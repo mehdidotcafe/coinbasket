@@ -1,0 +1,6 @@
+# Global
+.env
+
+# Python
+.python-version
+__pycache__
