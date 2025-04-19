@@ -1,0 +1,85 @@
+[
+  {
+    "name": "Top 10",
+    "description": "Top 10 coins by market cap basket",
+    "coins": [
+      {"name": "Binance Pegged Bitcoin", "displayName": "Bitcoin", "ticker": "BTC" },
+      {"name": "Binance Pegged ETH", "displayName": "Ethereum", "ticker": "ETH" },
+      {"name": "Binance Pegged USDT", "displayName": "Tether USD", "ticker": "TUSD" },
+      {"name": "XRP Token", "displayName": "XRP", "ticker": "XRP" },
+      {"name": "WBNB Token", "displayName": "Binance Coin", "ticker": "BNB" },
+      {"name": "Binance Pegged USD Coin", "displayName": "USDC", "ticker": "USDC" },
+      {"name": "SOLANA", "displayName": "Solana", "ticker": "SOL" },
+      {"name": "Tron", "displayName": "Tron", "ticker": "TRX" },
+      {"name": "Dogecoin", "displayName": "Dogecoin", "ticker" : "DOGE" },
+      {"name": "Cardano Token", "displayName": "Cardano", "ticker": "ADA" }
+    ]
+  },
+  {
+    "name": "HODL your Bitcoins",
+    "description": "HODL your Bitcoins, just bitcoin basket",
+    "coins": [
+      {"name": "Binance Pegged Bitcoin", "displayName": "Bitcoin", "ticker": "BNB" }
+    ]
+  },
+  {
+    "name": "memecoin mania",
+    "description": "memecoin basket",
+    "coins": [
+      {"name": "Dogecoin", "displayName": "Dogecoin",  "ticker": "DOGE" },
+      {"name": "SHIBA INU", "displayName": "Shiba Inu", "ticker" : "SHIB"},
+      {"name": "Pepe", "displayName": "Pepe", "ticker": "PEPE" },
+      {"name": "Baby Doge Coin", "displayName": "Baby Doge Coin", "ticker": "babyDOGE" },
+      {"name": "Dogelon Mars", "displayName": "Dogelon Mars", "ticker": "ELON" },
+      {"name": "MAGA", "displayName": "MAGA", "ticker": "MAGA" },
+      {"name": "Bonk", "displayName": "Bonk", "ticker": "BONK" },
+      {"name": "Test", "displayName": "Test", "ticker": "TST" },
+      {"name": "mubarak", "displayName": "mubarak", "ticker" : "MUBARAK"}
+    ]
+  },
+  {
+    "name": "Privacy first",
+    "description": "Privacy related project coins basket",
+    "coins": [
+      {"name": "Zcash", "displayName": "Zcash", "ticker": "ZEC"}
+    ]
+  },
+  {
+    "name": "AI",
+    "description": "AI related project coins basket",
+    "coins": [
+      {"name": "NEAR Protocol", "displayName": "NEAR Protocol", "ticker": "NEAR"},
+      {"name": "Filecoin", "displayName": "Filecoin", "ticker": "FIL"},
+      {"name": "FetchToken", "displayName": "Fetch.ai", "ticker": "FET"},
+      {"name": "Injective", "displayName": "Injective", "ticker": "INJ"},
+      {"name": "DeXe", "displayName": "DeXe", "ticker": "DEXE" }
+    ]
+  },
+  {
+    "name": "BNB Ecosystem",
+    "description": "BNB Ecosystem related project coins basket",
+    "coins": [
+      {"name": "WBNB Token", "displayName": "Binance Coin", "ticker": "BNB" },
+      {"name": "PancakeSwap Token", "displayName": "PancakeSwap Token", "ticker": "CAKE" },
+      {"name": "ChainLink Token", "displayName": "ChainLink Token" },
+      {"name": "DeXe", "displayName": "DeXe", "ticker": "DEXE" },
+      {"name": "Formation Finance", "displayName": "DeXe", "ticker": "DGT"}
+    ]
+  },
+  {
+    "name": "Certified Halal",
+    "description": "Certified Halal coins basket",
+    "coins": [
+      {"name": "Binance Pegged Bitcoin", "displayName": "Bitcoin", "ticker": "BTC" },
+      {"name": "Binance Pegged ETH", "displayName": "Ethereum", "ticker": "ETH" },
+      {"name": "Binance Pegged USDT", "displayName": "Tether USD", "ticker": "USDT" },
+      {"name": "XRP Token", "displayName": "XRP", "ticker": "XRP" },
+      {"name": "WBNB Token", "displayName": "Binance Coin", "ticker": "BNB" },
+      {"name": "Binance Pegged USD Coin", "displayName": "USDC", "ticker" :"USDC"},
+      {"name": "SOLANA", "displayName": "Solana", "ticker": "SOL" },
+      {"name": "Tron", "displayName": "Tron", "ticker": "TRX" },
+      {"name": "Dogecoin", "displayName": "Dogecoin", "ticker" : "DOGE" },
+      {"name": "Cardano Token", "displayName": "Cardano", "ticker": "ADA" }
+    ]
+  }
+]
