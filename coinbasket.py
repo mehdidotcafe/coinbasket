@@ -70,17 +70,41 @@ def retrieve(query: str):
     return serialized, retrieved_docs
 
 
+class Coin(TypedDict):
+    name: str
+    displayName: str
+    ticker: str
+
+
+class Basket(TypedDict):
+    name: str
+    coins: List[Coin]
+
+
+@tool()
+def invest(basket: Basket):
+    """Invest / fund / buy the basket create by the user.
+
+    Args:
+        basket: The basket to Invest / fund / buy.
+    """
+    # This is a placeholder for the invest tool
+    print(basket)
+
+    return "Investment successful", []
+
+
 # Step 1: Generate an AIMessage that may include a tool-call to be sent.
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools([retrieve])
+    llm_with_tools = llm.bind_tools([retrieve, invest])
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 
 # Step 2: Execute the retrieval.
-tools = ToolNode([retrieve])
+tools = ToolNode([retrieve, invest])
 
 
 # Step 3: Generate a response using the retrieved content.
@@ -98,8 +122,9 @@ def generate(state: MessagesState):
     # Format into prompt
     docs_content = "\n\n".join(doc.content for doc in tool_messages)
     system_message_content = (
-        "Your goal is to create crypto baskets.  "
-        "Always show the user the basket you are creating by listing the coins in a single list with the coin display name and the coin ticker between parenthesis. Don't mention excluded coins.  "
+        "Your goal is to create and then invest in crypto coin baskets.  "
+        "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
+        "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name and the coin ticker between parenthesis. Don't mention excluded coins.  "
         "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
         "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
         "Use the following pieces of context to answer the question at the end.  "
