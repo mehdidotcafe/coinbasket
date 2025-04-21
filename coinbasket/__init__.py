@@ -20,6 +20,8 @@ from langgraph.graph import StateGraph, MessagesState, END
 
 from langchain_openai import OpenAIEmbeddings
 
+from coinbasket.chain.bsc_chain import BscChain
+
 config = dotenv_values()
 
 os.environ["LANGSMITH_TRACING"] = config["LANGSMITH_TRACING"]
@@ -51,6 +53,11 @@ embeddings = OpenAIEmbeddings(
 vector_store = InMemoryVectorStore(embeddings)
 
 vector_store.add_documents(docs)
+
+chain = BscChain(
+    rpc_url=config["BSC_RPC_URL"],
+    private_key=config["BSC_PRIVATE_KEY"],
+)
 
 
 class State(TypedDict):
@@ -88,10 +95,7 @@ def invest(basket: Basket):
     Args:
         basket: The basket to Invest / fund / buy.
     """
-    # This is a placeholder for the invest tool
-    print(basket)
-
-    return "Investment successful", []
+    return chain.send_and_wait_transaction(), []
 
 
 # Step 1: Generate an AIMessage that may include a tool-call to be sent.
