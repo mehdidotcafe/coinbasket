@@ -1,12 +1,14 @@
 from web3 import Web3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware
 
-from coinbasket.chain.ichain import IChain
+from coinbasket.chain.balance import Balance
+from coinbasket.chain.chain import Chain
 
 
-class BscChain(IChain):
+class BscChain(Chain):
     def __init__(self, rpc_url: str, private_key: str):
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
+
         self.private_key = private_key
         self.account = self.web3.eth.account.from_key(private_key)
 
@@ -16,11 +18,16 @@ class BscChain(IChain):
         )
         print("Bsc chain initialized")
 
-    def get_balance(self) -> float:
+    def get_min_balance(self) -> Balance:
+        """Get the minimum balance required for the agent address."""
+        return Balance(amount=0.035, currency="BNB")
+
+    def get_balance(self) -> Balance:
         """Get the balance of the agent address."""
         balance = self.web3.eth.get_balance(self.account.address)
-        print(f"Balance: {self.web3.fromWei(balance, 'ether')} BNB")
-        return self.web3.fromWei(balance, "ether")
+        print(f"Balance: {self.web3.from_wei(balance, 'ether')} BNB")
+
+        return Balance(amount=self.web3.from_wei(balance, "ether"), currency="BNB")
 
     def send_and_wait_transaction(self) -> str:
         """Send and wait for transaction."""

@@ -20,7 +20,14 @@ from langgraph.graph import StateGraph, MessagesState, END
 
 from langchain_openai import OpenAIEmbeddings
 
+from coinbasket.basket import Basket
 from coinbasket.chain.bsc_chain import BscChain
+from coinbasket.investment_planner.equal_investment_planner import (
+    EqualInvestmentPlanner,
+)
+from coinbasket.investment_planner.insufficient_balance_exception import (
+    InsufficientBalanceException,
+)
 
 config = dotenv_values()
 
@@ -58,6 +65,7 @@ chain = BscChain(
     rpc_url=config["BSC_RPC_URL"],
     private_key=config["BSC_PRIVATE_KEY"],
 )
+investment_planner = EqualInvestmentPlanner(chain=chain)
 
 
 class State(TypedDict):
@@ -77,15 +85,10 @@ def retrieve(query: str):
     return serialized, retrieved_docs
 
 
-class Coin(TypedDict):
-    name: str
-    displayName: str
-    ticker: str
-
-
-class Basket(TypedDict):
-    name: str
-    coins: List[Coin]
+@tool()
+def get_balance():
+    """Retrieve agent's current wallet balance."""
+    return chain.get_balance()
 
 
 @tool()
@@ -95,20 +98,28 @@ def invest(basket: Basket):
     Args:
         basket: The basket to Invest / fund / buy.
     """
-    return chain.send_and_wait_transaction(), []
+
+    try:
+        investment_plan = investment_planner.make_investment_plan(basket)
+
+        print(investment_plan)
+
+        return "Investment success."
+    except InsufficientBalanceException as e:
+        return e.message
 
 
 # Step 1: Generate an AIMessage that may include a tool-call to be sent.
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools([retrieve, invest])
+    llm_with_tools = llm.bind_tools([retrieve, invest, get_balance])
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 
 # Step 2: Execute the retrieval.
-tools = ToolNode([retrieve, invest])
+tools = ToolNode([retrieve, invest, get_balance])
 
 
 # Step 3: Generate a response using the retrieved content.
