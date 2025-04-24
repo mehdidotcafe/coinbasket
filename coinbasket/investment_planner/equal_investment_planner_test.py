@@ -24,7 +24,7 @@ def chain():
 def basket():
     return Basket(
         name="Test Basket",
-        coins=[
+        tokens=[
             {
                 "name": "Binance Pegged Bitcoin",
                 "displayName": "Bitcoin",
@@ -60,11 +60,11 @@ def test_make_investment_plan(
     assert result == InvestmentPlan(
         steps=[
             InvestmentPlanStep(
-                coin=basket.coins[0],
+                token=basket.tokens[0],
                 amount=500.0,
             ),
             InvestmentPlanStep(
-                coin=basket.coins[1],
+                token=basket.tokens[1],
                 amount=500.0,
             ),
         ],

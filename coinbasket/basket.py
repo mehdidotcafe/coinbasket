@@ -3,7 +3,7 @@ from typing_extensions import List
 
 
 @dataclass
-class Coin:
+class Token:
     name: str
     display_name: str
     ticker: str
@@ -13,4 +13,4 @@ class Coin:
 @dataclass
 class Basket:
     name: str
-    coins: List[Coin]
+    tokens: List[Token]

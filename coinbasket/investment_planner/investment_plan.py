@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing_extensions import List
 
-from coinbasket.basket import Coin
+from coinbasket.basket import Token
 
 
 @dataclass
 class InvestmentPlanStep:
-    coin: Coin
+    token: Token
     amount: float
 
 

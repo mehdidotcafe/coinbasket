@@ -25,10 +25,10 @@ class EqualInvestmentPlanner(InvestmentPlanner):
         if total_balance.amount <= min_balance.amount:
             raise InsufficientBalanceException(min_balance)
 
-        step_amount = total_balance.amount / len(basket.coins)
+        step_amount = total_balance.amount / len(basket.tokens)
 
         steps = [
-            InvestmentPlanStep(coin=coin, amount=step_amount) for coin in basket.coins
+            InvestmentPlanStep(token=coin, amount=step_amount) for coin in basket.tokens
         ]
 
         return InvestmentPlan(steps=steps, total_amount=total_balance.amount)
