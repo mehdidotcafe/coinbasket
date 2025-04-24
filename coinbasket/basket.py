@@ -5,7 +5,7 @@ from typing_extensions import List
 @dataclass
 class Coin:
     name: str
-    displayName: str
+    display_name: str
     ticker: str
     address: str
 

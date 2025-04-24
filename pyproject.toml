@@ -18,7 +18,8 @@ dependencies = [
     "langchain-community (>=0.3.21,<0.4.0)",
     "langgraph (>=0.3.30,<0.4.0)",
     "jq (>=1.8.0,<2.0.0)",
-    "web3 (>=7.10.0,<8.0.0)"
+    "web3 (>=7.10.0,<8.0.0)",
+    "environs (>=14.1.1,<15.0.0)"
 ]
 
 
@@ -30,4 +31,5 @@ build-backend = "poetry.core.masonry.api"
 coinbasket = "coinbasket:main"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
+pytest-watch = "^4.2.0"
 

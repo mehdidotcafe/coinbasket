@@ -1,5 +1,5 @@
 from uagents import Agent, Context, Model
-from dotenv import dotenv_values
+
 import os
 
 from typing_extensions import List, TypedDict
@@ -22,23 +22,27 @@ from langchain_openai import OpenAIEmbeddings
 
 from coinbasket.basket import Basket
 from coinbasket.chain.bsc_chain import BscChain
+from coinbasket.config import Config
 from coinbasket.investment_planner.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
 from coinbasket.investment_planner.insufficient_balance_exception import (
     InsufficientBalanceException,
 )
+from coinbasket.investment_planner.exchange.pancakeswap_universal_router import (
+    PancakeSwapUniversalRouter,
+)
 
-config = dotenv_values()
+config = Config()
 
-os.environ["LANGSMITH_TRACING"] = config["LANGSMITH_TRACING"]
-os.environ["LANGSMITH_API_KEY"] = config["LANGSMITH_API_KEY"]
+os.environ["LANGSMITH_TRACING"] = config.langsmith_tracing
+os.environ["LANGSMITH_API_KEY"] = config.langsmith_api_key
 
 coinbasket = Agent(
-    name=config["AGENT_NAME"],
-    seed=config["AGENT_SEED"],
-    port=config["AGENT_PORT"],
-    endpoint=f"http://localhost:{config['AGENT_PORT']}/submit",
+    name=config.agent_name,
+    seed=config.agent_seed,
+    port=config.agent_port,
+    endpoint=f"http://localhost:{config.agent_port}/submit",
 )
 
 loader = JSONLoader(
@@ -50,11 +54,11 @@ loader = JSONLoader(
 docs = loader.load()
 
 llm = init_chat_model(
-    "gpt-4o-mini", model_provider="openai", api_key=config["OPENAI_API_KEY"]
+    "gpt-4o-mini", model_provider="openai", api_key=config.openai_api_key
 )
 
 embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small", api_key=config["OPENAI_API_KEY"]
+    model="text-embedding-3-small", api_key=config.openai_api_key
 )
 
 vector_store = InMemoryVectorStore(embeddings)
@@ -62,10 +66,11 @@ vector_store = InMemoryVectorStore(embeddings)
 vector_store.add_documents(docs)
 
 chain = BscChain(
-    rpc_url=config["BSC_RPC_URL"],
-    private_key=config["BSC_PRIVATE_KEY"],
+    rpc_url=config.bsc_rpc_url,
+    private_key=config.bsc_private_key,
 )
 investment_planner = EqualInvestmentPlanner(chain=chain)
+exchange = PancakeSwapUniversalRouter(config=config)
 
 
 class State(TypedDict):
@@ -102,6 +107,7 @@ def invest(basket: Basket):
     try:
         investment_plan = investment_planner.make_investment_plan(basket)
 
+        exchange.execute_investment_plan(investment_plan)
         print(investment_plan)
 
         return "Investment success."
