@@ -1,17 +1,16 @@
 from dataclasses import dataclass
-from typing_extensions import List
 
 from coinbasket.basket import Token
 from coinbasket.chain.balance import Balance
 
 
 @dataclass
-class InvestmentPlanStep:
+class InvestmentResultBid:
     token: Token
-    amount: float
+    balance_in: Balance
+    balance_out: Balance
 
 
 @dataclass
-class InvestmentPlan:
-    steps: List[InvestmentPlanStep]
-    balance: Balance
+class InvestmentResult:
+    bids: list[InvestmentResultBid]

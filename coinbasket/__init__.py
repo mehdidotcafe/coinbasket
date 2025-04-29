@@ -20,17 +20,17 @@ from langgraph.graph import StateGraph, MessagesState, END
 
 from langchain_openai import OpenAIEmbeddings
 
-from coinbasket.basket import Basket
+from coinbasket.basket import Basket, Token
 from coinbasket.chain.bsc_chain import BscChain
 from coinbasket.config import Config
 from coinbasket.investment_planner.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
+from coinbasket.investment_planner.exchange.pancakeswap.universal_router import (
+    PancakeSwapUniversalRouter,
+)
 from coinbasket.investment_planner.insufficient_balance_exception import (
     InsufficientBalanceException,
-)
-from coinbasket.investment_planner.exchange.pancakeswap_universal_router import (
-    PancakeSwapUniversalRouter,
 )
 
 config = Config()
@@ -68,9 +68,22 @@ vector_store.add_documents(docs)
 chain = BscChain(
     rpc_url=config.bsc_rpc_url,
     private_key=config.bsc_private_key,
+    base_token=Token(
+        name=config.bsc_base_token_name,
+        display_name=config.bsc_base_token_display_name,
+        ticker=config.bsc_base_token_ticker,
+        address=config.bsc_base_token_ticker,
+    ),
 )
 investment_planner = EqualInvestmentPlanner(chain=chain)
-exchange = PancakeSwapUniversalRouter(config=config)
+exchange = PancakeSwapUniversalRouter(
+    config.bsc_rpc_url,
+    config.pancakeswap_universal_router_address,
+    config.pancakeswap_permit2_contract_address,
+    config.pancakeswap_v2_router_address,
+    config.bsc_private_key,
+    chain,
+)
 
 
 class State(TypedDict):

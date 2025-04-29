@@ -31,4 +31,4 @@ class EqualInvestmentPlanner(InvestmentPlanner):
             InvestmentPlanStep(token=coin, amount=step_amount) for coin in basket.tokens
         ]
 
-        return InvestmentPlan(steps=steps, total_amount=total_balance.amount)
+        return InvestmentPlan(steps=steps, balance=total_balance)

@@ -3573,6 +3573,21 @@ pydantic = ">=2.8,<3.0"
 requests = ">=2.32.3,<3.0"
 
 [[package]]
+name = "uniswap-universal-router-decoder"
+version = "2.0.0"
+description = "Decode & Encode transactions sent to the Uniswap Universal Router. Support Uniswap V2, V3 & V4"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "uniswap_universal_router_decoder-2.0.0-py3-none-any.whl", hash = "sha256:233858cfefd50ea70192ce07abec83d6b7f5a192bdea61d98e2cc7cff47d1256"},
+    {file = "uniswap_universal_router_decoder-2.0.0.tar.gz", hash = "sha256:e6c7a8698c089263f2e33216de6461497c5901435db073182c3fde67df2439e0"},
+]
+
+[package.dependencies]
+web3 = ">=6.0.0,<8.0.0"
+
+[[package]]
 name = "urllib3"
 version = "2.3.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -4117,4 +4132,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "b7a0bb742f8843ec131dc688239e18b90c972af6772049049305015fdbdc88a1"
+content-hash = "50036c74484eeaad95ef43fd6582fc57a9917207ae0572c2296e787b2977c677"

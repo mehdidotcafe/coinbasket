@@ -1,6 +1,6 @@
 from unittest import mock
 from pytest import fixture, raises
-from coinbasket.basket import Basket
+from coinbasket.basket import Basket, Token
 from coinbasket.chain.balance import Balance
 from coinbasket.chain.chain import Chain
 from coinbasket.investment_planner.insufficient_balance_exception import (
@@ -18,6 +18,11 @@ from coinbasket.investment_planner.investment_plan import (
 @fixture
 def chain():
     return mock.Mock(spec=Chain)
+
+
+@fixture
+def base_token():
+    return Token(name="BNB", display_name="BNB", ticker="BNB", address="")
 
 
 @fixture
@@ -47,10 +52,13 @@ def investment_planner(chain: Chain):
 
 
 def test_make_investment_plan(
-    investment_planner: EqualInvestmentPlanner, basket: Basket, chain: Chain
+    investment_planner: EqualInvestmentPlanner,
+    basket: Basket,
+    chain: Chain,
+    base_token: Token,
 ):
-    chain.get_balance.return_value = Balance(amount=1000.0, currency="BNB")
-    chain.get_min_balance.return_value = Balance(amount=0.0001, currency="BNB")
+    chain.get_balance.return_value = Balance(amount=1000.0, token=base_token)
+    chain.get_min_balance.return_value = Balance(amount=0.0001, token=base_token)
 
     result = investment_planner.make_investment_plan(basket)
 
@@ -68,15 +76,18 @@ def test_make_investment_plan(
                 amount=500.0,
             ),
         ],
-        total_amount=1000.0,
+        balance=Balance(token=base_token, amount=1000.0),
     )
 
 
 def test_make_investment_plan_insufficient_balance(
-    investment_planner: EqualInvestmentPlanner, basket: Basket, chain: Chain
+    investment_planner: EqualInvestmentPlanner,
+    basket: Basket,
+    chain: Chain,
+    base_token: Token,
 ):
-    chain.get_balance.return_value = Balance(amount=1000.0, currency="BNB")
-    chain.get_min_balance.return_value = Balance(amount=9999.9, currency="BNB")
+    chain.get_balance.return_value = Balance(amount=1000.0, token=base_token)
+    chain.get_min_balance.return_value = Balance(amount=9999.9, token=base_token)
 
     with raises(InsufficientBalanceException):
         investment_planner.make_investment_plan(basket)
