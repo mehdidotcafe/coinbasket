@@ -1,3 +1,4 @@
+from typing import Any
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
@@ -87,7 +88,7 @@ exchange = PancakeSwapUniversalRouter(
     config.bsc_private_key,
     chain,
 )
-storage = FetchAiStorage(store=KeyValueStore(config.agent_name))
+storage = FetchAiStorage[Any](store=KeyValueStore(config.agent_name))
 
 invest_use_case = InvestUseCase(
     investment_planner=investment_planner,

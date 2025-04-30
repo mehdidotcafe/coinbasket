@@ -1,6 +1,7 @@
 import json
 from eth_typing import HexStr
 from web3 import Account, Web3
+from web3.types import TxReceipt, TxParams
 from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec
 
 from coinbasket.chain.balance import Balance
@@ -142,20 +143,17 @@ class PancakeSwapUniversalRouter(Exchange):
 
         gas_estimate = self.compute_gas_estimation(amount=amount)
 
-        transaction = contract_function.build_transaction(
-            {
-                "from": self.account.address,
-                "gas": gas_estimate,
-                "maxPriorityFeePerGas": self.w3.eth.max_priority_fee,
-                "maxFeePerGas": 100 * 10**9,
-                "type": "0x2",
-                "chainId": self.w3.eth.chain_id,
-                "value": amount,
-                "nonce": self.w3.eth.get_transaction_count(
-                    self.account.address, "pending"
-                ),
-            }
-        )
+        transaction_params: TxParams = {
+            "from": self.account.address,
+            "gas": gas_estimate,
+            "maxPriorityFeePerGas": self.w3.eth.max_priority_fee,
+            "maxFeePerGas": 100 * 10**9,
+            "type": "0x2",
+            "chainId": self.w3.eth.chain_id,
+            "value": amount,
+            "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
+        }
+        transaction = contract_function.build_transaction(transaction_params)
         raw_transaction = self.w3.eth.account.sign_transaction(
             transaction, self.account.key
         ).raw_transaction
@@ -213,7 +211,7 @@ class PancakeSwapUniversalRouter(Exchange):
     def compute_gas_estimation(
         self, amount: int, encoded_input: HexStr | None = None
     ) -> int:
-        transaction_params = {
+        transaction_params: TxParams = {
             "from": self.account.address,
             "to": Web3.to_checksum_address(self.universal_router_address),
             "value": amount,
@@ -259,18 +257,18 @@ class PancakeSwapUniversalRouter(Exchange):
         return receipt
 
     def parse_bids_from_receipt(
-        self, receipt, investment_plan: InvestmentPlan
-    ) -> list[Balance]:
-        bids = []
+        self, receipt: TxReceipt, investment_plan: InvestmentPlan
+    ) -> list[InvestmentResultBid]:
+        bids: list[InvestmentResultBid] = []
 
         for step in investment_plan.steps:
-            for log in receipt.logs:
-                if log.address.lower() == step.token.address.lower():
+            for log in receipt["logs"]:
+                if log["address"].lower() == step.token.address.lower():
                     try:
                         decoded = (
                             self.w3.eth.contract(
                                 address=self.w3.to_checksum_address(
-                                    log.address.lower()
+                                    log["address"].lower()
                                 ),
                                 abi=self.erc20_token_abi,
                             )

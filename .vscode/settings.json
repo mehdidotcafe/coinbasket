@@ -2,5 +2,7 @@
   "[python]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff"
-  }
+  },
+  "python.analysis.typeCheckingMode": "strict",
+  "python.languageServer": "Pylance"
 }

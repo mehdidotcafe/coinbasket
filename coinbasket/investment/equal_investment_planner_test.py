@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest import mock
 from pytest import fixture, raises
 from coinbasket.basket import Basket, Token
@@ -30,18 +31,18 @@ def basket():
     return Basket(
         name="Test Basket",
         tokens=[
-            {
-                "name": "Binance Pegged Bitcoin",
-                "displayName": "Bitcoin",
-                "ticker": "BTC",
-                "address": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-            },
-            {
-                "name": "Binance Pegged ETH",
-                "displayName": "Ethereum",
-                "ticker": "ETH",
-                "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
-            },
+            Token(
+                name="Binance Pegged Bitcoin",
+                display_name="Bitcoin",
+                ticker="BTC",
+                address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+            ),
+            Token(
+                name="Binance Pegged ETH",
+                display_name="Ethereum",
+                ticker="ETH",
+                address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            ),
         ],
     )
 
@@ -57,8 +58,8 @@ def test_make_investment_plan(
     chain: Chain,
     base_token: Token,
 ):
-    chain.get_balance.return_value = Balance(amount=1000.0, token=base_token)
-    chain.get_min_balance.return_value = Balance(amount=0.0001, token=base_token)
+    chain.get_balance.return_value = Balance(amount=Decimal("1000.0"), token=base_token)
+    chain.get_min_balance.return_value = Balance(amount=Decimal("2"), token=base_token)
 
     result = investment_planner.make_investment_plan(basket)
 
@@ -69,14 +70,14 @@ def test_make_investment_plan(
         steps=[
             InvestmentPlanStep(
                 token=basket.tokens[0],
-                amount=500.0,
+                amount=Decimal("499.0"),
             ),
             InvestmentPlanStep(
                 token=basket.tokens[1],
-                amount=500.0,
+                amount=Decimal("499.0"),
             ),
         ],
-        balance=Balance(token=base_token, amount=1000.0),
+        balance=Balance(token=base_token, amount=Decimal("998.0")),
     )
 
 
@@ -86,8 +87,10 @@ def test_make_investment_plan_insufficient_balance(
     chain: Chain,
     base_token: Token,
 ):
-    chain.get_balance.return_value = Balance(amount=1000.0, token=base_token)
-    chain.get_min_balance.return_value = Balance(amount=9999.9, token=base_token)
+    chain.get_balance.return_value = Balance(amount=Decimal("1000.0"), token=base_token)
+    chain.get_min_balance.return_value = Balance(
+        amount=Decimal("9999.9"), token=base_token
+    )
 
     with raises(InsufficientBalanceException):
         investment_planner.make_investment_plan(basket)

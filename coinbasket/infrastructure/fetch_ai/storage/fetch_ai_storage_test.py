@@ -13,10 +13,10 @@ def fetch_ai_store():
 
 @fixture
 def storage(fetch_ai_store: KeyValueStore):
-    return FetchAiStorage(store=fetch_ai_store)
+    return FetchAiStorage[str](store=fetch_ai_store)
 
 
-def test_get(storage: FetchAiStorage, fetch_ai_store: KeyValueStore):
+def test_get(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
     fetch_ai_store.get.return_value = "value"
     result = storage.get("key")
 
@@ -24,7 +24,7 @@ def test_get(storage: FetchAiStorage, fetch_ai_store: KeyValueStore):
     fetch_ai_store.get.assert_called_once_with("key")
 
 
-def test_has(storage: FetchAiStorage, fetch_ai_store: KeyValueStore):
+def test_has(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
     fetch_ai_store.has.return_value = True
     result = storage.has("key")
 
@@ -32,16 +32,16 @@ def test_has(storage: FetchAiStorage, fetch_ai_store: KeyValueStore):
     fetch_ai_store.has.assert_called_once_with("key")
 
 
-def test_set(storage: FetchAiStorage, fetch_ai_store: KeyValueStore):
+def test_set(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
     storage.set("key", "value")
     fetch_ai_store.set.assert_called_once_with("key", "value")
 
 
-def test_remove(storage: FetchAiStorage, fetch_ai_store: KeyValueStore):
+def test_remove(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
     storage.remove("key")
     fetch_ai_store.remove.assert_called_once_with("key")
 
 
-def test_clear(storage: FetchAiStorage, fetch_ai_store: KeyValueStore):
+def test_clear(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
     storage.clear()
     fetch_ai_store.clear.assert_called_once()

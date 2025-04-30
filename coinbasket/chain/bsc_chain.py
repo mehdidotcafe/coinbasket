@@ -43,9 +43,6 @@ class BscChain(Chain):
     def get_base_token(self):
         return self.base_token
 
-    def get_wrapped_base_token(self):
-        return self.wrapped_base_token
-
     def send_and_wait_transaction(self) -> str:
         """Send and wait for transaction."""
         # Implement the logic to send a transaction and wait for its confirmation

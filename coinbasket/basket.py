@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing_extensions import List
 
 
 @dataclass
@@ -13,4 +12,4 @@ class Token:
 @dataclass
 class Basket:
     name: str
-    tokens: List[Token]
+    tokens: list[Token]

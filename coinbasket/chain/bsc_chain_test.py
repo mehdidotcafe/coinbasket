@@ -1,4 +1,6 @@
 from pytest import fixture
+from decimal import Decimal
+
 from coinbasket.basket import Token
 from coinbasket.chain.bsc_chain import BscChain
 
@@ -24,5 +26,5 @@ def test_defined(bsc_chain: BscChain):
 def test_get_min_balance(bsc_chain: BscChain, base_token: Token):
     min_balance = bsc_chain.get_min_balance()
 
-    assert min_balance.amount == 0.001
+    assert min_balance.amount == Decimal("1")
     assert min_balance.token == base_token

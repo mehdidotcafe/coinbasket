@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest import mock
 from pytest import fixture
 
@@ -28,7 +29,24 @@ private_key = env("BSC_PRIVATE_KEY")
 def chain():
     chain = mock.Mock(spec=Chain)
 
-    chain.get_balance.return_value = 99999999999999999999999999999999999999999999
+    chain.get_balance.return_value = Balance(
+        token=Token(
+            name="BNB",
+            display_name="BNB",
+            ticker="BNB",
+            address="",
+        ),
+        amount=Decimal("1000"),
+    )
+    chain.get_min_balance.return_value = Balance(
+        token=Token(
+            name="BNB",
+            display_name="BNB",
+            ticker="BNB",
+            address="",
+        ),
+        amount=Decimal("1"),
+    )
 
     return chain
 
@@ -55,7 +73,7 @@ def test_execute_investment_plan(router: PancakeSwapUniversalRouter):
                     ticker="USDC",
                     address="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
                 ),
-                amount=0.05,
+                amount=Decimal("0.05"),
             ),
             InvestmentPlanStep(
                 token=Token(
@@ -64,7 +82,7 @@ def test_execute_investment_plan(router: PancakeSwapUniversalRouter):
                     ticker="BTCB",
                     address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
                 ),
-                amount=0.15,
+                amount=Decimal("0.15"),
             ),
             InvestmentPlanStep(
                 token=Token(
@@ -73,7 +91,7 @@ def test_execute_investment_plan(router: PancakeSwapUniversalRouter):
                     ticker="CAKE",
                     address="0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
                 ),
-                amount=0.12,
+                amount=Decimal("0.12"),
             ),
             InvestmentPlanStep(
                 token=Token(
@@ -82,7 +100,7 @@ def test_execute_investment_plan(router: PancakeSwapUniversalRouter):
                     ticker="1INCH",
                     address="0x111111111117dC0aa78b770fA6A738034120C302",
                 ),
-                amount=0.15,
+                amount=Decimal("0.15"),
             ),
         ],
         balance=Balance(
@@ -92,7 +110,7 @@ def test_execute_investment_plan(router: PancakeSwapUniversalRouter):
                 ticker="BNB",
                 address="",
             ),
-            amount=0.47,
+            amount=Decimal("0.47"),
         ),
     )
 

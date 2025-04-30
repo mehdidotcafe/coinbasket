@@ -4,6 +4,7 @@ from coinbasket.investment.insufficient_balance_exception import (
     InsufficientBalanceException,
 )
 from coinbasket.investment.investment_planner import InvestmentPlanner
+from coinbasket.investment.investment_result import InvestmentResult
 from coinbasket.storage.storage import Storage
 
 
@@ -12,7 +13,7 @@ class InvestUseCase:
         self,
         investment_planner: InvestmentPlanner,
         exchange: Exchange,
-        storage: Storage,
+        storage: Storage[InvestmentResult],
     ):
         self.investment_planner = investment_planner
         self.exchange = exchange
