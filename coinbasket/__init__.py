@@ -1,4 +1,5 @@
 from uagents import Agent, Context, Model
+from uagents.storage import KeyValueStore
 
 import os
 
@@ -13,6 +14,7 @@ from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
 from langchain_core.vectorstores import InMemoryVectorStore
 
+
 from langchain.chat_models import init_chat_model
 
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -23,14 +25,15 @@ from langchain_openai import OpenAIEmbeddings
 from coinbasket.basket import Basket, Token
 from coinbasket.chain.bsc_chain import BscChain
 from coinbasket.config import Config
-from coinbasket.investment_planner.equal_investment_planner import (
+from coinbasket.investment.invest_use_case import InvestUseCase
+from coinbasket.investment.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
-from coinbasket.investment_planner.exchange.pancakeswap.universal_router import (
+from coinbasket.investment.exchange.pancakeswap.universal_router import (
     PancakeSwapUniversalRouter,
 )
-from coinbasket.investment_planner.insufficient_balance_exception import (
-    InsufficientBalanceException,
+from coinbasket.infrastructure.fetch_ai.storage.fetch_ai_storage import (
+    FetchAiStorage,
 )
 
 config = Config()
@@ -72,7 +75,7 @@ chain = BscChain(
         name=config.bsc_base_token_name,
         display_name=config.bsc_base_token_display_name,
         ticker=config.bsc_base_token_ticker,
-        address=config.bsc_base_token_ticker,
+        address=config.bsc_base_token_address,
     ),
 )
 investment_planner = EqualInvestmentPlanner(chain=chain)
@@ -83,6 +86,13 @@ exchange = PancakeSwapUniversalRouter(
     config.pancakeswap_v2_router_address,
     config.bsc_private_key,
     chain,
+)
+storage = FetchAiStorage(store=KeyValueStore(config.agent_name))
+
+invest_use_case = InvestUseCase(
+    investment_planner=investment_planner,
+    exchange=exchange,
+    storage=storage,
 )
 
 
@@ -110,35 +120,37 @@ def get_balance():
 
 
 @tool()
+def get_invested_basket():
+    """Retrieve the invested basket."""
+    basket = storage.get("investment_result")
+    if not basket:
+        return "No invested basket found."
+    return basket
+
+
+@tool(response_format="content_and_artifact")
 def invest(basket: Basket):
     """Invest / fund / buy the basket create by the user.
 
     Args:
         basket: The basket to Invest / fund / buy.
     """
-
-    try:
-        investment_plan = investment_planner.make_investment_plan(basket)
-
-        exchange.execute_investment_plan(investment_plan)
-        print(investment_plan)
-
-        return "Investment success."
-    except InsufficientBalanceException as e:
-        return e.message
+    return invest_use_case.execute(basket)
 
 
 # Step 1: Generate an AIMessage that may include a tool-call to be sent.
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools([retrieve, invest, get_balance])
+    llm_with_tools = llm.bind_tools(
+        [retrieve, invest, get_balance, get_invested_basket]
+    )
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 
 # Step 2: Execute the retrieval.
-tools = ToolNode([retrieve, invest, get_balance])
+tools = ToolNode([retrieve, invest, get_balance, get_invested_basket])
 
 
 # Step 3: Generate a response using the retrieved content.
@@ -208,7 +220,7 @@ class PromptResponse(Model):
 
 @coinbasket.on_rest_post("/", PromptRequest, PromptResponse)
 async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
-    graph_config = {"configurable": {"thread_id": "abc123"}}
+    graph_config = {"configurable": {"thread_id": "abc123", "storage": ctx.storage}}
     question = req.text
 
     for step in graph.stream(

@@ -3,13 +3,13 @@ from pytest import fixture, raises
 from coinbasket.basket import Basket, Token
 from coinbasket.chain.balance import Balance
 from coinbasket.chain.chain import Chain
-from coinbasket.investment_planner.insufficient_balance_exception import (
+from coinbasket.investment.insufficient_balance_exception import (
     InsufficientBalanceException,
 )
-from coinbasket.investment_planner.equal_investment_planner import (
+from coinbasket.investment.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
-from coinbasket.investment_planner.investment_plan import (
+from coinbasket.investment.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
 )

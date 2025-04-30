@@ -1,3 +1,4 @@
+from decimal import Decimal
 from web3 import Web3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware
 
@@ -28,7 +29,7 @@ class BscChain(Chain):
 
     def get_min_balance(self) -> Balance:
         """Get the minimum balance required for the agent address."""
-        return Balance(token=self.base_token, amount=0.035)
+        return Balance(token=self.base_token, amount=Decimal("1"))
 
     def get_balance(self) -> Balance:
         """Get the balance of the agent address."""

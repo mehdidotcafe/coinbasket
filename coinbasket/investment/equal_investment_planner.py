@@ -1,10 +1,11 @@
 from coinbasket.basket import Basket
+from coinbasket.chain.balance import Balance
 from coinbasket.chain.chain import Chain
-from coinbasket.investment_planner.investment_plan import (
+from coinbasket.investment.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
 )
-from coinbasket.investment_planner.investment_planner import InvestmentPlanner
+from coinbasket.investment.investment_planner import InvestmentPlanner
 from .insufficient_balance_exception import (
     InsufficientBalanceException,
 )
@@ -22,13 +23,20 @@ class EqualInvestmentPlanner(InvestmentPlanner):
         total_balance = self.chain.get_balance()
         min_balance = self.chain.get_min_balance()
 
-        if total_balance.amount <= min_balance.amount:
+        investment_balance = Balance(
+            amount=total_balance.amount - min_balance.amount,
+            token=total_balance.token,
+        )
+
+        if investment_balance.amount <= 0:
             raise InsufficientBalanceException(min_balance)
 
-        step_amount = total_balance.amount / len(basket.tokens)
+        step_amount = investment_balance.amount / len(basket.tokens)
 
         steps = [
             InvestmentPlanStep(token=coin, amount=step_amount) for coin in basket.tokens
         ]
 
-        return InvestmentPlan(steps=steps, balance=total_balance)
+        print(InvestmentPlan(steps=steps, balance=investment_balance))
+
+        return InvestmentPlan(steps=steps, balance=investment_balance)

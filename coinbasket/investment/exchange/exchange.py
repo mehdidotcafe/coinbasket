@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from coinbasket.investment_planner.investment_plan import InvestmentPlan
-from coinbasket.investment_planner.investment_result import InvestmentResult
+from coinbasket.investment.investment_plan import InvestmentPlan
+from coinbasket.investment.investment_result import InvestmentResult
 
 
 class Exchange(ABC):

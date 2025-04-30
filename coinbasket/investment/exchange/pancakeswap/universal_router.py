@@ -5,9 +5,9 @@ from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec
 
 from coinbasket.chain.balance import Balance
 from coinbasket.chain.chain import Chain
-from coinbasket.investment_planner.exchange.exchange import Exchange
-from coinbasket.investment_planner.investment_plan import InvestmentPlan
-from coinbasket.investment_planner.investment_result import (
+from coinbasket.investment.exchange.exchange import Exchange
+from coinbasket.investment.investment_plan import InvestmentPlan
+from coinbasket.investment.investment_result import (
     InvestmentResult,
     InvestmentResultBid,
 )
@@ -37,25 +37,25 @@ class PancakeSwapUniversalRouter(Exchange):
         self.codec = RouterCodec()
 
         with open(
-            "./coinbasket/investment_planner/exchange/pancakeswap/universal_router_abi.json",
+            "./coinbasket/investment/exchange/pancakeswap/universal_router_abi.json",
             "r",
         ) as f:
             self.universal_router_abi = json.load(f)
 
         with open(
-            "./coinbasket/investment_planner/exchange/pancakeswap/permit2_contract_abi.json",
+            "./coinbasket/investment/exchange/pancakeswap/permit2_contract_abi.json",
             "r",
         ) as f:
             self.permit2_contract_abi = json.load(f)
 
         with open(
-            "./coinbasket/investment_planner/exchange/pancakeswap/v2_router_abi.json",
+            "./coinbasket/investment/exchange/pancakeswap/v2_router_abi.json",
             "r",
         ) as f:
             self.v2_router = json.load(f)
 
         with open(
-            "./coinbasket/investment_planner/exchange/pancakeswap/erc20_token_abi.json",
+            "./coinbasket/investment/exchange/pancakeswap/erc20_token_abi.json",
             "r",
         ) as f:
             self.erc20_token_abi = json.load(f)

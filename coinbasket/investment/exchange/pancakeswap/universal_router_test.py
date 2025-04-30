@@ -8,10 +8,10 @@ from coinbasket.basket import Token
 
 from coinbasket.chain.balance import Balance
 from coinbasket.chain.chain import Chain
-from coinbasket.investment_planner.exchange.pancakeswap.universal_router import (
+from coinbasket.investment.exchange.pancakeswap.universal_router import (
     PancakeSwapUniversalRouter,
 )
-from coinbasket.investment_planner.investment_plan import (
+from coinbasket.investment.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
 )
