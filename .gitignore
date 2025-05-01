@@ -4,3 +4,6 @@
 # Python
 .python-version
 __pycache__
+
+# Fetch.ai Storage
+coinbasket_data.json

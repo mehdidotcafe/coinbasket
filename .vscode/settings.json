@@ -1,4 +1,8 @@
 {
+  "cSpell.words": [
+    "coinbasket",
+    "pancakeswap"
+  ],
   "[python]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff"

@@ -26,6 +26,9 @@ from langchain_openai import OpenAIEmbeddings
 from coinbasket.basket import Basket, Token
 from coinbasket.chain.bsc_chain import BscChain
 from coinbasket.config import Config
+from coinbasket.investment.get_investment_result_use_case import (
+    GetInvestmentResultUseCase,
+)
 from coinbasket.investment.invest_use_case import InvestUseCase
 from coinbasket.investment.equal_investment_planner import (
     EqualInvestmentPlanner,
@@ -95,6 +98,7 @@ invest_use_case = InvestUseCase(
     exchange=exchange,
     storage=storage,
 )
+get_invested_basket_use_case = GetInvestmentResultUseCase(storage=storage)
 
 
 class State(TypedDict):
@@ -123,10 +127,7 @@ def get_balance():
 @tool()
 def get_invested_basket():
     """Retrieve the invested basket."""
-    basket = storage.get("investment_result")
-    if not basket:
-        return "No invested basket found."
-    return basket
+    return get_invested_basket_use_case.execute()
 
 
 @tool(response_format="content_and_artifact")

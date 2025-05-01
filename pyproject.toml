@@ -20,7 +20,8 @@ dependencies = [
     "jq (>=1.8.0,<2.0.0)",
     "web3 (>=7.10.0,<8.0.0)",
     "environs (>=14.1.1,<15.0.0)",
-    "uniswap-universal-router-decoder (>=2.0.0,<3.0.0)"
+    "uniswap-universal-router-decoder (>=2.0.0,<3.0.0)",
+    "jsonpickle (>=4.0.5,<5.0.0)"
 ]
 
 

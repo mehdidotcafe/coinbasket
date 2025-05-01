@@ -1,5 +1,6 @@
 from unittest import mock
 from uagents.storage import KeyValueStore
+from jsonpickle import encode, decode
 
 from pytest import fixture
 
@@ -16,11 +17,11 @@ def storage(fetch_ai_store: KeyValueStore):
     return FetchAiStorage[str](store=fetch_ai_store)
 
 
-def test_get(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
+def test_get_with_decode(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
     fetch_ai_store.get.return_value = "value"
     result = storage.get("key")
 
-    assert result == "value"
+    assert decode(result) == "value"
     fetch_ai_store.get.assert_called_once_with("key")
 
 
@@ -32,9 +33,9 @@ def test_has(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
     fetch_ai_store.has.assert_called_once_with("key")
 
 
-def test_set(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
+def test_set_with_encode(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
     storage.set("key", "value")
-    fetch_ai_store.set.assert_called_once_with("key", "value")
+    fetch_ai_store.set.assert_called_once_with("key", encode("value"))
 
 
 def test_remove(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
