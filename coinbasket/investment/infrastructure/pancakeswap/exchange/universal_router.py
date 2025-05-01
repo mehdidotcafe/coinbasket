@@ -15,6 +15,7 @@ from coinbasket.investment.investment_result import (
 
 
 # https://github.com/Uniswap/permit2/blob/main/src/interfaces/IAllowanceTransfer.sol
+# https://github.com/Elnaril/uniswap-universal-router-decoder
 class PancakeSwapUniversalRouter(Exchange):
     def __init__(
         self,

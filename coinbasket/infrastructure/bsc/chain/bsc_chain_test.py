@@ -2,7 +2,7 @@ from pytest import fixture
 from decimal import Decimal
 
 from coinbasket.basket import Token
-from coinbasket.chain.bsc_chain import BscChain
+from coinbasket.infrastructure.bsc.chain.bsc_chain import BscChain
 
 
 @fixture

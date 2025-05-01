@@ -24,13 +24,13 @@ from langgraph.graph import StateGraph, MessagesState, END
 from langchain_openai import OpenAIEmbeddings
 
 from coinbasket.basket import Basket, Token
-from coinbasket.chain.bsc_chain import BscChain
+from coinbasket.infrastructure.bsc.chain.bsc_chain import BscChain
 from coinbasket.config import Config
 from coinbasket.investment.get_investment_result_use_case import (
     GetInvestmentResultUseCase,
 )
 from coinbasket.investment.invest_use_case import InvestUseCase
-from coinbasket.investment.equal_investment_planner import (
+from coinbasket.investment.investment_planner_strategy.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
 from coinbasket.investment.infrastructure.pancakeswap.exchange.universal_router import (

@@ -1,6 +1,6 @@
 from decimal import Decimal
 from web3 import Web3
-from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware
+from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
 
 from coinbasket.basket import Token
 from coinbasket.chain.balance import Balance
@@ -21,9 +21,10 @@ class BscChain(Chain):
 
         self.account = self.web3.eth.account.from_key(private_key)
 
-        self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+        self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)  # type: ignore
         self.web3.middleware_onion.inject(
-            SignAndSendRawMiddlewareBuilder.build(self.account), layer=0
+            SignAndSendRawMiddlewareBuilder.build(self.account),  # type: ignore
+            layer=0,
         )
         print("Bsc chain initialized")
 
@@ -37,7 +38,8 @@ class BscChain(Chain):
         print(f"Balance: {self.web3.from_wei(balance, 'ether')} BNB")
 
         return Balance(
-            token=self.base_token, amount=self.web3.from_wei(balance, "ether")
+            token=self.base_token,
+            amount=self.web3.from_wei(balance, "ether"),  # type: ignore
         )
 
     def get_base_token(self):

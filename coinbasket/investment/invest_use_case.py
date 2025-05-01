@@ -1,6 +1,6 @@
 from coinbasket.basket import Basket
 from coinbasket.investment.exchange.exchange import Exchange
-from coinbasket.investment.insufficient_balance_exception import (
+from coinbasket.investment.investment_planner_strategy.insufficient_balance_exception import (
     InsufficientBalanceException,
 )
 from coinbasket.investment.investment_planner import InvestmentPlanner
@@ -29,4 +29,4 @@ class InvestUseCase:
 
             return "Investment success.", investment_result
         except InsufficientBalanceException as e:
-            return e.message
+            return e.message, None
