@@ -38,25 +38,25 @@ class PancakeSwapUniversalRouter(Exchange):
         self.codec = RouterCodec()
 
         with open(
-            "./coinbasket/investment/exchange/pancakeswap/universal_router_abi.json",
+            "./coinbasket/investment/infrastructure/pancakeswap/exchange/universal_router_abi.json",
             "r",
         ) as f:
             self.universal_router_abi = json.load(f)
 
         with open(
-            "./coinbasket/investment/exchange/pancakeswap/permit2_contract_abi.json",
+            "./coinbasket/investment/infrastructure/pancakeswap/exchange/permit2_contract_abi.json",
             "r",
         ) as f:
             self.permit2_contract_abi = json.load(f)
 
         with open(
-            "./coinbasket/investment/exchange/pancakeswap/v2_router_abi.json",
+            "./coinbasket/investment/infrastructure/pancakeswap/exchange/v2_router_abi.json",
             "r",
         ) as f:
             self.v2_router = json.load(f)
 
         with open(
-            "./coinbasket/investment/exchange/pancakeswap/erc20_token_abi.json",
+            "./coinbasket/investment/infrastructure/pancakeswap/exchange/erc20_token_abi.json",
             "r",
         ) as f:
             self.erc20_token_abi = json.load(f)

@@ -33,7 +33,7 @@ from coinbasket.investment.invest_use_case import InvestUseCase
 from coinbasket.investment.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
-from coinbasket.investment.exchange.pancakeswap.universal_router import (
+from coinbasket.investment.infrastructure.pancakeswap.exchange.universal_router import (
     PancakeSwapUniversalRouter,
 )
 from coinbasket.infrastructure.fetch_ai.storage.fetch_ai_storage import (
