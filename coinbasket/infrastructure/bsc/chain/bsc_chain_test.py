@@ -1,8 +1,20 @@
+from unittest import mock
 from pytest import fixture
 from decimal import Decimal
+from web3 import Web3
+from web3.eth import Eth
 
 from coinbasket.basket import Token
 from coinbasket.infrastructure.bsc.chain.bsc_chain import BscChain
+
+
+@fixture
+def w3():
+    w3 = mock.Mock(spec=Web3)
+
+    w3.eth = mock.Mock(spec=Eth)
+
+    return w3
 
 
 @fixture
@@ -11,16 +23,12 @@ def base_token():
 
 
 @fixture
-def bsc_chain(base_token: Token):
+def bsc_chain(base_token: Token, w3: Web3):
     return BscChain(
-        rpc_url="https://bsc-dataseed.binance.org/",
+        w3=w3,
         private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
         base_token=base_token,
     )
-
-
-def test_defined(bsc_chain: BscChain):
-    assert bsc_chain is not None
 
 
 def test_get_min_balance(bsc_chain: BscChain, base_token: Token):

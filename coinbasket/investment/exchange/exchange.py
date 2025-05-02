@@ -10,3 +10,9 @@ class Exchange(ABC):
         self, investment_plan: InvestmentPlan
     ) -> InvestmentResult:
         pass
+
+    @abstractmethod
+    def execute_divestment_plan(
+        self, divestment_plan: InvestmentPlan
+    ) -> InvestmentResult:
+        pass

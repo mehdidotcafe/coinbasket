@@ -7,7 +7,7 @@ from coinbasket.chain.chain import Chain
 from coinbasket.investment.investment_planner_strategy.insufficient_balance_exception import (
     InsufficientBalanceException,
 )
-from coinbasket.investment.equal_investment_planner import (
+from coinbasket.investment.investment_planner_strategy.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
 from coinbasket.investment.investment_plan import (

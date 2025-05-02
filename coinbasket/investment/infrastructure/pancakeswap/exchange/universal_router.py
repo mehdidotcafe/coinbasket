@@ -1,12 +1,13 @@
 import json
 from eth_typing import HexStr
 from web3 import Account, Web3
-from web3.types import TxReceipt, TxParams
+from web3.types import TxReceipt, TxParams, Wei
 from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec
 
 from coinbasket.chain.balance import Balance
 from coinbasket.chain.chain import Chain
 from coinbasket.investment.exchange.exchange import Exchange
+from coinbasket.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
 from coinbasket.investment.investment_plan import InvestmentPlan
 from coinbasket.investment.investment_result import (
     InvestmentResult,
@@ -17,20 +18,23 @@ from coinbasket.investment.investment_result import (
 # https://github.com/Uniswap/permit2/blob/main/src/interfaces/IAllowanceTransfer.sol
 # https://github.com/Elnaril/uniswap-universal-router-decoder
 class PancakeSwapUniversalRouter(Exchange):
+    # TODO: handle multiple base tokens
+    base_token = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+
     def __init__(
         self,
         bsc_rpc_url: str,
         universal_router_address: str,
-        permit2_contract_address: str,
         v2_router_address: str,
         private_key: str,
         chain: Chain,
+        permit2: Permit2,
     ):
         self.universal_router_address = universal_router_address
-        self.permit2_contract_address = permit2_contract_address
         self.v2_router_address = v2_router_address
         self.private_key = private_key
         self.chain = chain
+        self.permit2 = permit2
 
         self.w3 = Web3(
             Web3.HTTPProvider(bsc_rpc_url),
@@ -43,12 +47,6 @@ class PancakeSwapUniversalRouter(Exchange):
             "r",
         ) as f:
             self.universal_router_abi = json.load(f)
-
-        with open(
-            "./coinbasket/investment/infrastructure/pancakeswap/exchange/permit2_contract_abi.json",
-            "r",
-        ) as f:
-            self.permit2_contract_abi = json.load(f)
 
         with open(
             "./coinbasket/investment/infrastructure/pancakeswap/exchange/v2_router_abi.json",
@@ -66,10 +64,6 @@ class PancakeSwapUniversalRouter(Exchange):
             address=Web3.to_checksum_address(universal_router_address),
             abi=self.universal_router_abi,
         )
-        self.permit2_contract = self.w3.eth.contract(
-            address=Web3.to_checksum_address(permit2_contract_address),
-            abi=self.permit2_contract_abi,
-        )
         self.v2_router = self.w3.eth.contract(
             address=Web3.to_checksum_address(v2_router_address),
             abi=self.v2_router,
@@ -78,28 +72,28 @@ class PancakeSwapUniversalRouter(Exchange):
     def execute_investment_plan(
         self, investment_plan: InvestmentPlan
     ) -> InvestmentResult:
-        # TODO: handle multiple base tokens
-        base_token = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+        self.permit2.approve_permit2_contract(Web3.to_checksum_address(self.base_token))
 
-        self.approve_permit2_contract(base_token)
-
-        signed_message, permit_data, deadline = self.sign_permit2_message(base_token)
+        signed_message, permit_data, deadline = self.permit2.sign_permit2_message(
+            Web3.to_checksum_address(self.base_token),
+            Web3.to_checksum_address(self.universal_router_address),
+        )
 
         amount = self.w3.to_wei(investment_plan.balance.amount, "ether")
 
-        chain = (
+        swap_chain = (
             self.codec.encode.chain()
             .permit2_permit(permit_data, signed_message)
             .wrap_eth(
                 FunctionRecipient.ROUTER,
-                self.w3.to_wei(investment_plan.balance.amount, "ether"),
+                amount,
             )
         )
 
         for step in investment_plan.steps:
             amount_in = self.w3.to_wei(step.amount, "ether")
             path = [
-                Web3.to_checksum_address(base_token),
+                Web3.to_checksum_address(self.base_token),
                 Web3.to_checksum_address(step.token.address),
             ]
             amount_out_min = self.compute_amount_out_min(
@@ -108,7 +102,7 @@ class PancakeSwapUniversalRouter(Exchange):
             )
 
             # TODO: check to use v3
-            chain = chain.v2_swap_exact_in(
+            swap_chain = swap_chain.v2_swap_exact_in(
                 FunctionRecipient.SENDER,
                 amount_in,
                 amount_out_min,
@@ -116,7 +110,7 @@ class PancakeSwapUniversalRouter(Exchange):
                 payer_is_sender=False,
             )
 
-        encoded_input = chain.build(deadline)
+        encoded_input = swap_chain.build(deadline)
 
         receipt = self.sign_send_wait_transaction(encoded_input, amount)
 
@@ -128,73 +122,57 @@ class PancakeSwapUniversalRouter(Exchange):
             bids,
         )
 
-    def approve_permit2_contract(self, base_token: str):
+    def execute_divestment_plan(
+        self, divestment_plan: InvestmentPlan
+    ) -> InvestmentResult:
         amount = 0
-        permit2_allowance = 2**256 - 1
+        swap_chain = self.codec.encode.chain()
 
-        base_token_contract = self.w3.eth.contract(
-            address=Web3.to_checksum_address(base_token),
-            abi=self.erc20_token_abi,
-        )
-
-        contract_function = base_token_contract.functions.approve(
-            Web3.to_checksum_address(self.permit2_contract_address),
-            permit2_allowance,
-        )
-
-        gas_estimate = self.compute_gas_estimation(amount=amount)
-
-        transaction_params: TxParams = {
-            "from": self.account.address,
-            "gas": gas_estimate,
-            "maxPriorityFeePerGas": self.w3.eth.max_priority_fee,
-            "maxFeePerGas": 100 * 10**9,
-            "type": "0x2",
-            "chainId": self.w3.eth.chain_id,
-            "value": amount,
-            "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
-        }
-        transaction = contract_function.build_transaction(transaction_params)
-        raw_transaction = self.w3.eth.account.sign_transaction(
-            transaction, self.account.key
-        ).raw_transaction
-        transaction_hash = self.w3.eth.send_raw_transaction(raw_transaction)
-        print(f"Permit2 Trx Hash: {transaction_hash.hex()}")
-
-        receipt = self.w3.eth.wait_for_transaction_receipt(transaction_hash)
-        print(f"Permit2 Receipt: {receipt}")
-
-    def get_permit2_nonce(self, token: str) -> int:
-        _permit2_amount, _permit2_expiration, permit2_nonce = (
-            self.codec.fetch_permit2_allowance(
-                wallet=self.account.address,
-                token=Web3.to_checksum_address(token),
-                spender=Web3.to_checksum_address(self.universal_router_address),
-                permit2=Web3.to_checksum_address(self.permit2_contract_address),
-                permit2_abi=self.permit2_contract_abi,
+        for step in divestment_plan.steps:
+            self.permit2.approve_permit2_contract(
+                Web3.to_checksum_address(step.token.address)
             )
+
+            signed_message, permit_data, _deadline = self.permit2.sign_permit2_message(
+                Web3.to_checksum_address(step.token.address),
+                Web3.to_checksum_address(self.universal_router_address),
+            )
+
+            amount_in = self.w3.to_wei(step.amount, "ether")
+            path = [
+                Web3.to_checksum_address(step.token.address),
+                Web3.to_checksum_address(self.base_token),
+            ]
+            amount_out_min = self.compute_amount_out_min(
+                amount_in,
+                path,
+            )
+
+            swap_chain = swap_chain.permit2_permit(
+                permit_data,
+                signed_message,
+                # TODO: check to use v3
+            ).v2_swap_exact_in(
+                FunctionRecipient.ROUTER,
+                amount_in,
+                amount_out_min,
+                path,
+                payer_is_sender=True,
+            )
+
+        encoded_input = swap_chain.unwrap_weth(FunctionRecipient.SENDER, Wei(0)).build(
+            self.permit2.get_default_deadline(),  # 180 seconds
         )
 
-        return permit2_nonce
-
-    def sign_permit2_message(self, base_token: str):
-        allowance_amount = 2**160 - 1  # max/infinite
-        deadline = self.codec.get_default_deadline()  # 180 seconds
-        permit2_nonce = self.get_permit2_nonce(base_token)
-
-        permit_data, signable_message = self.codec.create_permit2_signable_message(
-            token_address=Web3.to_checksum_address(base_token),
-            amount=allowance_amount,
-            expiration=self.codec.get_default_expiration(),  # 30 days
-            nonce=permit2_nonce,
-            spender=Web3.to_checksum_address(self.universal_router_address),
-            deadline=deadline,
-            chain_id=self.w3.eth.chain_id,
-            verifying_contract=Web3.to_checksum_address(self.permit2_contract_address),
+        receipt = self.chain.sign_send_wait_transaction(
+            amount,
+            Web3.to_checksum_address(self.universal_router_address),
+            encoded_input,
         )
-        signed_message = self.account.sign_message(signable_message)
 
-        return signed_message, permit_data, deadline
+        print(f"Receipt: {receipt}")
+
+        return InvestmentResult(bids=[])
 
     def compute_amount_out_min(
         self,

@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from decimal import Decimal
+from typing import Any
 
 from coinbasket.basket import Token
 from coinbasket.chain.balance import Balance
@@ -14,9 +16,21 @@ class Chain(ABC):
         pass
 
     @abstractmethod
+    def get_token_balance_amount(self, token_address_checksum: str) -> Decimal:
+        pass
+
+    @abstractmethod
     def get_base_token(self) -> Token:
         pass
 
     @abstractmethod
-    def send_and_wait_transaction(self) -> str:
+    def sign_send_wait_transaction(
+        self, amount: int, to_address: str, encoded_input: Any | None = None
+    ) -> Any:
+        pass
+
+    @abstractmethod
+    def compute_gas_estimate(
+        self, amount: int, to_address: str, encoded_input: Any | None = None
+    ) -> int:
         pass

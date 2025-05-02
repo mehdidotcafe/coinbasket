@@ -31,6 +31,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 coinbasket = "coinbasket:main"
+"coinbasket:cli" = "coinbasket.cli:main"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
 pytest-watch = "^4.2.0"

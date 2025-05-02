@@ -22,13 +22,19 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph import StateGraph, MessagesState, END
 
 from langchain_openai import OpenAIEmbeddings
+from web3 import Web3
 
 from coinbasket.basket import Basket, Token
 from coinbasket.infrastructure.bsc.chain.bsc_chain import BscChain
 from coinbasket.config import Config
+from coinbasket.investment.basket_divest_use_case import BasketDivestUseCase
+from coinbasket.investment.divestment_planner_strategy.total_divestment_planner import (
+    TotalDivestmentPlanner,
+)
 from coinbasket.investment.get_investment_result_use_case import (
     GetInvestmentResultUseCase,
 )
+from coinbasket.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
 from coinbasket.investment.invest_use_case import InvestUseCase
 from coinbasket.investment.investment_planner_strategy.equal_investment_planner import (
     EqualInvestmentPlanner,
@@ -73,7 +79,7 @@ vector_store = InMemoryVectorStore(embeddings)
 vector_store.add_documents(docs)
 
 chain = BscChain(
-    rpc_url=config.bsc_rpc_url,
+    w3=Web3(Web3.HTTPProvider(config.bsc_rpc_url)),
     private_key=config.bsc_private_key,
     base_token=Token(
         name=config.bsc_base_token_name,
@@ -82,19 +88,28 @@ chain = BscChain(
         address=config.bsc_base_token_address,
     ),
 )
-investment_planner = EqualInvestmentPlanner(chain=chain)
+permit2 = Permit2(
+    permit2_contract_address=config.pancakeswap_permit2_contract_address,
+    bsc_rpc_url=config.bsc_rpc_url,
+    private_key=config.bsc_private_key,
+)
 exchange = PancakeSwapUniversalRouter(
     config.bsc_rpc_url,
     config.pancakeswap_universal_router_address,
-    config.pancakeswap_permit2_contract_address,
     config.pancakeswap_v2_router_address,
     config.bsc_private_key,
     chain,
+    permit2,
 )
 storage = FetchAiStorage[Any](store=KeyValueStore(config.agent_name))
 
 invest_use_case = InvestUseCase(
-    investment_planner=investment_planner,
+    investment_planner=EqualInvestmentPlanner(chain),
+    exchange=exchange,
+    storage=storage,
+)
+basket_divest_use_case = BasketDivestUseCase(
+    divestment_planner=TotalDivestmentPlanner(chain),
     exchange=exchange,
     storage=storage,
 )
@@ -131,7 +146,7 @@ def get_invested_basket():
 
 
 @tool(response_format="content_and_artifact")
-def invest(basket: Basket):
+def invest_basket(basket: Basket):
     """Invest / fund / buy the basket create by the user.
 
     Args:
@@ -140,11 +155,21 @@ def invest(basket: Basket):
     return invest_use_case.execute(basket)
 
 
+@tool()
+def divest_basket():
+    """Divest / sell the basket create by the user.
+
+    Args:
+        basket: The basket to Invest / fund / buy.
+    """
+    return basket_divest_use_case.execute()
+
+
 # Step 1: Generate an AIMessage that may include a tool-call to be sent.
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
     llm_with_tools = llm.bind_tools(
-        [retrieve, invest, get_balance, get_invested_basket]
+        [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket]
     )
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
@@ -152,7 +177,9 @@ def query_or_respond(state: MessagesState):
 
 
 # Step 2: Execute the retrieval.
-tools = ToolNode([retrieve, invest, get_balance, get_invested_basket])
+tools = ToolNode(
+    [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket]
+)
 
 
 # Step 3: Generate a response using the retrieved content.

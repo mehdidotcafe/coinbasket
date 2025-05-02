@@ -30,3 +30,5 @@ class InvestUseCase:
             return "Investment success.", investment_result
         except InsufficientBalanceException as e:
             return e.message, None
+        except Exception as e:
+            return str(e), None
