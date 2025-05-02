@@ -111,7 +111,9 @@ class PancakeSwapUniversalRouter(Exchange):
                 payer_is_sender=False,
             )
 
-        encoded_input = swap_chain.build(deadline)
+        encoded_input = swap_chain.unwrap_weth(FunctionRecipient.SENDER, Wei(0)).build(
+            deadline
+        )
 
         receipt = self.chain.sign_send_wait_transaction(
             amount,
