@@ -1,8 +1,9 @@
+from decimal import Decimal
 import json
-from eth_typing import HexStr
+from eth_typing import ChecksumAddress
 from web3 import Account, Web3
-from web3.types import TxReceipt, TxParams, Wei
-from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec
+from web3.types import TxReceipt, Wei
+from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec  # type: ignore
 
 from coinbasket.chain.balance import Balance
 from coinbasket.chain.chain import Chain
@@ -181,11 +182,11 @@ class PancakeSwapUniversalRouter(Exchange):
     def compute_amount_out_min(
         self,
         amount_in: int,
-        path: list[str],
-    ) -> int:
+        path: list[ChecksumAddress],
+    ) -> Wei:
         slipping_tolerance = 0.05  # 5% slippage
         amounts_out = self.v2_router.functions.getAmountsOut(amount_in, path).call()
-        amount_out_min = int(amounts_out[-1] * (1 - slipping_tolerance))
+        amount_out_min = Wei(int(amounts_out[-1] * (1 - slipping_tolerance)))
 
         print(f"amount_out_min: {amount_out_min}")
 
@@ -223,8 +224,10 @@ class PancakeSwapUniversalRouter(Exchange):
                                     ),
                                     balance_out=Balance(
                                         token=step.token,
-                                        amount=self.w3.from_wei(
-                                            decoded["args"]["value"], "ether"
+                                        amount=Decimal(
+                                            self.w3.from_wei(
+                                                decoded["args"]["value"], "ether"
+                                            )
                                         ),
                                     ),
                                 )

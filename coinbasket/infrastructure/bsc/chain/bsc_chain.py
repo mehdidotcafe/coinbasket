@@ -36,7 +36,6 @@ class BscChain(Chain):
             SignAndSendRawMiddlewareBuilder.build(self.account),  # type: ignore
             layer=0,
         )
-        print("Bsc chain initialized")
 
     def get_min_balance(self) -> Balance:
         """Get the minimum balance required for the agent address."""
@@ -44,12 +43,15 @@ class BscChain(Chain):
 
     def get_balance(self) -> Balance:
         """Get the balance of the agent address."""
+        print(f"Account: {self.account.address}")
+
         balance = self.w3.eth.get_balance(self.account.address)
-        print(f"Balance: {self.w3.from_wei(balance, 'ether')} BNB")
+        balance_in_ether = self.w3.from_wei(balance, "ether")
+        print(f"Balance: {balance_in_ether} BNB")
 
         return Balance(
             token=self.base_token,
-            amount=self.w3.from_wei(balance, "ether"),  # type: ignore
+            amount=Decimal(balance_in_ether),
         )
 
     def get_token_balance_amount(self, token_address_checksum: str) -> Decimal:
@@ -91,7 +93,7 @@ class BscChain(Chain):
         encoded_input: HexStr | None = None,
     ) -> Any:
         latest_block = self.w3.eth.get_block("latest")
-        base_fee = latest_block["baseFeePerGas"]
+        base_fee = latest_block.get("baseFeePerGas", 0)
         max_priority_fee = self.w3.to_wei(2, "gwei")  # This is the miner "tip"
         max_fee_per_gas = Wei(base_fee * 2 + max_priority_fee)
 

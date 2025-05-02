@@ -30,6 +30,30 @@ v2_router_address = env("PANCAKESWAP_V2_ROUTER_ADDRESS")
 private_key = env("BSC_PRIVATE_KEY")
 
 
+permit2_deadline = 180
+permit2_signed_message = SignedMessage(
+    message_hash=HexBytes(
+        "0x47be46b9a6d7337182ba9c5cca34690d45c5dc05aa71efa3cd9408ad59cc2a94"
+    ),
+    r=40669160623095555763087913875086316304103726716775795630740097426109985262652,
+    s=27634496195978621419975347085402318339134228577272732890502192210119342298480,
+    v=28,
+    signature=HexBytes(
+        "0x59e9eddf43ca674b8f8a8645ab297fc374c9d085351ad67f9bb60415f3550c3c3d1892109cdb406de13662d4acdc36d0db23248366cb15bcf6af14391ffa15701c"
+    ),
+)
+permit2_data: Dict[str, Any] = {
+    "details": {
+        "token": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "amount": 1461501637330902918203684832716283019655932542975,
+        "expiration": 1748782719,
+        "nonce": 0,
+    },
+    "spender": "0x1A0A18AC4BECDDbd6389559687d1A73d8927E416",
+    "sigDeadline": 1746190899,
+}
+
+
 @fixture
 def chain():
     chain = mock.Mock(spec=Chain)
@@ -73,60 +97,85 @@ def router(chain: Chain, permit2: Permit2):
     )
 
 
-# def test_execute_investment_plan(router: PancakeSwapUniversalRouter):
-#     investment_plan = InvestmentPlan(
-#         steps=[
-#             InvestmentPlanStep(
-#                 token=Token(
-#                     name="USDC",
-#                     display_name="USDC",
-#                     ticker="USDC",
-#                     address="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-#                 ),
-#                 amount=Decimal("0.05"),
-#             ),
-#             InvestmentPlanStep(
-#                 token=Token(
-#                     name="BTCB",
-#                     display_name="BTCB",
-#                     ticker="BTCB",
-#                     address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-#                 ),
-#                 amount=Decimal("0.15"),
-#             ),
-#             InvestmentPlanStep(
-#                 token=Token(
-#                     name="CAKE",
-#                     display_name="CAKE",
-#                     ticker="CAKE",
-#                     address="0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
-#                 ),
-#                 amount=Decimal("0.12"),
-#             ),
-#             InvestmentPlanStep(
-#                 token=Token(
-#                     name="1INCH",
-#                     display_name="1INCH",
-#                     ticker="1INCH",
-#                     address="0x111111111117dC0aa78b770fA6A738034120C302",
-#                 ),
-#                 amount=Decimal("0.15"),
-#             ),
-#         ],
-#         balance=Balance(
-#             token=Token(
-#                 name="BNB",
-#                 display_name="BNB",
-#                 ticker="BNB",
-#                 address="",
-#             ),
-#             amount=Decimal("0.47"),
-#         ),
-#     )
+def test_execute_investment_plan(
+    router: PancakeSwapUniversalRouter, permit2: Permit2, chain: Chain
+):
+    investment_plan = InvestmentPlan(
+        steps=[
+            InvestmentPlanStep(
+                token=Token(
+                    name="USDC",
+                    display_name="USDC",
+                    ticker="USDC",
+                    address="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+                ),
+                amount=Decimal("0.05"),
+            ),
+            InvestmentPlanStep(
+                token=Token(
+                    name="BTCB",
+                    display_name="BTCB",
+                    ticker="BTCB",
+                    address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+                ),
+                amount=Decimal("0.15"),
+            ),
+            InvestmentPlanStep(
+                token=Token(
+                    name="CAKE",
+                    display_name="CAKE",
+                    ticker="CAKE",
+                    address="0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+                ),
+                amount=Decimal("0.12"),
+            ),
+            InvestmentPlanStep(
+                token=Token(
+                    name="1INCH",
+                    display_name="1INCH",
+                    ticker="1INCH",
+                    address="0x111111111117dC0aa78b770fA6A738034120C302",
+                ),
+                amount=Decimal("0.15"),
+            ),
+        ],
+        balance=Balance(
+            token=Token(
+                name="BNB",
+                display_name="BNB",
+                ticker="BNB",
+                address="",
+            ),
+            amount=Decimal("0.47"),
+        ),
+    )
+    base_token = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
 
-#     router.execute_investment_plan(investment_plan)
+    permit2.sign_permit2_message.return_value = (
+        permit2_signed_message,
+        permit2_data,
+        permit2_deadline,
+    )
+    # TODO: check log parsing in another test
+    chain.sign_send_wait_transaction.return_value = {"logs": []}
 
-#     assert True == True
+    router.execute_investment_plan(investment_plan)
+
+    permit2.assert_has_calls(
+        [
+            mock.call.approve_permit2_contract(Web3.to_checksum_address(base_token)),
+            mock.call.sign_permit2_message(
+                Web3.to_checksum_address(base_token),
+                Web3.to_checksum_address(universal_router_address),
+            ),
+        ]
+    )
+
+    chain.sign_send_wait_transaction.assert_called_once_with(
+        470000000000000000,  # 0.47 BNB
+        Web3.to_checksum_address(universal_router_address),
+        mock.ANY,
+    )
 
 
 def test_execute_divestment_plan(
@@ -172,29 +221,6 @@ def test_execute_divestment_plan(
             amount=Decimal("0.0"),
         ),
     )
-
-    permit2_deadline = 180
-    permit2_signed_message = SignedMessage(
-        message_hash=HexBytes(
-            "0x47be46b9a6d7337182ba9c5cca34690d45c5dc05aa71efa3cd9408ad59cc2a94"
-        ),
-        r=40669160623095555763087913875086316304103726716775795630740097426109985262652,
-        s=27634496195978621419975347085402318339134228577272732890502192210119342298480,
-        v=28,
-        signature=HexBytes(
-            "0x59e9eddf43ca674b8f8a8645ab297fc374c9d085351ad67f9bb60415f3550c3c3d1892109cdb406de13662d4acdc36d0db23248366cb15bcf6af14391ffa15701c"
-        ),
-    )
-    permit2_data: Dict[str, Any] = {
-        "details": {
-            "token": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-            "amount": 1461501637330902918203684832716283019655932542975,
-            "expiration": 1748782719,
-            "nonce": 0,
-        },
-        "spender": "0x1A0A18AC4BECDDbd6389559687d1A73d8927E416",
-        "sigDeadline": 1746190899,
-    }
 
     permit2.sign_permit2_message.return_value = (
         permit2_signed_message,
