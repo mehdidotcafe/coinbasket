@@ -59,7 +59,6 @@ class BscChain(Chain):
             abi=self.erc20_token_abi,
         )
         balance = token_contract.functions.balanceOf(self.account.address).call()
-        print(f"Token Balance: {balance}")
 
         return Decimal(self.w3.from_wei(balance, "ether"))
 

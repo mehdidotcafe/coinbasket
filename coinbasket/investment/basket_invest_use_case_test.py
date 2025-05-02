@@ -8,7 +8,7 @@ from coinbasket.investment.exchange.exchange import Exchange
 from coinbasket.investment.investment_planner_strategy.insufficient_balance_exception import (
     InsufficientBalanceException,
 )
-from coinbasket.investment.invest_use_case import InvestUseCase
+from coinbasket.investment.basket_invest_use_case import BasketInvestUseCase
 from coinbasket.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from coinbasket.investment.investment_planner import InvestmentPlanner
 from coinbasket.investment.investment_result import (
@@ -60,11 +60,11 @@ def investment_use_case(
     exchange: Exchange,
     storage: Storage[InvestmentResult],
 ):
-    return InvestUseCase(investment_planner, exchange, storage)
+    return BasketInvestUseCase(investment_planner, exchange, storage)
 
 
 def test_invest_use_case_execute_success(
-    investment_use_case: InvestUseCase,
+    investment_use_case: BasketInvestUseCase,
     investment_planner: InvestmentPlanner,
     exchange: Exchange,
     storage: Storage[InvestmentResult],
@@ -137,7 +137,7 @@ def test_invest_use_case_execute_success(
 
 
 def test_invest_use_case_execute_insufficient_balance(
-    investment_use_case: InvestUseCase,
+    investment_use_case: BasketInvestUseCase,
     investment_planner: InvestmentPlanner,
     exchange: Exchange,
     storage: Storage[InvestmentResult],

@@ -35,7 +35,7 @@ from coinbasket.investment.get_investment_result_use_case import (
     GetInvestmentResultUseCase,
 )
 from coinbasket.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
-from coinbasket.investment.invest_use_case import InvestUseCase
+from coinbasket.investment.basket_invest_use_case import BasketInvestUseCase
 from coinbasket.investment.investment_planner_strategy.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
@@ -89,6 +89,7 @@ chain = BscChain(
     ),
 )
 permit2 = Permit2(
+    chain=chain,
     permit2_contract_address=config.pancakeswap_permit2_contract_address,
     bsc_rpc_url=config.bsc_rpc_url,
     private_key=config.bsc_private_key,
@@ -103,7 +104,7 @@ exchange = PancakeSwapUniversalRouter(
 )
 storage = FetchAiStorage[Any](store=KeyValueStore(config.agent_name))
 
-invest_use_case = InvestUseCase(
+basket_invest_use_case = BasketInvestUseCase(
     investment_planner=EqualInvestmentPlanner(chain),
     exchange=exchange,
     storage=storage,
@@ -152,7 +153,7 @@ def invest_basket(basket: Basket):
     Args:
         basket: The basket to Invest / fund / buy.
     """
-    return invest_use_case.execute(basket)
+    return basket_invest_use_case.execute(basket)
 
 
 @tool()

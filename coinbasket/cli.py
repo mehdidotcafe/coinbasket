@@ -21,6 +21,12 @@ chain = BscChain(
 
 
 def get_balances():
+    balance = chain.get_balance()
+
+    print(
+        f"{chain.base_token.address} ({chain.base_token.ticker}) Balance: {balance.amount}"
+    )
+
     for arg in sys.argv[2:]:
         balance_amount = chain.get_token_balance_amount(Web3.to_checksum_address(arg))
         print(f"{arg} Balance: {balance_amount}")

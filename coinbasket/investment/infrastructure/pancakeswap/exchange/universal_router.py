@@ -55,7 +55,7 @@ class PancakeSwapUniversalRouter(Exchange):
             self.v2_router = json.load(f)
 
         with open(
-            "./coinbasket/investment/infrastructure/pancakeswap/exchange/erc20_token_abi.json",
+            "./coinbasket/infrastructure/bsc/chain/erc20_token_abi.json",
             "r",
         ) as f:
             self.erc20_token_abi = json.load(f)
@@ -112,7 +112,11 @@ class PancakeSwapUniversalRouter(Exchange):
 
         encoded_input = swap_chain.build(deadline)
 
-        receipt = self.sign_send_wait_transaction(encoded_input, amount)
+        receipt = self.chain.sign_send_wait_transaction(
+            amount,
+            Web3.to_checksum_address(self.universal_router_address),
+            encoded_input,
+        )
 
         bids = self.parse_bids_from_receipt(receipt, investment_plan)
 
@@ -186,54 +190,6 @@ class PancakeSwapUniversalRouter(Exchange):
         print(f"amount_out_min: {amount_out_min}")
 
         return amount_out_min
-
-    def compute_gas_estimation(
-        self, amount: int, encoded_input: HexStr | None = None
-    ) -> int:
-        transaction_params: TxParams = {
-            "from": self.account.address,
-            "to": Web3.to_checksum_address(self.universal_router_address),
-            "value": amount,
-        }
-
-        if encoded_input is not None:
-            transaction_params["data"] = encoded_input
-
-        return int(self.w3.eth.estimate_gas(transaction_params) * 1.1)
-
-    def sign_send_wait_transaction(self, encoded_input: HexStr, amount: int):
-        latest_block = self.w3.eth.get_block("latest")
-        base_fee = latest_block["baseFeePerGas"]
-        max_priority_fee = self.w3.to_wei(2, "gwei")  # This is the miner "tip"
-        max_fee_per_gas = base_fee * 2 + max_priority_fee
-
-        gas_estimate = self.compute_gas_estimation(
-            encoded_input=encoded_input,
-            amount=amount,
-        )
-
-        transaction_params = {
-            "from": self.account.address,
-            "to": Web3.to_checksum_address(self.universal_router_address),
-            "gas": gas_estimate,
-            "maxPriorityFeePerGas": max_priority_fee,
-            "maxFeePerGas": max_fee_per_gas,
-            "chainId": self.w3.eth.chain_id,
-            "type": "0x2",
-            "value": amount,
-            "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
-            "data": encoded_input,
-        }
-        raw_transaction = self.w3.eth.account.sign_transaction(
-            transaction_params, self.account.key
-        ).raw_transaction
-        transaction_hash = self.w3.eth.send_raw_transaction(raw_transaction)
-        print(f"Trx Hash: {transaction_hash.hex()}")
-
-        receipt = self.w3.eth.wait_for_transaction_receipt(transaction_hash)
-        print(f"Receipt: {receipt}")
-
-        return receipt
 
     def parse_bids_from_receipt(
         self, receipt: TxReceipt, investment_plan: InvestmentPlan

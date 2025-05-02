@@ -8,7 +8,7 @@ from coinbasket.investment.investment_result import InvestmentResult
 from coinbasket.storage.storage import Storage
 
 
-class InvestUseCase:
+class BasketInvestUseCase:
     def __init__(
         self,
         investment_planner: InvestmentPlanner,

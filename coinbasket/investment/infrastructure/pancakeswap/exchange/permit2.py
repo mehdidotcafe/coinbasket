@@ -5,16 +5,20 @@ from uniswap_universal_router_decoder import RouterCodec
 from web3 import Web3
 from web3.types import TxReceipt, TxParams, Wei
 
+from coinbasket.chain.chain import Chain
+
 
 # https://github.com/Uniswap/permit2/blob/main/src/interfaces/IAllowanceTransfer.sol
 # https://github.com/Elnaril/uniswap-universal-router-decoder
 class Permit2:
     def __init__(
         self,
+        chain: Chain,
         permit2_contract_address: str,
         bsc_rpc_url: str,
         private_key: str,
     ):
+        self.chain = chain
         self.permit2_contract_address = Web3.to_checksum_address(
             permit2_contract_address
         )
@@ -31,7 +35,7 @@ class Permit2:
             self.permit2_contract_abi = json.load(f)
 
         with open(
-            "./coinbasket/investment/infrastructure/pancakeswap/exchange/erc20_token_abi.json",
+            "./coinbasket/infrastructure/bsc/chain/erc20_token_abi.json",
             "r",
         ) as f:
             self.erc20_token_abi = json.load(f)
@@ -55,10 +59,10 @@ class Permit2:
         encoded_input = contract_function._encode_transaction_data()
 
         try:
-            gas_estimate = self.compute_gas_estimation(
-                amount=amount,
-                contract_address=token_address,
-                encoded_input=encoded_input,
+            gas_estimate = self.chain.compute_gas_estimate(
+                amount,
+                token_address,
+                encoded_input,
             )
         except Exception as e:
             print(f"Error estimating gas: {e}")
@@ -121,23 +125,6 @@ class Permit2:
         )
 
         return permit2_nonce
-
-    def compute_gas_estimation(
-        self,
-        amount: Wei,
-        contract_address: ChecksumAddress,
-        encoded_input: HexStr | None = None,
-    ) -> int:
-        transaction_params: TxParams = {
-            "from": self.account.address,
-            "to": contract_address,
-            "value": amount,
-        }
-
-        if encoded_input is not None:
-            transaction_params["data"] = encoded_input
-
-        return int(self.w3.eth.estimate_gas(transaction_params) * 1.1)
 
     def get_default_deadline(self) -> int:
         return self.codec.get_default_deadline()
