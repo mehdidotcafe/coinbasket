@@ -91,13 +91,20 @@ class PancakeSwapUniversalRouter(Exchange):
             )
         )
 
+        has_base_token_in_investment_plan = self.__has_base_token_in_investment_plan(
+            investment_plan
+        )
+
         for step in investment_plan.steps:
+            if step.token.address == self.base_token:
+                continue
+
             amount_in = self.w3.to_wei(step.amount, "ether")
             path = [
                 Web3.to_checksum_address(self.base_token),
                 Web3.to_checksum_address(step.token.address),
             ]
-            amount_out_min = self.compute_amount_out_min(
+            amount_out_min = self.__compute_amount_out_min(
                 amount_in,
                 path,
             )
@@ -111,8 +118,17 @@ class PancakeSwapUniversalRouter(Exchange):
                 payer_is_sender=False,
             )
 
-        encoded_input = swap_chain.unwrap_weth(FunctionRecipient.SENDER, Wei(0)).build(
-            deadline
+        if has_base_token_in_investment_plan:
+            swap_chain = swap_chain.sweep(
+                FunctionRecipient.SENDER,
+                Web3.to_checksum_address(self.base_token),
+                Wei(0),
+            )
+        else:
+            swap_chain = swap_chain.unwrap_weth(FunctionRecipient.SENDER, Wei(0))
+
+        encoded_input = swap_chain.build(
+            self.permit2.get_default_deadline()  # 180 seconds
         )
 
         receipt = self.chain.sign_send_wait_transaction(
@@ -121,7 +137,7 @@ class PancakeSwapUniversalRouter(Exchange):
             encoded_input,
         )
 
-        bids = self.parse_bids_from_receipt(receipt, investment_plan)
+        bids = self.__parse_bids_from_receipt(receipt, investment_plan)
 
         print(f"bids: {bids}")
 
@@ -136,36 +152,46 @@ class PancakeSwapUniversalRouter(Exchange):
         swap_chain = self.codec.encode.chain()
 
         for step in divestment_plan.steps:
-            self.permit2.approve_permit2_contract(
-                Web3.to_checksum_address(step.token.address)
-            )
+            if step.token.address == self.base_token:
+                # If the base token is in the divestment plan, we need to send it to the router
+                swap_chain = swap_chain.permit2_transfer_from(
+                    FunctionRecipient.ROUTER,
+                    Web3.to_checksum_address(step.token.address),
+                    self.w3.to_wei(step.amount, "ether"),
+                )
+            else:
+                self.permit2.approve_permit2_contract(
+                    Web3.to_checksum_address(step.token.address)
+                )
 
-            signed_message, permit_data, _deadline = self.permit2.sign_permit2_message(
-                Web3.to_checksum_address(step.token.address),
-                Web3.to_checksum_address(self.universal_router_address),
-            )
+                signed_message, permit_data, _deadline = (
+                    self.permit2.sign_permit2_message(
+                        Web3.to_checksum_address(step.token.address),
+                        Web3.to_checksum_address(self.universal_router_address),
+                    )
+                )
 
-            amount_in = self.w3.to_wei(step.amount, "ether")
-            path = [
-                Web3.to_checksum_address(step.token.address),
-                Web3.to_checksum_address(self.base_token),
-            ]
-            amount_out_min = self.compute_amount_out_min(
-                amount_in,
-                path,
-            )
+                amount_in = self.w3.to_wei(step.amount, "ether")
+                path = [
+                    Web3.to_checksum_address(step.token.address),
+                    Web3.to_checksum_address(self.base_token),
+                ]
+                amount_out_min = self.__compute_amount_out_min(
+                    amount_in,
+                    path,
+                )
 
-            swap_chain = swap_chain.permit2_permit(
-                permit_data,
-                signed_message,
-                # TODO: check to use v3
-            ).v2_swap_exact_in(
-                FunctionRecipient.ROUTER,
-                amount_in,
-                amount_out_min,
-                path,
-                payer_is_sender=True,
-            )
+                swap_chain = swap_chain.permit2_permit(
+                    permit_data,
+                    signed_message,
+                    # TODO: check to use v3
+                ).v2_swap_exact_in(
+                    FunctionRecipient.ROUTER,
+                    amount_in,
+                    amount_out_min,
+                    path,
+                    payer_is_sender=True,
+                )
 
         encoded_input = swap_chain.unwrap_weth(FunctionRecipient.SENDER, Wei(0)).build(
             self.permit2.get_default_deadline(),  # 180 seconds
@@ -181,7 +207,7 @@ class PancakeSwapUniversalRouter(Exchange):
 
         return InvestmentResult(bids=[])
 
-    def compute_amount_out_min(
+    def __compute_amount_out_min(
         self,
         amount_in: int,
         path: list[ChecksumAddress],
@@ -194,49 +220,77 @@ class PancakeSwapUniversalRouter(Exchange):
 
         return amount_out_min
 
-    def parse_bids_from_receipt(
+    def __has_base_token_in_investment_plan(
+        self, investment_plan: InvestmentPlan
+    ) -> bool:
+        return any(
+            step.token.address == self.base_token for step in investment_plan.steps
+        )
+
+    def __parse_bids_from_receipt(
         self, receipt: TxReceipt, investment_plan: InvestmentPlan
     ) -> list[InvestmentResultBid]:
         bids: list[InvestmentResultBid] = []
 
         for step in investment_plan.steps:
-            for log in receipt["logs"]:
-                if log["address"].lower() == step.token.address.lower():
-                    try:
-                        decoded = (
-                            self.w3.eth.contract(
-                                address=self.w3.to_checksum_address(
-                                    log["address"].lower()
-                                ),
-                                abi=self.erc20_token_abi,
-                            )
-                            .events.Transfer()
-                            .process_log(log)
-                        )
-                        if (
-                            decoded["args"]["to"].lower()
-                            == self.account.address.lower()
-                        ):
-                            bids.append(
-                                InvestmentResultBid(
-                                    token=step.token,
-                                    balance_in=Balance(
-                                        token=self.chain.get_base_token(),
-                                        amount=step.amount,
-                                    ),
-                                    balance_out=Balance(
-                                        token=step.token,
-                                        amount=Decimal(
-                                            self.w3.from_wei(
-                                                decoded["args"]["value"], "ether"
-                                            )
-                                        ),
-                                    ),
-                                )
-                            )
+            # Special case for base token that is not swapped hence not in transaction logs
+            if step.token.address == self.base_token:
+                base_token_balance = self.chain.get_token_balance_amount(
+                    self.base_token,
+                )
 
-                    except Exception as e:
-                        print(f"Error decoding log: {e}")
-                        continue
+                print(f"Base token special case, balance: {base_token_balance}")
+
+                bids.append(
+                    InvestmentResultBid(
+                        token=step.token,
+                        balance_in=Balance(
+                            token=step.token,
+                            amount=step.amount,
+                        ),
+                        balance_out=Balance(
+                            token=step.token, amount=base_token_balance
+                        ),
+                    )
+                )
+            else:
+                for log in receipt["logs"]:
+                    if log["address"].lower() == step.token.address.lower():
+                        try:
+                            decoded = (
+                                self.w3.eth.contract(
+                                    address=self.w3.to_checksum_address(
+                                        log["address"].lower()
+                                    ),
+                                    abi=self.erc20_token_abi,
+                                )
+                                .events.Transfer()
+                                .process_log(log)
+                            )
+                            if (
+                                decoded["args"]["to"].lower()
+                                == self.account.address.lower()
+                            ):
+                                bids.append(
+                                    InvestmentResultBid(
+                                        token=step.token,
+                                        balance_in=Balance(
+                                            token=self.chain.get_base_token(),
+                                            amount=step.amount,
+                                        ),
+                                        balance_out=Balance(
+                                            token=step.token,
+                                            amount=Decimal(
+                                                self.w3.from_wei(
+                                                    decoded["args"]["value"], "ether"
+                                                )
+                                            ),
+                                        ),
+                                    )
+                                )
+
+                        except Exception as e:
+                            print(f"Error decoding log: {e}")
+                            continue
 
         return bids

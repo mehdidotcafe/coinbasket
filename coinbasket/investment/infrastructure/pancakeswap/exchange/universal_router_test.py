@@ -156,6 +156,8 @@ def test_execute_investment_plan(
         permit2_data,
         permit2_deadline,
     )
+    permit2.get_default_deadline.return_value = permit2_deadline
+
     # TODO: check log parsing in another test
     chain.sign_send_wait_transaction.return_value = {"logs": []}
 
@@ -168,6 +170,7 @@ def test_execute_investment_plan(
                 Web3.to_checksum_address(base_token),
                 Web3.to_checksum_address(universal_router_address),
             ),
+            mock.call.get_default_deadline(),
         ]
     )
 
