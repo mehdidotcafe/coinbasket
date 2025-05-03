@@ -5,5 +5,6 @@
 .python-version
 __pycache__
 
-# Fetch.ai Storage
-coinbasket_data.json
+# Locale databases
+database/*
+!database/.gitkeep

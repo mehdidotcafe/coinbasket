@@ -3,25 +3,22 @@ from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
 import os
+import sqlite3
 
 from typing_extensions import List, TypedDict
 
 from langchain_community.document_loaders import JSONLoader
-
-from langgraph.checkpoint.memory import MemorySaver
-
 from langchain_core.documents import Document
 from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
 from langchain_core.vectorstores import InMemoryVectorStore
-
-
 from langchain.chat_models import init_chat_model
-
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph import StateGraph, MessagesState, END
-
 from langchain_openai import OpenAIEmbeddings
+from langgraph.checkpoint.sqlite import SqliteSaver
+
+
 from web3 import Web3
 
 from coinbasket.basket import Basket, Token
@@ -102,7 +99,7 @@ exchange = PancakeSwapUniversalRouter(
     chain,
     permit2,
 )
-storage = FetchAiStorage[Any](store=KeyValueStore(config.agent_name))
+storage = FetchAiStorage[Any](store=KeyValueStore(config.agent_name, cwd="./database"))
 
 basket_invest_use_case = BasketInvestUseCase(
     investment_planner=EqualInvestmentPlanner(chain),
@@ -236,8 +233,10 @@ graph_builder.add_conditional_edges(
 graph_builder.add_edge("tools", "generate")
 graph_builder.add_edge("generate", END)
 
-memory = MemorySaver()
-graph = graph_builder.compile(checkpointer=memory)
+sqliteMemory = SqliteSaver(
+    sqlite3.connect("./database/langchain_graphs.db", check_same_thread=False)
+)
+graph = graph_builder.compile(checkpointer=sqliteMemory)
 
 
 class PromptRequest(Model):
@@ -250,7 +249,11 @@ class PromptResponse(Model):
 
 @coinbasket.on_rest_post("/", PromptRequest, PromptResponse)
 async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
-    graph_config = {"configurable": {"thread_id": "abc123", "storage": ctx.storage}}
+    graph_config = {
+        "configurable": {
+            "thread_id": config.agent_seed,
+        }
+    }
     question = req.text
 
     for step in graph.stream(
