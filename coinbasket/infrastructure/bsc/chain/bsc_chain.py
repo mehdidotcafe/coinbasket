@@ -31,6 +31,7 @@ class BscChain(Chain):
 
         self.account: LocalAccount = self.w3.eth.account.from_key(private_key)
 
+        # TODO: Investigate why this is needed
         self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)  # type: ignore
         self.w3.middleware_onion.inject(
             SignAndSendRawMiddlewareBuilder.build(self.account),  # type: ignore
@@ -38,8 +39,18 @@ class BscChain(Chain):
         )
 
     def get_min_balance(self) -> Balance:
-        """Get the minimum balance required for the agent address."""
-        return Balance(token=self.base_token, amount=Decimal("1"))
+        """Get the minimum balance required for the agent wallet."""
+        gas_used = 200_000
+        transaction_count = 20
+
+        total_gas = gas_used * transaction_count
+        gas_price = self.w3.eth.gas_price
+        total_gas_cost = gas_price * total_gas
+
+        return Balance(
+            token=self.base_token,
+            amount=Decimal(self.w3.from_wei(total_gas_cost, "ether")),
+        )
 
     def get_balance(self) -> Balance:
         """Get the balance of the agent address."""

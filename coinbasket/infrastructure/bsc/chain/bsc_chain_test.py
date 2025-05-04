@@ -20,6 +20,7 @@ def w3():
     account = mock.Mock(spec=LocalAccount)
     account.address = "0x1234567890abcdef1234567890abcdef12345678"
 
+    w3.eth.gas_price = Wei(1_000_000_000)
     w3.eth.account.from_key.return_value = account
 
     return w3
@@ -39,11 +40,18 @@ def bsc_chain(base_token: Token, w3: Web3):
     )
 
 
-def test_get_min_balance(bsc_chain: BscChain, base_token: Token):
+def test_get_min_balance(bsc_chain: BscChain, base_token: Token, w3: Web3):
+    w3.from_wei.return_value = Decimal("1")
+
     min_balance = bsc_chain.get_min_balance()
 
     assert min_balance.amount == Decimal("1")
     assert min_balance.token == base_token
+
+    w3.from_wei.assert_called_once_with(
+        1_000_000_000 * 200_000 * 20,
+        "ether",
+    )
 
 
 def test_get_balance(bsc_chain: BscChain, w3: Web3, base_token: Token):
