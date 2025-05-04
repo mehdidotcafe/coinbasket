@@ -3,10 +3,12 @@ from typing import TypeVar, Generic
 
 T = TypeVar("T")
 
+Version = int
+
 
 class Storage(ABC, Generic[T]):
     @abstractmethod
-    def get(self, key: str) -> T | None:
+    def get(self, key: str) -> tuple[T, Version] | None:
         raise NotImplementedError
 
     @abstractmethod
@@ -14,7 +16,7 @@ class Storage(ABC, Generic[T]):
         raise NotImplementedError
 
     @abstractmethod
-    def set(self, key: str, value: T) -> None:
+    def set(self, key: str, value: T, version: int) -> None:
         raise NotImplementedError
 
     @abstractmethod

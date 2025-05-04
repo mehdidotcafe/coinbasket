@@ -133,7 +133,7 @@ def test_invest_use_case_execute_success(
 
     investment_planner.make_investment_plan.assert_called_once_with(basket)
     exchange.execute_investment_plan.assert_called_once_with(investment_plan)
-    storage.set.assert_called_once_with("investment_result", investment_result)
+    storage.set.assert_called_once_with("investment_result", investment_result, 1)
 
 
 def test_invest_use_case_execute_insufficient_balance(

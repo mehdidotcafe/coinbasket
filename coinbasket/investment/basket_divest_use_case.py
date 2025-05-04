@@ -28,7 +28,7 @@ class BasketDivestUseCase:
 
         try:
             divestment_result = self.exchange.execute_divestment_plan(
-                self.divestment_planner.make_divestment_plan(investment_result)
+                self.divestment_planner.make_divestment_plan(investment_result[0])
             )
 
             self.storage.remove("investment_result")

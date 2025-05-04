@@ -18,10 +18,10 @@ def storage(fetch_ai_store: KeyValueStore):
 
 
 def test_get_with_decode(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
-    fetch_ai_store.get.return_value = "value"
+    fetch_ai_store.get.return_value = encode(["value", 2])
     result = storage.get("key")
 
-    assert decode(result) == "value"
+    assert result == ("value", 2)
     fetch_ai_store.get.assert_called_once_with("kp:key")
 
 
@@ -34,8 +34,8 @@ def test_has(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
 
 
 def test_set_with_encode(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):
-    storage.set("key", "value")
-    fetch_ai_store.set.assert_called_once_with("kp:key", encode("value"))
+    storage.set("key", "value", 2)
+    fetch_ai_store.set.assert_called_once_with("kp:key", encode(["value", 2]))
 
 
 def test_remove(storage: FetchAiStorage[str], fetch_ai_store: KeyValueStore):

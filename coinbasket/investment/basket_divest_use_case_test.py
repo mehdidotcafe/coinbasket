@@ -113,7 +113,7 @@ def test_basket_divest_use_case_execute_exception(
             )
         ]
     )
-    storage.get.return_value = investment_result
+    storage.get.return_value = [investment_result, 1]
     divestment_planner.make_divestment_plan.return_value = divestment_plan
 
     exchange.execute_divestment_plan.side_effect = Exception("Error")
@@ -223,7 +223,7 @@ def test_basket_divest_use_case_execute_success(
         ]
     )
 
-    storage.get.return_value = investment_result
+    storage.get.return_value = [investment_result, 1]
     divestment_planner.make_divestment_plan.return_value = divestment_plan
     exchange.execute_divestment_plan.return_value = divestment_result
 

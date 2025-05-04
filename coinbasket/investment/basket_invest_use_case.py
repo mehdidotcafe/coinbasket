@@ -25,7 +25,7 @@ class BasketInvestUseCase:
                 self.investment_planner.make_investment_plan(basket)
             )
 
-            self.storage.set("investment_result", investment_result)
+            self.storage.set("investment_result", investment_result, 1)
 
             return "Investment success.", investment_result
         except InsufficientBalanceException as e:
