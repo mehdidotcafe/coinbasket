@@ -37,4 +37,7 @@ class EqualInvestmentPlanner(InvestmentPlanner):
             InvestmentPlanStep(token=coin, amount=step_amount) for coin in basket.tokens
         ]
 
-        return InvestmentPlan(steps=steps, balance=investment_balance)
+        investment_plan = InvestmentPlan(steps=steps, balance=investment_balance)
+
+        print(f"Investment plan: {investment_plan}")
+        return investment_plan

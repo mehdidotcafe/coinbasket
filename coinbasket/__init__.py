@@ -14,8 +14,8 @@ from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain.chat_models import init_chat_model
-from langgraph.prebuilt import ToolNode, tools_condition
-from langgraph.graph import StateGraph, MessagesState, END
+from langgraph.prebuilt import create_react_agent
+
 from langchain_openai import OpenAIEmbeddings
 from langgraph.checkpoint.sqlite import SqliteSaver
 
@@ -129,7 +129,16 @@ class State(TypedDict):
 
 @tool(response_format="content_and_artifact")
 def retrieve(query: str):
-    """Retrieve information related to a query."""
+    """
+    Retrieve a list of available coins to invest.
+
+    Args:
+        query: The query to search for.
+
+    Returns:
+        A list of documents containing the available coins to make the basket with.
+        Each coin has a name, display_name, ticker and address (contract address) property.
+    """
     retrieved_docs = vector_store.similarity_search(query)
     serialized = "\n\n".join(
         (f"Source: {doc.metadata}\nContent: {doc.page_content}")
@@ -146,13 +155,20 @@ def get_balance():
 
 @tool()
 def get_invested_basket():
-    """Retrieve the invested basket."""
+    """Retrieve the invested basket.
+
+    Returns:
+        The invested basket made of the bids that were made by the agent when investing in the basket.
+        Each bid has a token and a balance_in and balance_out property.
+        The token has a name, display_name, ticker and address (contract address) property.
+    """
     return get_invested_basket_use_case.execute()
 
 
 @tool(response_format="content_and_artifact")
 def invest_basket(basket: Basket):
     """Invest / fund / buy the basket create by the user.
+    Each basket coin needs to have a name, ticker and address.
 
     Args:
         basket: The basket to Invest / fund / buy.
@@ -170,80 +186,26 @@ def divest_basket():
     return basket_divest_use_case.execute()
 
 
-# Step 1: Generate an AIMessage that may include a tool-call to be sent.
-def query_or_respond(state: MessagesState):
-    """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools(
-        [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket]
-    )
-    response = llm_with_tools.invoke(state["messages"])
-    # MessagesState appends messages to state instead of overwriting
-    return {"messages": [response]}
-
-
-# Step 2: Execute the retrieval.
-tools = ToolNode(
-    [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket]
-)
-
-
-# Step 3: Generate a response using the retrieved content.
-def generate(state: MessagesState):
-    """Generate answer."""
-    # Get generated ToolMessages
-    recent_tool_messages = []
-    for message in reversed(state["messages"]):
-        if message.type == "tool":
-            recent_tool_messages.append(message)
-        else:
-            break
-    tool_messages = recent_tool_messages[::-1]
-
-    # Format into prompt
-    docs_content = "\n\n".join(doc.content for doc in tool_messages)
-    system_message_content = (
-        "Your goal is to create and then invest in crypto coin baskets.  "
-        "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
-        "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name and the coin ticker between parenthesis. Don't mention excluded coins.  "
-        "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
-        "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
-        "Use the following pieces of context to answer the question at the end.  "
-        "Context: "
-        f"{docs_content}"
-    )
-    conversation_messages = [
-        message
-        for message in state["messages"]
-        if message.type in ("human", "system")
-        or (message.type == "ai" and not message.tool_calls)
-    ]
-    prompt = [SystemMessage(system_message_content)] + conversation_messages
-
-    # Run
-    response = llm.invoke(prompt)
-    return {"messages": [response]}
-
-
-# Build graph
-graph_builder = StateGraph(MessagesState)
-
-graph_builder.add_node(query_or_respond)
-graph_builder.add_node(tools)
-graph_builder.add_node(generate)
-
-graph_builder.set_entry_point("query_or_respond")
-graph_builder.add_conditional_edges(
-    "query_or_respond",
-    tools_condition,
-    {END: END, "tools": "tools"},
-)
-graph_builder.add_edge("tools", "generate")
-graph_builder.add_edge("generate", END)
-
 sqliteMemory = SqliteSaver(
     sqlite3.connect("./database/langchain_graphs.db", check_same_thread=False)
 )
-graph = graph_builder.compile(checkpointer=sqliteMemory)
+
+agent_executor = create_react_agent(
+    llm,
+    [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket],
+    checkpointer=sqliteMemory,
+    prompt=SystemMessage(
+        "Your goal is to create and then invest in crypto coin baskets.  "
+        "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
+        "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
+        "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
+        "Always ask for the user's confirmation before investing in the basket.  "
+        # "If you already invested in a basket, you can't create a new one. Invested basket cannot be updated but can be divested.  "
+        "When you display a token, always show its address.  "
+        "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
+        "Use the following pieces of context to answer the question at the end.  "
+    ),
+)
 
 
 class PromptRequest(Model):
@@ -263,7 +225,7 @@ async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
     }
     question = req.text
 
-    for step in graph.stream(
+    for step in agent_executor.stream(
         {"messages": [{"role": "user", "content": question}]},
         stream_mode="values",
         config=graph_config,
