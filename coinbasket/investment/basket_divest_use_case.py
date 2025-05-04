@@ -24,6 +24,8 @@ class BasketDivestUseCase:
         if investment_result is None:
             return "Divestment error: No investment basket found.", None
 
+        # TODO: Check balance
+
         try:
             divestment_result = self.exchange.execute_divestment_plan(
                 self.divestment_planner.make_divestment_plan(investment_result)

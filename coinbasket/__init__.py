@@ -1,3 +1,4 @@
+import time
 from typing import Any
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
@@ -42,6 +43,10 @@ from coinbasket.investment.infrastructure.pancakeswap.exchange.universal_router 
 from coinbasket.infrastructure.fetch_ai.storage.fetch_ai_storage import (
     FetchAiStorage,
 )
+
+thread_id = str(int(time.time()))
+
+print(f"Thread ID: {thread_id}")
 
 config = Config()
 
@@ -99,7 +104,9 @@ exchange = PancakeSwapUniversalRouter(
     chain,
     permit2,
 )
-storage = FetchAiStorage[Any](store=KeyValueStore(config.agent_name, cwd="./database"))
+storage = FetchAiStorage[Any](
+    thread_id, store=KeyValueStore(config.agent_name, "./database")
+)
 
 basket_invest_use_case = BasketInvestUseCase(
     investment_planner=EqualInvestmentPlanner(chain),
@@ -251,7 +258,7 @@ class PromptResponse(Model):
 async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
     graph_config = {
         "configurable": {
-            "thread_id": config.agent_seed,
+            "thread_id": thread_id,
         }
     }
     question = req.text
