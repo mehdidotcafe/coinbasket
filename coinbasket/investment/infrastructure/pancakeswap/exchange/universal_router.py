@@ -2,6 +2,7 @@ from decimal import Decimal
 import json
 from eth_typing import ChecksumAddress
 from web3 import Account, Web3
+from web3.contract import Contract
 from web3.types import TxReceipt, Wei
 from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec  # type: ignore
 
@@ -257,16 +258,14 @@ class PancakeSwapUniversalRouter(Exchange):
                 for log in receipt["logs"]:
                     if log["address"].lower() == step.token.address.lower():
                         try:
-                            decoded = (
-                                self.w3.eth.contract(
-                                    address=self.w3.to_checksum_address(
-                                        log["address"].lower()
-                                    ),
-                                    abi=self.erc20_token_abi,
-                                )
-                                .events.Transfer()
-                                .process_log(log)
+                            contract = self.w3.eth.contract(
+                                address=self.w3.to_checksum_address(
+                                    log["address"].lower()
+                                ),
+                                abi=self.erc20_token_abi,
                             )
+                            decoded = contract.events.Transfer().process_log(log)
+
                             if (
                                 decoded["args"]["to"].lower()
                                 == self.account.address.lower()
@@ -280,10 +279,8 @@ class PancakeSwapUniversalRouter(Exchange):
                                         ),
                                         balance_out=Balance(
                                             token=step.token,
-                                            amount=Decimal(
-                                                self.w3.from_wei(
-                                                    decoded["args"]["value"], "ether"
-                                                )
+                                            amount=self.__get_token_amount(
+                                                contract, decoded["args"]["value"]
                                             ),
                                         ),
                                     )
@@ -294,3 +291,7 @@ class PancakeSwapUniversalRouter(Exchange):
                             continue
 
         return bids
+
+    def __get_token_amount(self, token_contract: Contract, raw_amount: int) -> Decimal:
+        decimals = token_contract.functions.decimals().call()
+        return Decimal(raw_amount) / Decimal(10**decimals)
