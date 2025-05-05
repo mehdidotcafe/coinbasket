@@ -17,6 +17,8 @@ class Config:
         self.bsc_rpc_url = env("BSC_RPC_URL")
         self.bsc_private_key = env("BSC_PRIVATE_KEY")
 
+        self.data_agent_address = env("DATA_AGENT_ADDRESS")
+
         self.langsmith_tracing = env("LANGSMITH_TRACING")
         self.langsmith_api_key = env("LANGSMITH_API_KEY")
 

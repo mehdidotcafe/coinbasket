@@ -61,7 +61,7 @@
         "command": "poetry run pytest",
         "cwd": "{projectRoot}"
       },
-      "cache": false
+      "cache": true
     },
     "install": {
       "executor": "@nxlv/python:install",

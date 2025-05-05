@@ -1,8 +1,8 @@
 {
-  "name": "invest_agent",
+  "name": "protocol",
   "$schema": "../node_modules/nx/schemas/project-schema.json",
-  "projectType": "application",
-  "sourceRoot": "invest_agent/invest_agent",
+  "projectType": "library",
+  "sourceRoot": "protocol/protocol",
   "targets": {
     "lock": {
       "executor": "@nxlv/python:lock",
@@ -43,14 +43,6 @@
       "executor": "@nxlv/python:run-commands",
       "options": {
         "command": "poetry run ruff format .",
-        "cwd": "{projectRoot}"
-      },
-      "cache": true
-    },
-    "start": {
-      "executor": "@nxlv/python:run-commands",
-      "options": {
-        "command": "poetry run python -m invest_agent.main",
         "cwd": "{projectRoot}"
       },
       "cache": true

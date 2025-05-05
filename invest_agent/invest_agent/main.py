@@ -1,23 +1,22 @@
 import time
 from typing import Any
+from jsonpickle import decode
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
 import os
-import sqlite3
+import aiosqlite
 
 from typing_extensions import List, TypedDict
 
-from langchain_community.document_loaders import JSONLoader
 from langchain_core.documents import Document
 from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
-from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_core.runnables import RunnableConfig
 from langchain.chat_models import init_chat_model
 from langgraph.prebuilt import create_react_agent
 
-from langchain_openai import OpenAIEmbeddings
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 
 from web3 import Web3
@@ -44,6 +43,8 @@ from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
     FetchAiStorage,
 )
 
+from protocol.protocol import SimilarityQuery, SimilarityResponse
+
 thread_id = str(int(time.time()))
 
 print(f"Thread ID: {thread_id}")
@@ -60,25 +61,9 @@ invest_agent = Agent(
     endpoint=f"http://localhost:{config.agent_port}/submit",
 )
 
-loader = JSONLoader(
-    file_path="./data/selection.json",
-    jq_schema=".",
-    text_content=False,
-)
-
-docs = loader.load()
-
 llm = init_chat_model(
     "gpt-4o-mini", model_provider="openai", api_key=config.openai_api_key
 )
-
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small", api_key=config.openai_api_key
-)
-
-vector_store = InMemoryVectorStore(embeddings)
-
-vector_store.add_documents(docs)
 
 chain = BscChain(
     w3=Web3(Web3.HTTPProvider(config.bsc_rpc_url)),
@@ -128,7 +113,7 @@ class State(TypedDict):
 
 
 @tool(response_format="content_and_artifact")
-def retrieve(query: str):
+async def retrieve(query: str, runnableConfig: RunnableConfig):
     """
     Retrieve a list of available coins to invest.
 
@@ -139,11 +124,31 @@ def retrieve(query: str):
         A list of documents containing the available coins to make the basket with.
         Each coin has a name, display_name, ticker and address (contract address) property.
     """
-    retrieved_docs = vector_store.similarity_search(query)
-    serialized = "\n\n".join(
-        (f"Source: {doc.metadata}\nContent: {doc.page_content}")
-        for doc in retrieved_docs
+    ctx: Context | None = runnableConfig.get("configurable", {}).get("ctx")
+
+    print(f"ctx: {ctx}")
+
+    if ctx is None:
+        raise ValueError("Context is not available in the config.")
+
+    res, _status = await ctx.send_and_receive(
+        configuration.data_agent_address,
+        SimilarityQuery(query=query),
+        SimilarityResponse,
     )
+
+    if not isinstance(res, SimilarityResponse):
+        raise ValueError("Response is None.")
+
+    retrieved_docs = decode(res.retrieved_docs)
+
+    if retrieved_docs is None:
+        raise ValueError("Retrieved documents are None.")
+
+    print(f"Retrieved docs: {retrieved_docs}")
+
+    serialized = res.serialized
+
     return serialized, retrieved_docs
 
 
@@ -186,26 +191,6 @@ def divest_basket():
     return basket_divest_use_case.execute()
 
 
-sqliteMemory = SqliteSaver(
-    sqlite3.connect("./database/langchain_graphs.db", check_same_thread=False)
-)
-
-agent_executor = create_react_agent(
-    llm,
-    [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket],
-    checkpointer=sqliteMemory,
-    prompt=SystemMessage(
-        "Your goal is to create and then invest in crypto coin baskets.  "
-        "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
-        "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
-        "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
-        "Always ask for the user's confirmation before investing in the basket.  "
-        "When you display a token, always show its address.  "
-        "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
-    ),
-)
-
-
 class PromptRequest(Model):
     text: str
 
@@ -214,25 +199,53 @@ class PromptResponse(Model):
     text: str
 
 
+def create_agent_executor(conn: aiosqlite.Connection):
+    conn = aiosqlite.connect("./database/langchain_graphs.db", check_same_thread=False)
+    sqliteMemory = AsyncSqliteSaver(conn)
+
+    agent_executor = create_react_agent(
+        llm,
+        [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket],
+        checkpointer=sqliteMemory,
+        prompt=SystemMessage(
+            "Your goal is to create and then invest in crypto coin baskets.  "
+            "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
+            "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
+            "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
+            "Always ask for the user's confirmation before investing in the basket.  "
+            "When you display a token, always show its address.  "
+            "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
+        ),
+    )
+
+    return agent_executor
+
+
 @invest_agent.on_rest_post("/", PromptRequest, PromptResponse)
 async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
-    graph_config = {
-        "configurable": {
-            "thread_id": thread_id,
+    async with aiosqlite.connect(
+        "./database/langchain_graphs.db", check_same_thread=False
+    ) as conn:
+        agent_executor = create_agent_executor(conn)
+
+        graph_config = {
+            "configurable": {
+                "thread_id": thread_id,
+                "ctx": ctx,
+            }
         }
-    }
-    question = req.text
+        question = req.text
 
-    for step in agent_executor.stream(
-        {"messages": [{"role": "user", "content": question}]},
-        stream_mode="values",
-        config=graph_config,
-    ):
-        step["messages"][-1].pretty_print()
+        async for step in agent_executor.astream(
+            {"messages": [{"role": "user", "content": question}]},
+            stream_mode="values",
+            config=graph_config,
+        ):
+            step["messages"][-1].pretty_print()
 
-    ctx.logger.info(f"Received request with text: {req.text}")
+        ctx.logger.info(f"Received request with text: {req.text}")
 
-    return PromptResponse(text=step["messages"][-1].content)
+        return PromptResponse(text=step["messages"][-1].content)
 
 
 def main():

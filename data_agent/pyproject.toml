@@ -3,7 +3,7 @@ branch = true
 source = [ "data_agent" ]
 
 [tool.coverage.report]
-exclude_lines = ['if TYPE_CHECKING:']
+exclude_lines = [ "if TYPE_CHECKING:" ]
 show_missing = true
 
 [tool.pytest.ini_options]
@@ -19,9 +19,9 @@ addopts = """
 name = "data_agent"
 version = "0.0.1"
 description = "🧺 coinbasket data agent"
-authors = [ ]
-license = 'Proprietary'
-readme = 'README.md'
+authors = [ "mehdidotcafe" ]
+license = "Proprietary"
+readme = "README.md"
 
   [[tool.poetry.packages]]
   include = "data_agent"
@@ -31,16 +31,28 @@ readme = 'README.md'
   python-dotenv = ">=1.1.0,<2.0.0"
   uagents = ">=0.22.3,<0.23.0"
   environs = ">=14.1.1,<15.0.0"
+  langchain-community = "^0.3.23"
+  langchain-core = "^0.3.58"
+  jq = "^1.8.0"
+  jsonpickle = "^4.0.5"
 
-  [tool.poetry.group.dev.dependencies]
-  autopep8 = "2.3.1"
-  ruff = ">=0.11.4,<0.12.0"
-  pytest = "8.3.5"
-  pytest-sugar = "1.0.0"
-  pytest-cov = "6.0.0"
-  pytest-html = "4.1.1"
-  pytest-watch = "4.2.0"
+    [tool.poetry.dependencies.langchain]
+    extras = [ "openai" ]
+    version = "^0.3.25"
+
+    [tool.poetry.dependencies.protocol]
+    path = "../protocol"
+    develop = true
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "2.3.1"
+ruff = ">=0.11.4,<0.12.0"
+pytest = "8.3.5"
+pytest-sugar = "1.0.0"
+pytest-cov = "6.0.0"
+pytest-html = "4.1.1"
+pytest-watch = "4.2.0"
 
 [build-system]
-requires = ["poetry-core"]
+requires = [ "poetry-core" ]
 build-backend = "poetry.core.masonry.api"
