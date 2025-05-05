@@ -3,19 +3,19 @@ import sys
 from web3 import Web3
 
 from invest_agent.basket import Token
-from invest_agent.config import Config
+from invest_agent.configuration import Configuration
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 
 
-config = Config()
+configuration = Configuration()
 chain = BscChain(
-    w3=Web3(Web3.HTTPProvider(config.bsc_rpc_url)),
-    private_key=config.bsc_private_key,
+    w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+    private_key=configuration.bsc_private_key,
     base_token=Token(
-        name=config.bsc_base_token_name,
-        display_name=config.bsc_base_token_display_name,
-        ticker=config.bsc_base_token_ticker,
-        address=config.bsc_base_token_address,
+        name=configuration.bsc_base_token_name,
+        display_name=configuration.bsc_base_token_display_name,
+        ticker=configuration.bsc_base_token_ticker,
+        address=configuration.bsc_base_token_address,
     ),
 )
 

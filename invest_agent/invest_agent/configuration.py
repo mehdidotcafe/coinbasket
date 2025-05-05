@@ -1,7 +1,7 @@
 from environs import env
 
 
-class Config:
+class Configuration:
     def __init__(self):
         env.read_env()
 

@@ -23,7 +23,7 @@ from web3 import Web3
 
 from invest_agent.basket import Basket, Token
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
-from invest_agent.config import Config
+from invest_agent.configuration import Configuration
 from invest_agent.investment.basket_divest_use_case import BasketDivestUseCase
 from invest_agent.investment.divestment_planner_strategy.total_divestment_planner import (
     TotalDivestmentPlanner,
@@ -49,48 +49,48 @@ thread_id = str(int(time.time()))
 
 print(f"Thread ID: {thread_id}")
 
-config = Config()
+configuration = Configuration()
 
-os.environ["LANGSMITH_TRACING"] = config.langsmith_tracing
-os.environ["LANGSMITH_API_KEY"] = config.langsmith_api_key
+os.environ["LANGSMITH_TRACING"] = configuration.langsmith_tracing
+os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
 
 invest_agent = Agent(
-    name=config.agent_name,
-    seed=config.agent_seed,
-    port=config.agent_port,
-    endpoint=f"http://localhost:{config.agent_port}/submit",
+    name=configuration.agent_name,
+    seed=configuration.agent_seed,
+    port=configuration.agent_port,
+    endpoint=f"http://localhost:{configuration.agent_port}/submit",
 )
 
 llm = init_chat_model(
-    "gpt-4o-mini", model_provider="openai", api_key=config.openai_api_key
+    "gpt-4o-mini", model_provider="openai", api_key=configuration.openai_api_key
 )
 
 chain = BscChain(
-    w3=Web3(Web3.HTTPProvider(config.bsc_rpc_url)),
-    private_key=config.bsc_private_key,
+    w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+    private_key=configuration.bsc_private_key,
     base_token=Token(
-        name=config.bsc_base_token_name,
-        display_name=config.bsc_base_token_display_name,
-        ticker=config.bsc_base_token_ticker,
-        address=config.bsc_base_token_address,
+        name=configuration.bsc_base_token_name,
+        display_name=configuration.bsc_base_token_display_name,
+        ticker=configuration.bsc_base_token_ticker,
+        address=configuration.bsc_base_token_address,
     ),
 )
 permit2 = Permit2(
     chain=chain,
-    permit2_contract_address=config.pancakeswap_permit2_contract_address,
-    bsc_rpc_url=config.bsc_rpc_url,
-    private_key=config.bsc_private_key,
+    permit2_contract_address=configuration.pancakeswap_permit2_contract_address,
+    bsc_rpc_url=configuration.bsc_rpc_url,
+    private_key=configuration.bsc_private_key,
 )
 exchange = PancakeSwapUniversalRouter(
-    config.bsc_rpc_url,
-    config.pancakeswap_universal_router_address,
-    config.pancakeswap_v2_router_address,
-    config.bsc_private_key,
+    configuration.bsc_rpc_url,
+    configuration.pancakeswap_universal_router_address,
+    configuration.pancakeswap_v2_router_address,
+    configuration.bsc_private_key,
     chain,
     permit2,
 )
 storage = FetchAiStorage[Any](
-    thread_id, store=KeyValueStore(config.agent_name, "./database")
+    thread_id, store=KeyValueStore(configuration.agent_name, "./database")
 )
 
 basket_invest_use_case = BasketInvestUseCase(
