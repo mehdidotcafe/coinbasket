@@ -1,0 +1,10 @@
+# Global
+.env
+
+# Python
+.python-version
+__pycache__
+
+# Invest Agent Local databases
+invest_agent/database/*
+!invest_agent/database/.gitkeep
