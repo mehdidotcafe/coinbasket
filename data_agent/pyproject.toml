@@ -1,25 +1,46 @@
-[project]
+[tool.coverage.run]
+branch = true
+source = [ "data_agent" ]
+
+[tool.coverage.report]
+exclude_lines = ['if TYPE_CHECKING:']
+show_missing = true
+
+[tool.pytest.ini_options]
+addopts = """
+ --cov
+ --cov-report html:'../coverage/data_agent/html'
+ --cov-report xml:'../coverage/data_agent/coverage.xml'
+ --html='../reports/data_agent/unittests/html/index.html'
+ --junitxml='../reports/data_agent/unittests/junit.xml'
+"""
+
+[tool.poetry]
 name = "data_agent"
 version = "0.0.1"
 description = "🧺 coinbasket data agent"
-authors = [
-    {name = "mehdidotcafe",email = "contact@mehdi.cafe"}
-]
-license = {text = "GPL3"}
-readme = "README.md"
-requires-python = ">=3.10,<4.0"
-dependencies = [
-]
+authors = [ ]
+license = 'Proprietary'
+readme = 'README.md'
 
+  [[tool.poetry.packages]]
+  include = "data_agent"
+
+  [tool.poetry.dependencies]
+  python = ">=3.10,<4.0"
+  python-dotenv = ">=1.1.0,<2.0.0"
+  uagents = ">=0.22.3,<0.23.0"
+  environs = ">=14.1.1,<15.0.0"
+
+  [tool.poetry.group.dev.dependencies]
+  autopep8 = "2.3.1"
+  ruff = ">=0.11.4,<0.12.0"
+  pytest = "8.3.5"
+  pytest-sugar = "1.0.0"
+  pytest-cov = "6.0.0"
+  pytest-html = "4.1.1"
+  pytest-watch = "4.2.0"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-"data_agent" = "data_agent:main"
-"data_agent:cli" = "data_agent.cli:main"
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
-pytest-watch = "^4.2.0"
-

@@ -1,3 +1,4 @@
+name: coinbasket_invest_agent
 services:
   ganache:
     image: node:20
