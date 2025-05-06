@@ -3,7 +3,7 @@ branch = true
 source = [ "invest_agent" ]
 
 [tool.coverage.report]
-exclude_lines = ['if TYPE_CHECKING:']
+exclude_lines = [ "if TYPE_CHECKING:" ]
 show_missing = true
 
 [tool.pytest.ini_options]
@@ -19,9 +19,7 @@ addopts = """
 name = "invest_agent"
 version = "0.0.1"
 description = "🧺 coinbasket invest agent"
-authors = [
-    "mehdidotcafe"
-]
+authors = [ "mehdidotcafe" ]
 license = "Proprietary"
 readme = "README.md"
 
@@ -42,19 +40,25 @@ readme = "README.md"
   uniswap-universal-router-decoder = ">=2.0.0,<3.0.0"
   jsonpickle = ">=4.0.5,<5.0.0"
   langgraph-checkpoint-sqlite = ">=2.0.7,<3.0.0"
-  langchain = {extras = ["openapi"], version = "^0.3.25"}
   aiosqlite = "^0.21.0"
 
-  [tool.poetry.group.dev.dependencies]
-  autopep8 = "2.3.1"
-  ruff = ">=0.11.4,<0.12.0"
-  pytest = "8.3.5"
-  pytest-sugar = "1.0.0"
-  pytest-cov = "6.0.0"
-  pytest-html = "4.1.1"
-  pytest-watch = "4.2.0"
+    [tool.poetry.dependencies.langchain]
+    extras = [ "openapi" ]
+    version = "^0.3.25"
 
+    [tool.poetry.dependencies.protocol]
+    path = "../protocol"
+    develop = true
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "2.3.1"
+ruff = ">=0.11.4,<0.12.0"
+pytest = "8.3.5"
+pytest-sugar = "1.0.0"
+pytest-cov = "6.0.0"
+pytest-html = "4.1.1"
+pytest-watch = "4.2.0"
 
 [build-system]
-requires = ["poetry-core"]
+requires = [ "poetry-core" ]
 build-backend = "poetry.core.masonry.api"

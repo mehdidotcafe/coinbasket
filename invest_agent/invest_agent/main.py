@@ -43,7 +43,7 @@ from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
     FetchAiStorage,
 )
 
-from protocol.protocol import SimilarityQuery, SimilarityResponse
+from protocol import SimilarityQuery, SimilarityResponse
 
 thread_id = str(int(time.time()))
 

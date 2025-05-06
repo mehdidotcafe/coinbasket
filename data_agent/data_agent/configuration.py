@@ -9,4 +9,7 @@ class Configuration:
         self.agent_seed = env("AGENT_SEED")
         self.agent_port = env.int("AGENT_PORT")
 
+        self.qdrant_api_key = env("QDRANT_API_KEY")
+        self.qdrant_url = env("QDRANT_URL")
+
         self.openai_api_key = env("OPENAI_API_KEY")

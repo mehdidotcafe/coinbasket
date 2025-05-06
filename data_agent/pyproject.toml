@@ -35,6 +35,7 @@ readme = "README.md"
   langchain-core = "^0.3.58"
   jq = "^1.8.0"
   jsonpickle = "^4.0.5"
+  qdrant-client = "^1.14.2"
 
     [tool.poetry.dependencies.langchain]
     extras = [ "openai" ]

@@ -1,13 +1,16 @@
 from uagents import Agent, Context
 
-from langchain_community.document_loaders import JSONLoader
-from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_community.vectorstores import Qdrant
 from langchain_openai import OpenAIEmbeddings
 
 from jsonpickle import encode
 
 from data_agent.configuration import Configuration
-from protocol.protocol import SimilarityQuery, SimilarityResponse
+from data_agent.similarity.get_similarities_use_case import GetSimilaritiesUseCase
+from data_agent.similarity.infrastructure.qdrant_langchain.similarity_storage.qdrant_langchain_similarity_storage import (
+    QdrantLangChainSimilarityStorage,
+)
+from protocol import SimilarityQuery, SimilarityResponse
 
 configuration = Configuration()
 
@@ -18,22 +21,18 @@ data_agent = Agent(
     endpoint=f"http://localhost:{configuration.agent_port}/submit",
 )
 
-
-loader = JSONLoader(
-    file_path="./data/selection.json",
-    jq_schema=".",
-    text_content=False,
+similarity_storage = QdrantLangChainSimilarityStorage(
+    {
+        "qdrant_url": configuration.qdrant_url,
+        "qdrant_api_key": configuration.qdrant_api_key,
+    },
+    Qdrant,
+    OpenAIEmbeddings(
+        model="text-embedding-3-small", api_key=configuration.openai_api_key
+    ),
 )
 
-docs = loader.load()
-
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small", api_key=configuration.openai_api_key
-)
-
-vector_store = InMemoryVectorStore(embeddings)
-
-vector_store.add_documents(docs)
+get_similarities_use_case = GetSimilaritiesUseCase(similarity_storage)
 
 
 def retrieve(query: str):
@@ -47,17 +46,31 @@ def retrieve(query: str):
         A list of documents containing the available coins to make the basket with.
         Each coin has a name, display_name, ticker and address (contract address) property.
     """
-    retrieved_docs = vector_store.similarity_search(query)
-    serialized = "\n\n".join(
-        (f"Source: {doc.metadata}\nContent: {doc.page_content}")
-        for doc in retrieved_docs
-    )
-    return serialized, retrieved_docs
+    return get_similarities_use_case.execute(query)
 
 
 @data_agent.on_event("startup")
 async def on_startup(ctx: Context):
     ctx.logger.info(f"{configuration.agent_name} ready, address ${ctx.agent.address}.")
+
+
+@data_agent.on_rest_post("/", SimilarityQuery, SimilarityResponse)
+async def handle_similarity_query(
+    ctx: Context, req: SimilarityQuery
+) -> SimilarityResponse:
+    serialized, retrieved_docs = retrieve(req.query)
+
+    encoded_docs: str | None = encode(retrieved_docs)
+
+    print(f"Encoded docs: {encoded_docs}")
+
+    if not encoded_docs:
+        raise ValueError("Encoded documents are None.")
+
+    return SimilarityResponse(
+        serialized=serialized,
+        retrieved_docs=encoded_docs,
+    )
 
 
 @data_agent.on_message(model=SimilarityQuery)

@@ -2800,6 +2800,23 @@ files = [
 ]
 
 [[package]]
+name = "protocol"
+version = "0.0.1"
+description = "🧺 invest agent &lt;-&gt; data agent protocol"
+optional = false
+python-versions = ">=3.10,<4.0"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+uagents = ">=0.22.3,<0.23.0"
+
+[package.source]
+type = "directory"
+url = "../protocol"
+
+[[package]]
 name = "pycodestyle"
 version = "2.13.0"
 description = "Python style guide checker"
@@ -4576,4 +4593,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "38ebb6f2bd63548bae472284a89b176f1c206f7deafda5872ab8f4b08d939f74"
+content-hash = "ccaadb3a1ecbc5c07bf36076dcc3dd25914462974150b5bf38945d7d0e63a4f0"
