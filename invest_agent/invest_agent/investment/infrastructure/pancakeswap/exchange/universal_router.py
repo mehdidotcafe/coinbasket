@@ -4,7 +4,7 @@ from eth_typing import ChecksumAddress
 from web3 import Account, Web3
 from web3.contract import Contract
 from web3.types import TxReceipt, Wei
-from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec  # type: ignore
+from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec
 
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
@@ -153,6 +153,8 @@ class PancakeSwapUniversalRouter(Exchange):
         swap_chain = self.codec.encode.chain()
 
         for step in divestment_plan.steps:
+            print(f"token: {step.token.name}")
+
             if step.token.address == self.base_token:
                 # If the base token is in the divestment plan, we need to send it to the router
                 swap_chain = swap_chain.permit2_transfer_from(
@@ -161,6 +163,11 @@ class PancakeSwapUniversalRouter(Exchange):
                     self.w3.to_wei(step.amount, "ether"),
                 )
             else:
+                contract = self.w3.eth.contract(
+                    address=self.w3.to_checksum_address(step.token.address),
+                    abi=self.erc20_token_abi,
+                )
+
                 self.permit2.approve_permit2_contract(
                     Web3.to_checksum_address(step.token.address)
                 )
@@ -172,7 +179,7 @@ class PancakeSwapUniversalRouter(Exchange):
                     )
                 )
 
-                amount_in = self.w3.to_wei(step.amount, "ether")
+                amount_in = self.__get_raw_amount(contract, step.amount)
                 path = [
                     Web3.to_checksum_address(step.token.address),
                     Web3.to_checksum_address(self.base_token),
@@ -188,7 +195,7 @@ class PancakeSwapUniversalRouter(Exchange):
                     # TODO: check to use v3
                 ).v2_swap_exact_in(
                     FunctionRecipient.ROUTER,
-                    amount_in,
+                    Wei(amount_in),
                     amount_out_min,
                     path,
                     payer_is_sender=True,
@@ -198,15 +205,22 @@ class PancakeSwapUniversalRouter(Exchange):
             self.permit2.get_default_deadline(),  # 180 seconds
         )
 
-        receipt = self.chain.sign_send_wait_transaction(
-            amount,
-            Web3.to_checksum_address(self.universal_router_address),
-            encoded_input,
-        )
+        print("Executing batch transaction")
 
-        print(f"Receipt: {receipt}")
+        try:
+            receipt = self.chain.sign_send_wait_transaction(
+                amount,
+                Web3.to_checksum_address(self.universal_router_address),
+                encoded_input,
+            )
 
-        return InvestmentResult(bids=[])
+            print(f"Receipt: {receipt}")
+
+            return InvestmentResult(bids=[])
+        # TODO: handle gracefully errors
+        except Exception as e:
+            print(f"Error executing batch transaction: {e}")
+            raise e
 
     def __compute_amount_out_min(
         self,
@@ -295,3 +309,8 @@ class PancakeSwapUniversalRouter(Exchange):
     def __get_token_amount(self, token_contract: Contract, raw_amount: int) -> Decimal:
         decimals = token_contract.functions.decimals().call()
         return Decimal(raw_amount) / Decimal(10**decimals)
+
+    # TODO: See how to store the decimals in the Token class
+    def __get_raw_amount(self, token_contract: Contract, amount: Decimal) -> int:
+        decimals = token_contract.functions.decimals().call()
+        return int(amount * Decimal(10**decimals))

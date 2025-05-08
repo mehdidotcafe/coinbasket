@@ -86,6 +86,8 @@ async def on_startup(ctx: Context):
 async def handle_similarity_query(
     ctx: Context, req: SimilarityQuery
 ) -> SimilarityResponse:
+    print(f"Query: {req.query}")
+
     serialized, retrieved_docs = get_similarities_use_case.execute(req.query)
 
     encoded_docs: str | None = encode(retrieved_docs)
@@ -103,7 +105,7 @@ async def handle_similarity_query(
 
 @data_agent.on_message(model=SimilarityQuery)
 async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
-    ctx.logger.info(f"I have received a message from {sender}.")
+    print(f"Query: {msg.query}")
 
     serialized, retrieved_docs = get_similarities_use_case.execute(msg.query)
 

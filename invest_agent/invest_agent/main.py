@@ -6,7 +6,6 @@ from protocol.token import Token
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
-import os
 import aiosqlite
 
 from typing_extensions import List, TypedDict
@@ -46,14 +45,15 @@ from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
 
 from protocol import SimilarityQuery, SimilarityResponse
 
-thread_id = str(int(time.time()))
+thread_id = "1746740448"
+# thread_id = str(int(time.time()))
 
 print(f"Thread ID: {thread_id}")
 
 configuration = Configuration()
 
-os.environ["LANGSMITH_TRACING"] = configuration.langsmith_tracing
-os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
+# os.environ["LANGSMITH_TRACING"] = configuration.langsmith_tracing
+# os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
 
 invest_agent = Agent(
     name=configuration.agent_name,
@@ -116,15 +116,16 @@ class State(TypedDict):
 @tool(response_format="content_and_artifact")
 async def retrieve(query: str, runnableConfig: RunnableConfig):
     """
-    Retrieve a list of available coins to invest.
+    Retrieve a list of available tokens to invest.
     Retrieve a list of available baskets to invest.
 
     Args:
         query: The query to search for.
 
     Returns:
-        A list of documents containing the available coins to make the basket with.
-        Each coin has a name, display_name, ticker and address (contract address) property.
+        A list of documents containing tokens or a basket.
+        Each token has a name, display_name, ticker and address (contract address) property.
+        A basket is made of a name, a description and a list of tokens.
     """
     ctx: Context | None = runnableConfig.get("configurable", {}).get("ctx")
 

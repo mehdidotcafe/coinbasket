@@ -1,9 +1,9 @@
 import json
-from eth_typing import HexStr, ChecksumAddress
+from eth_typing import ChecksumAddress
 from eth_account.signers.local import LocalAccount
 from uniswap_universal_router_decoder import RouterCodec
 from web3 import Web3
-from web3.types import TxReceipt, TxParams, Wei
+from web3.types import TxReceipt, Wei
 
 from invest_agent.chain.chain import Chain
 
@@ -44,7 +44,7 @@ class Permit2:
         self,
         token_address: ChecksumAddress,
     ) -> TxReceipt:
-        amount = Wei(0)
+        amount = 0
         permit2_allowance = 2**256 - 1
 
         token_contract = self.w3.eth.contract(
@@ -58,34 +58,11 @@ class Permit2:
         )
         encoded_input = contract_function._encode_transaction_data()
 
-        try:
-            gas_estimate = self.chain.compute_gas_estimate(
-                amount,
-                token_address,
-                encoded_input,
-            )
-        except Exception as e:
-            print(f"Error estimating gas: {e}")
-            raise e
-
-        transaction_params: TxParams = {
-            "from": self.account.address,
-            "gas": gas_estimate,
-            "maxPriorityFeePerGas": self.w3.eth.max_priority_fee,
-            "maxFeePerGas": Wei(100 * 10**9),
-            "type": HexStr("0x2"),
-            "chainId": self.w3.eth.chain_id,
-            "value": amount,
-            "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
-        }
-        transaction = contract_function.build_transaction(transaction_params)
-        raw_transaction = self.w3.eth.account.sign_transaction(
-            transaction, self.account.key
-        ).raw_transaction
-        transaction_hash = self.w3.eth.send_raw_transaction(raw_transaction)
-        print(f"Permit2 Trx Hash: {transaction_hash.hex()}")
-
-        receipt = self.w3.eth.wait_for_transaction_receipt(transaction_hash)
+        receipt = self.chain.sign_send_wait_transaction(
+            amount=amount,
+            encoded_input=encoded_input,
+            to_address=token_address,
+        )
         print(f"Permit2 Receipt: {receipt}")
 
         return receipt

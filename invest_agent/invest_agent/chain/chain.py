@@ -26,7 +26,10 @@ class Chain(ABC):
 
     @abstractmethod
     def sign_send_wait_transaction(
-        self, amount: int, to_address: str, encoded_input: Any | None = None
+        self,
+        amount: int,
+        to_address: str | None = None,
+        encoded_input: Any | None = None,
     ) -> Any:
         pass
 

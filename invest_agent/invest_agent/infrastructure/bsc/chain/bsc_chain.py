@@ -94,13 +94,15 @@ class BscChain(Chain):
         if encoded_input is not None:
             transaction_params["data"] = encoded_input
 
-        return int(self.w3.eth.estimate_gas(transaction_params) * 1.1)
+        gas_estimate = int(self.w3.eth.estimate_gas(transaction_params) * 1.1)
+
+        return gas_estimate
 
     def sign_send_wait_transaction(
         self,
         amount: int,
         # address checksum
-        to_address: str,
+        to_address: str | None = None,
         encoded_input: HexStr | None = None,
     ) -> Any:
         latest_block = self.w3.eth.get_block("latest")
@@ -108,30 +110,22 @@ class BscChain(Chain):
         max_priority_fee = self.w3.to_wei(2, "gwei")  # This is the miner "tip"
         max_fee_per_gas = Wei(base_fee * 2 + max_priority_fee)
 
-        gas_estimate = self.compute_gas_estimate(
-            encoded_input=encoded_input,
-            to_address=to_address,
-            amount=amount,
-        )
-
         transaction_params: TxParams = {
             "from": self.account.address,
-            "to": to_address,
-            "gas": gas_estimate,
             "maxPriorityFeePerGas": max_priority_fee,
             "maxFeePerGas": max_fee_per_gas,
             "chainId": self.w3.eth.chain_id,
-            "type": HexStr("0x2"),
+            "type": 2,
             "value": Wei(amount),
             "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
         }
         if encoded_input is not None:
             transaction_params["data"] = encoded_input
 
-        raw_transaction = self.w3.eth.account.sign_transaction(
-            transaction_params, self.account.key
-        ).raw_transaction
-        transaction_hash = self.w3.eth.send_raw_transaction(raw_transaction)
+        if to_address is not None:
+            transaction_params["to"] = to_address
+
+        transaction_hash = self.w3.eth.send_transaction(transaction_params)
         print(f"Trx Hash: {transaction_hash.hex()}")
 
         receipt = self.w3.eth.wait_for_transaction_receipt(transaction_hash)
