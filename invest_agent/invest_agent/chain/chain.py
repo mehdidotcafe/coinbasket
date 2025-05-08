@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from decimal import Decimal
 from typing import Any
 
-from invest_agent.basket import Token
+from protocol.token import Token
+
 from invest_agent.chain.balance import Balance
 
 

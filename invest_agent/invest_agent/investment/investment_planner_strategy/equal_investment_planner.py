@@ -1,4 +1,4 @@
-from invest_agent.basket import Basket
+from protocol.basket import Basket
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
 from invest_agent.investment.investment_plan import (

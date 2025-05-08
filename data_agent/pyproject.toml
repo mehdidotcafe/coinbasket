@@ -31,11 +31,12 @@ readme = "README.md"
   python-dotenv = ">=1.1.0,<2.0.0"
   uagents = ">=0.22.3,<0.23.0"
   environs = ">=14.1.1,<15.0.0"
-  langchain-community = "^0.3.23"
   langchain-core = "^0.3.58"
   jq = "^1.8.0"
   jsonpickle = "^4.0.5"
+  langchain-qdrant = "^0.2.0"
   qdrant-client = "^1.14.2"
+  syrupy = "^4.9.1"
 
     [tool.poetry.dependencies.langchain]
     extras = [ "openai" ]

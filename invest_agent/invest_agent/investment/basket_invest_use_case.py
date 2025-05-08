@@ -1,4 +1,4 @@
-from invest_agent.basket import Basket
+from protocol.basket import Basket
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_planner_strategy.insufficient_balance_exception import (
     InsufficientBalanceException,

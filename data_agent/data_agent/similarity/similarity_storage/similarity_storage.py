@@ -7,3 +7,7 @@ class SimilarityStorage(ABC):
     @abstractmethod
     def similarity_search(self, query: str) -> list[SimilarityDocument]:
         raise NotImplementedError
+
+    @abstractmethod
+    def set(self, documents: list[SimilarityDocument]) -> None:
+        raise NotImplementedError

@@ -12,4 +12,5 @@ class Token:
 @dataclass
 class Basket:
     name: str
+    description: str
     tokens: list[Token]

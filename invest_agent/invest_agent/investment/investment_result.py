@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from invest_agent.basket import Token
+from protocol.token import Token
 from invest_agent.chain.balance import Balance
 
 

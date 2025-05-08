@@ -9,7 +9,7 @@ from web3 import Web3
 from eth_account.datastructures import SignedMessage
 
 
-from invest_agent.basket import Token
+from protocol.token import Token
 
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain

@@ -1,6 +1,8 @@
 import time
 from typing import Any
 from jsonpickle import decode
+from protocol.basket import Basket
+from protocol.token import Token
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
@@ -21,7 +23,6 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from web3 import Web3
 
-from invest_agent.basket import Basket, Token
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 from invest_agent.configuration import Configuration
 from invest_agent.investment.basket_divest_use_case import BasketDivestUseCase
@@ -116,6 +117,7 @@ class State(TypedDict):
 async def retrieve(query: str, runnableConfig: RunnableConfig):
     """
     Retrieve a list of available coins to invest.
+    Retrieve a list of available baskets to invest.
 
     Args:
         query: The query to search for.
@@ -125,8 +127,6 @@ async def retrieve(query: str, runnableConfig: RunnableConfig):
         Each coin has a name, display_name, ticker and address (contract address) property.
     """
     ctx: Context | None = runnableConfig.get("configurable", {}).get("ctx")
-
-    print(f"ctx: {ctx}")
 
     if ctx is None:
         raise ValueError("Context is not available in the config.")

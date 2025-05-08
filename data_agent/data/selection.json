@@ -16,12 +16,6 @@
         "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8"
       },
       {
-        "name": "Binance Pegged USDT",
-        "displayName": "Tether USD",
-        "ticker": "TUSD",
-        "address": "0x55d398326f99059fF775485246999027B3197955"
-      },
-      {
         "name": "XRP Token",
         "displayName": "XRP",
         "ticker": "XRP",
@@ -32,12 +26,6 @@
         "displayName": "Binance Coin",
         "ticker": "BNB",
         "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
-      },
-      {
-        "name": "Binance Pegged USD Coin",
-        "displayName": "USDC",
-        "ticker": "USDC",
-        "address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
       },
       {
         "name": "SOLANA",
@@ -62,6 +50,18 @@
         "displayName": "Cardano",
         "ticker": "ADA",
         "address": "0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47"
+      },
+      {
+        "name": "ChainLink Token",
+        "displayName": "Chainklink",
+        "ticker": "LINK",
+        "address": "0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd"
+      },
+      {
+        "name": "Avalanche",
+        "displayName": "Avalanche",
+        "ticker": "AVAX",
+        "address": "0x1ce0c2827e2ef14d5c4f29a091d735a204794041"
       }
     ]
   },
@@ -79,7 +79,7 @@
   },
   {
     "name": "memecoin mania",
-    "description": "memecoin basket",
+    "description": "This basket offers concentrated exposure to the memecoin sector—tokens driven by internet culture, viral trends, and highly engaged online communities. Often fueled by humor, speculation, and social media influence, memecoins represent a unique and volatile niche within the crypto landscape. This basket is designed for investors who understand the high-risk, high-reward nature of memecoins and are looking to capture upside from rapidly shifting narratives and collective enthusiasm in the digital economy.",
     "coins": [
       {
         "name": "Dogecoin",
@@ -100,22 +100,10 @@
         "address": "0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00"
       },
       {
-        "name": "Baby Doge Coin",
-        "displayName": "Baby Doge Coin",
-        "ticker": "babyDOGE",
-        "address": "0xc748673057861a797275CD8A068AbB95A902e8de"
-      },
-      {
-        "name": "Dogelon Mars",
-        "displayName": "Dogelon Mars",
-        "ticker": "ELON",
-        "address": "0x7bd6FaBD64813c48545C9c0e312A0099d9be2540"
-      },
-      {
-        "name": "MAGA",
-        "displayName": "MAGA",
-        "ticker": "MAGA",
-        "address": "0x4eA98c1999575aaadfb38237Dd015c5E773F75a2"
+        "name": "FLOKI",
+        "display_name": "FLOKI",
+        "ticker": "FLOKI",
+        "address": "0xfb5b838b6cfeedc2873ab27866079ac55363d37e"
       },
       {
         "name": "Bonk",
@@ -174,13 +162,8 @@
       {
         "name": "Injective",
         "displayName": "Injective",
-        "ticker": "INJ"
-      },
-      {
-        "name": "DeXe",
-        "displayName": "DeXe",
-        "ticker": "DEXE",
-        "address": "0x039cB485212f996A9DBb85A9a75d898F94d38dA6"
+        "ticker": "INJ",
+        "address": "0xa2b726b1145a4773f68593cf171187d8ebe4d495"
       }
     ]
   },
@@ -236,12 +219,6 @@
         "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8"
       },
       {
-        "name": "Binance Pegged USDT",
-        "displayName": "Tether USD",
-        "ticker": "USDT",
-        "address": "0x55d398326f99059fF775485246999027B3197955"
-      },
-      {
         "name": "XRP Token",
         "displayName": "XRP",
         "ticker": "XRP",
@@ -254,12 +231,6 @@
         "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
       },
       {
-        "name": "Binance Pegged USD Coin",
-        "displayName": "USDC",
-        "ticker": "USDC",
-        "address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
-      },
-      {
         "name": "SOLANA",
         "displayName": "Solana",
         "ticker": "SOL",
@@ -269,19 +240,13 @@
         "name": "Tron",
         "displayName": "Tron",
         "ticker": "TRX",
-        "address": "0x85EAC5Ac2F758618dFa09bDbe0cf174e7d574D5B"
-      },
-      {
-        "name": "Dogecoin",
-        "displayName": "Dogecoin",
-        "ticker": "DOGE",
-        "address": "0xbA2aE424d960c26247Dd6c32edC70B295c744C43"
+        "address": "0xce7de646e7208a4ef112cb6ed5038fa6cc6b12e3"
       },
       {
         "name": "Cardano Token",
         "displayName": "Cardano",
         "ticker": "ADA",
-        "address": "0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47"
+        "address": "0x3ee2200efb3400fabb9aacf31297cbdd1d435d47"
       }
     ]
   }

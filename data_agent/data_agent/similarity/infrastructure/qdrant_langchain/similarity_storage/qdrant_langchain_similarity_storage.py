@@ -1,8 +1,10 @@
-from typing import TypedDict
+from typing import Any, TypedDict
 from langchain_core.embeddings import Embeddings
-from langchain_community.document_loaders import JSONLoader
-from langchain_community.vectorstores import Qdrant
+
+from langchain_qdrant import QdrantVectorStore
 from langchain_core.documents import Document
+from qdrant_client import QdrantClient
+from qdrant_client.models import VectorParams, Distance
 
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.similarity.similarity_storage.similarity_storage import (
@@ -11,38 +13,59 @@ from data_agent.similarity.similarity_storage.similarity_storage import (
 
 
 class Configuration(TypedDict):
+    qdrant_collection: str
     qdrant_url: str
     qdrant_api_key: str
 
 
 class QdrantLangChainSimilarityStorage(SimilarityStorage):
     def __init__(
-        self, configuration: Configuration, qdrant: type[Qdrant], embeddings: Embeddings
+        self,
+        configuration: Configuration,
+        qdrant_client: type[QdrantClient],
+        qdrant_vector_store: type[QdrantVectorStore],
+        embeddings: Embeddings,
     ):
-        loader = JSONLoader(
-            file_path="./data/selection.json",
-            jq_schema=".",
-            text_content=False,
-        )
-
-        docs = loader.load()
-
-        self.qdrant = qdrant.from_documents(
-            docs,
-            embeddings,
+        client = qdrant_client(
             url=configuration["qdrant_url"],
-            prefer_grpc=True,
             api_key=configuration["qdrant_api_key"],
-            collection_name="dataset",
-            force_recreate=True,
+            prefer_grpc=True,
         )
+
+        # TODO: Keep the same collection, just update documents by their id somehow
+        client.recreate_collection(  # safely drops if exists
+            collection_name=configuration["qdrant_collection"],
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+        )
+
+        self.qdrant = qdrant_vector_store(
+            client=client,
+            collection_name=configuration["qdrant_collection"],
+            embedding=embeddings,
+        )
+
         self.embeddings = embeddings
 
     def similarity_search(self, query: str):
+        """
+        Performs a similarity search in the Qdrant vector store."""
+
         return [
             self.__map_document_to_similarity_document(doc)
             for doc in self.qdrant.similarity_search(query)
         ]
+
+    def set(self, documents: list[SimilarityDocument]):
+        print(f"Upserting {len(documents)} documents to Qdrant")
+        """
+        Upserts the documents into the Qdrant vector store.
+        """
+        self.qdrant.add_documents(
+            [
+                self.__map_similarity_document_to_document(document)
+                for document in documents
+            ],
+        )
 
     def __map_document_to_similarity_document(
         self, document: Document
@@ -50,4 +73,14 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
         return SimilarityDocument(
             page_content=document.page_content,
             metadata=document.metadata or None,
+            id=document.id,
+        )
+
+    def __map_similarity_document_to_document(
+        self, document: SimilarityDocument
+    ) -> Document:
+        return Document(
+            id=document.id,
+            page_content=document.page_content,
+            metadata=document.metadata or dict(),
         )

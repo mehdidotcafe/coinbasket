@@ -2,7 +2,7 @@ from decimal import Decimal
 from unittest import mock
 
 from pytest import fixture
-from invest_agent.basket import Token
+from protocol.token import Token
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
 from invest_agent.investment.divestment_planner_strategy.total_divestment_planner import (

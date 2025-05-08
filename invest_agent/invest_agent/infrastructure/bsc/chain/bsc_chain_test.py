@@ -7,7 +7,7 @@ from web3.types import Wei
 from web3.eth import Eth
 from eth_account.signers.local import LocalAccount
 
-from invest_agent.basket import Token
+from protocol.token import Token
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 
 

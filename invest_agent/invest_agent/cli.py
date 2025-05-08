@@ -1,8 +1,9 @@
 import sys
 
+from protocol.token import Token
+
 from web3 import Web3
 
-from invest_agent.basket import Token
 from invest_agent.configuration import Configuration
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 

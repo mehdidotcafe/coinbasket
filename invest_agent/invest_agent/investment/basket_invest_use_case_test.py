@@ -1,8 +1,9 @@
 from decimal import Decimal
 from unittest import mock
+from protocol.basket import Basket
+from protocol.token import Token
 from pytest import fixture
 
-from invest_agent.basket import Basket, Token
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_planner_strategy.insufficient_balance_exception import (
@@ -37,6 +38,7 @@ def storage():
 def basket():
     return Basket(
         name="Test Basket",
+        description="A test basket",
         tokens=[
             Token(
                 name="TokenA",

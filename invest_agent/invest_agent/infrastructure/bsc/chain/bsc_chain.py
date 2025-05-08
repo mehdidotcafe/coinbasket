@@ -7,7 +7,7 @@ from web3 import Web3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
 from web3.types import TxParams, Wei
 
-from invest_agent.basket import Token
+from protocol.token import Token
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
 
