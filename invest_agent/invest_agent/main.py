@@ -1,6 +1,7 @@
 import os
-from typing import Any
+from typing import Any, Dict
 from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
+from invest_agent.investment.basket_investment import BasketInvestment
 from jsonpickle import decode
 from protocol.basket import Basket
 from protocol.token import Token
@@ -182,8 +183,21 @@ def invest_basket(basket: Basket):
 
     Args:
         basket: The basket to Invest / fund / buy.
+
+    Returns:
+        BasketInvestment: The basket investment made of the bids that were made by the agent when investing in the basket.
     """
-    return basket_invest_use_case.execute(basket)
+    message, basket_investment = basket_invest_use_case.execute(basket)
+
+    if basket_investment is None:
+        return message, None
+
+    content: Dict[str, str | BasketInvestment] = {
+        "message": message,
+        "basket_investment": basket_investment,
+    }
+
+    return content, basket_investment
 
 
 @tool()
@@ -217,9 +231,13 @@ def create_agent_executor(conn: aiosqlite.Connection):
             f"Today is {date_time.now_str()}.  "
             "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
             "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
-            "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
-            "Always ask for the user's confirmation before investing in the basket.  "
             "When you display a token, always show its address as a link using this link 'https://bscscan.com/token/[token_address]'.  "
+            "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
+            "Always ask for the user's confirmation before investing in the basket and show a message mentioning that he should do his own research (DYOR) before investing.  "
+            "Always ask for the user's confirmation before divesting the basket. "
+            "You can manage / invest in only one basket at a time.  "
+            "You can update a created basket but once it has been invested, you can only divest it and you can't update it anymore.  "
+            "You can't create a basket if you already have one.  "
             "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
         ),
     )
