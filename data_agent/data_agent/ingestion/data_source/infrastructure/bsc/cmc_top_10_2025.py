@@ -8,6 +8,7 @@ from protocol.basket import Basket
 
 class CmcTop102025BasketDataSource(DataSource):
     def __init__(self):
+        self.id = "bec1f741-61f2-4903-a4fd-363c63deaa4e"
         self.basket = Basket(
             name="Coinmarketcap Top 10 2025",
             description="This basket features a diverse mix of leading Layer-1 and utility tokens that form the backbone of the blockchain ecosystem in 2025. Representing widely adopted smart contract platforms, cross-chain protocols, and decentralized infrastructure, these assets reflect the continued maturity and interoperability of the crypto space. By excluding stablecoins, the basket maintains direct exposure to market-driven value while focusing on assets that power network operations, governance, and user interaction across decentralized applications.",
@@ -86,6 +87,11 @@ class CmcTop102025BasketDataSource(DataSource):
         Map the basket to a similarity document.
         """
         return SimilarityDocument(
+            id=self.id,
             page_content=str(basket),
-            metadata={"source": asdict(basket), "type": "basket"},
+            metadata={
+                "source": asdict(basket),
+                "type": "basket",
+                "version": self.version(),
+            },
         )

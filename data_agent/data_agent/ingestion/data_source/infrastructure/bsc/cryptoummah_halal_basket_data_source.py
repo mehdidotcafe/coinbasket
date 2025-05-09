@@ -8,6 +8,7 @@ from protocol.basket import Basket
 
 class CryptoUmmahHalalBasketDataSource(DataSource):
     def __init__(self):
+        self.id = "0f4b83f3-47eb-45a1-a698-688365ef2e64"
         self.basket = Basket(
             name="Cryptoummah.com Certified Halal",
             description="This basket features a curated selection of major blockchain assets that align with Cryptoummah.com's halal screening framework. Focused on transparency, utility, and real-world adoption, these assets represent foundational layers of the global crypto economy while adhering to ethical and Shariah-compliant investment principles. This basket is designed for faith-conscious investors seeking exposure to leading digital assets without compromising on religious values.",
@@ -68,6 +69,11 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
         Map the basket to a similarity document.
         """
         return SimilarityDocument(
+            id=self.id,
             page_content=str(basket),
-            metadata={"source": asdict(basket), "type": "basket"},
+            metadata={
+                "source": asdict(basket),
+                "type": "basket",
+                "version": self.version(),
+            },
         )

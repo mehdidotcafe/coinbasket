@@ -8,9 +8,9 @@ class GetSimilaritiesUseCase:
         self.storage = storage
 
     def execute(self, query: str):
-        retrieved_docs = self.storage.similarity_search(query)
+        documents = self.storage.similarity_search(query)
         serialized = "\n\n".join(
             (f"Source: {doc.metadata}\nContent: {doc.page_content}")
-            for doc in retrieved_docs
+            for doc in documents
         )
-        return serialized, retrieved_docs
+        return serialized, documents

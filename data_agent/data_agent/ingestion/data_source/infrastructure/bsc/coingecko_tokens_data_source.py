@@ -62,6 +62,8 @@ class CoingeckoTokenListDataSource(DataSource):
         )
 
         return SimilarityDocument(
+            # TODO: Fix a way to create a unique ID for the document (maybe from coingecko id)
+            id="d179fa30-808d-48a9-98f3-93c8702e78d8",
             page_content=token.__str__(),
             metadata={
                 "source": asdict(token),

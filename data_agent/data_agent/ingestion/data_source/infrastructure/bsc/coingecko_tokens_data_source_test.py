@@ -56,7 +56,7 @@ display_name: Lithosphere
 ticker: LITHO
 address: 0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93
 """,
-            id=None,
+            id="d179fa30-808d-48a9-98f3-93c8702e78d8",
         ),
     ]
 

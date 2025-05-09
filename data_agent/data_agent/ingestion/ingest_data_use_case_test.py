@@ -49,10 +49,12 @@ def test_ingest_data_use_case(
               ticker: WBNB
               address: 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7
             """,
-            id="bsc:0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+            id="97c8ba98-c869-4929-b048-27bc703693e4",
         )
     ]
     token_data_source.get.return_value = token_similarity_documents
+
+    similarity_storage.get.return_value = []
 
     basket_similarity_documents = [
         SimilarityDocument(
@@ -79,7 +81,7 @@ def test_ingest_data_use_case(
                   ticker: WBNB
                   address: 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7
             """,
-            id="bsc:0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+            id="8a9a8501-1123-43f5-88e3-6b526f8f9d19",
         )
     ]
     basket_data_source.get.return_value = basket_similarity_documents
@@ -99,7 +101,83 @@ def test_ingest_data_use_case(
 
     similarity_storage.assert_has_calls(
         [
+            mock.call.get(["97c8ba98-c869-4929-b048-27bc703693e4"]),
             mock.call.set(token_similarity_documents),
+            mock.call.get(["8a9a8501-1123-43f5-88e3-6b526f8f9d19"]),
             mock.call.set(basket_similarity_documents),
         ]
     )
+
+
+def test_ingest_data_use_case_with_existing_documents_lower_version(
+    similarity_storage: SimilarityStorage,
+    token_data_source: DataSource,
+):
+    token_similarity_documents = [
+        SimilarityDocument(
+            metadata={"version": 2},
+            page_content="page content 1",
+            id="97c8ba98-c869-4929-b048-27bc703693e4",
+        )
+    ]
+    token_data_source.get.return_value = token_similarity_documents
+
+    similarity_storage.get.return_value = [
+        SimilarityDocument(
+            metadata={"version": 1},
+            page_content="page content 1",
+            id="97c8ba98-c869-4929-b048-27bc703693e4",
+        )
+    ]
+
+    use_case = IngestDataUseCase(
+        similarity_storage,
+        [
+            token_data_source,
+        ],
+    )
+
+    use_case.execute()
+
+    similarity_storage.set.assert_called_once_with(
+        [
+            SimilarityDocument(
+                metadata={"version": 2},
+                page_content="page content 1",
+                id="97c8ba98-c869-4929-b048-27bc703693e4",
+            )
+        ]
+    )
+
+
+def test_ingest_data_use_case_with_existing_documents_same_version(
+    similarity_storage: SimilarityStorage,
+    token_data_source: DataSource,
+):
+    token_similarity_documents = [
+        SimilarityDocument(
+            metadata={"version": 1},
+            page_content="page content 1",
+            id="97c8ba98-c869-4929-b048-27bc703693e4",
+        )
+    ]
+    token_data_source.get.return_value = token_similarity_documents
+
+    similarity_storage.get.return_value = [
+        SimilarityDocument(
+            metadata={"version": 1},
+            page_content="page content 1",
+            id="97c8ba98-c869-4929-b048-27bc703693e4",
+        )
+    ]
+
+    use_case = IngestDataUseCase(
+        similarity_storage,
+        [
+            token_data_source,
+        ],
+    )
+
+    use_case.execute()
+
+    similarity_storage.set.assert_not_called()

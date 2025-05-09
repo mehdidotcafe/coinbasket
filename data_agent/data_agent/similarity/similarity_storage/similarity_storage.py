@@ -9,5 +9,9 @@ class SimilarityStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get(self, ids: list[str]) -> list[SimilarityDocument]:
+        raise NotImplementedError
+
+    @abstractmethod
     def set(self, documents: list[SimilarityDocument]) -> None:
         raise NotImplementedError

@@ -19,8 +19,12 @@ def test_get_similarities_use_case_execute_success(
 ):
     query = "Please create a low risk basket without stablecoins."
     documents = [
-        SimilarityDocument(page_content="page content 1", metadata="metadata 1"),
-        SimilarityDocument(page_content="page content 2", metadata="metadata 2"),
+        SimilarityDocument(
+            page_content="page content 1", metadata="metadata 1", id="1"
+        ),
+        SimilarityDocument(
+            page_content="page content 2", metadata="metadata 2", id="2"
+        ),
     ]
 
     similarity_storage.similarity_search.return_value = documents

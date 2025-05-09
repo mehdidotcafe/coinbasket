@@ -8,6 +8,7 @@ from protocol.basket import Basket
 
 class MemecoinManiaBasketDataSource(DataSource):
     def __init__(self):
+        self.id = "c0e724d3-c4d0-4bd0-973d-edd3907ecf51"
         self.basket = Basket(
             name="Memecoin mania",
             description="This basket offers concentrated exposure to the memecoin sector—tokens driven by internet culture, viral trends, and highly engaged online communities. Often fueled by humor, speculation, and social media influence, memecoins represent a unique and volatile niche within the crypto landscape. This basket is designed for investors who understand the high-risk, high-reward nature of memecoins and are looking to capture upside from rapidly shifting narratives and collective enthusiasm in the digital economy.",
@@ -68,6 +69,11 @@ class MemecoinManiaBasketDataSource(DataSource):
         Map the basket to a similarity document.
         """
         return SimilarityDocument(
+            id=self.id,
             page_content=str(basket),
-            metadata={"source": asdict(basket), "type": "basket"},
+            metadata={
+                "source": asdict(basket),
+                "type": "basket",
+                "version": self.version(),
+            },
         )

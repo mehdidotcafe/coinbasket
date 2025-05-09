@@ -6,4 +6,4 @@ from typing import Any
 class SimilarityDocument:
     metadata: Any | None
     page_content: Any
-    id: str | None = None
+    id: str

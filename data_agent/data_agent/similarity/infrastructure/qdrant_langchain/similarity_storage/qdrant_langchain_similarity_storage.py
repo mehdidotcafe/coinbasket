@@ -32,11 +32,11 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
             prefer_grpc=True,
         )
 
-        # TODO: Keep the same collection, just update documents by their id somehow
-        client.recreate_collection(  # safely drops if exists
-            collection_name=configuration["qdrant_collection"],
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-        )
+        if client.collection_exists(configuration["qdrant_collection"]) is False:
+            client.create_collection(
+                collection_name=configuration["qdrant_collection"],
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+            )
 
         self.qdrant = qdrant_vector_store(
             client=client,
@@ -55,8 +55,13 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
             for doc in self.qdrant.similarity_search(query)
         ]
 
+    def get(self, ids: list[str]):
+        return [
+            self.__map_document_to_similarity_document(doc)
+            for doc in self.qdrant.get_by_ids(ids)
+        ]
+
     def set(self, documents: list[SimilarityDocument]):
-        print(f"Upserting {len(documents)} documents to Qdrant")
         """
         Upserts the documents into the Qdrant vector store.
         """
@@ -72,8 +77,8 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
     ) -> SimilarityDocument:
         return SimilarityDocument(
             page_content=document.page_content,
-            metadata=document.metadata or None,
-            id=document.id,
+            metadata=document.metadata,
+            id=document.metadata["_id"],
         )
 
     def __map_similarity_document_to_document(
