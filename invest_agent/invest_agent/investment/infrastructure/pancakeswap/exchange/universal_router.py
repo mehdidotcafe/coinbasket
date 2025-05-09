@@ -1,6 +1,7 @@
 from decimal import Decimal
 import json
 from eth_typing import ChecksumAddress
+from invest_agent.investment.basket_investment import Bid
 from web3 import Account, Web3
 from web3.contract import Contract
 from web3.types import TxReceipt, Wei
@@ -11,10 +12,6 @@ from invest_agent.chain.chain import Chain
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
 from invest_agent.investment.investment_plan import InvestmentPlan
-from invest_agent.investment.investment_result import (
-    InvestmentResult,
-    InvestmentResultBid,
-)
 
 
 # https://github.com/Uniswap/permit2/blob/main/src/interfaces/IAllowanceTransfer.sol
@@ -71,9 +68,7 @@ class PancakeSwapUniversalRouter(Exchange):
             abi=self.v2_router,
         )
 
-    def execute_investment_plan(
-        self, investment_plan: InvestmentPlan
-    ) -> InvestmentResult:
+    def execute_investment_plan(self, investment_plan: InvestmentPlan):
         self.permit2.approve_permit2_contract(Web3.to_checksum_address(self.base_token))
 
         signed_message, permit_data, deadline = self.permit2.sign_permit2_message(
@@ -142,13 +137,9 @@ class PancakeSwapUniversalRouter(Exchange):
 
         print(f"bids: {bids}")
 
-        return InvestmentResult(
-            bids,
-        )
+        return bids
 
-    def execute_divestment_plan(
-        self, divestment_plan: InvestmentPlan
-    ) -> InvestmentResult:
+    def execute_divestment_plan(self, divestment_plan: InvestmentPlan) -> list[Bid]:
         amount = 0
         swap_chain = self.codec.encode.chain()
 
@@ -216,7 +207,8 @@ class PancakeSwapUniversalRouter(Exchange):
 
             print(f"Receipt: {receipt}")
 
-            return InvestmentResult(bids=[])
+            # TODO: parse bids from receipt
+            return []
         # TODO: handle gracefully errors
         except Exception as e:
             print(f"Error executing batch transaction: {e}")
@@ -244,8 +236,8 @@ class PancakeSwapUniversalRouter(Exchange):
 
     def __parse_bids_from_receipt(
         self, receipt: TxReceipt, investment_plan: InvestmentPlan
-    ) -> list[InvestmentResultBid]:
-        bids: list[InvestmentResultBid] = []
+    ) -> list[Bid]:
+        bids: list[Bid] = []
 
         for step in investment_plan.steps:
             # Special case for base token that is not swapped hence not in transaction logs
@@ -257,7 +249,7 @@ class PancakeSwapUniversalRouter(Exchange):
                 print(f"Base token special case, balance: {base_token_balance}")
 
                 bids.append(
-                    InvestmentResultBid(
+                    Bid(
                         token=step.token,
                         balance_in=Balance(
                             token=step.token,
@@ -285,7 +277,7 @@ class PancakeSwapUniversalRouter(Exchange):
                                 == self.account.address.lower()
                             ):
                                 bids.append(
-                                    InvestmentResultBid(
+                                    Bid(
                                         token=step.token,
                                         balance_in=Balance(
                                             token=self.chain.get_base_token(),

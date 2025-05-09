@@ -1,6 +1,7 @@
 from decimal import Decimal
 from unittest import mock
 
+from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from pytest import fixture
 from protocol.token import Token
 from invest_agent.chain.balance import Balance
@@ -9,10 +10,6 @@ from invest_agent.investment.divestment_planner_strategy.total_divestment_planne
     TotalDivestmentPlanner,
 )
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
-from invest_agent.investment.investment_result import (
-    InvestmentResult,
-    InvestmentResultBid,
-)
 
 
 @fixture
@@ -28,9 +25,13 @@ def test_make_divestment_plan_success(chain: Chain):
         ticker="BTK",
         address="0x123",
     )
-    divestment_plan = InvestmentResult(
+    divestment_plan = BasketInvestment(
+        name="Test Basket",
+        description="A test basket",
+        invested_at="2020-05-09",
+        type="basket divestment",
         bids=[
-            InvestmentResultBid(
+            Bid(
                 token=Token(
                     name="Test Token",
                     display_name="Test",
@@ -56,7 +57,7 @@ def test_make_divestment_plan_success(chain: Chain):
                     ),
                 ),
             )
-        ]
+        ],
     )
 
     chain.get_base_token.return_value = base_token

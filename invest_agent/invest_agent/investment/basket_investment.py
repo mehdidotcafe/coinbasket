@@ -1,16 +1,20 @@
 from dataclasses import dataclass
 
-from protocol.token import Token
 from invest_agent.chain.balance import Balance
+from protocol.token import Token
 
 
 @dataclass
-class InvestmentResultBid:
+class Bid:
     token: Token
     balance_in: Balance
     balance_out: Balance
 
 
 @dataclass
-class InvestmentResult:
-    bids: list[InvestmentResultBid]
+class BasketInvestment:
+    name: str
+    description: str
+    type: str
+    invested_at: str
+    bids: list[Bid]

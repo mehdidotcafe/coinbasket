@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 
+from invest_agent.investment.basket_investment import BasketInvestment
 from invest_agent.investment.investment_plan import InvestmentPlan
-from invest_agent.investment.investment_result import InvestmentResult
 
 
 class DivestmentPlanner(ABC):
     @abstractmethod
     def make_divestment_plan(
-        self, investment_result: InvestmentResult
+        self, basket_investment: BasketInvestment
     ) -> InvestmentPlan:
         pass

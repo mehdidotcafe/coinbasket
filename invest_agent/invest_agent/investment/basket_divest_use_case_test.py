@@ -1,5 +1,7 @@
 from decimal import Decimal
 from unittest import mock
+from invest_agent.datetime.date_time import DateTime
+from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from pytest import fixture
 
 from protocol.token import Token
@@ -8,10 +10,6 @@ from invest_agent.investment.basket_divest_use_case import BasketDivestUseCase
 from invest_agent.investment.divestment_planner import DivestmentPlanner
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
-from invest_agent.investment.investment_result import (
-    InvestmentResult,
-    InvestmentResultBid,
-)
 from invest_agent.storage.storage import Storage
 
 
@@ -30,27 +28,34 @@ def storage():
     return mock.Mock(spec=Storage)
 
 
+@fixture
+def date_time():
+    return mock.Mock(spec=DateTime)
+
+
 def test_basket_divest_use_case_execute_no_investment(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
-    storage: Storage[InvestmentResult],
+    storage: Storage[BasketInvestment],
+    date_time: DateTime,
 ):
     storage.get.return_value = None
 
-    use_case = BasketDivestUseCase(divestment_planner, exchange, storage)
+    use_case = BasketDivestUseCase(divestment_planner, exchange, storage, date_time)
 
     message, result = use_case.execute()
 
     assert message == "Divestment error: No investment basket found."
     assert result is None
 
-    storage.get.assert_called_once_with("investment_result")
+    storage.get.assert_called_once_with("basket_investment")
 
 
 def test_basket_divest_use_case_execute_exception(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
-    storage: Storage[InvestmentResult],
+    storage: Storage[BasketInvestment],
+    date_time: DateTime,
 ):
     divestment_plan = InvestmentPlan(
         steps=[
@@ -83,9 +88,13 @@ def test_basket_divest_use_case_execute_exception(
             ),
         ),
     )
-    investment_result = InvestmentResult(
+    basket_investment = BasketInvestment(
+        name="Test Basket",
+        description="A test basket",
+        invested_at="2020-05-09",
+        type="basket divestment",
         bids=[
-            InvestmentResultBid(
+            Bid(
                 token=Token(
                     name="Test Token",
                     display_name="Test",
@@ -111,14 +120,14 @@ def test_basket_divest_use_case_execute_exception(
                     ),
                 ),
             )
-        ]
+        ],
     )
-    storage.get.return_value = [investment_result, 1]
+    storage.get.return_value = [basket_investment, 1]
     divestment_planner.make_divestment_plan.return_value = divestment_plan
 
     exchange.execute_divestment_plan.side_effect = Exception("Error")
 
-    use_case = BasketDivestUseCase(divestment_planner, exchange, storage)
+    use_case = BasketDivestUseCase(divestment_planner, exchange, storage, date_time)
 
     message, result = use_case.execute()
 
@@ -129,11 +138,16 @@ def test_basket_divest_use_case_execute_exception(
 def test_basket_divest_use_case_execute_success(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
-    storage: Storage[InvestmentResult],
+    storage: Storage[BasketInvestment],
+    date_time: DateTime,
 ):
-    investment_result = InvestmentResult(
+    basket_investment = BasketInvestment(
+        name="Test Basket",
+        description="A test basket",
+        invested_at="2020-05-09",
+        type="basket divestment",
         bids=[
-            InvestmentResultBid(
+            Bid(
                 token=Token(
                     name="Test Token",
                     display_name="Test",
@@ -159,7 +173,7 @@ def test_basket_divest_use_case_execute_success(
                     ),
                 ),
             )
-        ]
+        ],
     )
     divestment_plan = InvestmentPlan(
         steps=[
@@ -192,9 +206,13 @@ def test_basket_divest_use_case_execute_success(
             ),
         ),
     )
-    divestment_result = InvestmentResult(
+    basket_divestment = BasketInvestment(
+        name="Test Basket",
+        description="A test basket",
+        invested_at="2020-05-09",
+        type="basket divestment",
         bids=[
-            InvestmentResultBid(
+            Bid(
                 token=Token(
                     name="WBNB",
                     display_name="WBNB",
@@ -220,21 +238,23 @@ def test_basket_divest_use_case_execute_success(
                     ),
                 ),
             )
-        ]
+        ],
     )
 
-    storage.get.return_value = [investment_result, 1]
+    storage.get.return_value = [basket_investment, 1]
     divestment_planner.make_divestment_plan.return_value = divestment_plan
-    exchange.execute_divestment_plan.return_value = divestment_result
+    exchange.execute_divestment_plan.return_value = basket_divestment.bids
+    date_time.now_str.return_value = "2020-05-09"
 
-    use_case = BasketDivestUseCase(divestment_planner, exchange, storage)
+    use_case = BasketDivestUseCase(divestment_planner, exchange, storage, date_time)
 
     message, result = use_case.execute()
 
     assert message == "Divestment success."
-    assert result == divestment_result
+    assert result == basket_divestment
 
-    storage.get.assert_called_once_with("investment_result")
-    divestment_planner.make_divestment_plan.assert_called_once_with(investment_result)
+    storage.get.assert_called_once_with("basket_investment")
+    divestment_planner.make_divestment_plan.assert_called_once_with(basket_investment)
     exchange.execute_divestment_plan.assert_called_once_with(divestment_plan)
-    storage.remove.assert_called_once_with("investment_result")
+    storage.remove.assert_called_once_with("basket_investment")
+    date_time.now_str.assert_called_once()

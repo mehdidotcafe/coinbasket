@@ -1,5 +1,6 @@
-import time
+import os
 from typing import Any
+from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
 from jsonpickle import decode
 from protocol.basket import Basket
 from protocol.token import Token
@@ -28,8 +29,8 @@ from invest_agent.investment.basket_divest_use_case import BasketDivestUseCase
 from invest_agent.investment.divestment_planner_strategy.total_divestment_planner import (
     TotalDivestmentPlanner,
 )
-from invest_agent.investment.get_investment_result_use_case import (
-    GetInvestmentResultUseCase,
+from invest_agent.investment.get_basket_investment_use_case import (
+    GetBasketInvestmentUseCase,
 )
 from invest_agent.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
 from invest_agent.investment.basket_invest_use_case import BasketInvestUseCase
@@ -45,15 +46,16 @@ from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
 
 from protocol import SimilarityQuery, SimilarityResponse
 
-thread_id = "1746740448"
-# thread_id = str(int(time.time()))
+date_time = PythonDateTime()
+
+thread_id = str(date_time.now())
 
 print(f"Thread ID: {thread_id}")
 
 configuration = Configuration()
 
-# os.environ["LANGSMITH_TRACING"] = configuration.langsmith_tracing
-# os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
+os.environ["LANGSMITH_TRACING"] = configuration.langsmith_tracing
+os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
 
 invest_agent = Agent(
     name=configuration.agent_name,
@@ -98,13 +100,15 @@ basket_invest_use_case = BasketInvestUseCase(
     investment_planner=EqualInvestmentPlanner(chain),
     exchange=exchange,
     storage=storage,
+    date_time=date_time,
 )
 basket_divest_use_case = BasketDivestUseCase(
     divestment_planner=TotalDivestmentPlanner(chain),
     exchange=exchange,
     storage=storage,
+    date_time=date_time,
 )
-get_invested_basket_use_case = GetInvestmentResultUseCase(storage=storage)
+get_invested_basket_use_case = GetBasketInvestmentUseCase(storage=storage)
 
 
 class State(TypedDict):
@@ -209,12 +213,13 @@ def create_agent_executor(conn: aiosqlite.Connection):
         [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket],
         checkpointer=sqliteMemory,
         prompt=SystemMessage(
-            "Your goal is to create and then invest in crypto coin baskets.  "
+            "Your goal is to create and then invest in crypto coin baskets on binance smart chain.  "
+            f"Today is {date_time.now_str()}.  "
             "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
             "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
             "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
             "Always ask for the user's confirmation before investing in the basket.  "
-            "When you display a token, always show its address.  "
+            "When you display a token, always show its address as a link using this link 'https://bscscan.com/token/[token_address]'.  "
             "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
         ),
     )
@@ -229,7 +234,7 @@ async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
     ) as conn:
         agent_executor = create_agent_executor(conn)
 
-        graph_config = {
+        graph_config: RunnableConfig = {
             "configurable": {
                 "thread_id": thread_id,
                 "ctx": ctx,

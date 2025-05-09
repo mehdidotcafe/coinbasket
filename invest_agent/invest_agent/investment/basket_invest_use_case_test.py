@@ -1,5 +1,7 @@
 from decimal import Decimal
 from unittest import mock
+from invest_agent.datetime.date_time import DateTime
+from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from protocol.basket import Basket
 from protocol.token import Token
 from pytest import fixture
@@ -12,10 +14,6 @@ from invest_agent.investment.investment_planner_strategy.insufficient_balance_ex
 from invest_agent.investment.basket_invest_use_case import BasketInvestUseCase
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from invest_agent.investment.investment_planner import InvestmentPlanner
-from invest_agent.investment.investment_result import (
-    InvestmentResult,
-    InvestmentResultBid,
-)
 from invest_agent.storage.storage import Storage
 
 
@@ -32,6 +30,11 @@ def exchange():
 @fixture
 def storage():
     return mock.Mock(spec=Storage)
+
+
+@fixture
+def date_time():
+    return mock.Mock(spec=DateTime)
 
 
 @fixture
@@ -60,16 +63,18 @@ def basket():
 def investment_use_case(
     investment_planner: InvestmentPlanner,
     exchange: Exchange,
-    storage: Storage[InvestmentResult],
+    storage: Storage[BasketInvestment],
+    date_time: DateTime,
 ):
-    return BasketInvestUseCase(investment_planner, exchange, storage)
+    return BasketInvestUseCase(investment_planner, exchange, storage, date_time)
 
 
 def test_invest_use_case_execute_success(
     investment_use_case: BasketInvestUseCase,
     investment_planner: InvestmentPlanner,
     exchange: Exchange,
-    storage: Storage[InvestmentResult],
+    storage: Storage[BasketInvestment],
+    date_time: DateTime,
     basket: Basket,
 ):
     investment_plan = InvestmentPlan(
@@ -94,9 +99,13 @@ def test_invest_use_case_execute_success(
             ),
         ),
     )
-    investment_result = InvestmentResult(
+    basket_investment = BasketInvestment(
+        name="Test Basket",
+        description="A test basket",
+        invested_at="2020-05-09",
+        type="basket investment",
         bids=[
-            InvestmentResultBid(
+            Bid(
                 token=Token(
                     name="TokenA",
                     display_name="Token A",
@@ -122,27 +131,29 @@ def test_invest_use_case_execute_success(
                     ),
                 ),
             )
-        ]
+        ],
     )
 
     investment_planner.make_investment_plan.return_value = investment_plan
-    exchange.execute_investment_plan.return_value = investment_result
+    exchange.execute_investment_plan.return_value = basket_investment.bids
+    date_time.now_str.return_value = 0
 
     message, result = investment_use_case.execute(basket)
 
     assert message == "Investment success."
-    assert result == investment_result
+    assert result == basket_investment
 
     investment_planner.make_investment_plan.assert_called_once_with(basket)
     exchange.execute_investment_plan.assert_called_once_with(investment_plan)
-    storage.set.assert_called_once_with("investment_result", investment_result, 1)
+    storage.set.assert_called_once_with("basket_investment", basket_investment, 1)
+    date_time.now_str.assert_called_once()
 
 
 def test_invest_use_case_execute_insufficient_balance(
     investment_use_case: BasketInvestUseCase,
     investment_planner: InvestmentPlanner,
     exchange: Exchange,
-    storage: Storage[InvestmentResult],
+    storage: Storage[BasketInvestment],
     basket: Basket,
 ):
     exception = InsufficientBalanceException(

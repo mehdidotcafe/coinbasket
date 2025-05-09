@@ -4,25 +4,29 @@ from pytest import fixture
 
 from protocol.token import Token
 from invest_agent.chain.balance import Balance
-from invest_agent.investment.get_investment_result_use_case import (
-    GetInvestmentResultUseCase,
+from invest_agent.investment.get_basket_investment_use_case import (
+    GetBasketInvestmentUseCase,
 )
-from invest_agent.investment.investment_result import (
-    InvestmentResult,
-    InvestmentResultBid,
+from invest_agent.investment.basket_investment import (
+    BasketInvestment,
+    Bid,
 )
 from invest_agent.storage.storage import Storage
 
 
 @fixture
 def storage():
-    return mock.Mock(spec=Storage[InvestmentResult])
+    return mock.Mock(spec=Storage[BasketInvestment])
 
 
-def test_get_investment_result_use_case(storage: Storage[InvestmentResult]):
-    investment_result = InvestmentResult(
+def test_get_basket_investment_use_case(storage: Storage[BasketInvestment]):
+    basket_investment = BasketInvestment(
+        name="Test Basket",
+        description="A test basket",
+        invested_at="2020-05-09",
+        type="basket investment",
         bids=[
-            InvestmentResultBid(
+            Bid(
                 token=Token(
                     name="Test Token",
                     display_name="Test",
@@ -48,24 +52,24 @@ def test_get_investment_result_use_case(storage: Storage[InvestmentResult]):
                     ),
                 ),
             )
-        ]
+        ],
     )
-    storage.get.return_value = investment_result
+    storage.get.return_value = [basket_investment, 1]
 
-    use_case = GetInvestmentResultUseCase(storage)
+    use_case = GetBasketInvestmentUseCase(storage)
 
     result = use_case.execute()
 
-    assert result == investment_result
-    storage.get.assert_called_once_with("investment_result")
+    assert result == basket_investment
+    storage.get.assert_called_once_with("basket_investment")
 
 
-def test_get_investment_result_use_case_no_result(storage: Storage[InvestmentResult]):
+def test_get_basket_investment_use_case_no_result(storage: Storage[BasketInvestment]):
     storage.get.return_value = None
 
-    use_case = GetInvestmentResultUseCase(storage)
+    use_case = GetBasketInvestmentUseCase(storage)
 
     result = use_case.execute()
 
-    assert result == "No invested basket found."
-    storage.get.assert_called_once_with("investment_result")
+    assert result == "No basket investment found."
+    storage.get.assert_called_once_with("basket_investment")
