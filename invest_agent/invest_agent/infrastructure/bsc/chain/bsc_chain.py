@@ -38,6 +38,10 @@ class BscChain(Chain):
             layer=0,
         )
 
+    def get_address(self) -> str:
+        """Get the address of the agent wallet."""
+        return self.account.address
+
     def get_min_balance(self) -> Balance:
         """Get the minimum balance required for the agent wallet."""
         gas_used = 200_000

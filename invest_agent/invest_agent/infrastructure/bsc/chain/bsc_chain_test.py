@@ -40,7 +40,17 @@ def bsc_chain(base_token: Token, w3: Web3):
     )
 
 
-def test_get_min_balance(bsc_chain: BscChain, base_token: Token, w3: Web3):
+def test_bsc_chain_get_address(bsc_chain: BscChain):
+    address = bsc_chain.get_address()
+
+    assert address == "0x1234567890abcdef1234567890abcdef12345678"
+
+    bsc_chain.w3.eth.account.from_key.assert_called_once_with(
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    )
+
+
+def test_bsc_chain_get_min_balance(bsc_chain: BscChain, base_token: Token, w3: Web3):
     w3.from_wei.return_value = Decimal("1")
 
     min_balance = bsc_chain.get_min_balance()
@@ -54,7 +64,7 @@ def test_get_min_balance(bsc_chain: BscChain, base_token: Token, w3: Web3):
     )
 
 
-def test_get_balance(bsc_chain: BscChain, w3: Web3, base_token: Token):
+def test_bsc_chain_get_balance(bsc_chain: BscChain, w3: Web3, base_token: Token):
     w3.eth.get_balance.return_value = Wei(1000000000000000000)
     w3.from_wei.return_value = Decimal("1")
 
@@ -72,7 +82,7 @@ def test_get_balance(bsc_chain: BscChain, w3: Web3, base_token: Token):
     )
 
 
-def test_get_token_balance_amount(bsc_chain: BscChain, w3: Web3):
+def test_bsc_chain_get_token_balance_amount(bsc_chain: BscChain, w3: Web3):
     token_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
 
     token_contract = mock.Mock()
@@ -91,13 +101,13 @@ def test_get_token_balance_amount(bsc_chain: BscChain, w3: Web3):
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
 
 
-def test_get_base_token(bsc_chain: BscChain, base_token: Token):
+def test_bsc_chain_get_base_token(bsc_chain: BscChain, base_token: Token):
     base_token_result = bsc_chain.get_base_token()
 
     assert base_token_result == base_token
 
 
-def test_compute_gas_estimate(bsc_chain: BscChain, w3: Web3):
+def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: Web3):
     amount = 1000
     to_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
     encoded_input = HexStr("0x1234567890abcdef")
@@ -119,7 +129,9 @@ def test_compute_gas_estimate(bsc_chain: BscChain, w3: Web3):
     )
 
 
-def test_compute_gas_estimate_without_encoded_input(bsc_chain: BscChain, w3: Web3):
+def test_bsc_chain_compute_gas_estimate_without_encoded_input(
+    bsc_chain: BscChain, w3: Web3
+):
     amount = 1000
     to_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
 

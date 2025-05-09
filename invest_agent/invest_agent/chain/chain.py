@@ -9,20 +9,24 @@ from invest_agent.chain.balance import Balance
 
 class Chain(ABC):
     @abstractmethod
+    def get_address(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_min_balance(self) -> Balance:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_balance(self) -> Balance:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_token_balance_amount(self, token_address_checksum: str) -> Decimal:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_base_token(self) -> Token:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def sign_send_wait_transaction(
@@ -31,10 +35,10 @@ class Chain(ABC):
         to_address: str | None = None,
         encoded_input: Any | None = None,
     ) -> Any:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def compute_gas_estimate(
         self, amount: int, to_address: str, encoded_input: Any | None = None
     ) -> int:
-        pass
+        raise NotImplementedError

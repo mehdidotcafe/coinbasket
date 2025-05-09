@@ -159,8 +159,14 @@ async def retrieve(query: str, runnableConfig: RunnableConfig):
 
 
 @tool()
+def get_address():
+    """Retrieve agent's current wallet address."""
+    return chain.get_address()
+
+
+@tool()
 def get_balance():
-    """Retrieve agent's current wallet balance."""
+    """Retrieve agent's current wallet balance in BNB."""
     return chain.get_balance()
 
 
@@ -224,7 +230,14 @@ def create_agent_executor(conn: aiosqlite.Connection):
 
     agent_executor = create_react_agent(
         llm,
-        [retrieve, invest_basket, get_balance, get_invested_basket, divest_basket],
+        [
+            retrieve,
+            invest_basket,
+            get_address,
+            get_balance,
+            get_invested_basket,
+            divest_basket,
+        ],
         checkpointer=sqliteMemory,
         prompt=SystemMessage(
             "Your goal is to create and then invest in crypto coin baskets on binance smart chain.  "
