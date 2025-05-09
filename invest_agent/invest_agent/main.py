@@ -1,8 +1,8 @@
+import json
 import os
 from typing import Any, Dict
 from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
 from invest_agent.investment.basket_investment import BasketInvestment
-from jsonpickle import decode
 from protocol.basket import Basket
 from protocol.token import Token
 from uagents import Agent, Context, Model
@@ -146,12 +146,7 @@ async def retrieve(query: str, runnableConfig: RunnableConfig):
     if not isinstance(res, SimilarityResponse):
         raise ValueError("Response is None.")
 
-    retrieved_docs = decode(res.retrieved_docs)
-
-    if retrieved_docs is None:
-        raise ValueError("Retrieved documents are None.")
-
-    print(f"Retrieved docs: {retrieved_docs}")
+    retrieved_docs = json.loads(res.retrieved_docs)
 
     serialized = res.serialized
 

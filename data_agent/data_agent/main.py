@@ -1,3 +1,5 @@
+from dataclasses import asdict
+import json
 from typing import Any
 from data_agent.ingestion.data_source.infrastructure.bsc.ai_basket_data_source import (
     AiBasketDataSource,
@@ -19,8 +21,6 @@ from qdrant_client import QdrantClient
 from uagents import Agent, Context
 
 from langchain_openai import OpenAIEmbeddings
-
-from jsonpickle import encode
 
 from data_agent.configuration import Configuration
 from data_agent.http_request.infrastructure.requests_http_request import (
@@ -90,16 +90,14 @@ async def handle_similarity_query(
 
     serialized, retrieved_docs = get_similarities_use_case.execute(req.query)
 
-    encoded_docs: str | None = encode(retrieved_docs)
-
-    print(f"Encoded docs: {encoded_docs}")
+    encoded_docs = [asdict(doc) for doc in retrieved_docs]
 
     if not encoded_docs:
         raise ValueError("Encoded documents are None.")
 
     return SimilarityResponse(
         serialized=serialized,
-        retrieved_docs=encoded_docs,
+        retrieved_docs=json.dumps(encoded_docs),
     )
 
 
@@ -109,9 +107,7 @@ async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
 
     serialized, retrieved_docs = get_similarities_use_case.execute(msg.query)
 
-    encoded_docs: str | None = encode(retrieved_docs)
-
-    print(f"Encoded docs: {encoded_docs}")
+    encoded_docs = [asdict(doc) for doc in retrieved_docs]
 
     if not encoded_docs:
         raise ValueError("Encoded documents are None.")
@@ -120,7 +116,7 @@ async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
         sender,
         SimilarityResponse(
             serialized=serialized,
-            retrieved_docs=encoded_docs,
+            retrieved_docs=json.dumps(encoded_docs),
         ),
     )
 
