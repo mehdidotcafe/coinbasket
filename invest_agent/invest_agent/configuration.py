@@ -8,6 +8,7 @@ class Configuration:
         self.agent_name = env("AGENT_NAME")
         self.agent_seed = env("AGENT_SEED")
         self.agent_port = env.int("AGENT_PORT")
+        self.agent_key = env("AGENT_KEY")
 
         self.bsc_base_token_name = env("BSC_BASE_TOKEN_NAME")
         self.bsc_base_token_display_name = env("BSC_BASE_TOKEN_DISPLAY_NAME")
@@ -18,6 +19,7 @@ class Configuration:
         self.bsc_private_key = env("BSC_PRIVATE_KEY")
 
         self.data_agent_address = env("DATA_AGENT_ADDRESS")
+        self.data_agent_key = env("DATA_AGENT_KEY")
 
         self.langsmith_tracing = env("LANGSMITH_TRACING")
         self.langsmith_api_key = env("LANGSMITH_API_KEY")

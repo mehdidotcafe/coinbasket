@@ -20,7 +20,7 @@ class IngestDataUseCase:
         self.similarity_storage = similarity_storage
         self.data_sources = data_sources
 
-    # TODO: Current use case does NOT remove documents from the storage if not in the data source.
+    # TODO: Current use case does NOT remove documents from the storage if not in the data source (use qdrant `scroll` API)
     def execute(self):
         for data_source in self.data_sources:
             documents = data_source.get()
@@ -39,7 +39,7 @@ class IngestDataUseCase:
                 )
                 self.similarity_storage.set(documents_to_update)
             else:
-                print(f"No datasource update for {data_source.__class__.__name__}.")
+                print(f"No update for datasource {data_source.__class__.__name__}.")
 
     def filter_documents_to_update(
         self,

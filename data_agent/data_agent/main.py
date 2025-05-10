@@ -1,6 +1,9 @@
 from dataclasses import asdict
 import json
 from typing import Any
+from data_agent.http_request.exceptions.invalid_agent_key_exception import (
+    InvalidAgentKeyException,
+)
 from data_agent.ingestion.data_source.infrastructure.bsc.ai_basket_data_source import (
     AiBasketDataSource,
 )
@@ -34,7 +37,7 @@ from data_agent.similarity.get_similarities_use_case import GetSimilaritiesUseCa
 from data_agent.similarity.infrastructure.qdrant_langchain.similarity_storage.qdrant_langchain_similarity_storage import (
     QdrantLangChainSimilarityStorage,
 )
-from protocol import SimilarityQuery, SimilarityResponse
+from protocol import SimilarityQuery, SimilarityResponse, SimilarityValidResponse
 
 configuration = Configuration()
 
@@ -86,37 +89,41 @@ async def on_startup(ctx: Context):
 async def handle_similarity_query(
     ctx: Context, req: SimilarityQuery
 ) -> SimilarityResponse:
+    if req.agent_key != configuration.agent_key:
+        raise InvalidAgentKeyException()
+
     print(f"Query: {req.query}")
 
     serialized, retrieved_docs = get_similarities_use_case.execute(req.query)
 
-    encoded_docs = [asdict(doc) for doc in retrieved_docs]
-
-    if not encoded_docs:
-        raise ValueError("Encoded documents are None.")
-
     return SimilarityResponse(
-        serialized=serialized,
-        retrieved_docs=json.dumps(encoded_docs),
+        data=SimilarityValidResponse(
+            serialized=serialized,
+            retrieved_docs=json.dumps([asdict(doc) for doc in retrieved_docs]),
+        )
     )
 
 
 @data_agent.on_message(model=SimilarityQuery)
 async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
+    if msg.agent_key != configuration.agent_key:
+        await ctx.send(
+            sender,
+            SimilarityResponse(data=InvalidAgentKeyException().message),
+        )
+        return
+
     print(f"Query: {msg.query}")
 
     serialized, retrieved_docs = get_similarities_use_case.execute(msg.query)
 
-    encoded_docs = [asdict(doc) for doc in retrieved_docs]
-
-    if not encoded_docs:
-        raise ValueError("Encoded documents are None.")
-
     await ctx.send(
         sender,
         SimilarityResponse(
-            serialized=serialized,
-            retrieved_docs=json.dumps(encoded_docs),
+            data=SimilarityValidResponse(
+                serialized=serialized,
+                retrieved_docs=json.dumps([asdict(doc) for doc in retrieved_docs]),
+            )
         ),
     )
 

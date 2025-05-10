@@ -8,6 +8,7 @@ class Configuration:
         self.agent_name = env("AGENT_NAME")
         self.agent_seed = env("AGENT_SEED")
         self.agent_port = env.int("AGENT_PORT")
+        self.agent_key = env("AGENT_KEY")
 
         self.qdrant_api_key = env("QDRANT_API_KEY")
         self.qdrant_collection = env("QDRANT_COLLECTION")

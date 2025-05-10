@@ -2,6 +2,9 @@ import json
 import os
 from typing import Any, Dict
 from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
+from invest_agent.http.exception.invalid_agent_key_exception import (
+    InvalidAgentKeyException,
+)
 from invest_agent.investment.basket_investment import BasketInvestment
 from protocol.basket import Basket
 from protocol.token import Token
@@ -10,9 +13,6 @@ from uagents.storage import KeyValueStore
 
 import aiosqlite
 
-from typing_extensions import List, TypedDict
-
-from langchain_core.documents import Document
 from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
@@ -112,12 +112,6 @@ basket_divest_use_case = BasketDivestUseCase(
 get_invested_basket_use_case = GetBasketInvestmentUseCase(storage=storage)
 
 
-class State(TypedDict):
-    question: str
-    context: List[Document]
-    answer: str
-
-
 @tool(response_format="content_and_artifact")
 async def retrieve(query: str, runnableConfig: RunnableConfig):
     """
@@ -139,16 +133,19 @@ async def retrieve(query: str, runnableConfig: RunnableConfig):
 
     res, _status = await ctx.send_and_receive(
         configuration.data_agent_address,
-        SimilarityQuery(query=query),
+        SimilarityQuery(query=query, agent_key=configuration.data_agent_key),
         SimilarityResponse,
     )
 
     if not isinstance(res, SimilarityResponse):
         raise ValueError("Response is None.")
 
-    retrieved_docs = json.loads(res.retrieved_docs)
+    if isinstance(res.data, str):
+        raise ValueError(f"Response is not a valid response: {res.data}")
 
-    serialized = res.serialized
+    retrieved_docs = json.loads(res.data.retrieved_docs)
+
+    serialized = res.data.serialized
 
     return serialized, retrieved_docs
 
@@ -211,14 +208,6 @@ def divest_basket():
     return basket_divest_use_case.execute()
 
 
-class PromptRequest(Model):
-    text: str
-
-
-class PromptResponse(Model):
-    text: str
-
-
 def create_agent_executor(conn: aiosqlite.Connection):
     conn = aiosqlite.connect("./database/langchain_graphs.db", check_same_thread=False)
     sqliteMemory = AsyncSqliteSaver(conn)
@@ -253,8 +242,20 @@ def create_agent_executor(conn: aiosqlite.Connection):
     return agent_executor
 
 
+class PromptRequest(Model):
+    text: str
+    agent_key: str
+
+
+class PromptResponse(Model):
+    text: str
+
+
 @invest_agent.on_rest_post("/", PromptRequest, PromptResponse)
 async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
+    if req.agent_key != configuration.agent_key:
+        raise InvalidAgentKeyException()
+
     async with aiosqlite.connect(
         "./database/langchain_graphs.db", check_same_thread=False
     ) as conn:
