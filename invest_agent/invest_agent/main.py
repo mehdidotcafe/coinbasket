@@ -2,8 +2,8 @@ import json
 import os
 from typing import Any, Dict
 from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
-from invest_agent.http.exception.invalid_agent_key_exception import (
-    InvalidAgentKeyException,
+from invest_agent.http.exception.invalid_authentication_exception import (
+    InvalidAuthenticationException,
 )
 from invest_agent.investment.basket_investment import BasketInvestment
 from protocol.basket import Basket
@@ -63,10 +63,6 @@ invest_agent = Agent(
     seed=configuration.agent_seed,
     port=configuration.agent_port,
     endpoint=f"http://localhost:{configuration.agent_port}/submit",
-)
-
-llm = init_chat_model(
-    "gpt-4o-mini", model_provider="openai", api_key=configuration.openai_api_key
 )
 
 chain = BscChain(
@@ -208,6 +204,11 @@ def divest_basket():
     return basket_divest_use_case.execute()
 
 
+llm = init_chat_model(
+    "gpt-4o-mini", model_provider="openai", api_key=configuration.openai_api_key
+)
+
+
 def create_agent_executor(conn: aiosqlite.Connection):
     conn = aiosqlite.connect("./database/langchain_graphs.db", check_same_thread=False)
     sqliteMemory = AsyncSqliteSaver(conn)
@@ -242,19 +243,44 @@ def create_agent_executor(conn: aiosqlite.Connection):
     return agent_executor
 
 
+class AuthRequest(Model):
+    agent_key: str
+
+
+class AuthResponse(Model):
+    status: str
+
+
+@invest_agent.on_rest_post("/auth", AuthRequest, AuthResponse)
+async def auth_request(ctx: Context, req: AuthRequest) -> AuthResponse:
+    if req.agent_key != configuration.agent_key:
+        raise InvalidAuthenticationException()
+    return AuthResponse(status="OK")
+
+
+class HealthResponse(Model):
+    status: str
+
+
+@invest_agent.on_rest_get("/health", HealthResponse)
+async def health_check(_ctx: Context) -> HealthResponse:
+    """Health check endpoint."""
+    return HealthResponse(status="OK")
+
+
 class PromptRequest(Model):
-    text: str
+    content: str
     agent_key: str
 
 
 class PromptResponse(Model):
-    text: str
+    content: str
 
 
-@invest_agent.on_rest_post("/", PromptRequest, PromptResponse)
-async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
+@invest_agent.on_rest_post("/conversation", PromptRequest, PromptResponse)
+async def conversation(ctx: Context, req: PromptRequest) -> PromptResponse:
     if req.agent_key != configuration.agent_key:
-        raise InvalidAgentKeyException()
+        raise InvalidAuthenticationException()
 
     async with aiosqlite.connect(
         "./database/langchain_graphs.db", check_same_thread=False
@@ -267,7 +293,7 @@ async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
                 "ctx": ctx,
             }
         }
-        question = req.text
+        question = req.content
 
         async for step in agent_executor.astream(
             {"messages": [{"role": "user", "content": question}]},
@@ -276,9 +302,11 @@ async def handle_post(ctx: Context, req: PromptRequest) -> PromptResponse:
         ):
             step["messages"][-1].pretty_print()
 
-        ctx.logger.info(f"Received request with text: {req.text}")
+        last_message = step["messages"][-1]
 
-        return PromptResponse(text=step["messages"][-1].content)
+        ctx.logger.info(f"Received request with content: {req.content}")
+
+        return PromptResponse(content=last_message.content)
 
 
 def main():

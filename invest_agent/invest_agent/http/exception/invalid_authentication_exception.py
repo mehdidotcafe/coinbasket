@@ -1,6 +1,6 @@
-class InvalidAgentKeyException(Exception):
+class InvalidAuthenticationException(Exception):
     """Exception raised for invalid Agent key errors."""
 
     def __init__(self):
-        self.message = "Invalid Agent key"
+        self.message = "Invalid Authentication."
         super().__init__(self.message)
