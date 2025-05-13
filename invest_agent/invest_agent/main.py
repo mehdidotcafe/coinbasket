@@ -1,6 +1,13 @@
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional, cast
+from invest_agent.conversation.get_conversation_messages_use_case import (
+    GetConversationMessagesUseCase,
+)
+from invest_agent.conversation.message import Message
+from invest_agent.conversation.repository.infrastructure.langchain_sqlite_conversation_repository import (
+    LangchainSqliteConversationRepository,
+)
 from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
 from invest_agent.http.exception.invalid_authentication_exception import (
     InvalidAuthenticationException,
@@ -13,7 +20,7 @@ from uagents.storage import KeyValueStore
 
 import aiosqlite
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
 from langchain.chat_models import init_chat_model
@@ -49,7 +56,8 @@ from protocol import SimilarityQuery, SimilarityResponse
 
 date_time = PythonDateTime()
 
-thread_id = str(date_time.now())
+# thread_id = str(date_time.now())
+thread_id = "1747088966"
 
 print(f"Thread ID: {thread_id}")
 
@@ -107,11 +115,19 @@ basket_divest_use_case = BasketDivestUseCase(
 )
 get_invested_basket_use_case = GetBasketInvestmentUseCase(storage=storage)
 
+conversation_repository = LangchainSqliteConversationRepository(
+    db_path="./database/langchain_graphs.db", date_time=date_time
+)
+
+get_conversation_messages_use_case = GetConversationMessagesUseCase(
+    conversation_repository=conversation_repository
+)
+
 
 @tool(response_format="content_and_artifact")
-async def retrieve(query: str, runnableConfig: RunnableConfig):
+async def get_premade_basket_or_coin_info(query: str, runnableConfig: RunnableConfig):
     """
-    Retrieve a list of available tokens to invest.
+    Retrieve a list of available tokens / coins to invest.
     Retrieve a list of available baskets to invest.
 
     Args:
@@ -216,7 +232,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
     agent_executor = create_react_agent(
         llm,
         [
-            retrieve,
+            get_premade_basket_or_coin_info,
             invest_basket,
             get_address,
             get_balance,
@@ -225,6 +241,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
         ],
         checkpointer=sqliteMemory,
         prompt=SystemMessage(
+            "Your name is coinbasket agent.  "
             "Your goal is to create and then invest in crypto coin baskets on binance smart chain.  "
             f"Today is {date_time.now_str()}.  "
             "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
@@ -233,9 +250,10 @@ def create_agent_executor(conn: aiosqlite.Connection):
             "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
             "Always ask for the user's confirmation before investing in the basket and show a message mentioning that he should do his own research (DYOR) before investing.  "
             "Always ask for the user's confirmation before divesting the basket. "
-            "You can manage / invest in only one basket at a time.  "
-            "You can update a created basket but once it has been invested, you can only divest it and you can't update it anymore.  "
-            "You can't create a basket if you already have one.  "
+            "Always use get_premade_basket_or_coin_info to retrieve the list of available tokens / coins to invest.  "
+            # "You can manage / invest in only one basket at a time.  "
+            # "You can update a created basket but once it has been invested, you can only divest it and you can't update it anymore.  "
+            # "You can't create a basket if you already have one.  "
             "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
         ),
     )
@@ -243,42 +261,27 @@ def create_agent_executor(conn: aiosqlite.Connection):
     return agent_executor
 
 
-class AuthRequest(Model):
-    agent_key: str
-
-
-class AuthResponse(Model):
-    status: str
-
-
-@invest_agent.on_rest_post("/auth", AuthRequest, AuthResponse)
-async def auth_request(ctx: Context, req: AuthRequest) -> AuthResponse:
-    if req.agent_key != configuration.agent_key:
-        raise InvalidAuthenticationException()
-    return AuthResponse(status="OK")
-
-
-class HealthResponse(Model):
-    status: str
-
-
-@invest_agent.on_rest_get("/health", HealthResponse)
-async def health_check(_ctx: Context) -> HealthResponse:
-    """Health check endpoint."""
-    return HealthResponse(status="OK")
+class MessageRequest(Model):
+    id: str
+    role: str
+    content: str
+    created_at: Optional[str]
 
 
 class PromptRequest(Model):
-    content: str
+    message: MessageRequest
     agent_key: str
 
 
-class PromptResponse(Model):
+class MessageResponse(Model):
+    id: str
+    role: str
     content: str
+    created_at: Optional[str]
 
 
-@invest_agent.on_rest_post("/conversation", PromptRequest, PromptResponse)
-async def conversation(ctx: Context, req: PromptRequest) -> PromptResponse:
+@invest_agent.on_rest_post("/conversation", PromptRequest, MessageResponse)
+async def conversation(ctx: Context, req: PromptRequest) -> MessageResponse:
     if req.agent_key != configuration.agent_key:
         raise InvalidAuthenticationException()
 
@@ -293,10 +296,9 @@ async def conversation(ctx: Context, req: PromptRequest) -> PromptResponse:
                 "ctx": ctx,
             }
         }
-        question = req.content
 
         async for step in agent_executor.astream(
-            {"messages": [{"role": "user", "content": question}]},
+            {"messages": [{"role": "user", "content": req.message.content}]},
             stream_mode="values",
             config=graph_config,
         ):
@@ -304,9 +306,73 @@ async def conversation(ctx: Context, req: PromptRequest) -> PromptResponse:
 
         last_message = step["messages"][-1]
 
-        ctx.logger.info(f"Received request with content: {req.content}")
+        return MessageResponse(
+            id=cast(str, last_message.id),
+            role=isinstance(last_message, HumanMessage) and "user" or "assistant",
+            content=cast(str, last_message.content),
+            created_at=date_time.now_str(),
+        )
 
-        return PromptResponse(content=last_message.content)
+
+class MessagesRequest(Model):
+    agent_key: str
+
+
+class MessagesResponse(Model):
+    messages: list[MessageResponse]
+
+
+@invest_agent.on_rest_post("/conversation/messages", MessagesRequest, MessagesResponse)
+async def get_conversation_messages(
+    _ctx: Context,
+    req: MessagesRequest,
+) -> MessagesResponse:
+    """Retrieve the conversation messages."""
+    if req.agent_key != configuration.agent_key:
+        raise InvalidAuthenticationException()
+
+    messages = await get_conversation_messages_use_case.execute(thread_id=thread_id)
+
+    return MessagesResponse(
+        messages=[map_message_to_message_response(m) for m in messages]
+    )
+
+
+def map_message_to_message_response(
+    message: Message,
+) -> MessageResponse:
+    """Map a Langchain message to a MessageResponse."""
+    return MessageResponse(
+        id=message.id,
+        role=message.role,
+        content=message.content,
+        created_at=message.created_at,
+    )
+
+
+class AuthRequest(Model):
+    agent_key: str
+
+
+class AuthResponse(Model):
+    status: str
+
+
+@invest_agent.on_rest_post("/auth", AuthRequest, AuthResponse)
+async def auth_request(_ctx: Context, req: AuthRequest) -> AuthResponse:
+    if req.agent_key != configuration.agent_key:
+        raise InvalidAuthenticationException()
+    return AuthResponse(status="OK")
+
+
+class HealthResponse(Model):
+    status: str
+
+
+@invest_agent.on_rest_get("/health", HealthResponse)
+async def health_check(_ctx: Context) -> HealthResponse:
+    """Health check endpoint."""
+    return HealthResponse(status="OK")
 
 
 def main():

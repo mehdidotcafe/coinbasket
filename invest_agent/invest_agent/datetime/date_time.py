@@ -16,6 +16,7 @@ class DateTime(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def now_str(self) -> str:
         """
         Get the current time as a string.
