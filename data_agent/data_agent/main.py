@@ -68,7 +68,7 @@ get_similarities_use_case = GetSimilaritiesUseCase(similarity_storage)
 ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
     data_sources=[
-        # CoingeckoTokenListDataSource(http_request),
+        CoingeckoTokenListDataSource(http_request),
         Big4BasketDataSource(),
         AiBasketDataSource(),
         CmcTop102025BasketDataSource(),
@@ -87,7 +87,7 @@ async def on_startup(ctx: Context):
 
 @data_agent.on_rest_post("/", SimilarityQuery, SimilarityResponse)
 async def handle_similarity_query(
-    ctx: Context, req: SimilarityQuery
+    _ctx: Context, req: SimilarityQuery
 ) -> SimilarityResponse:
     if req.agent_key != configuration.agent_key:
         raise InvalidAgentKeyException()
@@ -116,6 +116,9 @@ async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
     print(f"Query: {msg.query}")
 
     serialized, retrieved_docs = get_similarities_use_case.execute(msg.query)
+
+    print(f"Serialized: {serialized}")
+    print(f"Retrieved docs: {json.dumps([asdict(doc) for doc in retrieved_docs])}")
 
     await ctx.send(
         sender,

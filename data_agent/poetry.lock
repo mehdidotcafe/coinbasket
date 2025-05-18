@@ -3172,21 +3172,21 @@ typing-extensions = ">=4.12.0"
 
 [[package]]
 name = "uagents"
-version = "0.22.3"
+version = "0.22.4"
 description = "Lightweight framework for rapid agent-based development"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "uagents-0.22.3-py3-none-any.whl", hash = "sha256:d068c3dbb9ae02dcd55abb9452e0d4237341f436b18a244582b1e59e6ab5dbbe"},
-    {file = "uagents-0.22.3.tar.gz", hash = "sha256:95a058ea47695d1a69724fb7bfc3cb7be1367a90e4ed73a6e2677eb09b2d635c"},
+    {file = "uagents-0.22.4-py3-none-any.whl", hash = "sha256:cfc2b601dbf92019d180377b4b30f78c7161b94c86a26ca377a8fdc65a3d7afb"},
+    {file = "uagents-0.22.4.tar.gz", hash = "sha256:f4adcfa76f58111db1aac8fdc1b26ad8dca60e907fda5eb0c88d14b372581272"},
 ]
 
 [package.dependencies]
 aiohttp = ">=3.8.3,<4.0"
-cosmpy = ">=0.9.2,<1.0"
+cosmpy = ">=0.9.3,<1.0"
 pydantic = ">=2.8,<3.0"
-uagents_core = ">=0.2.3"
+uagents_core = ">=0.3.0"
 uvicorn = ">=0.30.1,<1.0"
 
 [package.extras]
@@ -3195,14 +3195,14 @@ wallet = ["fetchai-babble (>=0.4.5)"]
 
 [[package]]
 name = "uagents-core"
-version = "0.2.3"
+version = "0.3.1"
 description = "Core components for agent based systems"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "uagents_core-0.2.3-py3-none-any.whl", hash = "sha256:66334a39643de168d31eb9186d642438830bc7ce26342eb6d5d7bd65ec3888f6"},
-    {file = "uagents_core-0.2.3.tar.gz", hash = "sha256:3b2c075691ac728b1fb3d2b1614bcf86b580e4f192d90cacc2906db3b87df9ff"},
+    {file = "uagents_core-0.3.1-py3-none-any.whl", hash = "sha256:0e96bdbc14f4c761f646ab98dd729ef7352c37a13547a5bdd763c76c86eb36cd"},
+    {file = "uagents_core-0.3.1.tar.gz", hash = "sha256:10534c0cfdc640bf3c4facc8942cbe286cdc67e5582f8e9595c377e0740ac25d"},
 ]
 
 [package.dependencies]
@@ -3548,4 +3548,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "a09ce1c43df5a6b0ef37ce86f3d5584b447b3d4e0b354e63fca39e1256d7d6a1"
+content-hash = "cf18406b316de7f36fc22d2d48708f3fdc2f523a27b80d9ec7ab172e50df4990"

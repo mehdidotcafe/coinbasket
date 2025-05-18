@@ -136,7 +136,7 @@ def test_invest_use_case_execute_success(
 
     investment_planner.make_investment_plan.return_value = investment_plan
     exchange.execute_investment_plan.return_value = basket_investment.bids
-    date_time.now_str.return_value = 0
+    date_time.now_str.return_value = "2020-05-09"
 
     message, result = investment_use_case.execute(basket)
 

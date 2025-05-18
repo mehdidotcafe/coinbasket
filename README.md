@@ -1,4 +1,4 @@
-![image info](./assets/logo.svg)
+![image info](./assets/coinbasket.svg)
 
 
 # coinbasket

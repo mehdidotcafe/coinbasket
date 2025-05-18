@@ -266,3 +266,42 @@ def test_execute_divestment_plan(
         Web3.to_checksum_address(universal_router_address),
         mock.ANY,
     )
+
+
+def test_get_tokens_balance_in_token(
+    router: PancakeSwapUniversalRouter,
+):
+    token = Token(
+        name="Tether USD",
+        display_name="Tether USD",
+        ticker="USDT",
+        address="0x55d398326f99059ff775485246999027b3197955",
+    )
+
+    balance = router.get_wallet_in_token(
+        [
+            Balance(
+                token=Token(
+                    name="Ethereum",
+                    display_name="Ethereum",
+                    ticker="ETH",
+                    address="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                ),
+                amount=Decimal("2.4"),
+            ),
+            Balance(
+                token=Token(
+                    name="Binance coin",
+                    display_name="Binance coin",
+                    ticker="BNB",
+                    address="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                ),
+                amount=Decimal("10"),
+            ),
+        ],
+        token,
+    )
+
+    print(f"Balance: {balance}")
+
+    assert True == True

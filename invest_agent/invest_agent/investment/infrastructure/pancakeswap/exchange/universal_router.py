@@ -1,7 +1,9 @@
 from decimal import Decimal
 import json
+from typing import cast
 from eth_typing import ChecksumAddress
 from invest_agent.investment.basket_investment import Bid
+from protocol.token import Token
 from web3 import Account, Web3
 from web3.contract import Contract
 from web3.types import TxReceipt, Wei
@@ -9,7 +11,11 @@ from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec
 
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
-from invest_agent.investment.exchange.exchange import Exchange
+from invest_agent.investment.exchange.exchange import (
+    ConvertedBalance,
+    Wallet,
+    Exchange,
+)
 from invest_agent.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
 from invest_agent.investment.investment_plan import InvestmentPlan
 
@@ -213,6 +219,56 @@ class PancakeSwapUniversalRouter(Exchange):
         except Exception as e:
             print(f"Error executing batch transaction: {e}")
             raise e
+
+    def get_wallet_in_token(
+        self, tokens_balance: list[Balance], token: Token
+    ) -> Wallet:
+        balances: list[ConvertedBalance] = []
+
+        for balance in tokens_balance:
+            if balance.token.address == token.address:
+                balances.append(
+                    ConvertedBalance(
+                        balance_in=balance,
+                        balance_out=balance,
+                    )
+                )
+            else:
+                contract = self.w3.eth.contract(
+                    address=self.w3.to_checksum_address(balance.token.address),
+                    abi=self.erc20_token_abi,
+                )
+
+                amounts_out = self.v2_router.functions.getAmountsOut(
+                    self.__get_raw_amount(contract, balance.amount),
+                    [
+                        Web3.to_checksum_address(balance.token.address),
+                        Web3.to_checksum_address(token.address),
+                    ],
+                ).call()
+
+                balances.append(
+                    ConvertedBalance(
+                        balance_in=balance,
+                        balance_out=Balance(
+                            token=token,
+                            amount=self.__get_token_amount(contract, amounts_out[-1]),
+                        ),
+                    )
+                )
+
+        return Wallet(
+            balances=balances,
+            total_balance=self.__sum_balances(balances, token),
+        )
+
+    def __sum_balances(self, balances: list[ConvertedBalance], token: Token):
+        return Balance(
+            token=token,
+            amount=cast(
+                Decimal, sum([balance.balance_out.amount for balance in balances])
+            ),
+        )
 
     def __compute_amount_out_min(
         self,

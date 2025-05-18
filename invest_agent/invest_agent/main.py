@@ -1,18 +1,18 @@
 import json
 import os
 from typing import Any, Dict, Optional, cast
+from invest_agent.authentication.authentication import authentication
 from invest_agent.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
-from invest_agent.conversation.message import Message
 from invest_agent.conversation.repository.infrastructure.langchain_sqlite_conversation_repository import (
     LangchainSqliteConversationRepository,
 )
 from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
-from invest_agent.http.exception.invalid_authentication_exception import (
-    InvalidAuthenticationException,
-)
 from invest_agent.investment.basket_investment import BasketInvestment
+from invest_agent.metrics.get_wallet_in_token_use_case import (
+    GetWalletInTokenUseCase,
+)
 from protocol.basket import Basket
 from protocol.token import Token
 from uagents import Agent, Context, Model
@@ -56,8 +56,8 @@ from protocol import SimilarityQuery, SimilarityResponse
 
 date_time = PythonDateTime()
 
-# thread_id = str(date_time.now())
-thread_id = "1747088966"
+thread_id = str(date_time.now())
+# thread_id = "1747088966"
 
 print(f"Thread ID: {thread_id}")
 
@@ -115,6 +115,11 @@ basket_divest_use_case = BasketDivestUseCase(
 )
 get_invested_basket_use_case = GetBasketInvestmentUseCase(storage=storage)
 
+get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
+    storage=storage, exchange=exchange, chain=chain
+)
+
+
 conversation_repository = LangchainSqliteConversationRepository(
     db_path="./database/langchain_graphs.db", date_time=date_time
 )
@@ -125,7 +130,7 @@ get_conversation_messages_use_case = GetConversationMessagesUseCase(
 
 
 @tool(response_format="content_and_artifact")
-async def get_premade_basket_or_coin_info(query: str, runnableConfig: RunnableConfig):
+async def get_basket_or_coin_info(query: str, runnable_config: RunnableConfig):
     """
     Retrieve a list of available tokens / coins to invest.
     Retrieve a list of available baskets to invest.
@@ -138,7 +143,7 @@ async def get_premade_basket_or_coin_info(query: str, runnableConfig: RunnableCo
         Each token has a name, display_name, ticker and address (contract address) property.
         A basket is made of a name, a description and a list of tokens.
     """
-    ctx: Context | None = runnableConfig.get("configurable", {}).get("ctx")
+    ctx: Context | None = runnable_config.get("configurable", {}).get("ctx")
 
     if ctx is None:
         raise ValueError("Context is not available in the config.")
@@ -232,7 +237,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
     agent_executor = create_react_agent(
         llm,
         [
-            get_premade_basket_or_coin_info,
+            get_basket_or_coin_info,
             invest_basket,
             get_address,
             get_balance,
@@ -250,7 +255,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
             "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
             "Always ask for the user's confirmation before investing in the basket and show a message mentioning that he should do his own research (DYOR) before investing.  "
             "Always ask for the user's confirmation before divesting the basket. "
-            "Always use get_premade_basket_or_coin_info to retrieve the list of available tokens / coins to invest.  "
+            "Always use get_basket_or_coin_info to retrieve the list of available tokens / coins to invest.  "
             # "You can manage / invest in only one basket at a time.  "
             # "You can update a created basket but once it has been invested, you can only divest it and you can't update it anymore.  "
             # "You can't create a basket if you already have one.  "
@@ -281,10 +286,8 @@ class MessageResponse(Model):
 
 
 @invest_agent.on_rest_post("/conversation", PromptRequest, MessageResponse)
+@authentication(configuration.agent_key)
 async def conversation(ctx: Context, req: PromptRequest) -> MessageResponse:
-    if req.agent_key != configuration.agent_key:
-        raise InvalidAuthenticationException()
-
     async with aiosqlite.connect(
         "./database/langchain_graphs.db", check_same_thread=False
     ) as conn:
@@ -323,30 +326,24 @@ class MessagesResponse(Model):
 
 
 @invest_agent.on_rest_post("/conversation/messages", MessagesRequest, MessagesResponse)
+@authentication(configuration.agent_key)
 async def get_conversation_messages(
     _ctx: Context,
-    req: MessagesRequest,
+    _req: MessagesRequest,
 ) -> MessagesResponse:
     """Retrieve the conversation messages."""
-    if req.agent_key != configuration.agent_key:
-        raise InvalidAuthenticationException()
-
     messages = await get_conversation_messages_use_case.execute(thread_id=thread_id)
 
     return MessagesResponse(
-        messages=[map_message_to_message_response(m) for m in messages]
-    )
-
-
-def map_message_to_message_response(
-    message: Message,
-) -> MessageResponse:
-    """Map a Langchain message to a MessageResponse."""
-    return MessageResponse(
-        id=message.id,
-        role=message.role,
-        content=message.content,
-        created_at=message.created_at,
+        messages=[
+            MessageResponse(
+                id=message.id,
+                role=message.role,
+                content=message.content,
+                created_at=message.created_at,
+            )
+            for message in messages
+        ]
     )
 
 
@@ -359,9 +356,8 @@ class AuthResponse(Model):
 
 
 @invest_agent.on_rest_post("/auth", AuthRequest, AuthResponse)
+@authentication(configuration.agent_key)
 async def auth_request(_ctx: Context, req: AuthRequest) -> AuthResponse:
-    if req.agent_key != configuration.agent_key:
-        raise InvalidAuthenticationException()
     return AuthResponse(status="OK")
 
 
@@ -373,6 +369,92 @@ class HealthResponse(Model):
 async def health_check(_ctx: Context) -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse(status="OK")
+
+
+class TokenRequest(Model):
+    name: str
+    display_name: str
+    ticker: str
+    address: str
+
+
+class TokenResponse(Model):
+    name: str
+    display_name: str
+    ticker: str
+    address: str
+
+
+class BalanceResponse(Model):
+    balance: str
+    token: TokenResponse
+
+
+class ConvertedBalanceResponse(Model):
+    balance_in: BalanceResponse
+    balance_out: BalanceResponse
+
+
+class MetricsWalletRequest(Model):
+    agent_key: str
+    token: TokenRequest
+
+
+class MetricsWalletResponse(Model):
+    balances: list[ConvertedBalanceResponse]
+    total_balance: BalanceResponse
+
+
+@invest_agent.on_rest_post(
+    "/metrics/wallet/token",
+    MetricsWalletRequest,
+    MetricsWalletResponse,
+)
+@authentication(configuration.agent_key)
+async def get_wallet_in_token(_ctx: Context, _req: MetricsWalletRequest):
+    converted_token_balances = get_basket_balance_in_token_use_case.execute(
+        Token(
+            name=_req.token.name,
+            display_name=_req.token.display_name,
+            ticker=_req.token.ticker,
+            address=_req.token.address,
+        )
+    )
+
+    return MetricsWalletResponse(
+        balances=[
+            ConvertedBalanceResponse(
+                balance_in=BalanceResponse(
+                    balance=str(balance.balance_in.amount),
+                    token=TokenResponse(
+                        name=balance.balance_in.token.name,
+                        display_name=balance.balance_in.token.display_name,
+                        ticker=balance.balance_in.token.ticker,
+                        address=balance.balance_in.token.address,
+                    ),
+                ),
+                balance_out=BalanceResponse(
+                    balance=str(balance.balance_out.amount),
+                    token=TokenResponse(
+                        name=balance.balance_out.token.name,
+                        display_name=balance.balance_out.token.display_name,
+                        ticker=balance.balance_out.token.ticker,
+                        address=balance.balance_out.token.address,
+                    ),
+                ),
+            )
+            for balance in converted_token_balances.balances
+        ],
+        total_balance=BalanceResponse(
+            balance=str(converted_token_balances.total_balance.amount),
+            token=TokenResponse(
+                name=converted_token_balances.total_balance.token.name,
+                display_name=converted_token_balances.total_balance.token.display_name,
+                ticker=converted_token_balances.total_balance.token.ticker,
+                address=converted_token_balances.total_balance.token.address,
+            ),
+        ),
+    )
 
 
 def main():

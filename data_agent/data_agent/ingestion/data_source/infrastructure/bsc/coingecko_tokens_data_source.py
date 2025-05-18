@@ -1,5 +1,7 @@
 from dataclasses import asdict
+import hashlib
 from typing import TypedDict
+import uuid
 
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.ingestion.data_source.data_source import DataSource
@@ -62,14 +64,19 @@ class CoingeckoTokenListDataSource(DataSource):
         )
 
         return SimilarityDocument(
-            # TODO: Fix a way to create a unique ID for the document (maybe from coingecko id)
-            id="d179fa30-808d-48a9-98f3-93c8702e78d8",
+            id=self.__generate_id(token),
             page_content=token.__str__(),
             metadata={
                 "source": asdict(token),
-                "type": self.__type(),
+                "type": "token",
+                "version": self.version(),
             },
         )
 
-    def __type(self) -> str:
-        return "token"
+    def __generate_id(self, token: Token) -> str:
+        """
+        Generates a unique ID (UUID) for the token based on its address.
+        """
+        hash_bytes = hashlib.sha256(token.address[2:].encode()).digest()
+
+        return str(uuid.UUID(bytes=hash_bytes[:16]))

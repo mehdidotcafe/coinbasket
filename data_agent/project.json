@@ -49,6 +49,7 @@
     },
     "start": {
       "executor": "@nxlv/python:run-commands",
+      "dependsOn": ["infra"],
       "options": {
         "command": "poetry run python -m data_agent.main",
         "cwd": "{projectRoot}"
@@ -71,6 +72,13 @@
         "cacheDir": ".cache/pypoetry",
         "verbose": false,
         "debug": false
+      }
+    },
+    "infra": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose up -d",
+        "cwd": "{projectRoot}"
       }
     }
   },
