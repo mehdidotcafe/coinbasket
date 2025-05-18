@@ -1,6 +1,7 @@
-import json
 import os
 from typing import Any, Dict, Optional, cast
+
+import aiohttp
 from invest_agent.authentication.authentication import authentication
 from invest_agent.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
@@ -9,6 +10,9 @@ from invest_agent.conversation.repository.infrastructure.langchain_sqlite_conver
     LangchainSqliteConversationRepository,
 )
 from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
+from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_client import (
+    AiohttpAgentToAgentClient,
+)
 from invest_agent.investment.basket_investment import BasketInvestment
 from invest_agent.metrics.get_wallet_in_token_use_case import (
     GetWalletInTokenUseCase,
@@ -27,7 +31,6 @@ from langchain.chat_models import init_chat_model
 from langgraph.prebuilt import create_react_agent
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-
 
 from web3 import Web3
 
@@ -100,6 +103,10 @@ exchange = PancakeSwapUniversalRouter(
 storage = FetchAiStorage[Any](
     thread_id, store=KeyValueStore(configuration.agent_name, "./database")
 )
+agent_to_agent_client = AiohttpAgentToAgentClient(
+    configuration={"agent_url": configuration.data_agent_url},
+    aiohttp_client_session=aiohttp.ClientSession,
+)
 
 basket_invest_use_case = BasketInvestUseCase(
     investment_planner=EqualInvestmentPlanner(chain),
@@ -130,7 +137,7 @@ get_conversation_messages_use_case = GetConversationMessagesUseCase(
 
 
 @tool(response_format="content_and_artifact")
-async def get_basket_or_coin_info(query: str, runnable_config: RunnableConfig):
+async def get_basket_or_coin_info(query: str):
     """
     Retrieve a list of available tokens / coins to invest.
     Retrieve a list of available baskets to invest.
@@ -143,28 +150,16 @@ async def get_basket_or_coin_info(query: str, runnable_config: RunnableConfig):
         Each token has a name, display_name, ticker and address (contract address) property.
         A basket is made of a name, a description and a list of tokens.
     """
-    ctx: Context | None = runnable_config.get("configurable", {}).get("ctx")
-
-    if ctx is None:
-        raise ValueError("Context is not available in the config.")
-
-    res, _status = await ctx.send_and_receive(
-        configuration.data_agent_address,
+    # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
+    res = await agent_to_agent_client.send_and_receive_message(
         SimilarityQuery(query=query, agent_key=configuration.data_agent_key),
         SimilarityResponse,
     )
 
-    if not isinstance(res, SimilarityResponse):
-        raise ValueError("Response is None.")
-
     if isinstance(res.data, str):
         raise ValueError(f"Response is not a valid response: {res.data}")
 
-    retrieved_docs = json.loads(res.data.retrieved_docs)
-
-    serialized = res.data.serialized
-
-    return serialized, retrieved_docs
+    return res.data.serialized, res.data.retrieved_docs
 
 
 @tool()
@@ -231,7 +226,6 @@ llm = init_chat_model(
 
 
 def create_agent_executor(conn: aiosqlite.Connection):
-    conn = aiosqlite.connect("./database/langchain_graphs.db", check_same_thread=False)
     sqliteMemory = AsyncSqliteSaver(conn)
 
     agent_executor = create_react_agent(
@@ -287,16 +281,13 @@ class MessageResponse(Model):
 
 @invest_agent.on_rest_post("/conversation", PromptRequest, MessageResponse)
 @authentication(configuration.agent_key)
-async def conversation(ctx: Context, req: PromptRequest) -> MessageResponse:
-    async with aiosqlite.connect(
-        "./database/langchain_graphs.db", check_same_thread=False
-    ) as conn:
+async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
+    async with aiosqlite.connect("./database/langchain_graphs.db") as conn:
         agent_executor = create_agent_executor(conn)
 
         graph_config: RunnableConfig = {
             "configurable": {
                 "thread_id": thread_id,
-                "ctx": ctx,
             }
         }
 
@@ -357,7 +348,7 @@ class AuthResponse(Model):
 
 @invest_agent.on_rest_post("/auth", AuthRequest, AuthResponse)
 @authentication(configuration.agent_key)
-async def auth_request(_ctx: Context, req: AuthRequest) -> AuthResponse:
+async def auth_request(_ctx: Context, _req: AuthRequest) -> AuthResponse:
     return AuthResponse(status="OK")
 
 
@@ -411,13 +402,13 @@ class MetricsWalletResponse(Model):
     MetricsWalletResponse,
 )
 @authentication(configuration.agent_key)
-async def get_wallet_in_token(_ctx: Context, _req: MetricsWalletRequest):
+async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
     converted_token_balances = get_basket_balance_in_token_use_case.execute(
         Token(
-            name=_req.token.name,
-            display_name=_req.token.display_name,
-            ticker=_req.token.ticker,
-            address=_req.token.address,
+            name=req.token.name,
+            display_name=req.token.display_name,
+            ticker=req.token.ticker,
+            address=req.token.address,
         )
     )
 

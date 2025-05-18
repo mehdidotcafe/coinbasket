@@ -9,6 +9,7 @@ class SimilarityQuery(Model):
 class SimilarityValidResponse(Model):
     serialized: str
     retrieved_docs: str
+    query: str
 
 
 class SimilarityResponse(Model):

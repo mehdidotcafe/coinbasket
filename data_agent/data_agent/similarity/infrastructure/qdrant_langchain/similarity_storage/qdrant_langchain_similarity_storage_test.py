@@ -2,7 +2,7 @@ from unittest import mock
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore
-from pytest import fixture
+from pytest import fixture, mark
 from qdrant_client.models import VectorParams, Distance
 
 from data_agent.similarity.similarity_document import SimilarityDocument
@@ -10,6 +10,9 @@ from data_agent.similarity.infrastructure.qdrant_langchain.similarity_storage.qd
     QdrantLangChainSimilarityStorage,
 )
 from qdrant_client import QdrantClient
+
+
+pytestmark = mark.anyio
 
 
 @fixture
@@ -86,7 +89,7 @@ def test_qdrant_langchain_similarity_storage_init_with_collection(
     qdrant_client.create_collection.assert_not_called()
 
 
-def test_qdrant_langchain_similarity_storage_search(
+async def test_qdrant_langchain_similarity_storage_search(
     qdrant_client: type[QdrantClient],
     qdrant_vector_store: type[QdrantVectorStore],
     embeddings: OpenAIEmbeddings,
@@ -104,12 +107,12 @@ def test_qdrant_langchain_similarity_storage_search(
         embeddings,
     )
 
-    qdrant_vector_store.similarity_search.return_value = [
+    qdrant_vector_store.asimilarity_search.return_value = [
         Document(page_content="page content 1", metadata={"_id": "1"}),
         Document(page_content="page content 2", metadata={"_id": "2"}),
     ]
 
-    similarities = similarity_storage.similarity_search(query)
+    similarities = await similarity_storage.similarity_search(query)
 
     assert similarities == [
         SimilarityDocument(
@@ -130,7 +133,7 @@ def test_qdrant_langchain_similarity_storage_search(
         collection_name="datasets",
         embedding=embeddings,
     )
-    qdrant_vector_store.similarity_search.assert_called_once_with(query)
+    qdrant_vector_store.asimilarity_search.assert_called_once_with(query)
 
 
 def test_qdrant_langchain_similarity_storage_get(

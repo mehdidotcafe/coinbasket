@@ -1,4 +1,4 @@
-from typing import Any, TypedDict
+from typing import TypedDict
 from langchain_core.embeddings import Embeddings
 
 from langchain_qdrant import QdrantVectorStore
@@ -46,13 +46,13 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
 
         self.embeddings = embeddings
 
-    def similarity_search(self, query: str):
+    async def similarity_search(self, query: str):
         """
         Performs a similarity search in the Qdrant vector store."""
 
         return [
             self.__map_document_to_similarity_document(doc)
-            for doc in self.qdrant.similarity_search(query)
+            for doc in await self.qdrant.asimilarity_search(query)
         ]
 
     def get(self, ids: list[str]):

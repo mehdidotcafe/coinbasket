@@ -1,6 +1,7 @@
 from dataclasses import asdict
 import json
 from typing import Any
+from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.http_request.exceptions.invalid_agent_key_exception import (
     InvalidAgentKeyException,
 )
@@ -48,6 +49,8 @@ data_agent = Agent(
     endpoint=f"http://localhost:{configuration.agent_port}/submit",
 )
 
+id_generator = IdGenerator()
+
 http_request = RequestsHttpRequest[Any]()
 
 similarity_storage = QdrantLangChainSimilarityStorage(
@@ -68,7 +71,10 @@ get_similarities_use_case = GetSimilaritiesUseCase(similarity_storage)
 ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
     data_sources=[
-        CoingeckoTokenListDataSource(http_request),
+        CoingeckoTokenListDataSource(
+            http_request,
+            id_generator,
+        ),
         Big4BasketDataSource(),
         AiBasketDataSource(),
         CmcTop102025BasketDataSource(),
@@ -94,12 +100,15 @@ async def handle_similarity_query(
 
     print(f"Query: {req.query}")
 
-    serialized, retrieved_docs = get_similarities_use_case.execute(req.query)
+    serialized, retrieved_docs = await get_similarities_use_case.execute(req.query)
+
+    print(f"Serialized: {serialized}")
 
     return SimilarityResponse(
         data=SimilarityValidResponse(
             serialized=serialized,
             retrieved_docs=json.dumps([asdict(doc) for doc in retrieved_docs]),
+            query=req.query,
         )
     )
 
@@ -113,12 +122,9 @@ async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
         )
         return
 
-    print(f"Query: {msg.query}")
+    query = msg.query
 
-    serialized, retrieved_docs = get_similarities_use_case.execute(msg.query)
-
-    print(f"Serialized: {serialized}")
-    print(f"Retrieved docs: {json.dumps([asdict(doc) for doc in retrieved_docs])}")
+    serialized, retrieved_docs = await get_similarities_use_case.execute(msg.query)
 
     await ctx.send(
         sender,
@@ -126,6 +132,7 @@ async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
             data=SimilarityValidResponse(
                 serialized=serialized,
                 retrieved_docs=json.dumps([asdict(doc) for doc in retrieved_docs]),
+                query=query,
             )
         ),
     )

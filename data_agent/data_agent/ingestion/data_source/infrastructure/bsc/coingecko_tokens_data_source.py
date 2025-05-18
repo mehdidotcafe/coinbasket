@@ -1,8 +1,7 @@
 from dataclasses import asdict
-import hashlib
 from typing import TypedDict
-import uuid
 
+from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.ingestion.data_source.data_source import DataSource
 from data_agent.http_request.http_request import HttpRequest
@@ -24,9 +23,10 @@ class Response(TypedDict):
 
 
 class CoingeckoTokenListDataSource(DataSource):
-    def __init__(self, http_request: HttpRequest[Response]):
+    def __init__(self, http_request: HttpRequest[Response], id_generator: IdGenerator):
         self.url = "https://tokens.coingecko.com/binance-smart-chain/all.json"
         self.http_request = http_request
+        self.id_generator = id_generator
         self.headers = {
             "accept": "application/json",
         }
@@ -77,6 +77,4 @@ class CoingeckoTokenListDataSource(DataSource):
         """
         Generates a unique ID (UUID) for the token based on its address.
         """
-        hash_bytes = hashlib.sha256(token.address[2:].encode()).digest()
-
-        return str(uuid.UUID(bytes=hash_bytes[:16]))
+        return self.id_generator.generate_id(token.address[2:])

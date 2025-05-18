@@ -1,5 +1,5 @@
 from unittest import mock
-from pytest import fixture
+from pytest import fixture, mark
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.similarity.get_similarities_use_case import (
     GetSimilaritiesUseCase,
@@ -9,12 +9,15 @@ from data_agent.similarity.similarity_storage.similarity_storage import (
 )
 
 
+pytestmark = mark.anyio
+
+
 @fixture
 def similarity_storage():
     return mock.Mock(spec=SimilarityStorage)
 
 
-def test_get_similarities_use_case_execute_success(
+async def test_get_similarities_use_case_execute_success(
     similarity_storage: SimilarityStorage,
 ):
     query = "Please create a low risk basket without stablecoins."
@@ -31,7 +34,7 @@ def test_get_similarities_use_case_execute_success(
 
     use_case = GetSimilaritiesUseCase(similarity_storage)
 
-    serialized, retrieved_docs = use_case.execute(query)
+    serialized, retrieved_docs = await use_case.execute(query)
 
     assert serialized == (
         "Source: metadata 1\nContent: page content 1\n\n"

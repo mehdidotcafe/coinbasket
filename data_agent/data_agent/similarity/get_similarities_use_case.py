@@ -7,8 +7,8 @@ class GetSimilaritiesUseCase:
     def __init__(self, storage: SimilarityStorage):
         self.storage = storage
 
-    def execute(self, query: str):
-        documents = self.storage.similarity_search(query)
+    async def execute(self, query: str):
+        documents = await self.storage.similarity_search(query)
         serialized = "\n\n".join(
             (f"Source: {doc.metadata}\nContent: {doc.page_content}")
             for doc in documents

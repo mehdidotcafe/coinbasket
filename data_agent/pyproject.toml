@@ -54,6 +54,7 @@ pytest-sugar = "1.0.0"
 pytest-cov = "6.0.0"
 pytest-html = "4.1.1"
 pytest-watch = "4.2.0"
+trio = "^0.30.0"
 
 [build-system]
 requires = [ "poetry-core" ]

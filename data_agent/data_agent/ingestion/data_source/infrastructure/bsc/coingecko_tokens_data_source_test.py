@@ -1,6 +1,7 @@
 from dataclasses import asdict
 from unittest import mock
 from pytest import fixture
+from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.http_request.infrastructure.requests_http_request import (
     RequestsHttpRequest,
@@ -13,11 +14,18 @@ from protocol.token import Token
 
 
 @fixture
+def id_generator():
+    return mock.Mock(spec=IdGenerator)
+
+
+@fixture
 def http_request():
     return mock.Mock(spec=RequestsHttpRequest)
 
 
-def test_coingecko_tokens_data_source_get(http_request: RequestsHttpRequest[Response]):
+def test_coingecko_tokens_data_source_get(
+    http_request: RequestsHttpRequest[Response], id_generator: IdGenerator
+):
     http_request.get.return_value = {
         "tokens": [
             {
@@ -30,9 +38,10 @@ def test_coingecko_tokens_data_source_get(http_request: RequestsHttpRequest[Resp
             }
         ]
     }
+    id_generator.generate_id.return_value = "d179fa30-808d-48a9-98f3-93c8702e78d8"
 
     # Create an instance of the data source with the mocked HttpRequest
-    data_source = CoingeckoTokenListDataSource(http_request)
+    data_source = CoingeckoTokenListDataSource(http_request, id_generator)
 
     # Call the get method and check the result
     similarity_documents = data_source.get()
@@ -40,6 +49,7 @@ def test_coingecko_tokens_data_source_get(http_request: RequestsHttpRequest[Resp
     assert similarity_documents == [
         SimilarityDocument(
             metadata={
+                "version": 1,
                 "source": asdict(
                     Token(
                         name="Lithosphere",
@@ -72,8 +82,9 @@ address: 0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93
 
 def test_coingecko_tokens_data_source_version(
     http_request: RequestsHttpRequest[Response],
+    id_generator: IdGenerator,
 ):
-    data_source = CoingeckoTokenListDataSource(http_request)
+    data_source = CoingeckoTokenListDataSource(http_request, id_generator)
     version = data_source.version()
 
     assert version == 1

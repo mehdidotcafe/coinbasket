@@ -41,6 +41,7 @@ readme = "README.md"
   langgraph-checkpoint-sqlite = ">=2.0.7,<3.0.0"
   aiosqlite = "^0.21.0"
   anyio = {extras = ["trio"], version = "^4.9.0"}
+  aiohttp = "^3.11.18"
 
     [tool.poetry.dependencies.langchain]
     extras = [ "openapi" ]
