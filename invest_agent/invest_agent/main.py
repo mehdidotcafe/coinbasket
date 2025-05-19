@@ -137,7 +137,7 @@ get_conversation_messages_use_case = GetConversationMessagesUseCase(
 
 
 @tool(response_format="content_and_artifact")
-async def get_basket_or_coin_info(query: str):
+async def get_available_basket_or_coin_info(query: str):
     """
     Retrieve a list of available tokens / coins to invest.
     Retrieve a list of available baskets to invest.
@@ -231,7 +231,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
     agent_executor = create_react_agent(
         llm,
         [
-            get_basket_or_coin_info,
+            get_available_basket_or_coin_info,
             invest_basket,
             get_address,
             get_balance,
@@ -240,7 +240,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
         ],
         checkpointer=sqliteMemory,
         prompt=SystemMessage(
-            "Your name is coinbasket agent.  "
+            f"Your name is {configuration.agent_name}.  "
             "Your goal is to create and then invest in crypto coin baskets on binance smart chain.  "
             f"Today is {date_time.now_str()}.  "
             "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "

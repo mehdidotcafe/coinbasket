@@ -9,4 +9,4 @@ services:
     entrypoint: >
       sh -c '
       npm install -g ganache &&
-      ganache --fork.url=${GANACHE_FORK_URL} --logging.verbose=true --mnemonic "${GANACHE_MNEMONIC}" --server.host=0.0.0.0'
+      ganache --wallet.defaultBalance 10 --fork.url=${GANACHE_FORK_URL} --logging.verbose=true --mnemonic "${GANACHE_MNEMONIC}" --server.host=0.0.0.0'

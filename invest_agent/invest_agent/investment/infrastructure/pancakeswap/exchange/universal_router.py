@@ -225,6 +225,11 @@ class PancakeSwapUniversalRouter(Exchange):
     ) -> Wallet:
         balances: list[ConvertedBalance] = []
 
+        token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(token.address),
+            abi=self.erc20_token_abi,
+        )
+
         for balance in tokens_balance:
             if balance.token.address == token.address:
                 balances.append(
@@ -234,13 +239,13 @@ class PancakeSwapUniversalRouter(Exchange):
                     )
                 )
             else:
-                contract = self.w3.eth.contract(
+                balance_token_contract = self.w3.eth.contract(
                     address=self.w3.to_checksum_address(balance.token.address),
                     abi=self.erc20_token_abi,
                 )
 
                 amounts_out = self.v2_router.functions.getAmountsOut(
-                    self.__get_raw_amount(contract, balance.amount),
+                    self.__get_raw_amount(balance_token_contract, balance.amount),
                     [
                         Web3.to_checksum_address(balance.token.address),
                         Web3.to_checksum_address(token.address),
@@ -252,7 +257,9 @@ class PancakeSwapUniversalRouter(Exchange):
                         balance_in=balance,
                         balance_out=Balance(
                             token=token,
-                            amount=self.__get_token_amount(contract, amounts_out[-1]),
+                            amount=self.__get_token_amount(
+                                token_contract, amounts_out[1]
+                            ),
                         ),
                     )
                 )
@@ -354,8 +361,11 @@ class PancakeSwapUniversalRouter(Exchange):
 
         return bids
 
-    def __get_token_amount(self, token_contract: Contract, raw_amount: int) -> Decimal:
+    def __get_token_amount(
+        self, token_contract: Contract, raw_amount: int | Decimal
+    ) -> Decimal:
         decimals = token_contract.functions.decimals().call()
+
         return Decimal(raw_amount) / Decimal(10**decimals)
 
     # TODO: See how to store the decimals in the Token class
