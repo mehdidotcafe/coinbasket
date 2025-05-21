@@ -34,8 +34,12 @@ def get_balances():
 
 
 def main():
-    if sys.argv[1] == "get-balances":
+    if sys.argv[1] == "get_balances":
         get_balances()
 
     else:
         print("Invalid command.")
+
+
+if __name__ == "__main__":
+    main()
