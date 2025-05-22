@@ -16,7 +16,9 @@ from invest_agent.investment.exchange.exchange import (
     Wallet,
     Exchange,
 )
-from invest_agent.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
+from invest_agent.investment.infrastructure.pancakeswap.universal_router.permit2 import (
+    Permit2,
+)
 from invest_agent.investment.investment_plan import InvestmentPlan
 
 
@@ -48,13 +50,13 @@ class PancakeSwapUniversalRouter(Exchange):
         self.codec = RouterCodec()
 
         with open(
-            "./invest_agent/investment/infrastructure/pancakeswap/exchange/universal_router_abi.json",
+            "./invest_agent/investment/infrastructure/pancakeswap/universal_router/universal_router_abi.json",
             "r",
         ) as f:
             self.universal_router_abi = json.load(f)
 
         with open(
-            "./invest_agent/investment/infrastructure/pancakeswap/exchange/v2_router_abi.json",
+            "./invest_agent/investment/infrastructure/pancakeswap/universal_router/v2_router_abi.json",
             "r",
         ) as f:
             self.v2_router = json.load(f)

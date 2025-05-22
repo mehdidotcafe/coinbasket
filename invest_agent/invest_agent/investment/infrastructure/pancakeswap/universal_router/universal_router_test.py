@@ -13,8 +13,10 @@ from protocol.token import Token
 
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
-from invest_agent.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
-from invest_agent.investment.infrastructure.pancakeswap.exchange.universal_router import (
+from invest_agent.investment.infrastructure.pancakeswap.universal_router.permit2 import (
+    Permit2,
+)
+from invest_agent.investment.infrastructure.pancakeswap.universal_router.universal_router import (
     PancakeSwapUniversalRouter,
 )
 from invest_agent.investment.investment_plan import (

@@ -43,12 +43,14 @@ from invest_agent.investment.divestment_planner_strategy.total_divestment_planne
 from invest_agent.investment.get_basket_investment_use_case import (
     GetBasketInvestmentUseCase,
 )
-from invest_agent.investment.infrastructure.pancakeswap.exchange.permit2 import Permit2
+from invest_agent.investment.infrastructure.pancakeswap.universal_router.permit2 import (
+    Permit2,
+)
 from invest_agent.investment.basket_invest_use_case import BasketInvestUseCase
 from invest_agent.investment.investment_planner_strategy.equal_investment_planner import (
     EqualInvestmentPlanner,
 )
-from invest_agent.investment.infrastructure.pancakeswap.exchange.universal_router import (
+from invest_agent.investment.infrastructure.pancakeswap.universal_router.universal_router import (
     PancakeSwapUniversalRouter,
 )
 from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (

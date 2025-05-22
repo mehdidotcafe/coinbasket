@@ -29,7 +29,7 @@ class Permit2:
         self.codec = RouterCodec()
 
         with open(
-            "./invest_agent/investment/infrastructure/pancakeswap/exchange/permit2_contract_abi.json",
+            "./invest_agent/investment/infrastructure/pancakeswap/universal_router/permit2_contract_abi.json",
             "r",
         ) as f:
             self.permit2_contract_abi = json.load(f)
