@@ -83,7 +83,9 @@ class ZeroXSwapper(Exchange):
                 amount=amount,
             )
 
-            self.__approve_allowance(price=price, token=step.token)
+            self.__approve_allowance(
+                price=price, token_contract=step_token_contract, token=step.token
+            )
 
             quote = self.api_client.get_quote(
                 chain_id=self.chain.get_chain_id(),
@@ -92,8 +94,6 @@ class ZeroXSwapper(Exchange):
                 buy_token=step.token.address,
                 amount=amount,
             )
-
-            print(f"Quote: {quote}")
 
             transaction_data = self.__make_transaction_data(quote)
 
@@ -122,7 +122,72 @@ class ZeroXSwapper(Exchange):
         return bids
 
     def execute_divestment_plan(self, divestment_plan: InvestmentPlan) -> list[Bid]:
-        return []
+        bids: list[Bid] = []
+
+        base_token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(divestment_plan.balance.token.address),
+            abi=self.erc20_token_abi,
+        )
+
+        for step in divestment_plan.steps:
+            step_token_contract = self.w3.eth.contract(
+                address=self.w3.to_checksum_address(step.token.address),
+                abi=self.erc20_token_abi,
+            )
+
+            amount = int(
+                self.__get_token_amount(
+                    token_contract=step_token_contract,
+                    token=step.token,
+                    raw_amount=step.amount,
+                )
+            )
+
+            price = self.api_client.get_price(
+                chain_id=self.chain.get_chain_id(),
+                taker=self.account.address,
+                sell_token=step.token.address,
+                buy_token=divestment_plan.balance.token.address,
+                amount=amount,
+            )
+
+            self.__approve_allowance(
+                price=price, token_contract=step_token_contract, token=step.token
+            )
+
+            quote = self.api_client.get_quote(
+                chain_id=self.chain.get_chain_id(),
+                taker=self.account.address,
+                sell_token=step.token.address,
+                buy_token=divestment_plan.balance.token.address,
+                amount=amount,
+            )
+
+            transaction_data = self.__make_transaction_data(quote)
+
+            self.chain.sign_send_wait_transaction(
+                gas=Gas(
+                    gas=int(quote.transaction.gas) if quote.transaction.gas else None,
+                    gas_price=int(quote.transaction.gasPrice)
+                    if quote.transaction.gasPrice
+                    else None,
+                ),
+                to_address=self.w3.to_checksum_address(quote.transaction.to),
+                encoded_input=transaction_data,
+                amount=int(quote.transaction.value) if quote.transaction.value else 0,
+            )
+
+            bids.append(
+                self.__make_bid(
+                    quote=quote,
+                    token_in_contract=base_token_contract,
+                    token_in=divestment_plan.balance.token,
+                    token_out_contract=step_token_contract,
+                    token_out=step.token,
+                )
+            )
+
+        return bids
 
     def get_wallet_in_token(
         self, tokens_balance: list[Balance], token: Token
@@ -189,14 +254,23 @@ class ZeroXSwapper(Exchange):
         sig_len_hex = "0x" + sig_len.to_bytes(32, "big").hex()
         return sig_len_hex
 
-    def __approve_allowance(self, price: Price, token: Token):
+    def __approve_allowance(self, price: Price, token_contract: Contract, token: Token):
         if self.chain.is_native_token(token) or price.issues.allowance is None:
             return
 
-        # print(
-        #     f"MOCK Approving allowance for token {token.address} with amount {price.issues.allowance}"
-        # )
-        return
+        contract_function = token_contract.functions.approve(
+            self.w3.to_checksum_address(price.issues.allowance.spender), 2**256 - 1
+        )
+
+        encoded_input = contract_function._encode_transaction_data()
+
+        receipt = self.chain.sign_send_wait_transaction(
+            amount=0,
+            encoded_input=encoded_input,
+            to_address=self.w3.to_checksum_address(token.address),
+        )
+
+        return receipt
 
     def __get_token_amount(
         self, token_contract: Contract, token: Token, raw_amount: Decimal
