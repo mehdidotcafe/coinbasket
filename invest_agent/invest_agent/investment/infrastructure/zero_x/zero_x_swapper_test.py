@@ -1,0 +1,303 @@
+from decimal import Decimal
+from unittest import mock
+from hexbytes import HexBytes
+from invest_agent.chain.balance import Balance
+from invest_agent.chain.chain import Chain, Gas
+from invest_agent.investment.basket_investment import Bid
+from invest_agent.investment.infrastructure.zero_x.price import Issues, Price
+from invest_agent.investment.infrastructure.zero_x.quote import (
+    Fee,
+    Fees,
+    Permit2,
+    Quote,
+    Transaction,
+)
+from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
+    ZeroXApiClient,
+)
+from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import (
+    Configuration,
+    ZeroXSwapper,
+)
+from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
+from pytest import fixture
+from protocol.fixture.token import bnb_token, eth_token
+
+from web3 import Web3
+from web3.eth import Eth
+from eth_account.signers.local import LocalAccount
+
+
+@fixture
+def w3():
+    w3 = mock.Mock(spec=Web3)
+
+    w3.eth = mock.Mock(spec=Eth)
+
+    account = mock.Mock(spec=LocalAccount)
+    account.address = "0x1234567890abcdef1234567890abcdef12345678"
+
+    w3.eth.account.from_key.return_value = account
+
+    token_contract = mock.Mock()
+    token_contract.functions.decimals.return_value.call.return_value = 18
+    w3.eth.contract.return_value = token_contract
+
+    return w3
+
+
+@fixture
+def zero_x_api_client():
+    return mock.Mock(spec=ZeroXApiClient)
+
+
+@fixture
+def chain():
+    return mock.Mock(spec=Chain)
+
+
+@fixture
+def configuration():
+    return {
+        "bsc_rpc_url": "https://bsc-dataseed.binance.org/",
+        "private_key": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    }
+
+
+def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    configuration: Configuration,
+    w3: Web3,
+):
+    zero_x_swapper = ZeroXSwapper(
+        api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
+    )
+    investment_plan = InvestmentPlan(
+        steps=[
+            InvestmentPlanStep(
+                token=eth_token,
+                amount=Decimal("1"),
+            ),
+        ],
+        balance=Balance(token=bnb_token, amount=Decimal("1")),
+    )
+
+    w3.to_wei.return_value = 1000000000000000000
+    w3.to_checksum_address.return_value = "0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD"
+
+    chain.is_native_token.return_value = True
+    chain.get_chain_id.return_value = 42
+
+    zero_x_api_client.get_price.return_value = Price(issues=Issues())
+    zero_x_api_client.get_quote.return_value = Quote(
+        permit2=None,
+        transaction=Transaction(
+            to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
+            data="0x1234567890abcdef1234567890abcdef12345678",
+            gas="21000",
+            gasPrice="1000000000",
+            value="1000000000000000000",
+        ),
+        liquidityAvailable=True,
+        buyAmount="254516995428172740",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellAmount="1000000000000000000",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(
+            integratorFee=None,
+            zeroExFee=Fee(
+                amount="382349016667264",
+                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                type="volume",
+            ),
+            gasFee=None,
+        ),
+    )
+    # TODO: check log parsing in another test
+    chain.sign_send_wait_transaction.return_value = {"logs": []}
+
+    zero_x_swapper.execute_investment_plan(investment_plan)
+
+    zero_x_api_client.get_quote.assert_called_once_with(
+        taker="0x1234567890abcdef1234567890abcdef12345678",
+        chain_id=42,
+        sell_token="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        buy_token="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        amount=1000000000000000000,
+    )
+    zero_x_api_client.get_price.assert_called_once_with(
+        taker="0x1234567890abcdef1234567890abcdef12345678",
+        chain_id=42,
+        sell_token="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        buy_token="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        amount=1000000000000000000,
+    )
+    chain.sign_send_wait_transaction.assert_called_once_with(
+        gas=Gas(gas=21000, gas_price=1000000000),
+        to_address="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
+        encoded_input="0x1234567890abcdef1234567890abcdef12345678",
+        amount=1000000000000000000,
+    )
+
+
+def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    configuration: Configuration,
+    w3: Web3,
+):
+    zero_x_swapper = ZeroXSwapper(
+        api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
+    )
+    investment_plan = InvestmentPlan(
+        steps=[
+            InvestmentPlanStep(
+                token=eth_token,
+                amount=Decimal("1"),
+            ),
+        ],
+        balance=Balance(token=bnb_token, amount=Decimal("1")),
+    )
+
+    w3.to_wei.return_value = 1000000000000000000
+    w3.to_checksum_address.return_value = "0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD"
+
+    chain.is_native_token.return_value = True
+    chain.get_chain_id.return_value = 42
+
+    zero_x_api_client.get_price.return_value = Price(issues=Issues())
+    zero_x_api_client.get_quote.return_value = Quote(
+        permit2=Permit2(
+            eip721={
+                "types": {
+                    "EIP712Domain": [
+                        {"name": "name", "type": "string"},
+                        {"name": "version", "type": "string"},
+                        {"name": "chainId", "type": "uint256"},
+                        {"name": "verifyingContract", "type": "address"},
+                    ],
+                    "Permit": [
+                        {"name": "spender", "type": "address"},
+                        {"name": "tokenId", "type": "uint256"},
+                        {"name": "nonce", "type": "uint256"},
+                        {"name": "deadline", "type": "uint256"},
+                    ],
+                },
+                "primaryType": "Permit",
+                "domain": {
+                    "name": "MyNFT",
+                    "version": "1",
+                    "chainId": 1,
+                    "verifyingContract": "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+                },
+                "message": {
+                    "spender": "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835Cb2",
+                    "tokenId": 1234,
+                    "nonce": 1,
+                    "deadline": 1754884800,
+                },
+            }
+        ),
+        transaction=Transaction(
+            to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
+            data="0x1234567890abcdef1234567890abcdef12345678",
+            gas="21000",
+            gasPrice="1000000000",
+            value="1000000000000000000",
+        ),
+        liquidityAvailable=True,
+        buyAmount="254516995428172740",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellAmount="1000000000000000000",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(
+            integratorFee=None,
+            zeroExFee=Fee(
+                amount="382349016667264",
+                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                type="volume",
+            ),
+            gasFee=None,
+        ),
+    )
+
+    w3.eth.account.sign_typed_data.return_value = mock.Mock(
+        signature=HexBytes("0x12890438482abdbf")
+    )
+    zero_x_swapper.execute_investment_plan(investment_plan)
+
+    chain.sign_send_wait_transaction.assert_called_once_with(
+        gas=mock.ANY,
+        to_address=mock.ANY,
+        amount=mock.ANY,
+        encoded_input=f"0x{'0x1234567890abcdef1234567890abcdef12345678'[2:]}{'0x0000000000000000000000000000000000000000000000000000000000000008'[2:]}{'0x12890438482abdbf'[2:]}",  # Permit2 signature
+    )
+
+
+def test_zero_x_swapper_execute_investment_plan_bids(
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    configuration: Configuration,
+    w3: Web3,
+):
+    zero_x_swapper = ZeroXSwapper(
+        api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
+    )
+    investment_plan = InvestmentPlan(
+        steps=[
+            InvestmentPlanStep(
+                token=eth_token,
+                amount=Decimal("1"),
+            )
+        ],
+        balance=Balance(token=bnb_token, amount=Decimal("3")),
+    )
+
+    w3.to_wei.return_value = 1000000000000000000
+    w3.to_checksum_address.return_value = "0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD"
+
+    chain.is_native_token.return_value = True
+    chain.get_chain_id.return_value = 42
+
+    zero_x_api_client.get_price.return_value = Price(issues=Issues())
+    zero_x_api_client.get_quote.return_value = Quote(
+        liquidityAvailable=True,
+        permit2=None,
+        transaction=Transaction(
+            to="0x779a74436eda060911b2c4f209d34ea155f3df09",
+            data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            gas="322930",
+            gasPrice="100000000",
+            value="1000000000000000000",
+        ),
+        buyAmount="254516995428172740",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellAmount="1000000000000000000",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(
+            integratorFee=None,
+            zeroExFee=Fee(
+                amount="382349016667264",
+                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                type="volume",
+            ),
+            gasFee=None,
+        ),
+    )
+
+    bids = zero_x_swapper.execute_investment_plan(investment_plan)
+
+    assert bids == [
+        Bid(
+            token=eth_token,
+            balance_in=Balance(
+                token=bnb_token,
+                amount=Decimal("1.0"),
+            ),
+            balance_out=Balance(
+                token=eth_token,
+                amount=Decimal("0.25451699542817274"),
+            ),
+        ),
+    ]

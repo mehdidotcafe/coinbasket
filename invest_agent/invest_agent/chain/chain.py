@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
@@ -7,7 +8,21 @@ from protocol.token import Token
 from invest_agent.chain.balance import Balance
 
 
+@dataclass
+class Gas:
+    gas: int | None
+    gas_price: int | None
+
+
 class Chain(ABC):
+    @abstractmethod
+    def is_native_token(self, token: Token) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_chain_id(self) -> int:
+        raise NotImplementedError
+
     @abstractmethod
     def get_address(self) -> str:
         raise NotImplementedError
@@ -32,6 +47,7 @@ class Chain(ABC):
     def sign_send_wait_transaction(
         self,
         amount: int,
+        gas: Gas | None = None,
         to_address: str | None = None,
         encoded_input: Any | None = None,
     ) -> Any:

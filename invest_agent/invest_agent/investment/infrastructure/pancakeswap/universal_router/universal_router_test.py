@@ -99,7 +99,7 @@ def router(chain: Chain, permit2: Permit2):
     )
 
 
-def test_execute_investment_plan(
+def test_universal_router_execute_investment_plan(
     router: PancakeSwapUniversalRouter, permit2: Permit2, chain: Chain
 ):
     investment_plan = InvestmentPlan(
@@ -177,13 +177,13 @@ def test_execute_investment_plan(
     )
 
     chain.sign_send_wait_transaction.assert_called_once_with(
-        470000000000000000,  # 0.47 BNB
-        Web3.to_checksum_address(universal_router_address),
-        mock.ANY,
+        amount=470000000000000000,  # 0.47 BNB
+        to_address=Web3.to_checksum_address(universal_router_address),
+        encoded_input=mock.ANY,
     )
 
 
-def test_execute_divestment_plan(
+def test_universal_router_execute_divestment_plan(
     router: PancakeSwapUniversalRouter, chain: Chain, permit2: Permit2
 ):
     divestment_plan = InvestmentPlan(
@@ -264,13 +264,13 @@ def test_execute_divestment_plan(
     )
 
     chain.sign_send_wait_transaction.assert_called_once_with(
-        0,
-        Web3.to_checksum_address(universal_router_address),
-        mock.ANY,
+        amount=0,
+        to_address=Web3.to_checksum_address(universal_router_address),
+        encoded_input=mock.ANY,
     )
 
 
-def test_get_tokens_balance_in_token(
+def test_universal_router_get_tokens_balance_in_token(
     router: PancakeSwapUniversalRouter,
 ):
     token = Token(
@@ -280,7 +280,7 @@ def test_get_tokens_balance_in_token(
         address="0x55d398326f99059ff775485246999027b3197955",
     )
 
-    balance = router.get_wallet_in_token(
+    router.get_wallet_in_token(
         [
             Balance(
                 token=Token(
@@ -303,7 +303,5 @@ def test_get_tokens_balance_in_token(
         ],
         token,
     )
-
-    print(f"Balance: {balance}")
 
     assert True == True

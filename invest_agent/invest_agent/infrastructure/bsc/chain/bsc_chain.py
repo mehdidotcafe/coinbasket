@@ -9,7 +9,7 @@ from web3.types import TxParams, Wei
 
 from protocol.token import Token
 from invest_agent.chain.balance import Balance
-from invest_agent.chain.chain import Chain
+from invest_agent.chain.chain import Chain, Gas
 
 
 class BscChain(Chain):
@@ -37,6 +37,13 @@ class BscChain(Chain):
             SignAndSendRawMiddlewareBuilder.build(self.account),  # type: ignore
             layer=0,
         )
+
+    def is_native_token(self, token: Token) -> bool:
+        return token.address == self.base_token.address
+
+    def get_chain_id(self) -> int:
+        """Get the chain ID of the BSC network."""
+        return self.w3.eth.chain_id
 
     def get_address(self) -> str:
         """Get the address of the agent wallet."""
@@ -105,21 +112,14 @@ class BscChain(Chain):
     def sign_send_wait_transaction(
         self,
         amount: int,
+        gas: Gas | None = None,
         # address checksum
         to_address: str | None = None,
         encoded_input: HexStr | None = None,
     ) -> Any:
-        latest_block = self.w3.eth.get_block("latest")
-        base_fee = latest_block.get("baseFeePerGas", 0)
-        max_priority_fee = self.w3.to_wei(2, "gwei")  # This is the miner "tip"
-        max_fee_per_gas = Wei(base_fee * 2 + max_priority_fee)
-
         transaction_params: TxParams = {
             "from": self.account.address,
-            "maxPriorityFeePerGas": max_priority_fee,
-            "maxFeePerGas": max_fee_per_gas,
             "chainId": self.w3.eth.chain_id,
-            "type": 2,
             "value": Wei(amount),
             "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
         }
@@ -128,6 +128,22 @@ class BscChain(Chain):
 
         if to_address is not None:
             transaction_params["to"] = to_address
+
+        if gas is None:
+            latest_block = self.w3.eth.get_block("latest")
+            base_fee = latest_block.get("baseFeePerGas", 0)
+            max_priority_fee = self.w3.to_wei(2, "gwei")  # This is the miner "tip"
+            max_fee_per_gas = Wei(base_fee * 2 + max_priority_fee)
+
+            transaction_params["type"] = 2
+            transaction_params["maxFeePerGas"] = max_fee_per_gas
+            transaction_params["maxPriorityFeePerGas"] = max_priority_fee
+
+        if gas is not None and gas.gas is not None:
+            transaction_params["gas"] = gas.gas
+
+        if gas is not None and gas.gas_price is not None:
+            transaction_params["gasPrice"] = Wei(gas.gas_price)
 
         transaction_hash = self.w3.eth.send_transaction(transaction_params)
         print(f"Trx Hash: {transaction_hash.hex()}")

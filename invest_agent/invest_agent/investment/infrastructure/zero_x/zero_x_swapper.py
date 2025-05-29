@@ -1,0 +1,220 @@
+from decimal import Decimal
+import json
+from typing import TypedDict
+from hexbytes import HexBytes
+from invest_agent.chain.balance import Balance
+from invest_agent.chain.chain import Chain, Gas
+from invest_agent.investment.basket_investment import Bid
+from invest_agent.investment.exchange.exchange import Exchange, Wallet
+from invest_agent.investment.infrastructure.zero_x.price import Price
+from invest_agent.investment.infrastructure.zero_x.quote import Quote
+from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
+    ZeroXApiClient,
+)
+from invest_agent.investment.investment_plan import InvestmentPlan
+from protocol.token import Token
+from web3 import Web3
+from web3.contract import Contract
+
+from eth_account.signers.local import LocalAccount
+from eth_account.datastructures import (
+    SignedMessage,
+)
+
+
+class Configuration(TypedDict):
+    bsc_rpc_url: str
+    private_key: str
+
+
+# LINK: https://0x.org/docs/api#tag/Swap/operation/swap::permit2::getPrice
+# LINK: https://0x.org/docs/0x-swap-api/guides/swap-tokens-with-0x-swap-api
+class ZeroXSwapper(Exchange):
+    def __init__(
+        self,
+        api_client: ZeroXApiClient,
+        chain: Chain,
+        configuration: Configuration,
+        w3: Web3,
+    ):
+        self.api_client = api_client
+        self.chain = chain
+        self.bsc_rpc_url = configuration["bsc_rpc_url"]
+
+        self.w3 = w3
+        self.account: LocalAccount = self.w3.eth.account.from_key(
+            private_key=configuration["private_key"]
+        )
+
+        with open(
+            "./invest_agent/infrastructure/bsc/chain/erc20_token_abi.json",
+            "r",
+            encoding="utf-8",
+        ) as f:
+            self.erc20_token_abi = json.load(f)
+
+    def execute_investment_plan(self, investment_plan: InvestmentPlan) -> list[Bid]:
+        bids: list[Bid] = []
+
+        base_token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(investment_plan.balance.token.address),
+            abi=self.erc20_token_abi,
+        )
+
+        for step in investment_plan.steps:
+            step_token_contract = self.w3.eth.contract(
+                address=self.w3.to_checksum_address(step.token.address),
+                abi=self.erc20_token_abi,
+            )
+
+            amount = int(
+                self.__get_token_amount(
+                    token_contract=step_token_contract,
+                    token=step.token,
+                    raw_amount=step.amount,
+                )
+            )
+
+            price = self.api_client.get_price(
+                chain_id=self.chain.get_chain_id(),
+                taker=self.account.address,
+                sell_token=investment_plan.balance.token.address,
+                buy_token=step.token.address,
+                amount=amount,
+            )
+
+            self.__approve_allowance(price=price, token=step.token)
+
+            quote = self.api_client.get_quote(
+                chain_id=self.chain.get_chain_id(),
+                taker=self.account.address,
+                sell_token=investment_plan.balance.token.address,
+                buy_token=step.token.address,
+                amount=amount,
+            )
+
+            print(f"Quote: {quote}")
+
+            transaction_data = self.__make_transaction_data(quote)
+
+            self.chain.sign_send_wait_transaction(
+                gas=Gas(
+                    gas=int(quote.transaction.gas) if quote.transaction.gas else None,
+                    gas_price=int(quote.transaction.gasPrice)
+                    if quote.transaction.gasPrice
+                    else None,
+                ),
+                to_address=self.w3.to_checksum_address(quote.transaction.to),
+                encoded_input=transaction_data,
+                amount=int(quote.transaction.value) if quote.transaction.value else 0,
+            )
+
+            bids.append(
+                self.__make_bid(
+                    quote=quote,
+                    token_in_contract=base_token_contract,
+                    token_in=investment_plan.balance.token,
+                    token_out_contract=step_token_contract,
+                    token_out=step.token,
+                )
+            )
+
+        return bids
+
+    def execute_divestment_plan(self, divestment_plan: InvestmentPlan) -> list[Bid]:
+        return []
+
+    def get_wallet_in_token(
+        self, tokens_balance: list[Balance], token: Token
+    ) -> Wallet:
+        return Wallet(
+            balances=[], total_balance=Balance(token=token, amount=Decimal(0))
+        )
+
+    def __make_bid(
+        self,
+        quote: Quote,
+        token_in_contract: Contract,
+        token_in: Token,
+        token_out_contract: Contract,
+        token_out: Token,
+    ) -> Bid:
+        return Bid(
+            token=token_out,
+            balance_in=Balance(
+                token=token_in,
+                amount=self.__get_raw_amount(
+                    token_in_contract, token_in, Decimal(quote.sellAmount)
+                ),
+            ),
+            balance_out=Balance(
+                token=token_out,
+                amount=self.__get_raw_amount(
+                    token_out_contract, token_out, Decimal(quote.buyAmount)
+                ),
+            ),
+        )
+
+    def __make_transaction_data(self, quote: Quote):
+        if quote.permit2 is None:
+            return quote.transaction.data
+
+        signature: SignedMessage = self.w3.eth.account.sign_typed_data(
+            full_message=quote.permit2.eip712,
+            private_key=self.account.key,
+        )
+
+        signature_hex = signature.signature.to_0x_hex()
+
+        signature_length_hex = self.__compute_signature_length_in_hex(
+            signature.signature
+        )
+
+        transaction_data = quote.transaction.data
+
+        return "0x" + "".join(
+            [
+                h[2:]
+                for h in [
+                    transaction_data,
+                    signature_length_hex,
+                    signature_hex,
+                ]
+            ]
+        )
+
+    def __compute_signature_length_in_hex(self, signature: HexBytes) -> str:
+        sig_len = len(signature)
+
+        sig_len_hex = "0x" + sig_len.to_bytes(32, "big").hex()
+        return sig_len_hex
+
+    def __approve_allowance(self, price: Price, token: Token):
+        if self.chain.is_native_token(token) or price.issues.allowance is None:
+            return
+
+        # print(
+        #     f"MOCK Approving allowance for token {token.address} with amount {price.issues.allowance}"
+        # )
+        return
+
+    def __get_token_amount(
+        self, token_contract: Contract, token: Token, raw_amount: Decimal
+    ) -> Decimal:
+        if self.chain.is_native_token(token):
+            return Decimal(self.w3.to_wei(raw_amount, "ether"))
+
+        decimals = token_contract.functions.decimals().call()
+
+        return raw_amount * (10**decimals)
+
+    def __get_raw_amount(
+        self, token_contract: Contract, token: Token, amount: Decimal
+    ) -> Decimal:
+        decimals = (
+            18
+            if self.chain.is_native_token(token)
+            else token_contract.functions.decimals().call()
+        )
+
+        return amount / (10**decimals)
