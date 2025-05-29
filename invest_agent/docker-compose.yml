@@ -1,12 +1,12 @@
 name: coinbasket_invest_agent
 services:
-  ganache:
-    image: node:20
-    container_name: ganache
+  anvil:
+    image: ghcr.io/foundry-rs/foundry
+    container_name: anvil
+    environment:
+      ANVIL_IP_ADDR: "0.0.0.0"
+    working_dir: /anvil
     ports:
       - "8545:8545"
-    working_dir: /app
-    entrypoint: >
-      sh -c '
-      npm install -g ganache &&
-      ganache --wallet.defaultBalance 10 --fork.url=${GANACHE_FORK_URL} --logging.verbose=true --mnemonic "${GANACHE_MNEMONIC}" --server.host=0.0.0.0'
+    entrypoint: ["anvil"]
+    command: [ "--balance", "10", "--chain-id", "56", "--fork-url", "${ANVIL_FORK_URL}", "--mnemonic", "${ANVIL_MNEMONIC}" ]
