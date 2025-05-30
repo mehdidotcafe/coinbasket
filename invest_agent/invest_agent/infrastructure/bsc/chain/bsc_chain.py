@@ -1,4 +1,5 @@
 from decimal import Decimal
+from functools import cache, lru_cache
 import json
 from typing import Any, TypedDict, cast
 from eth_typing import ChecksumAddress, HexStr
@@ -47,7 +48,8 @@ class BscChain(Chain):
     def is_native_token(self, token: Token) -> bool:
         return token.address == self.base_token.address
 
-    def get_chain_id(self) -> int:
+    @cache
+    def get_chain_id(self) -> int:  # type: ignore
         """Get the chain ID of the BSC network."""
         return self.w3.eth.chain_id
 

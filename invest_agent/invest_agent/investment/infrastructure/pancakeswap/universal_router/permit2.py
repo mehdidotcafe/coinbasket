@@ -14,16 +14,15 @@ class Permit2:
     def __init__(
         self,
         chain: Chain,
+        w3: Web3,
         permit2_contract_address: str,
-        bsc_rpc_url: str,
         private_key: str,
     ):
         self.chain = chain
         self.permit2_contract_address = Web3.to_checksum_address(
             permit2_contract_address
         )
-        self.bsc_rpc_url = bsc_rpc_url
-        self.w3 = Web3(Web3.HTTPProvider(bsc_rpc_url))
+        self.w3 = w3
 
         self.account: LocalAccount = self.w3.eth.account.from_key(private_key)
         self.codec = RouterCodec()
@@ -81,7 +80,7 @@ class Permit2:
             nonce=permit2_nonce,
             spender=spender,
             deadline=deadline,
-            chain_id=self.w3.eth.chain_id,
+            chain_id=self.chain.get_chain_id(),
             verifying_contract=self.permit2_contract_address,
         )
         signed_message = self.account.sign_message(signable_message)

@@ -30,12 +30,12 @@ class PancakeSwapUniversalRouter(Exchange):
 
     def __init__(
         self,
-        bsc_rpc_url: str,
         universal_router_address: str,
         v2_router_address: str,
         private_key: str,
         chain: Chain,
         permit2: Permit2,
+        w3: Web3,
     ):
         self.universal_router_address = universal_router_address
         self.v2_router_address = v2_router_address
@@ -43,9 +43,7 @@ class PancakeSwapUniversalRouter(Exchange):
         self.chain = chain
         self.permit2 = permit2
 
-        self.w3 = Web3(
-            Web3.HTTPProvider(bsc_rpc_url),
-        )
+        self.w3 = w3
         self.account = Account.from_key(private_key)
         self.codec = RouterCodec()
 
