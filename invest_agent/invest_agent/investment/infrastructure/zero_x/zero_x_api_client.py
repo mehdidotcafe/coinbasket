@@ -28,15 +28,17 @@ class ZeroXApiClient:
         sell_token: str,
         buy_token: str,
         amount: int,
+        sell_entire_balance: bool | None = None,
     ) -> Price:
         url = f"{self.api_url}/swap/permit2/price"
-        params: dict[str, str | int] = {
-            "chainId": chain_id,
-            "sellToken": sell_token,
-            "buyToken": buy_token,
-            "sellAmount": amount,
-            "taker": taker,
-        }
+        params = self.__make_params(
+            chain_id,
+            sell_token,
+            buy_token,
+            amount,
+            taker,
+            sell_entire_balance,
+        )
 
         return self.http_request.get(
             {
@@ -54,15 +56,17 @@ class ZeroXApiClient:
         sell_token: str,
         buy_token: str,
         amount: int,
+        sell_entire_balance: bool | None = None,
     ) -> Quote:
         url = f"{self.api_url}/swap/permit2/quote"
-        params: dict[str, str | int] = {
-            "chainId": chain_id,
-            "sellToken": sell_token,
-            "buyToken": buy_token,
-            "sellAmount": amount,
-            "taker": taker,
-        }
+        params = self.__make_params(
+            chain_id,
+            sell_token,
+            buy_token,
+            amount,
+            taker,
+            sell_entire_balance,
+        )
 
         return self.http_request.get(
             {
@@ -72,3 +76,25 @@ class ZeroXApiClient:
             },
             Quote,
         )
+
+    def __make_params(
+        self,
+        chain_id: int,
+        sell_token: str,
+        buy_token: str,
+        amount: int,
+        taker: str,
+        sell_entire_balance: bool | None = None,
+    ) -> dict[str, str | int]:
+        params: dict[str, str | int] = {
+            "chainId": chain_id,
+            "sellToken": sell_token,
+            "buyToken": buy_token,
+            "sellAmount": amount,
+            "taker": taker,
+        }
+
+        if sell_entire_balance is not None:
+            params["sellEntireBalance"] = "true" if sell_entire_balance else "false"
+
+        return params

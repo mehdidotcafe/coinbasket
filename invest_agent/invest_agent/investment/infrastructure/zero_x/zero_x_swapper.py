@@ -1,11 +1,11 @@
 from decimal import Decimal
 import json
-from typing import TypedDict
+from typing import TypedDict, cast
 from hexbytes import HexBytes
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain, Gas
 from invest_agent.investment.basket_investment import Bid
-from invest_agent.investment.exchange.exchange import Exchange, Wallet
+from invest_agent.investment.exchange.exchange import ConvertedBalance, Exchange, Wallet
 from invest_agent.investment.infrastructure.zero_x.price import Price
 from invest_agent.investment.infrastructure.zero_x.quote import Quote
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
@@ -62,6 +62,8 @@ class ZeroXSwapper(Exchange):
         )
 
         for step in investment_plan.steps:
+            print(f"=== {step.token.display_name} ({step.amount}) ===")
+
             step_token_contract = self.w3.eth.contract(
                 address=self.w3.to_checksum_address(step.token.address),
                 abi=self.erc20_token_abi,
@@ -118,6 +120,7 @@ class ZeroXSwapper(Exchange):
                     token_out=step.token,
                 )
             )
+            print(f"==================")
 
         return bids
 
@@ -130,6 +133,8 @@ class ZeroXSwapper(Exchange):
         )
 
         for step in divestment_plan.steps:
+            print(f"=== {step.token.display_name} ({step.amount}) ===")
+
             step_token_contract = self.w3.eth.contract(
                 address=self.w3.to_checksum_address(step.token.address),
                 abi=self.erc20_token_abi,
@@ -147,8 +152,9 @@ class ZeroXSwapper(Exchange):
                 chain_id=self.chain.get_chain_id(),
                 taker=self.account.address,
                 sell_token=step.token.address,
-                buy_token=divestment_plan.balance.token.address,
                 amount=amount,
+                buy_token=divestment_plan.balance.token.address,
+                sell_entire_balance=True,
             )
 
             self.__approve_allowance(
@@ -161,6 +167,7 @@ class ZeroXSwapper(Exchange):
                 sell_token=step.token.address,
                 buy_token=divestment_plan.balance.token.address,
                 amount=amount,
+                sell_entire_balance=True,
             )
 
             transaction_data = self.__make_transaction_data(quote)
@@ -186,14 +193,73 @@ class ZeroXSwapper(Exchange):
                     token_out=step.token,
                 )
             )
+            print(f"==================")
 
         return bids
 
     def get_wallet_in_token(
         self, tokens_balance: list[Balance], token: Token
     ) -> Wallet:
+        balances: list[ConvertedBalance] = []
+
+        token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(token.address),
+            abi=self.erc20_token_abi,
+        )
+
+        for balance in tokens_balance:
+            amount = int(
+                self.__get_token_amount(
+                    token_contract=token_contract,
+                    token=token,
+                    raw_amount=balance.amount,
+                )
+            )
+
+            price = self.api_client.get_price(
+                chain_id=self.chain.get_chain_id(),
+                taker=self.account.address,
+                sell_token=balance.token.address,
+                buy_token=token.address,
+                amount=amount,
+            )
+            balance_token_contract = self.w3.eth.contract(
+                address=self.w3.to_checksum_address(balance.token.address),
+                abi=self.erc20_token_abi,
+            )
+
+            balances.append(
+                ConvertedBalance(
+                    balance_in=Balance(
+                        token=balance.token,
+                        amount=self.__get_raw_amount(
+                            token_contract=balance_token_contract,
+                            token=balance.token,
+                            amount=Decimal(price.sellAmount),
+                        ),
+                    ),
+                    balance_out=Balance(
+                        token=token,
+                        amount=self.__get_raw_amount(
+                            token_contract=token_contract,
+                            token=token,
+                            amount=Decimal(price.buyAmount),
+                        ),
+                    ),
+                )
+            )
+
         return Wallet(
-            balances=[], total_balance=Balance(token=token, amount=Decimal(0))
+            balances=balances,
+            total_balance=self.__sum_balances(balances, token),
+        )
+
+    def __sum_balances(self, balances: list[ConvertedBalance], token: Token):
+        return Balance(
+            token=token,
+            amount=cast(
+                Decimal, sum([balance.balance_out.amount for balance in balances])
+            ),
         )
 
     def __make_bid(

@@ -1,4 +1,5 @@
 from typing import Optional
+from invest_agent.investment.infrastructure.zero_x.fee import Fees
 from pydantic import BaseModel
 
 
@@ -12,3 +13,8 @@ class Issues(BaseModel):
 
 class Price(BaseModel):
     issues: Issues
+    buyAmount: str
+    buyToken: str
+    sellAmount: str
+    sellToken: str
+    fees: Fees

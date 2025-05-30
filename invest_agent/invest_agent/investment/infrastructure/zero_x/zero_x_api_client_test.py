@@ -1,10 +1,9 @@
 from unittest import mock
 from invest_agent.http_request.http_request import HttpRequest
+from invest_agent.investment.infrastructure.zero_x.fee import Fee, Fees
 from invest_agent.investment.infrastructure.zero_x.quote import (
     Quote,
     Transaction,
-    Fees,
-    Fee,
 )
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     Configuration,
@@ -43,6 +42,11 @@ def test_zero_x_api_client_get_price_success(
 
     expected_price = Price(
         issues=Issues(),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(),
     )
 
     http_request.get.return_value = expected_price

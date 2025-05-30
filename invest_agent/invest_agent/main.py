@@ -13,7 +13,14 @@ from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
 from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_client import (
     AiohttpAgentToAgentClient,
 )
+from invest_agent.http_request.infrastructure.requests_http_request import (
+    RequestsHttpRequest,
+)
 from invest_agent.investment.basket_investment import BasketInvestment
+from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
+    ZeroXApiClient,
+)
+from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import ZeroXSwapper
 from invest_agent.metrics.get_wallet_in_token_use_case import (
     GetWalletInTokenUseCase,
 )
@@ -43,15 +50,9 @@ from invest_agent.investment.divestment_planner_strategy.total_divestment_planne
 from invest_agent.investment.get_basket_investment_use_case import (
     GetBasketInvestmentUseCase,
 )
-from invest_agent.investment.infrastructure.pancakeswap.universal_router.permit2 import (
-    Permit2,
-)
 from invest_agent.investment.basket_invest_use_case import BasketInvestUseCase
 from invest_agent.investment.investment_planner_strategy.equal_investment_planner import (
     EqualInvestmentPlanner,
-)
-from invest_agent.investment.infrastructure.pancakeswap.universal_router.universal_router import (
-    PancakeSwapUniversalRouter,
 )
 from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
     FetchAiStorage,
@@ -62,7 +63,7 @@ from protocol import SimilarityQuery, SimilarityResponse
 date_time = PythonDateTime()
 
 thread_id = str(date_time.now())
-# thread_id = "1747088966"
+# thread_id = "1748606838"
 
 print(f"Thread ID: {thread_id}")
 
@@ -78,8 +79,10 @@ invest_agent = Agent(
     endpoint=f"http://localhost:{configuration.agent_port}/submit",
 )
 
+w3 = Web3(Web3.HTTPProvider(configuration.bsc_rpc_url))
+
 chain = BscChain(
-    w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+    w3=w3,
     private_key=configuration.bsc_private_key,
     base_token=Token(
         name=configuration.bsc_base_token_name,
@@ -88,19 +91,25 @@ chain = BscChain(
         address=configuration.bsc_base_token_address,
     ),
 )
-permit2 = Permit2(
-    chain=chain,
-    permit2_contract_address=configuration.pancakeswap_permit2_contract_address,
-    bsc_rpc_url=configuration.bsc_rpc_url,
-    private_key=configuration.bsc_private_key,
+
+http_request = RequestsHttpRequest[Any]()
+
+api_client = ZeroXApiClient(
+    configuration={
+        "zero_x_api_url": configuration.zero_x_api_url,
+        "zero_x_api_key": configuration.zero_x_api_key,
+    },
+    http_request=http_request,
 )
-exchange = PancakeSwapUniversalRouter(
-    configuration.bsc_rpc_url,
-    configuration.pancakeswap_universal_router_address,
-    configuration.pancakeswap_v2_router_address,
-    configuration.bsc_private_key,
-    chain,
-    permit2,
+
+exchange = ZeroXSwapper(
+    api_client=api_client,
+    chain=chain,
+    w3=w3,
+    configuration={
+        "bsc_rpc_url": configuration.bsc_rpc_url,
+        "private_key": configuration.bsc_private_key,
+    },
 )
 storage = FetchAiStorage[Any](
     thread_id, store=KeyValueStore(configuration.agent_name, "./database")

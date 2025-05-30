@@ -5,14 +5,14 @@ from hexbytes import HexBytes
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain, Gas
 from invest_agent.investment.basket_investment import Bid
+from invest_agent.investment.infrastructure.zero_x.fee import Fee, Fees
 from invest_agent.investment.infrastructure.zero_x.price import Allowance, Issues, Price
 from invest_agent.investment.infrastructure.zero_x.quote import (
-    Fee,
-    Fees,
     Permit2,
     Quote,
     Transaction,
 )
+from invest_agent.investment.exchange.exchange import ConvertedBalance, Wallet
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
@@ -22,7 +22,7 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import (
 )
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from pytest import fixture
-from protocol.fixture.token import bnb_token, eth_token
+from protocol.fixture.token import bnb_token, eth_token, usdt_token, sol_token
 
 from web3 import Web3
 from web3.eth import Eth
@@ -40,6 +40,7 @@ def w3():
 
     w3.eth.account.from_key.return_value = account
     w3.to_checksum_address.side_effect = lambda x: x
+    w3.to_wei.return_value = 1000000000000000000
 
     token_contract = mock.Mock()
     token_contract.functions.decimals.return_value.call.return_value = 18
@@ -85,12 +86,17 @@ def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
         balance=Balance(token=bnb_token, amount=Decimal("1")),
     )
 
-    w3.to_wei.return_value = 1000000000000000000
-
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_price.return_value = Price(issues=Issues())
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(),
+    )
     zero_x_api_client.get_quote.return_value = Quote(
         permit2=None,
         transaction=Transaction(
@@ -161,12 +167,17 @@ def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
         balance=Balance(token=bnb_token, amount=Decimal("1")),
     )
 
-    w3.to_wei.return_value = 1000000000000000000
-
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_price.return_value = Price(issues=Issues())
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(),
+    )
     zero_x_api_client.get_quote.return_value = Quote(
         permit2=Permit2(
             eip721={
@@ -254,12 +265,17 @@ def test_zero_x_swapper_execute_investment_plan_bids(
         balance=Balance(token=bnb_token, amount=Decimal("3")),
     )
 
-    w3.to_wei.return_value = 1000000000000000000
-
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_price.return_value = Price(issues=Issues())
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(),
+    )
     zero_x_api_client.get_quote.return_value = Quote(
         liquidityAvailable=True,
         permit2=None,
@@ -321,12 +337,17 @@ def test_zero_x_swapper_execute_divestment_plan(
         balance=Balance(token=bnb_token, amount=Decimal("0")),
     )
 
-    w3.to_wei.return_value = 1000000000000000000
-
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_price.return_value = Price(issues=Issues())
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(),
+    )
     zero_x_api_client.get_quote.return_value = Quote(
         permit2=None,
         transaction=Transaction(
@@ -361,6 +382,7 @@ def test_zero_x_swapper_execute_divestment_plan(
         sell_token="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
         buy_token="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         amount=1000000000000000000,
+        sell_entire_balance=True,
     )
     zero_x_api_client.get_price.assert_called_once_with(
         taker="0x1234567890abcdef1234567890abcdef12345678",
@@ -368,6 +390,7 @@ def test_zero_x_swapper_execute_divestment_plan(
         sell_token="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
         buy_token="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         amount=1000000000000000000,
+        sell_entire_balance=True,
     )
     chain.sign_send_wait_transaction.assert_called_once_with(
         gas=Gas(gas=21000, gas_price=1000000000),
@@ -396,8 +419,6 @@ def test_zero_x_swapper_execute_divestment_plan_with_allowance(
         balance=Balance(token=bnb_token, amount=Decimal("0")),
     )
 
-    w3.to_wei.return_value = 1000000000000000000
-
     chain.is_native_token.return_value = False
     chain.get_chain_id.return_value = 42
 
@@ -415,7 +436,12 @@ def test_zero_x_swapper_execute_divestment_plan_with_allowance(
             allowance=Allowance(
                 spender="0x694e49f3F7a24387299D619A2931Ee3A763Dc760",
             )
-        )
+        ),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(),
     )
     zero_x_api_client.get_quote.return_value = Quote(
         permit2=None,
@@ -457,4 +483,70 @@ def test_zero_x_swapper_execute_divestment_plan_with_allowance(
                 to_address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
             )
         ]
+    )
+
+
+def test_zero_x_swapper_get_wallet_in_token(
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    configuration: Configuration,
+    w3: Web3,
+):
+    token = usdt_token
+
+    tokens_balance = [
+        Balance(token=sol_token, amount=Decimal("1.0")),
+        Balance(token=eth_token, amount=Decimal("4.0")),
+        Balance(token=usdt_token, amount=Decimal("10.0")),
+    ]
+
+    zero_x_api_client.get_price.side_effect = [
+        Price(
+            issues=Issues(),
+            buyAmount="300000000000000000000",
+            sellAmount="1000000000000000000",
+            buyToken=usdt_token.address,
+            sellToken=sol_token.address,
+            fees=Fees(),
+        ),
+        Price(
+            issues=Issues(),
+            buyAmount="1100000000000000000000",
+            sellAmount="4000000000000000000",
+            buyToken=usdt_token.address,
+            sellToken=eth_token.address,
+            fees=Fees(),
+        ),
+        Price(
+            issues=Issues(),
+            buyAmount="10000000000000000000",
+            sellAmount="10000000000000000000",
+            buyToken=usdt_token.address,
+            sellToken=usdt_token.address,
+            fees=Fees(),
+        ),
+    ]
+
+    zero_x_swapper = ZeroXSwapper(
+        api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
+    )
+
+    wallet = zero_x_swapper.get_wallet_in_token(tokens_balance, token)
+
+    assert wallet == Wallet(
+        balances=[
+            ConvertedBalance(
+                balance_in=Balance(token=sol_token, amount=Decimal("1.0")),
+                balance_out=Balance(token=usdt_token, amount=Decimal("300")),
+            ),
+            ConvertedBalance(
+                balance_in=Balance(token=eth_token, amount=Decimal("4.0")),
+                balance_out=Balance(token=usdt_token, amount=Decimal("1100.0")),
+            ),
+            ConvertedBalance(
+                balance_in=Balance(token=usdt_token, amount=Decimal("10.0")),
+                balance_out=Balance(token=usdt_token, amount=Decimal("10.0")),
+            ),
+        ],
+        total_balance=Balance(token=usdt_token, amount=Decimal("1410.0")),
     )

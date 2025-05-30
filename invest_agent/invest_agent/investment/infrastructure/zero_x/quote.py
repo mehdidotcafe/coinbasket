@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+from invest_agent.investment.infrastructure.zero_x.fee import Fees
 from pydantic import BaseModel
 
 
@@ -12,18 +13,6 @@ class Transaction(BaseModel):
     gas: Optional[str]
     gasPrice: str
     value: str
-
-
-class Fee(BaseModel):
-    amount: str
-    token: str
-    type: str
-
-
-class Fees(BaseModel):
-    integratorFee: Optional[Fee] = None
-    zeroExFee: Optional[Fee] = None
-    gasFee: Optional[Fee] = None
 
 
 class Quote(BaseModel):

@@ -13,7 +13,14 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import (
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from invest_agent.chain.balance import Balance
 
-from protocol.fixture.token import bnb_token, eth_token, wbnb_token, sol_token
+from protocol.fixture.token import (
+    bnb_token,
+    eth_token,
+    wbnb_token,
+    sol_token,
+    btc_token,
+    usdt_token,
+)
 from protocol.token import Token
 from web3 import Web3
 
@@ -52,6 +59,10 @@ def test_integration_zero_x_swapper_execute_investment_plan():
     investment_plan = InvestmentPlan(
         steps=[
             InvestmentPlanStep(
+                token=btc_token,
+                amount=Decimal(1),
+            ),
+            InvestmentPlanStep(
                 token=eth_token,
                 amount=Decimal(1),
             ),
@@ -61,6 +72,10 @@ def test_integration_zero_x_swapper_execute_investment_plan():
             ),
             InvestmentPlanStep(
                 token=sol_token,
+                amount=Decimal(2),
+            ),
+            InvestmentPlanStep(
+                token=usdt_token,
                 amount=Decimal(2),
             ),
         ],
