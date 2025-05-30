@@ -60,23 +60,23 @@ def test_integration_zero_x_swapper_execute_investment_plan():
         steps=[
             InvestmentPlanStep(
                 token=btc_token,
-                amount=Decimal(1),
+                amount=Decimal("1.39283831092838"),
             ),
             InvestmentPlanStep(
                 token=eth_token,
-                amount=Decimal(1),
+                amount=Decimal("1.289891283838"),
             ),
             InvestmentPlanStep(
                 token=wbnb_token,
-                amount=Decimal(3),
+                amount=Decimal("3.189234898934589"),
             ),
             InvestmentPlanStep(
                 token=sol_token,
-                amount=Decimal(2),
+                amount=Decimal("2.0000000000"),
             ),
             InvestmentPlanStep(
                 token=usdt_token,
-                amount=Decimal(2),
+                amount=Decimal("0.9213909028917891"),
             ),
         ],
         balance=Balance(

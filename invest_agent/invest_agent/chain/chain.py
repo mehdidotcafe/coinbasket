@@ -8,6 +8,12 @@ from protocol.token import Token
 from invest_agent.chain.balance import Balance
 
 
+class TransactionFailure(Exception):
+    def __init__(self):
+        self.message = "Transaction failed."
+        super().__init__(self.message)
+
+
 @dataclass
 class Gas:
     gas: int | None

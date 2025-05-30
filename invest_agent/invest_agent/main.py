@@ -63,7 +63,7 @@ from protocol import SimilarityQuery, SimilarityResponse
 date_time = PythonDateTime()
 
 thread_id = str(date_time.now())
-# thread_id = "1748606838"
+# thread_id = "1748622992"
 
 print(f"Thread ID: {thread_id}")
 

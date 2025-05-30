@@ -11,8 +11,9 @@ from invest_agent.investment.infrastructure.zero_x.quote import Quote
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
-from invest_agent.investment.investment_plan import InvestmentPlan
+from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from protocol.token import Token
+from tenacity import retry, stop_after_attempt
 from web3 import Web3
 from web3.contract import Contract
 
@@ -20,6 +21,8 @@ from eth_account.signers.local import LocalAccount
 from eth_account.datastructures import (
     SignedMessage,
 )
+
+RETRY_ATTEMPTS = 5
 
 
 class Configuration(TypedDict):
@@ -62,67 +65,69 @@ class ZeroXSwapper(Exchange):
         )
 
         for step in investment_plan.steps:
-            print(f"=== {step.token.display_name} ({step.amount}) ===")
-
-            step_token_contract = self.w3.eth.contract(
-                address=self.w3.to_checksum_address(step.token.address),
-                abi=self.erc20_token_abi,
-            )
-
-            amount = int(
-                self.__get_token_amount(
-                    token_contract=step_token_contract,
-                    token=step.token,
-                    raw_amount=step.amount,
-                )
-            )
-
-            price = self.api_client.get_price(
-                chain_id=self.chain.get_chain_id(),
-                taker=self.account.address,
-                sell_token=investment_plan.balance.token.address,
-                buy_token=step.token.address,
-                amount=amount,
-            )
-
-            self.__approve_allowance(
-                price=price, token_contract=step_token_contract, token=step.token
-            )
-
-            quote = self.api_client.get_quote(
-                chain_id=self.chain.get_chain_id(),
-                taker=self.account.address,
-                sell_token=investment_plan.balance.token.address,
-                buy_token=step.token.address,
-                amount=amount,
-            )
-
-            transaction_data = self.__make_transaction_data(quote)
-
-            self.chain.sign_send_wait_transaction(
-                gas=Gas(
-                    gas=int(quote.transaction.gas) if quote.transaction.gas else None,
-                    gas_price=int(quote.transaction.gasPrice)
-                    if quote.transaction.gasPrice
-                    else None,
-                ),
-                to_address=self.w3.to_checksum_address(quote.transaction.to),
-                encoded_input=transaction_data,
-                amount=int(quote.transaction.value) if quote.transaction.value else 0,
-            )
-
             bids.append(
-                self.__make_bid(
-                    quote=quote,
-                    token_in_contract=base_token_contract,
-                    token_in=investment_plan.balance.token,
-                    token_out_contract=step_token_contract,
-                    token_out=step.token,
+                self.__execute_investment_step(
+                    step=step,
+                    base_token_contract=base_token_contract,
+                    base_token=investment_plan.balance.token,
                 )
             )
-            print(f"==================")
 
         return bids
+
+    @retry(stop=stop_after_attempt(RETRY_ATTEMPTS))
+    def __execute_investment_step(
+        self,
+        step: InvestmentPlanStep,
+        base_token_contract: Contract,
+        base_token: Token,
+    ) -> Bid:
+        print(
+            f"=== {step.token.display_name} - {step.token.address} ({step.amount}) ==="
+        )
+
+        step_token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(step.token.address),
+            abi=self.erc20_token_abi,
+        )
+
+        amount = int(
+            self.__get_token_amount(
+                token_contract=base_token_contract,
+                token=base_token,
+                raw_amount=step.amount,
+            )
+        )
+
+        quote = self.api_client.get_quote(
+            chain_id=self.chain.get_chain_id(),
+            taker=self.account.address,
+            sell_token=base_token.address,
+            buy_token=step.token.address,
+            amount=amount,
+        )
+
+        transaction_data = self.__make_transaction_data(quote)
+
+        self.chain.sign_send_wait_transaction(
+            gas=Gas(
+                gas=int(quote.transaction.gas) if quote.transaction.gas else None,
+                gas_price=int(quote.transaction.gasPrice)
+                if quote.transaction.gasPrice
+                else None,
+            ),
+            to_address=self.w3.to_checksum_address(quote.transaction.to),
+            encoded_input=transaction_data,
+            amount=int(quote.transaction.value) if quote.transaction.value else 0,
+        )
+
+        return self.__make_bid(
+            quote=quote,
+            token_in_contract=base_token_contract,
+            token_in=base_token,
+            token_out_contract=step_token_contract,
+            token_out=step.token,
+        )
 
     def execute_divestment_plan(self, divestment_plan: InvestmentPlan) -> list[Bid]:
         bids: list[Bid] = []
@@ -133,85 +138,107 @@ class ZeroXSwapper(Exchange):
         )
 
         for step in divestment_plan.steps:
-            print(f"=== {step.token.display_name} ({step.amount}) ===")
-
-            step_token_contract = self.w3.eth.contract(
-                address=self.w3.to_checksum_address(step.token.address),
-                abi=self.erc20_token_abi,
-            )
-
-            amount = int(
-                self.__get_token_amount(
-                    token_contract=step_token_contract,
-                    token=step.token,
-                    raw_amount=step.amount,
-                )
-            )
-
-            price = self.api_client.get_price(
-                chain_id=self.chain.get_chain_id(),
-                taker=self.account.address,
-                sell_token=step.token.address,
-                amount=amount,
-                buy_token=divestment_plan.balance.token.address,
-                sell_entire_balance=True,
-            )
-
-            self.__approve_allowance(
-                price=price, token_contract=step_token_contract, token=step.token
-            )
-
-            quote = self.api_client.get_quote(
-                chain_id=self.chain.get_chain_id(),
-                taker=self.account.address,
-                sell_token=step.token.address,
-                buy_token=divestment_plan.balance.token.address,
-                amount=amount,
-                sell_entire_balance=True,
-            )
-
-            transaction_data = self.__make_transaction_data(quote)
-
-            self.chain.sign_send_wait_transaction(
-                gas=Gas(
-                    gas=int(quote.transaction.gas) if quote.transaction.gas else None,
-                    gas_price=int(quote.transaction.gasPrice)
-                    if quote.transaction.gasPrice
-                    else None,
-                ),
-                to_address=self.w3.to_checksum_address(quote.transaction.to),
-                encoded_input=transaction_data,
-                amount=int(quote.transaction.value) if quote.transaction.value else 0,
-            )
-
             bids.append(
-                self.__make_bid(
-                    quote=quote,
-                    token_in_contract=base_token_contract,
-                    token_in=divestment_plan.balance.token,
-                    token_out_contract=step_token_contract,
-                    token_out=step.token,
+                self.__execute_divestment_plan_step(
+                    step=step,
+                    base_token_contract=base_token_contract,
+                    base_token=divestment_plan.balance.token,
                 )
             )
             print(f"==================")
 
         return bids
 
+    @retry(stop=stop_after_attempt(RETRY_ATTEMPTS))
+    def __execute_divestment_plan_step(
+        self,
+        step: InvestmentPlanStep,
+        base_token_contract: Contract,
+        base_token: Token,
+    ) -> Bid:
+        print(
+            f"=== {step.token.display_name} - {step.token.address} ({step.amount}) ==="
+        )
+
+        step_token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(step.token.address),
+            abi=self.erc20_token_abi,
+        )
+
+        amount = int(
+            self.__get_token_amount(
+                token_contract=step_token_contract,
+                token=step.token,
+                raw_amount=step.amount,
+            )
+        )
+
+        price = self.api_client.get_price(
+            chain_id=self.chain.get_chain_id(),
+            taker=self.account.address,
+            sell_token=step.token.address,
+            amount=amount,
+            buy_token=base_token.address,
+            sell_entire_balance=True,
+        )
+
+        self.__approve_allowance(
+            price=price, token_contract=step_token_contract, token=step.token
+        )
+
+        quote = self.api_client.get_quote(
+            chain_id=self.chain.get_chain_id(),
+            taker=self.account.address,
+            sell_token=step.token.address,
+            buy_token=base_token.address,
+            amount=amount,
+            sell_entire_balance=True,
+        )
+
+        transaction_data = self.__make_transaction_data(quote)
+
+        self.chain.sign_send_wait_transaction(
+            gas=Gas(
+                gas=int(quote.transaction.gas) if quote.transaction.gas else None,
+                gas_price=int(quote.transaction.gasPrice)
+                if quote.transaction.gasPrice
+                else None,
+            ),
+            to_address=self.w3.to_checksum_address(quote.transaction.to),
+            encoded_input=transaction_data,
+            amount=int(quote.transaction.value) if quote.transaction.value else 0,
+        )
+
+        print(f"==================")
+
+        return self.__make_bid(
+            quote=quote,
+            token_in_contract=base_token_contract,
+            token_in=base_token,
+            token_out_contract=step_token_contract,
+            token_out=step.token,
+        )
+
     def get_wallet_in_token(
         self, tokens_balance: list[Balance], token: Token
     ) -> Wallet:
         balances: list[ConvertedBalance] = []
 
-        token_contract = self.w3.eth.contract(
+        base_token_contract = self.w3.eth.contract(
             address=self.w3.to_checksum_address(token.address),
             abi=self.erc20_token_abi,
         )
 
         for balance in tokens_balance:
+            balance_token_contract = self.w3.eth.contract(
+                address=self.w3.to_checksum_address(balance.token.address),
+                abi=self.erc20_token_abi,
+            )
+
             amount = int(
                 self.__get_token_amount(
-                    token_contract=token_contract,
-                    token=token,
+                    token_contract=balance_token_contract,
+                    token=balance.token,
                     raw_amount=balance.amount,
                 )
             )
@@ -222,10 +249,6 @@ class ZeroXSwapper(Exchange):
                 sell_token=balance.token.address,
                 buy_token=token.address,
                 amount=amount,
-            )
-            balance_token_contract = self.w3.eth.contract(
-                address=self.w3.to_checksum_address(balance.token.address),
-                abi=self.erc20_token_abi,
             )
 
             balances.append(
@@ -241,7 +264,7 @@ class ZeroXSwapper(Exchange):
                     balance_out=Balance(
                         token=token,
                         amount=self.__get_raw_amount(
-                            token_contract=token_contract,
+                            token_contract=base_token_contract,
                             token=token,
                             amount=Decimal(price.buyAmount),
                         ),
