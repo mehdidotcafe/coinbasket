@@ -39,12 +39,6 @@ def test_integration_zero_x_swapper_execute_investment_plan():
     chain = BscChain(
         w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
         private_key=configuration.bsc_private_key,
-        base_token=Token(
-            name=configuration.bsc_base_token_name,
-            display_name=configuration.bsc_base_token_display_name,
-            ticker=configuration.bsc_base_token_ticker,
-            address=configuration.bsc_base_token_address,
-        ),
     )
     zero_x_swapper = ZeroXSwapper(
         api_client=api_client,
@@ -102,12 +96,6 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
     chain = BscChain(
         w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
         private_key=configuration.bsc_private_key,
-        base_token=Token(
-            name=configuration.bsc_base_token_name,
-            display_name=configuration.bsc_base_token_display_name,
-            ticker=configuration.bsc_base_token_ticker,
-            address=configuration.bsc_base_token_address,
-        ),
     )
     zero_x_swapper = ZeroXSwapper(
         api_client=api_client,

@@ -3,7 +3,8 @@
     "coinbasket",
     "qdrant",
     "uagents",
-    "pancakeswap"
+    "pancakeswap",
+    "langsmith"
   ],
   "[python]": {
     "editor.formatOnSave": true,

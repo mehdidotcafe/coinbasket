@@ -1,5 +1,5 @@
 from decimal import Decimal
-from functools import cache, lru_cache
+from functools import cache
 import json
 from typing import Any, TypedDict, cast
 from eth_typing import ChecksumAddress, HexStr
@@ -24,12 +24,16 @@ class BscChain(Chain):
         self,
         w3: Web3,
         private_key: str,
-        base_token: Token,
     ):
         self.w3 = w3
 
         self.private_key = private_key
-        self.base_token = base_token
+        self.base_token = Token(
+            name="BNB",
+            display_name="BNB",
+            ticker="BNB",
+            address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        )
 
         with open(
             "./invest_agent/infrastructure/bsc/chain/erc20_token_abi.json", "r"

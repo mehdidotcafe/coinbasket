@@ -12,12 +12,6 @@ configuration = Configuration()
 chain = BscChain(
     w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
     private_key=configuration.bsc_private_key,
-    base_token=Token(
-        name=configuration.bsc_base_token_name,
-        display_name=configuration.bsc_base_token_display_name,
-        ticker=configuration.bsc_base_token_ticker,
-        address=configuration.bsc_base_token_address,
-    ),
 )
 
 
