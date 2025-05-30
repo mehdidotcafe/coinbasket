@@ -62,15 +62,15 @@ from protocol import SimilarityQuery, SimilarityResponse
 
 date_time = PythonDateTime()
 
-thread_id = str(date_time.now())
-# thread_id = "1748622992"
-
-print(f"Thread ID: {thread_id}")
 
 configuration = Configuration()
 
-os.environ["LANGSMITH_TRACING"] = configuration.langsmith_tracing
-os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
+print(f"Thread ID: {configuration.langchain_thread_id}")
+
+
+if configuration.langsmith_tracing:
+    os.environ["LANGSMITH_TRACING"] = str(configuration.langsmith_tracing)
+    os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
 
 invest_agent = Agent(
     name=configuration.agent_name,
@@ -81,16 +81,7 @@ invest_agent = Agent(
 
 w3 = Web3(Web3.HTTPProvider(configuration.bsc_rpc_url))
 
-chain = BscChain(
-    w3=w3,
-    private_key=configuration.bsc_private_key,
-    base_token=Token(
-        name=configuration.bsc_base_token_name,
-        display_name=configuration.bsc_base_token_display_name,
-        ticker=configuration.bsc_base_token_ticker,
-        address=configuration.bsc_base_token_address,
-    ),
-)
+chain = BscChain(w3=w3, private_key=configuration.bsc_private_key)
 
 http_request = RequestsHttpRequest[Any]()
 
@@ -112,7 +103,8 @@ exchange = ZeroXSwapper(
     },
 )
 storage = FetchAiStorage[Any](
-    thread_id, store=KeyValueStore(configuration.agent_name, "./database")
+    configuration.langchain_thread_id,
+    store=KeyValueStore(configuration.agent_name, "./database"),
 )
 agent_to_agent_client = AiohttpAgentToAgentClient(
     configuration={"agent_url": configuration.data_agent_url},
@@ -298,7 +290,7 @@ async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
 
         graph_config: RunnableConfig = {
             "configurable": {
-                "thread_id": thread_id,
+                "thread_id": configuration.langchain_thread_id,
             }
         }
 
@@ -334,7 +326,9 @@ async def get_conversation_messages(
     _req: MessagesRequest,
 ) -> MessagesResponse:
     """Retrieve the conversation messages."""
-    messages = await get_conversation_messages_use_case.execute(thread_id=thread_id)
+    messages = await get_conversation_messages_use_case.execute(
+        thread_id=configuration.langchain_thread_id
+    )
 
     return MessagesResponse(
         messages=[

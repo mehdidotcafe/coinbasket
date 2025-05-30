@@ -1,4 +1,5 @@
 from decimal import Decimal
+from functools import cache
 import json
 from typing import Any, TypedDict, cast
 from eth_typing import ChecksumAddress, HexStr
@@ -23,12 +24,16 @@ class BscChain(Chain):
         self,
         w3: Web3,
         private_key: str,
-        base_token: Token,
     ):
         self.w3 = w3
 
         self.private_key = private_key
-        self.base_token = base_token
+        self.base_token = Token(
+            name="BNB",
+            display_name="BNB",
+            ticker="BNB",
+            address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        )
 
         with open(
             "./invest_agent/infrastructure/bsc/chain/erc20_token_abi.json", "r"
@@ -47,7 +52,8 @@ class BscChain(Chain):
     def is_native_token(self, token: Token) -> bool:
         return token.address == self.base_token.address
 
-    def get_chain_id(self) -> int:
+    @cache
+    def get_chain_id(self) -> int:  # type: ignore
         """Get the chain ID of the BSC network."""
         return self.w3.eth.chain_id
 
