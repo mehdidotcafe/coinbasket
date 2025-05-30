@@ -34,3 +34,6 @@ class Configuration:
         self.pancakeswap_v2_router_address = env.str("PANCAKESWAP_V2_ROUTER_ADDRESS")
 
         self.openai_api_key = env.str("OPENAI_API_KEY")
+
+        self.zero_x_api_url = env.str("ZERO_X_API_URL")
+        self.zero_x_api_key = env.str("ZERO_X_API_KEY")

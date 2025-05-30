@@ -1,6 +1,6 @@
 from decimal import Decimal
 import json
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 from eth_typing import ChecksumAddress, HexStr
 from eth_account.signers.local import LocalAccount
 from web3 import Web3
@@ -9,7 +9,13 @@ from web3.types import TxParams, Wei
 
 from protocol.token import Token
 from invest_agent.chain.balance import Balance
-from invest_agent.chain.chain import Chain
+from invest_agent.chain.chain import Chain, Gas, TransactionFailure
+
+
+class Eip1559Gas(TypedDict):
+    type: int
+    maxFeePerGas: Wei
+    maxPriorityFeePerGas: Wei
 
 
 class BscChain(Chain):
@@ -38,6 +44,13 @@ class BscChain(Chain):
             layer=0,
         )
 
+    def is_native_token(self, token: Token) -> bool:
+        return token.address == self.base_token.address
+
+    def get_chain_id(self) -> int:
+        """Get the chain ID of the BSC network."""
+        return self.w3.eth.chain_id
+
     def get_address(self) -> str:
         """Get the address of the agent wallet."""
         return self.account.address
@@ -45,7 +58,7 @@ class BscChain(Chain):
     def get_min_balance(self) -> Balance:
         """Get the minimum balance required for the agent wallet."""
         gas_used = 200_000
-        transaction_count = 20
+        transaction_count = 100
 
         total_gas = gas_used * transaction_count
         gas_price = self.w3.eth.gas_price
@@ -58,11 +71,8 @@ class BscChain(Chain):
 
     def get_balance(self) -> Balance:
         """Get the balance of the agent address."""
-        print(f"Account: {self.account.address}")
-
         balance = self.w3.eth.get_balance(self.account.address)
         balance_in_ether = self.w3.from_wei(balance, "ether")
-        print(f"Balance: {balance_in_ether} BNB")
 
         return Balance(
             token=self.base_token,
@@ -105,23 +115,16 @@ class BscChain(Chain):
     def sign_send_wait_transaction(
         self,
         amount: int,
+        gas: Gas | None = None,
         # address checksum
         to_address: str | None = None,
         encoded_input: HexStr | None = None,
     ) -> Any:
-        latest_block = self.w3.eth.get_block("latest")
-        base_fee = latest_block.get("baseFeePerGas", 0)
-        max_priority_fee = self.w3.to_wei(2, "gwei")  # This is the miner "tip"
-        max_fee_per_gas = Wei(base_fee * 2 + max_priority_fee)
-
         transaction_params: TxParams = {
             "from": self.account.address,
-            "maxPriorityFeePerGas": max_priority_fee,
-            "maxFeePerGas": max_fee_per_gas,
             "chainId": self.w3.eth.chain_id,
-            "type": 2,
             "value": Wei(amount),
-            "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
+            "nonce": self.w3.eth.get_transaction_count(self.account.address),
         }
         if encoded_input is not None:
             transaction_params["data"] = encoded_input
@@ -129,10 +132,48 @@ class BscChain(Chain):
         if to_address is not None:
             transaction_params["to"] = to_address
 
+        if gas is None:
+            eip1559Gas = self.__compute_eip1559_gas_estimate()
+
+            transaction_params["type"] = eip1559Gas["type"]
+            transaction_params["maxFeePerGas"] = eip1559Gas["maxFeePerGas"]
+            transaction_params["maxPriorityFeePerGas"] = eip1559Gas[
+                "maxPriorityFeePerGas"
+            ]
+
+        if gas is not None and gas.gas is not None:
+            transaction_params["gas"] = gas.gas
+
+        if gas is not None and gas.gas_price is not None:
+            transaction_params["gasPrice"] = Wei(gas.gas_price)
+
         transaction_hash = self.w3.eth.send_transaction(transaction_params)
-        print(f"Trx Hash: {transaction_hash.hex()}")
 
         receipt = self.w3.eth.wait_for_transaction_receipt(transaction_hash)
         print(f"Receipt: {receipt}")
 
+        if receipt["status"] != 1:
+            try:
+                self.w3.eth.call(
+                    transaction_params,
+                    block_identifier=receipt["blockNumber"],
+                )
+            except Exception as e:
+                print(f"Transaction failed: {e}")
+                raise TransactionFailure() from e
+            print("Transaction failed.")
+            raise TransactionFailure()
         return receipt
+
+    def __compute_eip1559_gas_estimate(self):
+        """Compute gas estimate for EIP-1559 transactions."""
+        latest_block = self.w3.eth.get_block("latest")
+        base_fee = latest_block.get("baseFeePerGas", 0)
+        max_priority_fee = self.w3.to_wei(2, "gwei")  # This is the miner "tip"
+        max_fee_per_gas = Wei(base_fee * 2 + max_priority_fee)
+
+        return Eip1559Gas(
+            type=2,
+            maxFeePerGas=max_fee_per_gas,
+            maxPriorityFeePerGas=max_priority_fee,
+        )

@@ -136,9 +136,9 @@ class PancakeSwapUniversalRouter(Exchange):
         )
 
         receipt = self.chain.sign_send_wait_transaction(
-            amount,
-            Web3.to_checksum_address(self.universal_router_address),
-            encoded_input,
+            amount=amount,
+            to_address=Web3.to_checksum_address(self.universal_router_address),
+            encoded_input=encoded_input,
         )
 
         bids = self.__parse_bids_from_receipt(receipt, investment_plan)
@@ -208,9 +208,9 @@ class PancakeSwapUniversalRouter(Exchange):
 
         try:
             receipt = self.chain.sign_send_wait_transaction(
-                amount,
-                Web3.to_checksum_address(self.universal_router_address),
-                encoded_input,
+                amount=amount,
+                to_address=Web3.to_checksum_address(self.universal_router_address),
+                encoded_input=encoded_input,
             )
 
             print(f"Receipt: {receipt}")

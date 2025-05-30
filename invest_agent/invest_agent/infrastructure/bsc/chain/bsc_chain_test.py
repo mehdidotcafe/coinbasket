@@ -5,10 +5,13 @@ from decimal import Decimal
 from web3 import Web3
 from web3.types import Wei
 from web3.eth import Eth
-from eth_account.signers.local import LocalAccount
+
 
 from protocol.token import Token
+from protocol.fixture.token import eth_token
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
+
+from eth_account.signers.local import LocalAccount
 
 
 @fixture
@@ -22,6 +25,7 @@ def w3():
 
     w3.eth.gas_price = Wei(1_000_000_000)
     w3.eth.account.from_key.return_value = account
+    w3.eth.chain_id = 42
 
     return w3
 
@@ -38,6 +42,20 @@ def bsc_chain(base_token: Token, w3: Web3):
         private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
         base_token=base_token,
     )
+
+
+def test_bsc_chain_is_native_token_success(bsc_chain: BscChain, base_token: Token):
+    assert bsc_chain.is_native_token(base_token) is True
+
+
+def test_bsc_chain_is_native_token_failure(bsc_chain: BscChain):
+    assert bsc_chain.is_native_token(eth_token) is False
+
+
+def test_bsc_chain_get_chain_id(bsc_chain: BscChain):
+    chain_id = bsc_chain.get_chain_id()
+
+    assert chain_id == 42
 
 
 def test_bsc_chain_get_address(bsc_chain: BscChain):
@@ -59,7 +77,7 @@ def test_bsc_chain_get_min_balance(bsc_chain: BscChain, base_token: Token, w3: W
     assert min_balance.token == base_token
 
     w3.from_wei.assert_called_once_with(
-        1_000_000_000 * 200_000 * 20,
+        1_000_000_000 * 200_000 * 100,
         "ether",
     )
 

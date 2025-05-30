@@ -63,7 +63,7 @@
         "command": "poetry run python -m invest_agent.cli",
         "cwd": "{projectRoot}"
       },
-      "cache": true
+      "cache": false
     },
     "test": {
       "executor": "@nxlv/python:run-commands",
@@ -72,6 +72,14 @@
         "cwd": "{projectRoot}"
       },
       "cache": true
+    },
+    "test:integration": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "poetry run pytest",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
     },
     "install": {
       "executor": "@nxlv/python:install",
