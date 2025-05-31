@@ -32,15 +32,19 @@ def w3():
 
 @fixture
 def base_token():
-    return Token(name="BNB", display_name="BNB", ticker="BNB", address="0x123456789")
+    return Token(
+        name="BNB",
+        display_name="BNB",
+        ticker="BNB",
+        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    )
 
 
 @fixture
-def bsc_chain(base_token: Token, w3: Web3):
+def bsc_chain(w3: Web3):
     return BscChain(
         w3=w3,
         private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-        base_token=base_token,
     )
 
 

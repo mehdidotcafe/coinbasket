@@ -8,6 +8,7 @@ from invest_agent.investment.basket_investment import Bid
 from invest_agent.investment.infrastructure.zero_x.fee import Fee, Fees
 from invest_agent.investment.infrastructure.zero_x.price import Allowance, Issues, Price
 from invest_agent.investment.infrastructure.zero_x.quote import (
+    InsufficientLiquidityQuote,
     Permit2,
     Quote,
     Transaction,
@@ -21,10 +22,9 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import (
     ZeroXSwapper,
 )
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
-from pytest import fixture, raises
+from pytest import fixture
 from protocol.fixture.token import bnb_token, eth_token, usdt_token, sol_token
 
-from tenacity import RetryError
 from web3 import Web3
 from web3.eth import Eth
 from eth_account.signers.local import LocalAccount
@@ -337,10 +337,42 @@ def test_zero_x_swapper_execute_investment_plan_retry(
 
     chain.sign_send_wait_transaction.side_effect = TransactionFailure()
 
-    with raises(RetryError):
-        zero_x_swapper.execute_investment_plan(investment_plan)
+    zero_x_swapper.execute_investment_plan(investment_plan)
 
     assert chain.sign_send_wait_transaction.call_count == 5
+
+
+def test_zero_x_swapper_execute_investment_plan_no_liquidity(
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    configuration: Configuration,
+    w3: Web3,
+):
+    zero_x_swapper = ZeroXSwapper(
+        api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
+    )
+    investment_plan = InvestmentPlan(
+        steps=[
+            InvestmentPlanStep(
+                token=eth_token,
+                amount=Decimal("1"),
+            )
+        ],
+        balance=Balance(token=bnb_token, amount=Decimal("3")),
+    )
+
+    chain.is_native_token.return_value = True
+    chain.get_chain_id.return_value = 42
+
+    zero_x_api_client.get_quote.return_value = InsufficientLiquidityQuote(
+        liquidityAvailable=False,
+    )
+
+    chain.sign_send_wait_transaction.side_effect = TransactionFailure()
+
+    bids = zero_x_swapper.execute_investment_plan(investment_plan)
+
+    assert not bids
 
 
 def test_zero_x_swapper_execute_divestment_plan(
@@ -633,7 +665,44 @@ def test_zero_x_swapper_execute_divestment_plan_retry(
     )
     chain.sign_send_wait_transaction.side_effect = TransactionFailure()
 
-    with raises(RetryError):
-        zero_x_swapper.execute_divestment_plan(divestment_plan)
+    zero_x_swapper.execute_divestment_plan(divestment_plan)
 
     assert chain.sign_send_wait_transaction.call_count == 5
+
+
+def test_zero_x_swapper_execute_divestment_plan_no_liquidity(
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    configuration: Configuration,
+    w3: Web3,
+):
+    zero_x_swapper = ZeroXSwapper(
+        api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
+    )
+    divestment_plan = InvestmentPlan(
+        steps=[
+            InvestmentPlanStep(
+                token=eth_token,
+                amount=Decimal("1"),
+            ),
+        ],
+        balance=Balance(token=bnb_token, amount=Decimal("0")),
+    )
+
+    chain.is_native_token.return_value = True
+    chain.get_chain_id.return_value = 42
+
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        fees=Fees(),
+    )
+    zero_x_api_client.get_quote.return_value = InsufficientLiquidityQuote(
+        liquidityAvailable=False,
+    )
+    bids = zero_x_swapper.execute_divestment_plan(divestment_plan)
+
+    assert not bids

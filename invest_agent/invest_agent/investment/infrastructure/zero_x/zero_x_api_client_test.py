@@ -3,6 +3,7 @@ from invest_agent.http_request.http_request import HttpRequest
 from invest_agent.investment.infrastructure.zero_x.fee import Fee, Fees
 from invest_agent.investment.infrastructure.zero_x.quote import (
     Quote,
+    QuoteResult,
     Transaction,
 )
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
@@ -76,7 +77,7 @@ def test_zero_x_api_client_get_price_success(
 
 
 def test_zero_x_api_client_get_quote_success(
-    configuration: Configuration, http_request: HttpRequest[Quote]
+    configuration: Configuration, http_request: HttpRequest[QuoteResult]
 ):
     client = ZeroXApiClient(configuration, http_request)
 
@@ -133,5 +134,5 @@ def test_zero_x_api_client_get_quote_success(
                 "0x-version": "v2",
             },
         },
-        Quote,
+        QuoteResult,
     )

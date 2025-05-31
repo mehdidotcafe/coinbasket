@@ -1,7 +1,7 @@
 from typing import Any, TypedDict
 from invest_agent.http_request.http_request import HttpRequest
 from invest_agent.investment.infrastructure.zero_x.price import Price
-from invest_agent.investment.infrastructure.zero_x.quote import Quote
+from invest_agent.investment.infrastructure.zero_x.quote import QuoteResult
 
 
 class Configuration(TypedDict):
@@ -57,7 +57,7 @@ class ZeroXApiClient:
         buy_token: str,
         amount: int,
         sell_entire_balance: bool | None = None,
-    ) -> Quote:
+    ) -> QuoteResult:
         url = f"{self.api_url}/swap/permit2/quote"
         params = self.__make_params(
             chain_id,
@@ -74,7 +74,7 @@ class ZeroXApiClient:
                 "params": params,
                 "headers": self.default_headers,
             },
-            Quote,
+            QuoteResult,
         )
 
     def __make_params(

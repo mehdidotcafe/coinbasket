@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional, Union
 from invest_agent.investment.infrastructure.zero_x.fee import Fees
 from pydantic import BaseModel
 
@@ -15,8 +15,12 @@ class Transaction(BaseModel):
     value: str
 
 
+class InsufficientLiquidityQuote(BaseModel):
+    liquidityAvailable: Literal[False]
+
+
 class Quote(BaseModel):
-    liquidityAvailable: bool
+    liquidityAvailable: Literal[True]
     permit2: Optional[Permit2] = None
     transaction: Transaction
     buyAmount: str
@@ -24,3 +28,6 @@ class Quote(BaseModel):
     sellAmount: str
     sellToken: str
     fees: Fees
+
+
+QuoteResult = Union[InsufficientLiquidityQuote, Quote]

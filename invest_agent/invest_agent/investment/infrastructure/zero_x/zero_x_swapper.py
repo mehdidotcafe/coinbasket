@@ -6,8 +6,14 @@ from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain, Gas
 from invest_agent.investment.basket_investment import Bid
 from invest_agent.investment.exchange.exchange import ConvertedBalance, Exchange, Wallet
+from invest_agent.investment.infrastructure.zero_x.exception.swap_insufficient_liquidity import (
+    SwapInsufficientLiquidity,
+)
 from invest_agent.investment.infrastructure.zero_x.price import Price
-from invest_agent.investment.infrastructure.zero_x.quote import Quote
+from invest_agent.investment.infrastructure.zero_x.quote import (
+    InsufficientLiquidityQuote,
+    Quote,
+)
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
@@ -65,17 +71,20 @@ class ZeroXSwapper(Exchange):
         )
 
         for step in investment_plan.steps:
-            bids.append(
-                self.__execute_investment_step(
-                    step=step,
-                    base_token_contract=base_token_contract,
-                    base_token=investment_plan.balance.token,
+            try:
+                bids.append(
+                    self.__execute_investment_step(
+                        step=step,
+                        base_token_contract=base_token_contract,
+                        base_token=investment_plan.balance.token,
+                    )
                 )
-            )
+            except Exception as e:
+                print(f"Investment step failed: {e}")
 
         return bids
 
-    @retry(stop=stop_after_attempt(RETRY_ATTEMPTS))
+    @retry(stop=stop_after_attempt(RETRY_ATTEMPTS), reraise=True)
     def __execute_investment_step(
         self,
         step: InvestmentPlanStep,
@@ -106,6 +115,9 @@ class ZeroXSwapper(Exchange):
             buy_token=step.token.address,
             amount=amount,
         )
+
+        if isinstance(quote, InsufficientLiquidityQuote):
+            raise SwapInsufficientLiquidity()
 
         transaction_data = self.__make_transaction_data(quote)
 
@@ -138,18 +150,20 @@ class ZeroXSwapper(Exchange):
         )
 
         for step in divestment_plan.steps:
-            bids.append(
-                self.__execute_divestment_plan_step(
-                    step=step,
-                    base_token_contract=base_token_contract,
-                    base_token=divestment_plan.balance.token,
+            try:
+                bids.append(
+                    self.__execute_divestment_plan_step(
+                        step=step,
+                        base_token_contract=base_token_contract,
+                        base_token=divestment_plan.balance.token,
+                    )
                 )
-            )
-            print(f"==================")
+            except Exception as e:
+                print(f"Divestment step failed: {e}")
 
         return bids
 
-    @retry(stop=stop_after_attempt(RETRY_ATTEMPTS))
+    @retry(stop=stop_after_attempt(RETRY_ATTEMPTS), reraise=True)
     def __execute_divestment_plan_step(
         self,
         step: InvestmentPlanStep,
@@ -194,6 +208,9 @@ class ZeroXSwapper(Exchange):
             amount=amount,
             sell_entire_balance=True,
         )
+
+        if isinstance(quote, InsufficientLiquidityQuote):
+            raise SwapInsufficientLiquidity()
 
         transaction_data = self.__make_transaction_data(quote)
 
