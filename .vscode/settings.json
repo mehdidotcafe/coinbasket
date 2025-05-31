@@ -4,7 +4,8 @@
     "qdrant",
     "uagents",
     "pancakeswap",
-    "langsmith"
+    "langsmith",
+    "langchain"
   ],
   "[python]": {
     "editor.formatOnSave": true,

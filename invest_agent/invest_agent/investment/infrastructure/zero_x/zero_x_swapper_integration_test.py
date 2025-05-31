@@ -21,7 +21,6 @@ from protocol.fixture.token import (
     btc_token,
     usdt_token,
 )
-from protocol.token import Token
 from web3 import Web3
 
 

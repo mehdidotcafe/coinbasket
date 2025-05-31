@@ -1,6 +1,8 @@
 from dataclasses import asdict
 import json
 from typing import Any
+
+from pydantic import SecretStr
 from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.http_request.exceptions.invalid_agent_key_exception import (
     InvalidAgentKeyException,
@@ -62,7 +64,8 @@ similarity_storage = QdrantLangChainSimilarityStorage(
     QdrantClient,
     QdrantVectorStore,
     OpenAIEmbeddings(
-        model="text-embedding-3-small", api_key=configuration.openai_api_key
+        model=configuration.embedding_provider_model,
+        api_key=SecretStr(configuration.embedding_provider_api_key),
     ),
 )
 

@@ -1,6 +1,6 @@
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional, Union, Annotated
 from invest_agent.investment.infrastructure.zero_x.fee import Fees
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, RootModel, TypeAdapter
 
 
 class Permit2(BaseModel):
@@ -30,4 +30,8 @@ class Quote(BaseModel):
     fees: Fees
 
 
-QuoteResult = Union[InsufficientLiquidityQuote, Quote]
+class QuoteResult(RootModel[Any]):
+    root: Annotated[
+        Union[Quote, InsufficientLiquidityQuote],
+        Field(discriminator="liquidityAvailable"),
+    ]

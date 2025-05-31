@@ -140,10 +140,10 @@ get_conversation_messages_use_case = GetConversationMessagesUseCase(
 
 
 @tool(response_format="content_and_artifact")
-async def get_available_basket_or_coin_info(query: str):
+async def get_preset_basket_or_coin_info(query: str):
     """
     Retrieve a list of available tokens / coins to invest.
-    Retrieve a list of available baskets to invest.
+    Retrieve a list of preset baskets to invest.
 
     Args:
         query: The query to search for.
@@ -224,7 +224,9 @@ def divest_basket():
 
 
 llm = init_chat_model(
-    "gpt-4o-mini", model_provider="openai", api_key=configuration.openai_api_key
+    model=configuration.chat_model,
+    model_provider=configuration.chat_provider,
+    api_key=configuration.chat_provider_api_key,
 )
 
 
@@ -234,7 +236,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
     agent_executor = create_react_agent(
         llm,
         [
-            get_available_basket_or_coin_info,
+            get_preset_basket_or_coin_info,
             invest_basket,
             get_address,
             get_balance,
@@ -252,7 +254,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
             "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
             "Always ask for the user's confirmation before investing in the basket and show a message mentioning that he should do his own research (DYOR) before investing.  "
             "Always ask for the user's confirmation before divesting the basket. "
-            "Always use get_basket_or_coin_info to retrieve the list of available tokens / coins to invest.  "
+            "Always use get_available_basket_or_coin_info to retrieve the list of available tokens / coins to invest.  "
             # "You can manage / invest in only one basket at a time.  "
             # "You can update a created basket but once it has been invested, you can only divest it and you can't update it anymore.  "
             # "You can't create a basket if you already have one.  "

@@ -11,6 +11,7 @@ from invest_agent.investment.infrastructure.zero_x.quote import (
     InsufficientLiquidityQuote,
     Permit2,
     Quote,
+    QuoteResult,
     Transaction,
 )
 from invest_agent.investment.exchange.exchange import ConvertedBalance, Wallet
@@ -90,31 +91,32 @@ def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_quote.return_value = Quote(
-        permit2=None,
-        transaction=Transaction(
-            to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
-            data="0x1234567890abcdef1234567890abcdef12345678",
-            gas="21000",
-            gasPrice="1000000000",
-            value="1000000000000000000",
-        ),
-        liquidityAvailable=True,
-        buyAmount="254516995428172740",
-        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-        sellAmount="1000000000000000000",
-        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        fees=Fees(
-            integratorFee=None,
-            zeroExFee=Fee(
-                amount="382349016667264",
-                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-                type="volume",
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            permit2=None,
+            transaction=Transaction(
+                to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
+                data="0x1234567890abcdef1234567890abcdef12345678",
+                gas="21000",
+                gasPrice="1000000000",
+                value="1000000000000000000",
             ),
-            gasFee=None,
-        ),
+            liquidityAvailable=True,
+            buyAmount="254516995428172740",
+            buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+            sellAmount="1000000000000000000",
+            sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+        )
     )
-    # TODO: check log parsing in another test
     chain.sign_send_wait_transaction.return_value = {"logs": []}
 
     zero_x_swapper.execute_investment_plan(investment_plan)
@@ -156,59 +158,61 @@ def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_quote.return_value = Quote(
-        permit2=Permit2(
-            eip721={
-                "types": {
-                    "EIP712Domain": [
-                        {"name": "name", "type": "string"},
-                        {"name": "version", "type": "string"},
-                        {"name": "chainId", "type": "uint256"},
-                        {"name": "verifyingContract", "type": "address"},
-                    ],
-                    "Permit": [
-                        {"name": "spender", "type": "address"},
-                        {"name": "tokenId", "type": "uint256"},
-                        {"name": "nonce", "type": "uint256"},
-                        {"name": "deadline", "type": "uint256"},
-                    ],
-                },
-                "primaryType": "Permit",
-                "domain": {
-                    "name": "MyNFT",
-                    "version": "1",
-                    "chainId": 1,
-                    "verifyingContract": "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
-                },
-                "message": {
-                    "spender": "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835Cb2",
-                    "tokenId": 1234,
-                    "nonce": 1,
-                    "deadline": 1754884800,
-                },
-            }
-        ),
-        transaction=Transaction(
-            to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
-            data="0x1234567890abcdef1234567890abcdef12345678",
-            gas="21000",
-            gasPrice="1000000000",
-            value="1000000000000000000",
-        ),
-        liquidityAvailable=True,
-        buyAmount="254516995428172740",
-        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-        sellAmount="1000000000000000000",
-        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        fees=Fees(
-            integratorFee=None,
-            zeroExFee=Fee(
-                amount="382349016667264",
-                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-                type="volume",
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            permit2=Permit2(
+                eip721={
+                    "types": {
+                        "EIP712Domain": [
+                            {"name": "name", "type": "string"},
+                            {"name": "version", "type": "string"},
+                            {"name": "chainId", "type": "uint256"},
+                            {"name": "verifyingContract", "type": "address"},
+                        ],
+                        "Permit": [
+                            {"name": "spender", "type": "address"},
+                            {"name": "tokenId", "type": "uint256"},
+                            {"name": "nonce", "type": "uint256"},
+                            {"name": "deadline", "type": "uint256"},
+                        ],
+                    },
+                    "primaryType": "Permit",
+                    "domain": {
+                        "name": "MyNFT",
+                        "version": "1",
+                        "chainId": 1,
+                        "verifyingContract": "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+                    },
+                    "message": {
+                        "spender": "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835Cb2",
+                        "tokenId": 1234,
+                        "nonce": 1,
+                        "deadline": 1754884800,
+                    },
+                }
             ),
-            gasFee=None,
-        ),
+            transaction=Transaction(
+                to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
+                data="0x1234567890abcdef1234567890abcdef12345678",
+                gas="21000",
+                gasPrice="1000000000",
+                value="1000000000000000000",
+            ),
+            liquidityAvailable=True,
+            buyAmount="254516995428172740",
+            buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+            sellAmount="1000000000000000000",
+            sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+        )
     )
 
     w3.eth.account.sign_typed_data.return_value = mock.Mock(
@@ -246,29 +250,31 @@ def test_zero_x_swapper_execute_investment_plan_bids(
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_quote.return_value = Quote(
-        liquidityAvailable=True,
-        permit2=None,
-        transaction=Transaction(
-            to="0x779a74436eda060911b2c4f209d34ea155f3df09",
-            data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-            gas="322930",
-            gasPrice="100000000",
-            value="1000000000000000000",
-        ),
-        buyAmount="254516995428172740",
-        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-        sellAmount="1000000000000000000",
-        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        fees=Fees(
-            integratorFee=None,
-            zeroExFee=Fee(
-                amount="382349016667264",
-                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-                type="volume",
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            liquidityAvailable=True,
+            permit2=None,
+            transaction=Transaction(
+                to="0x779a74436eda060911b2c4f209d34ea155f3df09",
+                data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                gas="322930",
+                gasPrice="100000000",
+                value="1000000000000000000",
             ),
-            gasFee=None,
-        ),
+            buyAmount="254516995428172740",
+            buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+            sellAmount="1000000000000000000",
+            sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+        )
     )
 
     bids = zero_x_swapper.execute_investment_plan(investment_plan)
@@ -310,29 +316,31 @@ def test_zero_x_swapper_execute_investment_plan_retry(
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_quote.return_value = Quote(
-        liquidityAvailable=True,
-        permit2=None,
-        transaction=Transaction(
-            to="0x779a74436eda060911b2c4f209d34ea155f3df09",
-            data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-            gas="322930",
-            gasPrice="100000000",
-            value="1000000000000000000",
-        ),
-        buyAmount="254516995428172740",
-        buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-        sellAmount="1000000000000000000",
-        sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        fees=Fees(
-            integratorFee=None,
-            zeroExFee=Fee(
-                amount="382349016667264",
-                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-                type="volume",
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            liquidityAvailable=True,
+            permit2=None,
+            transaction=Transaction(
+                to="0x779a74436eda060911b2c4f209d34ea155f3df09",
+                data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                gas="322930",
+                gasPrice="100000000",
+                value="1000000000000000000",
             ),
-            gasFee=None,
-        ),
+            buyAmount="254516995428172740",
+            buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+            sellAmount="1000000000000000000",
+            sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+        )
     )
 
     chain.sign_send_wait_transaction.side_effect = TransactionFailure()
@@ -364,8 +372,10 @@ def test_zero_x_swapper_execute_investment_plan_no_liquidity(
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
-    zero_x_api_client.get_quote.return_value = InsufficientLiquidityQuote(
-        liquidityAvailable=False,
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=InsufficientLiquidityQuote(
+            liquidityAvailable=False,
+        )
     )
 
     chain.sign_send_wait_transaction.side_effect = TransactionFailure()
@@ -405,29 +415,31 @@ def test_zero_x_swapper_execute_divestment_plan(
         sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         fees=Fees(),
     )
-    zero_x_api_client.get_quote.return_value = Quote(
-        permit2=None,
-        transaction=Transaction(
-            to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
-            data="0x1234567890abcdef1234567890abcdef12345678",
-            gas="21000",
-            gasPrice="1000000000",
-            value="0",
-        ),
-        liquidityAvailable=True,
-        buyAmount="328938894889",
-        buyToken="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-        sellAmount="1000000000000000000",
-        sellToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-        fees=Fees(
-            integratorFee=None,
-            zeroExFee=Fee(
-                amount="382349016667264",
-                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-                type="volume",
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            permit2=None,
+            transaction=Transaction(
+                to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
+                data="0x1234567890abcdef1234567890abcdef12345678",
+                gas="21000",
+                gasPrice="1000000000",
+                value="0",
             ),
-            gasFee=None,
-        ),
+            liquidityAvailable=True,
+            buyAmount="328938894889",
+            buyToken="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            sellAmount="1000000000000000000",
+            sellToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+        )
     )
     chain.sign_send_wait_transaction.return_value = {"logs": []}
 
@@ -500,29 +512,31 @@ def test_zero_x_swapper_execute_divestment_plan_with_allowance(
         sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         fees=Fees(),
     )
-    zero_x_api_client.get_quote.return_value = Quote(
-        permit2=None,
-        transaction=Transaction(
-            to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
-            data="0x1234567890abcdef1234567890abcdef12345678",
-            gas="21000",
-            gasPrice="1000000000",
-            value="0",
-        ),
-        liquidityAvailable=True,
-        buyAmount="328938894889",
-        buyToken="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-        sellAmount="1000000000000000000",
-        sellToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-        fees=Fees(
-            integratorFee=None,
-            zeroExFee=Fee(
-                amount="382349016667264",
-                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-                type="volume",
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            permit2=None,
+            transaction=Transaction(
+                to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
+                data="0x1234567890abcdef1234567890abcdef12345678",
+                gas="21000",
+                gasPrice="1000000000",
+                value="0",
             ),
-            gasFee=None,
-        ),
+            liquidityAvailable=True,
+            buyAmount="328938894889",
+            buyToken="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            sellAmount="1000000000000000000",
+            sellToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+        )
     )
     chain.sign_send_wait_transaction.return_value = {"logs": []}
 
@@ -639,29 +653,31 @@ def test_zero_x_swapper_execute_divestment_plan_retry(
         sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         fees=Fees(),
     )
-    zero_x_api_client.get_quote.return_value = Quote(
-        permit2=None,
-        transaction=Transaction(
-            to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
-            data="0x1234567890abcdef1234567890abcdef12345678",
-            gas="21000",
-            gasPrice="1000000000",
-            value="0",
-        ),
-        liquidityAvailable=True,
-        buyAmount="328938894889",
-        buyToken="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-        sellAmount="1000000000000000000",
-        sellToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-        fees=Fees(
-            integratorFee=None,
-            zeroExFee=Fee(
-                amount="382349016667264",
-                token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-                type="volume",
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            permit2=None,
+            transaction=Transaction(
+                to="0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD",
+                data="0x1234567890abcdef1234567890abcdef12345678",
+                gas="21000",
+                gasPrice="1000000000",
+                value="0",
             ),
-            gasFee=None,
-        ),
+            liquidityAvailable=True,
+            buyAmount="328938894889",
+            buyToken="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            sellAmount="1000000000000000000",
+            sellToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+        )
     )
     chain.sign_send_wait_transaction.side_effect = TransactionFailure()
 
@@ -700,8 +716,10 @@ def test_zero_x_swapper_execute_divestment_plan_no_liquidity(
         sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         fees=Fees(),
     )
-    zero_x_api_client.get_quote.return_value = InsufficientLiquidityQuote(
-        liquidityAvailable=False,
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=InsufficientLiquidityQuote(
+            liquidityAvailable=False,
+        )
     )
     bids = zero_x_swapper.execute_divestment_plan(divestment_plan)
 

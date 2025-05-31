@@ -108,13 +108,14 @@ class ZeroXSwapper(Exchange):
             )
         )
 
-        quote = self.api_client.get_quote(
+        quote_result = self.api_client.get_quote(
             chain_id=self.chain.get_chain_id(),
             taker=self.account.address,
             sell_token=base_token.address,
             buy_token=step.token.address,
             amount=amount,
         )
+        quote = quote_result.root
 
         if isinstance(quote, InsufficientLiquidityQuote):
             raise SwapInsufficientLiquidity()
@@ -200,7 +201,7 @@ class ZeroXSwapper(Exchange):
             price=price, token_contract=step_token_contract, token=step.token
         )
 
-        quote = self.api_client.get_quote(
+        quote_result = self.api_client.get_quote(
             chain_id=self.chain.get_chain_id(),
             taker=self.account.address,
             sell_token=step.token.address,
@@ -208,6 +209,7 @@ class ZeroXSwapper(Exchange):
             amount=amount,
             sell_entire_balance=True,
         )
+        quote = quote_result.root
 
         if isinstance(quote, InsufficientLiquidityQuote):
             raise SwapInsufficientLiquidity()
