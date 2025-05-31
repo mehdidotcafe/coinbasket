@@ -5,8 +5,8 @@ from protocol.token import Token
 from pytest import fixture, raises
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
-from invest_agent.investment.investment_planner_strategy.insufficient_balance_exception import (
-    InsufficientBalanceException,
+from invest_agent.investment.exception.insufficient_balance import (
+    InsufficientBalance,
 )
 from invest_agent.investment.investment_planner_strategy.equal_investment_planner import (
     EqualInvestmentPlanner,
@@ -94,5 +94,5 @@ def test_make_investment_plan_insufficient_balance(
         amount=Decimal("9999.9"), token=base_token
     )
 
-    with raises(InsufficientBalanceException):
+    with raises(InsufficientBalance):
         investment_planner.make_investment_plan(basket)

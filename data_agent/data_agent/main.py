@@ -4,8 +4,8 @@ from typing import Any
 
 from pydantic import SecretStr
 from data_agent.ingestion.id.id_generator import IdGenerator
-from data_agent.http_request.exceptions.invalid_agent_key_exception import (
-    InvalidAgentKeyException,
+from data_agent.http_request.exception.invalid_agent_key import (
+    InvalidAgentKey,
 )
 from data_agent.ingestion.data_source.infrastructure.bsc.ai_basket_data_source import (
     AiBasketDataSource,
@@ -74,10 +74,10 @@ get_similarities_use_case = GetSimilaritiesUseCase(similarity_storage)
 ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
     data_sources=[
-        CoingeckoTokenListDataSource(
-            http_request,
-            id_generator,
-        ),
+        # CoingeckoTokenListDataSource(
+        #     http_request,
+        #     id_generator,
+        # ),
         Big4BasketDataSource(),
         AiBasketDataSource(),
         CmcTop102025BasketDataSource(),
@@ -99,7 +99,7 @@ async def handle_similarity_query(
     _ctx: Context, req: SimilarityQuery
 ) -> SimilarityResponse:
     if req.agent_key != configuration.agent_key:
-        raise InvalidAgentKeyException()
+        raise InvalidAgentKey()
 
     print(f"Query: {req.query}")
 
@@ -121,7 +121,7 @@ async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
     if msg.agent_key != configuration.agent_key:
         await ctx.send(
             sender,
-            SimilarityResponse(data=InvalidAgentKeyException().message),
+            SimilarityResponse(data=InvalidAgentKey().message),
         )
         return
 

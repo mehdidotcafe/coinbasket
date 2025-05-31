@@ -1,9 +1,9 @@
 from typing import Generic, TypeVar
-from pydantic import BaseModel, VERSION
+from pydantic import BaseModel
 import requests
 
-from invest_agent.http_request.exceptions.failed_request_exception import (
-    FailedRequestException,
+from invest_agent.http_request.exception.failed_request import (
+    FailedRequest,
 )
 from invest_agent.http_request.http_request import GetParams, HttpRequest, PostParams
 
@@ -24,7 +24,7 @@ class RequestsHttpRequest(HttpRequest[T], Generic[T]):
         else:
             print(f"Failed request: {response.status_code} {response.text}")
 
-            raise FailedRequestException(
+            raise FailedRequest(
                 status_code=response.status_code,
                 response=response.text,
             )
@@ -40,7 +40,7 @@ class RequestsHttpRequest(HttpRequest[T], Generic[T]):
             print(f"Response: {response.json()}")
             return schema.model_validate(response.json())
         else:
-            raise FailedRequestException(
+            raise FailedRequest(
                 status_code=response.status_code,
                 response=response.text,
             )

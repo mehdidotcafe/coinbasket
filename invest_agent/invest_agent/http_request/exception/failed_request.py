@@ -1,4 +1,4 @@
-class FailedRequestException(Exception):
+class FailedRequest(Exception):
     """Exception raised for failed HTTP requests.
 
     Args:

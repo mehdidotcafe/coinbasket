@@ -1,6 +1,7 @@
 from decimal import Decimal
 from unittest import mock
-from pytest import fixture
+from invest_agent.investment.exception.no_basket_investment import NoBasketInvestment
+from pytest import fixture, raises
 
 from protocol.token import Token
 from invest_agent.chain.balance import Balance
@@ -53,6 +54,7 @@ def test_get_basket_investment_use_case(storage: Storage[BasketInvestment]):
                 ),
             )
         ],
+        status="invested",
     )
     storage.get.return_value = [basket_investment, 1]
 
@@ -69,7 +71,7 @@ def test_get_basket_investment_use_case_no_result(storage: Storage[BasketInvestm
 
     use_case = GetBasketInvestmentUseCase(storage)
 
-    result = use_case.execute()
+    with raises(NoBasketInvestment):
+        use_case.execute()
 
-    assert result == "No basket investment found."
     storage.get.assert_called_once_with("basket_investment")

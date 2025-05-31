@@ -1,4 +1,5 @@
 from invest_agent.investment.basket_investment import BasketInvestment
+from invest_agent.investment.exception.no_basket_investment import NoBasketInvestment
 from invest_agent.storage.storage import Storage
 
 
@@ -19,6 +20,6 @@ class GetBasketInvestmentUseCase:
         basket = self.storage.get("basket_investment")
 
         if basket is None:
-            return "No basket investment found."
+            raise NoBasketInvestment()
 
         return basket[0]

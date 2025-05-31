@@ -1,8 +1,8 @@
 from typing import Generic, TypeVar
 import requests
 
-from data_agent.http_request.exceptions.failed_request_exception import (
-    FailedRequestException,
+from data_agent.http_request.exception.failed_request import (
+    FailedRequest,
 )
 from data_agent.http_request.http_request import GetParams, HttpRequest
 
@@ -21,7 +21,7 @@ class RequestsHttpRequest(HttpRequest[T], Generic[T]):
         if response.status_code >= 200 and response.status_code < 400:
             return response.json()
         else:
-            raise FailedRequestException(
+            raise FailedRequest(
                 status_code=response.status_code,
                 response=response.text,
             )

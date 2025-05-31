@@ -6,8 +6,8 @@ from invest_agent.investment.investment_plan import (
     InvestmentPlanStep,
 )
 from invest_agent.investment.investment_planner import InvestmentPlanner
-from .insufficient_balance_exception import (
-    InsufficientBalanceException,
+from invest_agent.investment.exception.insufficient_balance import (
+    InsufficientBalance,
 )
 
 
@@ -29,7 +29,7 @@ class EqualInvestmentPlanner(InvestmentPlanner):
         )
 
         if investment_balance.amount <= 0:
-            raise InsufficientBalanceException(min_balance)
+            raise InsufficientBalance(min_balance)
 
         step_amount = investment_balance.amount / len(basket.tokens)
 

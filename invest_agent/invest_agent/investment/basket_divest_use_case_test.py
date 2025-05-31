@@ -2,7 +2,8 @@ from decimal import Decimal
 from unittest import mock
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
-from pytest import fixture
+from invest_agent.investment.exception.no_basket_investment import NoBasketInvestment
+from pytest import fixture, raises
 
 from protocol.token import Token
 from invest_agent.chain.balance import Balance
@@ -43,10 +44,8 @@ def test_basket_divest_use_case_execute_no_investment(
 
     use_case = BasketDivestUseCase(divestment_planner, exchange, storage, date_time)
 
-    message, result = use_case.execute()
-
-    assert message == "Divestment error: No investment basket found."
-    assert result is None
+    with raises(NoBasketInvestment):
+        use_case.execute()
 
     storage.get.assert_called_once_with("basket_investment")
 
@@ -121,6 +120,7 @@ def test_basket_divest_use_case_execute_exception(
                 ),
             )
         ],
+        status="invested",
     )
     storage.get.return_value = [basket_investment, 1]
     divestment_planner.make_divestment_plan.return_value = divestment_plan
@@ -174,6 +174,7 @@ def test_basket_divest_use_case_execute_success(
                 ),
             )
         ],
+        status="invested",
     )
     divestment_plan = InvestmentPlan(
         steps=[
@@ -239,6 +240,7 @@ def test_basket_divest_use_case_execute_success(
                 ),
             )
         ],
+        status="invested",
     )
 
     storage.get.return_value = [basket_investment, 1]

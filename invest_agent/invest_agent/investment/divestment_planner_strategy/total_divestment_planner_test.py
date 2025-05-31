@@ -58,6 +58,7 @@ def test_make_divestment_plan_success(chain: Chain):
                 ),
             )
         ],
+        status="invested",
     )
 
     chain.get_base_token.return_value = base_token

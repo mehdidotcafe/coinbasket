@@ -1,6 +1,7 @@
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.divestment_planner import DivestmentPlanner
+from invest_agent.investment.exception.no_basket_investment import NoBasketInvestment
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.storage.storage import Storage
 
@@ -25,7 +26,7 @@ class BasketDivestUseCase:
         basket_investment = self.storage.get("basket_investment")
 
         if basket_investment is None:
-            return "Divestment error: No investment basket found.", None
+            raise NoBasketInvestment()
 
         # TODO: Check balance
 
@@ -53,4 +54,5 @@ class BasketDivestUseCase:
             type="basket divestment",
             invested_at=self.date_time.now_str(),
             bids=bids,
+            status="invested",
         )

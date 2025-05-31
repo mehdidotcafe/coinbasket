@@ -1,7 +1,7 @@
 from invest_agent.chain.balance import Balance
 
 
-class InsufficientBalanceException(Exception):
+class InsufficientBalance(Exception):
     """Exception raised when there is insufficient balance for a transaction."""
 
     def __init__(self, minBalance: Balance):

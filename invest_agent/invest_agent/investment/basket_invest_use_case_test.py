@@ -2,14 +2,17 @@ from decimal import Decimal
 from unittest import mock
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
+from invest_agent.investment.exception.basked_already_invested import (
+    BasketAlreadyInvested,
+)
 from protocol.basket import Basket
 from protocol.token import Token
-from pytest import fixture
+from pytest import fixture, raises
 
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.exchange.exchange import Exchange
-from invest_agent.investment.investment_planner_strategy.insufficient_balance_exception import (
-    InsufficientBalanceException,
+from invest_agent.investment.exception.insufficient_balance import (
+    InsufficientBalance,
 )
 from invest_agent.investment.basket_invest_use_case import BasketInvestUseCase
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
@@ -132,8 +135,10 @@ def test_invest_use_case_execute_success(
                 ),
             )
         ],
+        status="invested",
     )
 
+    storage.has.return_value = False
     investment_planner.make_investment_plan.return_value = investment_plan
     exchange.execute_investment_plan.return_value = basket_investment.bids
     date_time.now_str.return_value = "2020-05-09"
@@ -143,6 +148,7 @@ def test_invest_use_case_execute_success(
     assert message == "Investment success."
     assert result == basket_investment
 
+    storage.has.assert_called_once_with("basket_investment")
     investment_planner.make_investment_plan.assert_called_once_with(basket)
     exchange.execute_investment_plan.assert_called_once_with(investment_plan)
     storage.set.assert_called_once_with("basket_investment", basket_investment, 1)
@@ -156,7 +162,7 @@ def test_invest_use_case_execute_insufficient_balance(
     storage: Storage[BasketInvestment],
     basket: Basket,
 ):
-    exception = InsufficientBalanceException(
+    exception = InsufficientBalance(
         Balance(
             amount=Decimal("0"),
             token=Token(
@@ -168,6 +174,7 @@ def test_invest_use_case_execute_insufficient_balance(
         )
     )
 
+    storage.has.return_value = False
     investment_planner.make_investment_plan.side_effect = exception
     message, result = investment_use_case.execute(basket)
 
@@ -177,3 +184,14 @@ def test_invest_use_case_execute_insufficient_balance(
     investment_planner.make_investment_plan.assert_called_once_with(basket)
     exchange.execute_investment_plan.assert_not_called()
     storage.set.assert_not_called()
+
+
+def test_invest_use_case_execute_already_invested(
+    investment_use_case: BasketInvestUseCase,
+    storage: Storage[BasketInvestment],
+    basket: Basket,
+):
+    storage.has.return_value = True
+
+    with raises(BasketAlreadyInvested):
+        investment_use_case.execute(basket)

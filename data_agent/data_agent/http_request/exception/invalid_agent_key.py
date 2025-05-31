@@ -1,4 +1,4 @@
-class InvalidAgentKeyException(Exception):
+class InvalidAgentKey(Exception):
     """Exception raised for invalid API key errors."""
 
     def __init__(self):

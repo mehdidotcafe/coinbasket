@@ -42,7 +42,6 @@ class BscChain(Chain):
 
         self.account: LocalAccount = self.w3.eth.account.from_key(private_key)
 
-        # TODO: Investigate why this is needed
         self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)  # type: ignore
         self.w3.middleware_onion.inject(
             SignAndSendRawMiddlewareBuilder.build(self.account),  # type: ignore
@@ -128,7 +127,7 @@ class BscChain(Chain):
     ) -> Any:
         transaction_params: TxParams = {
             "from": self.account.address,
-            "chainId": self.w3.eth.chain_id,
+            "chainId": self.get_chain_id(),
             "value": Wei(amount),
             "nonce": self.w3.eth.get_transaction_count(self.account.address),
         }

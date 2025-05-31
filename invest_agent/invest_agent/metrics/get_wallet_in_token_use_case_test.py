@@ -4,15 +4,12 @@ from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.exchange.exchange import Wallet, Exchange
-from invest_agent.metrics.exception.basket_investment_not_found_exception import (
-    BasketInvestmentNotFoundException,
-)
 from invest_agent.metrics.get_wallet_in_token_use_case import (
     GetWalletInTokenUseCase,
 )
 from invest_agent.storage.storage import Storage
 from protocol.token import Token
-from pytest import fixture, raises
+from pytest import fixture
 
 
 @fixture
@@ -91,6 +88,7 @@ def basket_investment():
                 ),
             ),
         ],
+        status="invested",
     )
 
 

@@ -123,7 +123,7 @@ basket_divest_use_case = BasketDivestUseCase(
     storage=storage,
     date_time=date_time,
 )
-get_invested_basket_use_case = GetBasketInvestmentUseCase(storage=storage)
+get_basket_investment_use_case = GetBasketInvestmentUseCase(storage=storage)
 
 get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
     storage=storage, exchange=exchange, chain=chain
@@ -186,13 +186,15 @@ def get_invested_basket():
         Each bid has a token and a balance_in and balance_out property.
         The token has a name, display_name, ticker and address (contract address) property.
     """
-    return get_invested_basket_use_case.execute()
+    return get_basket_investment_use_case.execute()
 
 
 @tool(response_format="content_and_artifact")
 def invest_basket(basket: Basket):
     """Invest / fund / buy the basket create by the user.
     Each basket coin needs to have a name, ticker and address.
+    A basket can't be invested if it already has been invested.
+    Always ask for user confirmation before investing in the basket.
 
     Args:
         basket: The basket to Invest / fund / buy.
@@ -215,7 +217,10 @@ def invest_basket(basket: Basket):
 
 @tool()
 def divest_basket():
-    """Divest / sell the basket create by the user.
+    """Divest / sell the whole basket create by the user.
+    This tool cannot be used if the basket has not been invested yet.
+    This tool cannot be used if to divest just a part of the basket, it divests the whole basket.
+    Always ask for user confirmation before divesting the basket.
 
     Args:
         basket: The basket to Invest / fund / buy.
@@ -248,17 +253,16 @@ def create_agent_executor(conn: aiosqlite.Connection):
             f"Your name is {configuration.agent_name}.  "
             "Your goal is to create and then invest in crypto coin baskets on binance smart chain.  "
             f"Today is {date_time.now_str()}.  "
-            "Always give a name to the basket you are creating. Reevaluate the basket name after each answer.  "
+            "Always give a name to the basket you are creating. Reevaluate the basket name after each update.  "
             "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
             "When you display a token, always show its address as a link using this link 'https://bscscan.com/token/[token_address]'.  "
             "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
             "Always ask for the user's confirmation before investing in the basket and show a message mentioning that he should do his own research (DYOR) before investing.  "
             "Always ask for the user's confirmation before divesting the basket. "
             "Always use get_available_basket_or_coin_info to retrieve the list of available tokens / coins to invest.  "
-            # "You can manage / invest in only one basket at a time.  "
-            # "You can update a created basket but once it has been invested, you can only divest it and you can't update it anymore.  "
-            # "You can't create a basket if you already have one.  "
-            "If you don't know the answer, just say that you don't know, don't try to make up an answer.  "
+            "You can't create a new basket if you already created one and it has not been divested.  "
+            "You can't update a basket if you already have an invested basket.  "
+            "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
         ),
     )
 
