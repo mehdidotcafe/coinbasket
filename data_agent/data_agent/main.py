@@ -35,6 +35,9 @@ from data_agent.http_request.infrastructure.requests_http_request import (
 from data_agent.ingestion.data_source.infrastructure.bsc.coingecko_tokens_data_source import (
     CoingeckoTokenListDataSource,
 )
+from data_agent.ingestion.data_source.infrastructure.bsc.pancakeswap_tokens_data_source import (
+    PancakeswapTokenListDataSource,
+)
 from data_agent.ingestion.ingest_data_use_case import IngestDataUseCase
 from data_agent.similarity.get_similarities_use_case import GetSimilaritiesUseCase
 from data_agent.similarity.infrastructure.qdrant_langchain.similarity_storage.qdrant_langchain_similarity_storage import (
@@ -78,6 +81,7 @@ ingest_data_use_case = IngestDataUseCase(
         #     http_request,
         #     id_generator,
         # ),
+        PancakeswapTokenListDataSource(http_request, id_generator),
         Big4BasketDataSource(),
         AiBasketDataSource(),
         CmcTop102025BasketDataSource(),

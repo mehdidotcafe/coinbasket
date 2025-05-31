@@ -261,7 +261,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
             "Always ask for the user's confirmation before divesting the basket. "
             "Always use get_available_basket_or_coin_info to retrieve the list of available tokens / coins to invest.  "
             "You can't create a new basket if you already created one and it has not been divested.  "
-            "You can't update a basket if you already have an invested basket.  "
+            "You can't update a basket if you already have an invested basket. If no basket is invested, you can update the basket you are creating.  "
             "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
         ),
     )
