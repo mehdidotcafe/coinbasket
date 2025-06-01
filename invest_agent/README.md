@@ -2,7 +2,9 @@
 ![tag:ASI](https://img.shields.io/badge/asi-3D8BD3)
 
 
-![image info](../assets/logo.svg)
+
+[<img src="../assets/coinbasket.svg" width="164"/>](../assets/coinbasket.svg)
+
 
 
 # coinbasket
