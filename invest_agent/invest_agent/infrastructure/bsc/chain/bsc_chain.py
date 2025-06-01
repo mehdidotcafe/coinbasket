@@ -1,8 +1,8 @@
 from decimal import Decimal
 from functools import cache
 import json
-from typing import Any, TypedDict, cast
-from eth_typing import ChecksumAddress, HexStr
+from typing import Any, TypedDict
+from eth_typing import HexStr
 from eth_account.signers.local import LocalAccount
 from web3 import Web3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
@@ -121,7 +121,6 @@ class BscChain(Chain):
         self,
         amount: int,
         gas: Gas | None = None,
-        # address (not checksum)
         to_address: str | None = None,
         encoded_input: HexStr | None = None,
     ) -> Any:
@@ -174,7 +173,7 @@ class BscChain(Chain):
         """Compute gas estimate for EIP-1559 transactions."""
         latest_block = self.w3.eth.get_block("latest")
         base_fee = latest_block.get("baseFeePerGas", 0)
-        max_priority_fee = self.w3.to_wei(2, "gwei")  # This is the miner "tip"
+        max_priority_fee = self.w3.to_wei(2, "gwei")  # miner "tip"
         max_fee_per_gas = Wei(base_fee * 2 + max_priority_fee)
 
         return Eip1559Gas(
