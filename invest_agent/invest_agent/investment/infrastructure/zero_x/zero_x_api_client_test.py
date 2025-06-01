@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest import mock
 from invest_agent.http_request.http_request import HttpRequest
 from invest_agent.investment.infrastructure.zero_x.fee import Fee, Fees
@@ -52,7 +53,14 @@ def test_zero_x_api_client_get_price_success(
 
     http_request.get.return_value = expected_price
 
-    price = client.get_price(taker, chain_id, sell_token, buy_token, amount)
+    price = client.get_price(
+        taker=taker,
+        chain_id=chain_id,
+        sell_token=sell_token,
+        buy_token=buy_token,
+        amount=amount,
+        slippage_bps=Decimal("100"),
+    )
 
     assert price == expected_price
 
@@ -65,6 +73,7 @@ def test_zero_x_api_client_get_price_success(
                 "buyToken": "0x1234567890abcdef1234567890abcdef12345678",
                 "sellAmount": 1000000000000000000,
                 "taker": "0x1234567890abcdef1234567890abcdef12345678",
+                "slippageBps": 100,
             },
             "headers": {
                 "Content-Type": "application/json",
@@ -83,7 +92,7 @@ def test_zero_x_api_client_get_quote_success(
 
     taker = "0x5234567890abcdef1234567890abcdef12345678"
     chain_id = 1
-    sell_token_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
+    sell_token = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
     buy_token = "0x1234567890abcdef1234567890abcdef12345678"
     amount = 1000000000000000000  # 1 ETH in wei
 
@@ -114,7 +123,14 @@ def test_zero_x_api_client_get_quote_success(
 
     http_request.get.return_value = expected_quote
 
-    quote = client.get_quote(taker, chain_id, sell_token_address, buy_token, amount)
+    quote = client.get_quote(
+        taker=taker,
+        chain_id=chain_id,
+        sell_token=sell_token,
+        buy_token=buy_token,
+        amount=amount,
+        slippage_bps=Decimal("100"),
+    )
 
     assert quote == expected_quote
 
@@ -127,6 +143,7 @@ def test_zero_x_api_client_get_quote_success(
                 "buyToken": "0x1234567890abcdef1234567890abcdef12345678",
                 "sellAmount": 1000000000000000000,
                 "taker": "0x5234567890abcdef1234567890abcdef12345678",
+                "slippageBps": 100,
             },
             "headers": {
                 "Content-Type": "application/json",

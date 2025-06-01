@@ -38,7 +38,7 @@ def test_make_divestment_plan_success(chain: Chain):
                     ticker="TTK",
                     address="0x123",
                 ),
-                balance_in=Balance(
+                sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
                         name="Test Token 1",
@@ -47,7 +47,7 @@ def test_make_divestment_plan_success(chain: Chain):
                         address="0x1",
                     ),
                 ),
-                balance_out=Balance(
+                buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
                         name="Test Token 2",

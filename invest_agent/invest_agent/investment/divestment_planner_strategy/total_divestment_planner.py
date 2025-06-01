@@ -26,6 +26,6 @@ class TotalDivestmentPlanner(DivestmentPlanner):
     def __map_bid_to_step(self, basket_investment_bid: Bid) -> InvestmentPlanStep:
         """Map a bid to a divestment step."""
         return InvestmentPlanStep(
-            token=basket_investment_bid.balance_out.token,
-            amount=basket_investment_bid.balance_out.amount,
+            token=basket_investment_bid.buy_balance.token,
+            amount=basket_investment_bid.buy_balance.amount,
         )

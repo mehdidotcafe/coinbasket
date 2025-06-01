@@ -3,6 +3,7 @@ from unittest import mock
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.exception.no_basket_investment import NoBasketInvestment
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from pytest import fixture, raises
 
 from protocol.token import Token
@@ -100,7 +101,7 @@ def test_basket_divest_use_case_execute_exception(
                     ticker="TTK",
                     address="0x123",
                 ),
-                balance_in=Balance(
+                sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
                         name="Test Token 1",
@@ -109,7 +110,7 @@ def test_basket_divest_use_case_execute_exception(
                         address="0x1",
                     ),
                 ),
-                balance_out=Balance(
+                buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
                         name="Test Token 2",
@@ -154,7 +155,7 @@ def test_basket_divest_use_case_execute_success(
                     ticker="TTK",
                     address="0x123",
                 ),
-                balance_in=Balance(
+                sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
                         name="Test Token 1",
@@ -163,7 +164,7 @@ def test_basket_divest_use_case_execute_success(
                         address="0x1",
                     ),
                 ),
-                balance_out=Balance(
+                buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
                         name="Test Token 2",
@@ -220,7 +221,7 @@ def test_basket_divest_use_case_execute_success(
                     ticker="WBNB",
                     address="0x238928933434",
                 ),
-                balance_in=Balance(
+                sell_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
                         name="Test Token",
@@ -229,7 +230,7 @@ def test_basket_divest_use_case_execute_success(
                         address="0x123",
                     ),
                 ),
-                balance_out=Balance(
+                buy_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
                         name="WBNB",
@@ -257,6 +258,9 @@ def test_basket_divest_use_case_execute_success(
 
     storage.get.assert_called_once_with("basket_investment")
     divestment_planner.make_divestment_plan.assert_called_once_with(basket_investment)
-    exchange.execute_divestment_plan.assert_called_once_with(divestment_plan)
+    exchange.execute_divestment_plan.assert_called_once_with(
+        divestment_plan,
+        InvestmentParameters(slippage_tolerance_in_percentage=Decimal("1")),
+    )
     storage.remove.assert_called_once_with("basket_investment")
     date_time.now_str.assert_called_once()

@@ -3,14 +3,15 @@ from dataclasses import dataclass
 
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.basket_investment import Bid
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.investment_plan import InvestmentPlan
 from protocol.token import Token
 
 
 @dataclass
 class ConvertedBalance:
-    balance_in: Balance
-    balance_out: Balance
+    sell_balance: Balance
+    buy_balance: Balance
 
 
 @dataclass
@@ -21,11 +22,19 @@ class Wallet:
 
 class Exchange(ABC):
     @abstractmethod
-    def execute_investment_plan(self, investment_plan: InvestmentPlan) -> list[Bid]:  # noqa: F821
+    def execute_investment_plan(
+        self,
+        investment_plan: InvestmentPlan,
+        investment_parameters: InvestmentParameters,
+    ) -> list[Bid]:  # noqa: F821
         raise NotImplementedError
 
     @abstractmethod
-    def execute_divestment_plan(self, divestment_plan: InvestmentPlan) -> list[Bid]:
+    def execute_divestment_plan(
+        self,
+        divestment_plan: InvestmentPlan,
+        investment_parameters: InvestmentParameters,
+    ) -> list[Bid]:
         raise NotImplementedError
 
     @abstractmethod

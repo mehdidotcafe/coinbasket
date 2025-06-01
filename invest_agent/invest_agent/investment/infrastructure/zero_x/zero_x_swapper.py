@@ -17,6 +17,7 @@ from invest_agent.investment.infrastructure.zero_x.quote import (
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from protocol.token import Token
 from tenacity import retry, stop_after_attempt
@@ -62,7 +63,11 @@ class ZeroXSwapper(Exchange):
         ) as f:
             self.erc20_token_abi = json.load(f)
 
-    def execute_investment_plan(self, investment_plan: InvestmentPlan) -> list[Bid]:
+    def execute_investment_plan(
+        self,
+        investment_plan: InvestmentPlan,
+        investment_parameters: InvestmentParameters,
+    ) -> list[Bid]:
         bids: list[Bid] = []
 
         base_token_contract = self.w3.eth.contract(
@@ -77,6 +82,7 @@ class ZeroXSwapper(Exchange):
                         step=step,
                         base_token_contract=base_token_contract,
                         base_token=investment_plan.balance.token,
+                        investment_parameters=investment_parameters,
                     )
                 )
             except Exception as e:
@@ -90,6 +96,7 @@ class ZeroXSwapper(Exchange):
         step: InvestmentPlanStep,
         base_token_contract: Contract,
         base_token: Token,
+        investment_parameters: InvestmentParameters,
     ) -> Bid:
         print(
             f"=== {step.token.display_name} - {step.token.address} ({step.amount}) ==="
@@ -114,6 +121,9 @@ class ZeroXSwapper(Exchange):
             sell_token=base_token.address,
             buy_token=step.token.address,
             amount=amount,
+            slippage_bps=self.__compute_slippage_tolerance_in_bps(
+                investment_parameters.slippage_tolerance_in_percentage
+            ),
         )
         quote = quote_result.root
 
@@ -142,7 +152,11 @@ class ZeroXSwapper(Exchange):
             token_out=step.token,
         )
 
-    def execute_divestment_plan(self, divestment_plan: InvestmentPlan) -> list[Bid]:
+    def execute_divestment_plan(
+        self,
+        divestment_plan: InvestmentPlan,
+        investment_parameters: InvestmentParameters,
+    ) -> list[Bid]:
         bids: list[Bid] = []
 
         base_token_contract = self.w3.eth.contract(
@@ -157,6 +171,7 @@ class ZeroXSwapper(Exchange):
                         step=step,
                         base_token_contract=base_token_contract,
                         base_token=divestment_plan.balance.token,
+                        investment_parameters=investment_parameters,
                     )
                 )
             except Exception as e:
@@ -170,6 +185,7 @@ class ZeroXSwapper(Exchange):
         step: InvestmentPlanStep,
         base_token_contract: Contract,
         base_token: Token,
+        investment_parameters: InvestmentParameters,
     ) -> Bid:
         print(
             f"=== {step.token.display_name} - {step.token.address} ({step.amount}) ==="
@@ -195,6 +211,9 @@ class ZeroXSwapper(Exchange):
             amount=amount,
             buy_token=base_token.address,
             sell_entire_balance=True,
+            slippage_bps=self.__compute_slippage_tolerance_in_bps(
+                investment_parameters.slippage_tolerance_in_percentage
+            ),
         )
 
         self.__approve_allowance(
@@ -208,6 +227,9 @@ class ZeroXSwapper(Exchange):
             buy_token=base_token.address,
             amount=amount,
             sell_entire_balance=True,
+            slippage_bps=self.__compute_slippage_tolerance_in_bps(
+                investment_parameters.slippage_tolerance_in_percentage
+            ),
         )
         quote = quote_result.root
 
@@ -272,7 +294,7 @@ class ZeroXSwapper(Exchange):
 
             balances.append(
                 ConvertedBalance(
-                    balance_in=Balance(
+                    sell_balance=Balance(
                         token=balance.token,
                         amount=self.__get_raw_amount(
                             token_contract=balance_token_contract,
@@ -280,7 +302,7 @@ class ZeroXSwapper(Exchange):
                             amount=Decimal(price.sellAmount),
                         ),
                     ),
-                    balance_out=Balance(
+                    buy_balance=Balance(
                         token=token,
                         amount=self.__get_raw_amount(
                             token_contract=base_token_contract,
@@ -300,7 +322,7 @@ class ZeroXSwapper(Exchange):
         return Balance(
             token=token,
             amount=cast(
-                Decimal, sum([balance.balance_out.amount for balance in balances])
+                Decimal, sum([balance.buy_balance.amount for balance in balances])
             ),
         )
 
@@ -314,13 +336,13 @@ class ZeroXSwapper(Exchange):
     ) -> Bid:
         return Bid(
             token=token_out,
-            balance_in=Balance(
+            sell_balance=Balance(
                 token=token_in,
                 amount=self.__get_raw_amount(
                     token_in_contract, token_in, Decimal(quote.sellAmount)
                 ),
             ),
-            balance_out=Balance(
+            buy_balance=Balance(
                 token=token_out,
                 amount=self.__get_raw_amount(
                     token_out_contract, token_out, Decimal(quote.buyAmount)
@@ -400,3 +422,8 @@ class ZeroXSwapper(Exchange):
         )
 
         return amount / (10**decimals)
+
+    def __compute_slippage_tolerance_in_bps(
+        self, slippage_tolerance_in_percentage: Decimal
+    ) -> Decimal:
+        return slippage_tolerance_in_percentage * 100

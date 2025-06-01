@@ -1,8 +1,10 @@
+from decimal import Decimal
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.exception.basked_already_invested import (
     BasketAlreadyInvested,
 )
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from protocol.basket import Basket
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_planner import InvestmentPlanner
@@ -26,9 +28,14 @@ class BasketInvestUseCase:
         if self.storage.has("basket_investment"):
             raise BasketAlreadyInvested()
 
+        investment_parameters = InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+        )
+
         try:
             bids = self.exchange.execute_investment_plan(
                 self.investment_planner.make_investment_plan(basket),
+                investment_parameters,
             )
             basket_investment = self.__map_bids_and_basket_to_basket_investment(
                 bids, basket

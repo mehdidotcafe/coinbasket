@@ -42,7 +42,7 @@ def basket_investment():
                     ticker="TK1",
                     address="0x00001",
                 ),
-                balance_in=Balance(
+                sell_balance=Balance(
                     amount=Decimal("1000"),
                     token=Token(
                         name="Token 1",
@@ -51,7 +51,7 @@ def basket_investment():
                         address="0x00001",
                     ),
                 ),
-                balance_out=Balance(
+                buy_balance=Balance(
                     amount=Decimal("333"),
                     token=Token(
                         name="Token 8",
@@ -68,7 +68,7 @@ def basket_investment():
                     ticker="TK2",
                     address="0x00002",
                 ),
-                balance_in=Balance(
+                sell_balance=Balance(
                     amount=Decimal("99999"),
                     token=Token(
                         name="Token 2",
@@ -77,7 +77,7 @@ def basket_investment():
                         address="0x00002",
                     ),
                 ),
-                balance_out=Balance(
+                buy_balance=Balance(
                     amount=Decimal("9384"),
                     token=Token(
                         name="Token 9",

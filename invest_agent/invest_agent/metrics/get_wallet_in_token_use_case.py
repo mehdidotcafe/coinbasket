@@ -25,4 +25,4 @@ class GetWalletInTokenUseCase:
         )
 
     def __map_basket_investment_bids_to_balances(self, bids: list[Bid]):
-        return [bid.balance_out for bid in bids]
+        return [bid.buy_balance for bid in bids]

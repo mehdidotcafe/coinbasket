@@ -34,7 +34,7 @@ def test_get_basket_investment_use_case(storage: Storage[BasketInvestment]):
                     ticker="TTK",
                     address="0x123",
                 ),
-                balance_in=Balance(
+                sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
                         name="Test Token",
@@ -43,7 +43,7 @@ def test_get_basket_investment_use_case(storage: Storage[BasketInvestment]):
                         address="0x123",
                     ),
                 ),
-                balance_out=Balance(
+                buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
                         name="Test Token",

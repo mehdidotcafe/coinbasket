@@ -8,8 +8,8 @@ from protocol.token import Token
 @dataclass
 class Bid:
     token: Token
-    balance_in: Balance
-    balance_out: Balance
+    sell_balance: Balance
+    buy_balance: Balance
 
 
 @dataclass

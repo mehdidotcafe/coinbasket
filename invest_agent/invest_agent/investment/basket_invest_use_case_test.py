@@ -5,6 +5,7 @@ from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.exception.basked_already_invested import (
     BasketAlreadyInvested,
 )
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from protocol.basket import Basket
 from protocol.token import Token
 from pytest import fixture, raises
@@ -115,7 +116,7 @@ def test_invest_use_case_execute_success(
                     ticker="TKA",
                     address="0x1234567890abcdef1234567890abcdef12345678",
                 ),
-                balance_in=Balance(
+                sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
                         name="Base Token",
@@ -124,7 +125,7 @@ def test_invest_use_case_execute_success(
                         address="0xabcdef1234567890abcdef1234567890abcdef12",
                     ),
                 ),
-                balance_out=Balance(
+                buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
                         name="TokenA",
@@ -150,7 +151,12 @@ def test_invest_use_case_execute_success(
 
     storage.has.assert_called_once_with("basket_investment")
     investment_planner.make_investment_plan.assert_called_once_with(basket)
-    exchange.execute_investment_plan.assert_called_once_with(investment_plan)
+    exchange.execute_investment_plan.assert_called_once_with(
+        investment_plan,
+        InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+        ),
+    )
     storage.set.assert_called_once_with("basket_investment", basket_investment, 1)
     date_time.now_str.assert_called_once()
 

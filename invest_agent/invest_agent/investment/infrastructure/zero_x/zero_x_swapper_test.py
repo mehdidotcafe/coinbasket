@@ -22,6 +22,7 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import (
     Configuration,
     ZeroXSwapper,
 )
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from pytest import fixture
 from protocol.fixture.token import bnb_token, eth_token, usdt_token, sol_token
@@ -69,11 +70,19 @@ def configuration():
     }
 
 
+@fixture
+def investment_parameters():
+    return InvestmentParameters(
+        slippage_tolerance_in_percentage=Decimal("1"),
+    )
+
+
 def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -119,7 +128,7 @@ def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
     )
     chain.sign_send_wait_transaction.return_value = {"logs": []}
 
-    zero_x_swapper.execute_investment_plan(investment_plan)
+    zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
 
     zero_x_api_client.get_quote.assert_called_once_with(
         taker="0x1234567890abcdef1234567890abcdef12345678",
@@ -127,6 +136,7 @@ def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
         sell_token="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         buy_token="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
         amount=1000000000000000000,
+        slippage_bps=Decimal("100"),
     )
     chain.sign_send_wait_transaction.assert_called_once_with(
         gas=Gas(gas=21000, gas_price=1000000000),
@@ -141,6 +151,7 @@ def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -218,7 +229,7 @@ def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
     w3.eth.account.sign_typed_data.return_value = mock.Mock(
         signature=HexBytes("0x12890438482abdbf")
     )
-    zero_x_swapper.execute_investment_plan(investment_plan)
+    zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
 
     chain.sign_send_wait_transaction.assert_called_once_with(
         gas=mock.ANY,
@@ -233,6 +244,7 @@ def test_zero_x_swapper_execute_investment_plan_bids(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -277,16 +289,18 @@ def test_zero_x_swapper_execute_investment_plan_bids(
         )
     )
 
-    bids = zero_x_swapper.execute_investment_plan(investment_plan)
+    bids = zero_x_swapper.execute_investment_plan(
+        investment_plan, investment_parameters
+    )
 
     assert bids == [
         Bid(
             token=eth_token,
-            balance_in=Balance(
+            sell_balance=Balance(
                 token=bnb_token,
                 amount=Decimal("1.0"),
             ),
-            balance_out=Balance(
+            buy_balance=Balance(
                 token=eth_token,
                 amount=Decimal("0.25451699542817274"),
             ),
@@ -299,6 +313,7 @@ def test_zero_x_swapper_execute_investment_plan_retry(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -345,7 +360,7 @@ def test_zero_x_swapper_execute_investment_plan_retry(
 
     chain.sign_send_wait_transaction.side_effect = TransactionFailure()
 
-    zero_x_swapper.execute_investment_plan(investment_plan)
+    zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
 
     assert chain.sign_send_wait_transaction.call_count == 5
 
@@ -355,6 +370,7 @@ def test_zero_x_swapper_execute_investment_plan_no_liquidity(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -380,7 +396,9 @@ def test_zero_x_swapper_execute_investment_plan_no_liquidity(
 
     chain.sign_send_wait_transaction.side_effect = TransactionFailure()
 
-    bids = zero_x_swapper.execute_investment_plan(investment_plan)
+    bids = zero_x_swapper.execute_investment_plan(
+        investment_plan, investment_parameters
+    )
 
     assert not bids
 
@@ -390,6 +408,7 @@ def test_zero_x_swapper_execute_divestment_plan(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -443,7 +462,7 @@ def test_zero_x_swapper_execute_divestment_plan(
     )
     chain.sign_send_wait_transaction.return_value = {"logs": []}
 
-    zero_x_swapper.execute_divestment_plan(divestment_plan)
+    zero_x_swapper.execute_divestment_plan(divestment_plan, investment_parameters)
 
     zero_x_api_client.get_quote.assert_called_once_with(
         taker="0x1234567890abcdef1234567890abcdef12345678",
@@ -452,6 +471,7 @@ def test_zero_x_swapper_execute_divestment_plan(
         buy_token="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         amount=1000000000000000000,
         sell_entire_balance=True,
+        slippage_bps=Decimal("100"),
     )
     zero_x_api_client.get_price.assert_called_once_with(
         taker="0x1234567890abcdef1234567890abcdef12345678",
@@ -460,6 +480,7 @@ def test_zero_x_swapper_execute_divestment_plan(
         buy_token="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         amount=1000000000000000000,
         sell_entire_balance=True,
+        slippage_bps=Decimal("100"),
     )
     chain.sign_send_wait_transaction.assert_called_once_with(
         gas=Gas(gas=21000, gas_price=1000000000),
@@ -474,6 +495,7 @@ def test_zero_x_swapper_execute_divestment_plan_with_allowance(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -540,7 +562,7 @@ def test_zero_x_swapper_execute_divestment_plan_with_allowance(
     )
     chain.sign_send_wait_transaction.return_value = {"logs": []}
 
-    zero_x_swapper.execute_divestment_plan(divestment_plan)
+    zero_x_swapper.execute_divestment_plan(divestment_plan, investment_parameters)
 
     approve.assert_called_once_with(
         "0x694e49f3F7a24387299D619A2931Ee3A763Dc760",
@@ -607,16 +629,16 @@ def test_zero_x_swapper_get_wallet_in_token(
     assert wallet == Wallet(
         balances=[
             ConvertedBalance(
-                balance_in=Balance(token=sol_token, amount=Decimal("1.0")),
-                balance_out=Balance(token=usdt_token, amount=Decimal("300")),
+                sell_balance=Balance(token=sol_token, amount=Decimal("1.0")),
+                buy_balance=Balance(token=usdt_token, amount=Decimal("300")),
             ),
             ConvertedBalance(
-                balance_in=Balance(token=eth_token, amount=Decimal("4.0")),
-                balance_out=Balance(token=usdt_token, amount=Decimal("1100.0")),
+                sell_balance=Balance(token=eth_token, amount=Decimal("4.0")),
+                buy_balance=Balance(token=usdt_token, amount=Decimal("1100.0")),
             ),
             ConvertedBalance(
-                balance_in=Balance(token=usdt_token, amount=Decimal("10.0")),
-                balance_out=Balance(token=usdt_token, amount=Decimal("10.0")),
+                sell_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
+                buy_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
             ),
         ],
         total_balance=Balance(token=usdt_token, amount=Decimal("1410.0")),
@@ -628,6 +650,7 @@ def test_zero_x_swapper_execute_divestment_plan_retry(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -681,7 +704,7 @@ def test_zero_x_swapper_execute_divestment_plan_retry(
     )
     chain.sign_send_wait_transaction.side_effect = TransactionFailure()
 
-    zero_x_swapper.execute_divestment_plan(divestment_plan)
+    zero_x_swapper.execute_divestment_plan(divestment_plan, investment_parameters)
 
     assert chain.sign_send_wait_transaction.call_count == 5
 
@@ -691,6 +714,7 @@ def test_zero_x_swapper_execute_divestment_plan_no_liquidity(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
@@ -721,6 +745,8 @@ def test_zero_x_swapper_execute_divestment_plan_no_liquidity(
             liquidityAvailable=False,
         )
     )
-    bids = zero_x_swapper.execute_divestment_plan(divestment_plan)
+    bids = zero_x_swapper.execute_divestment_plan(
+        divestment_plan, investment_parameters
+    )
 
     assert not bids

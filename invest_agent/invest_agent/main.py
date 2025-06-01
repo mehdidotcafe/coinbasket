@@ -65,6 +65,7 @@ from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
 )
 
 from protocol import SimilarityQuery, SimilarityResponse
+from protocol.fixture.token import usdt_token
 
 date_time = PythonDateTime()
 
@@ -192,7 +193,7 @@ def get_balance():
 
 @tool()
 def get_invested_basket():
-    """Retrieve the invested basket.
+    """Retrieve the invested basket in native value only.
 
     Returns:
         The invested basket made of the bids that were made by the agent when investing in the basket.
@@ -200,6 +201,17 @@ def get_invested_basket():
         The token has a name, display_name, ticker and address (contract address) property.
     """
     return get_basket_investment_use_case.execute()
+
+
+@tool()
+def get_invested_basket_balance_in_native_and_usd_value():
+    """Retrieve the invested basket in native and USD Value.
+
+    Returns:
+        The basket balance is made of the balances of each token in the basket, both in native and USD value.
+        The token has a name, display_name, ticker and address (contract address) property.
+    """
+    return get_basket_balance_in_token_use_case.execute(usdt_token)
 
 
 @tool(response_format="content_and_artifact")
@@ -259,6 +271,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
             get_address,
             get_balance,
             get_invested_basket,
+            get_invested_basket_balance_in_native_and_usd_value,
             divest_basket,
         ],
         checkpointer=sqliteMemory,
@@ -268,7 +281,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
             f"Today is {date_time.now_str()}.  "
             "Always give a name to the basket you are creating. Reevaluate the basket name after each update.  "
             "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
-            "When you display a token, always show its address as a link using this link 'https://bscscan.com/token/[token_address]'.  "
+            "When you display a token or coin, always show its address as a link using this link 'https://bscscan.com/token/[token_address]'.  "
             "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
             "Always ask for the user's confirmation before investing in the basket and show a message mentioning that he should do his own research (DYOR) before investing.  "
             "Always ask for the user's confirmation before divesting the basket. "
@@ -522,8 +535,8 @@ class BalanceResponse(Model):
 
 
 class ConvertedBalanceResponse(Model):
-    balance_in: BalanceResponse
-    balance_out: BalanceResponse
+    sell_balance: BalanceResponse
+    buy_balance: BalanceResponse
 
 
 class MetricsWalletRequest(Model):
@@ -546,7 +559,7 @@ class MetricsWalletResponse(Model):
         MetricsWalletRequest,
         MetricsWalletResponse,
     ],
-    path="/metrics/wallet/token",
+    path="/wallet/token",
     operations={
         "post": {
             "summary": "Get Agent wallet token and total balances in a specific token",
@@ -579,7 +592,7 @@ class MetricsWalletResponse(Model):
     },
 )
 @invest_agent.on_rest_post(
-    "/metrics/wallet/token",
+    "/wallet/token",
     MetricsWalletRequest,
     MetricsWalletResponse,
 )
@@ -597,22 +610,22 @@ async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
     return MetricsWalletResponse(
         balances=[
             ConvertedBalanceResponse(
-                balance_in=BalanceResponse(
-                    balance=str(balance.balance_in.amount),
+                sell_balance=BalanceResponse(
+                    balance=str(balance.sell_balance.amount),
                     token=TokenResponse(
-                        name=balance.balance_in.token.name,
-                        display_name=balance.balance_in.token.display_name,
-                        ticker=balance.balance_in.token.ticker,
-                        address=balance.balance_in.token.address,
+                        name=balance.sell_balance.token.name,
+                        display_name=balance.sell_balance.token.display_name,
+                        ticker=balance.sell_balance.token.ticker,
+                        address=balance.sell_balance.token.address,
                     ),
                 ),
-                balance_out=BalanceResponse(
-                    balance=str(balance.balance_out.amount),
+                buy_balance=BalanceResponse(
+                    balance=str(balance.buy_balance.amount),
                     token=TokenResponse(
-                        name=balance.balance_out.token.name,
-                        display_name=balance.balance_out.token.display_name,
-                        ticker=balance.balance_out.token.ticker,
-                        address=balance.balance_out.token.address,
+                        name=balance.buy_balance.token.name,
+                        display_name=balance.buy_balance.token.display_name,
+                        ticker=balance.buy_balance.token.ticker,
+                        address=balance.buy_balance.token.address,
                     ),
                 ),
             )

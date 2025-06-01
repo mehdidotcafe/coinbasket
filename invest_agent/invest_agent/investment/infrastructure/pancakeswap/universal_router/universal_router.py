@@ -234,8 +234,8 @@ class PancakeSwapUniversalRouter(Exchange):
             if balance.token.address == token.address:
                 balances.append(
                     ConvertedBalance(
-                        balance_in=balance,
-                        balance_out=balance,
+                        sell_balance=balance,
+                        buy_balance=balance,
                     )
                 )
             else:
@@ -254,8 +254,8 @@ class PancakeSwapUniversalRouter(Exchange):
 
                 balances.append(
                     ConvertedBalance(
-                        balance_in=balance,
-                        balance_out=Balance(
+                        sell_balance=balance,
+                        buy_balance=Balance(
                             token=token,
                             amount=self.__get_token_amount(
                                 token_contract, amounts_out[1]
@@ -273,7 +273,7 @@ class PancakeSwapUniversalRouter(Exchange):
         return Balance(
             token=token,
             amount=cast(
-                Decimal, sum([balance.balance_out.amount for balance in balances])
+                Decimal, sum([balance.buy_balance.amount for balance in balances])
             ),
         )
 
@@ -314,11 +314,11 @@ class PancakeSwapUniversalRouter(Exchange):
                 bids.append(
                     Bid(
                         token=step.token,
-                        balance_in=Balance(
+                        sell_balance=Balance(
                             token=step.token,
                             amount=step.amount,
                         ),
-                        balance_out=Balance(
+                        buy_balance=Balance(
                             token=step.token, amount=base_token_balance
                         ),
                     )
@@ -342,11 +342,11 @@ class PancakeSwapUniversalRouter(Exchange):
                                 bids.append(
                                     Bid(
                                         token=step.token,
-                                        balance_in=Balance(
+                                        sell_balance=Balance(
                                             token=self.chain.get_base_token(),
                                             amount=step.amount,
                                         ),
-                                        balance_out=Balance(
+                                        buy_balance=Balance(
                                             token=step.token,
                                             amount=self.__get_token_amount(
                                                 contract, decoded["args"]["value"]

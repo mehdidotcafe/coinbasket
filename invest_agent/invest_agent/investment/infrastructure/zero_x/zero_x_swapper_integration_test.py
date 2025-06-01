@@ -10,8 +10,10 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
 from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import (
     ZeroXSwapper,
 )
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from invest_agent.chain.balance import Balance
+
 
 from protocol.fixture.token import (
     bnb_token,
@@ -77,8 +79,11 @@ def test_integration_zero_x_swapper_execute_investment_plan():
             amount=Decimal(10),
         ),
     )
+    investment_parameters = InvestmentParameters(
+        slippage_tolerance_in_percentage=Decimal(5),
+    )
 
-    zero_x_swapper.execute_investment_plan(investment_plan)
+    zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
 
 
 def test_integration_zero_x_swapper_execute_divestment_plan():
@@ -126,23 +131,28 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
             amount=Decimal(10),
         ),
     )
+    investment_parameters = InvestmentParameters(
+        slippage_tolerance_in_percentage=Decimal(5),
+    )
 
     # TODO: Find a way to set the balance of the account directly
-    bids = zero_x_swapper.execute_investment_plan(investment_plan)
+    bids = zero_x_swapper.execute_investment_plan(
+        investment_plan, investment_parameters
+    )
 
     divestment_plan = InvestmentPlan(
         steps=[
             InvestmentPlanStep(
                 token=eth_token,
-                amount=bids[0].balance_out.amount,
+                amount=bids[0].buy_balance.amount,
             ),
             InvestmentPlanStep(
                 token=wbnb_token,
-                amount=bids[1].balance_out.amount,
+                amount=bids[1].buy_balance.amount,
             ),
             InvestmentPlanStep(
                 token=sol_token,
-                amount=bids[2].balance_out.amount,
+                amount=bids[2].buy_balance.amount,
             ),
         ],
         balance=Balance(

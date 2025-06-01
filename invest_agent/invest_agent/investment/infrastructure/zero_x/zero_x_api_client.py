@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any, TypedDict
 from invest_agent.http_request.http_request import HttpRequest
 from invest_agent.investment.infrastructure.zero_x.price import Price
@@ -29,6 +30,7 @@ class ZeroXApiClient:
         buy_token: str,
         amount: int,
         sell_entire_balance: bool | None = None,
+        slippage_bps: Decimal | None = None,
     ) -> Price:
         url = f"{self.api_url}/swap/permit2/price"
         params = self.__make_params(
@@ -38,6 +40,7 @@ class ZeroXApiClient:
             amount,
             taker,
             sell_entire_balance,
+            slippage_bps,
         )
 
         return self.http_request.get(
@@ -57,6 +60,7 @@ class ZeroXApiClient:
         buy_token: str,
         amount: int,
         sell_entire_balance: bool | None = None,
+        slippage_bps: Decimal | None = None,
     ) -> QuoteResult:
         url = f"{self.api_url}/swap/permit2/quote"
         params = self.__make_params(
@@ -66,6 +70,7 @@ class ZeroXApiClient:
             amount,
             taker,
             sell_entire_balance,
+            slippage_bps,
         )
 
         return self.http_request.get(
@@ -85,6 +90,7 @@ class ZeroXApiClient:
         amount: int,
         taker: str,
         sell_entire_balance: bool | None = None,
+        slippage_bps: Decimal | None = None,
     ) -> dict[str, str | int]:
         params: dict[str, str | int] = {
             "chainId": chain_id,
@@ -96,5 +102,8 @@ class ZeroXApiClient:
 
         if sell_entire_balance is not None:
             params["sellEntireBalance"] = "true" if sell_entire_balance else "false"
+
+        if slippage_bps is not None:
+            params["slippageBps"] = int(slippage_bps)
 
         return params
