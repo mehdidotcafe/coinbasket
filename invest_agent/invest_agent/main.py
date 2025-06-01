@@ -2,6 +2,7 @@ import os
 from typing import Any, Dict, Optional, cast
 
 import aiohttp
+from apispec import APISpec
 from invest_agent.authentication.authentication import authentication
 from invest_agent.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
@@ -10,6 +11,9 @@ from invest_agent.conversation.repository.infrastructure.langchain_sqlite_conver
     LangchainSqliteConversationRepository,
 )
 from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
+from invest_agent.documentation.response.invalid_authentication_key import (
+    invalid_authentication_key,
+)
 from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_client import (
     AiohttpAgentToAgentClient,
 )
@@ -24,8 +28,10 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import ZeroXSw
 from invest_agent.metrics.get_wallet_in_token_use_case import (
     GetWalletInTokenUseCase,
 )
+from invest_agent.documentation.openapi import openapi
 from protocol.basket import Basket
 from protocol.token import Token
+from pydantic import RootModel
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
@@ -71,6 +77,13 @@ print(f"Thread ID: {configuration.langchain_thread_id}")
 if configuration.langsmith_tracing:
     os.environ["LANGSMITH_TRACING"] = str(configuration.langsmith_tracing)
     os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
+
+
+spec = APISpec(
+    title=configuration.agent_name,
+    version="0.0.1",
+    openapi_version="3.0.2",
+)
 
 invest_agent = Agent(
     name=configuration.agent_name,
@@ -288,6 +301,36 @@ class MessageResponse(Model):
     created_at: Optional[str]
 
 
+@openapi(
+    spec=spec,
+    schemas=[MessageRequest, PromptRequest, MessageResponse],
+    path="/conversation",
+    operations={
+        "post": {
+            "summary": "Send message to the Agent",
+            "tags": ["Conversation"],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {
+                        "schema": {"$ref": "#/components/schemas/PromptRequest"}
+                    }
+                },
+            },
+            "responses": {
+                "200": {
+                    "description": "Agent response message",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/MessageResponse"},
+                        }
+                    },
+                },
+                "500": invalid_authentication_key,
+            },
+        }
+    },
+)
 @invest_agent.on_rest_post("/conversation", PromptRequest, MessageResponse)
 @authentication(configuration.agent_key)
 async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
@@ -325,6 +368,41 @@ class MessagesResponse(Model):
     messages: list[MessageResponse]
 
 
+@openapi(
+    spec=spec,
+    schemas=[MessagesRequest],
+    path="/conversation/messages",
+    operations={
+        "post": {
+            "summary": "Get Agent messages history",
+            "tags": ["Conversation"],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {
+                        "schema": {"$ref": "#/components/schemas/MessagesRequest"}
+                    }
+                },
+            },
+            "responses": {
+                "200": {
+                    "description": "Agent message history",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MessageResponse"
+                                },
+                            },
+                        }
+                    },
+                },
+                "500": invalid_authentication_key,
+            },
+        }
+    },
+)
 @invest_agent.on_rest_post("/conversation/messages", MessagesRequest, MessagesResponse)
 @authentication(configuration.agent_key)
 async def get_conversation_messages(
@@ -357,6 +435,36 @@ class AuthResponse(Model):
     status: str
 
 
+@openapi(
+    spec=spec,
+    schemas=[AuthRequest, AuthResponse],
+    path="/auth",
+    operations={
+        "post": {
+            "summary": "Test authentication to the Agent",
+            "tags": ["Authentication"],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {
+                        "schema": {"$ref": "#/components/schemas/AuthRequest"}
+                    }
+                },
+            },
+            "responses": {
+                "200": {
+                    "description": "Authentication status",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/AuthResponse"}
+                        }
+                    },
+                },
+                "500": invalid_authentication_key,
+            },
+        }
+    },
+)
 @invest_agent.on_rest_post("/auth", AuthRequest, AuthResponse)
 @authentication(configuration.agent_key)
 async def auth_request(_ctx: Context, _req: AuthRequest) -> AuthResponse:
@@ -367,6 +475,27 @@ class HealthResponse(Model):
     status: str
 
 
+@openapi(
+    spec=spec,
+    schemas=[HealthResponse],
+    path="/health",
+    operations={
+        "get": {
+            "summary": "Get agent health",
+            "tags": ["Health"],
+            "responses": {
+                "200": {
+                    "description": "Agent health status",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/HealthResponse"}
+                        }
+                    },
+                }
+            },
+        }
+    },
+)
 @invest_agent.on_rest_get("/health", HealthResponse)
 async def health_check(_ctx: Context) -> HealthResponse:
     """Health check endpoint."""
@@ -407,6 +536,48 @@ class MetricsWalletResponse(Model):
     total_balance: BalanceResponse
 
 
+@openapi(
+    spec=spec,
+    schemas=[
+        TokenRequest,
+        TokenResponse,
+        BalanceResponse,
+        ConvertedBalanceResponse,
+        MetricsWalletRequest,
+        MetricsWalletResponse,
+    ],
+    path="/metrics/wallet/token",
+    operations={
+        "post": {
+            "summary": "Get Agent wallet token and total balances in a specific token",
+            "tags": ["Wallet"],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {
+                        "schema": {"$ref": "#/components/schemas/MetricsWalletRequest"}
+                    }
+                },
+            },
+            "responses": {
+                "200": {
+                    "description": "Agent wallet token balances and total balance in the specified token",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MetricsWalletResponse"
+                                },
+                            },
+                        }
+                    },
+                },
+                "500": invalid_authentication_key,
+            },
+        }
+    },
+)
 @invest_agent.on_rest_post(
     "/metrics/wallet/token",
     MetricsWalletRequest,
@@ -457,6 +628,36 @@ async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
             ),
         ),
     )
+
+
+class OpenApiResponse(RootModel[dict[str, Any]]):
+    pass
+
+
+@openapi(
+    spec=spec,
+    schemas=[OpenApiResponse],
+    path="/openapi",
+    operations={
+        "get": {
+            "summary": "Generate JSON OpenAPI documentation",
+            "tags": ["Documentation"],
+            "responses": {
+                "200": {
+                    "description": "JSON OpenAPI documentation",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/OpenApiResponse"},
+                        }
+                    },
+                },
+            },
+        }
+    },
+)
+@invest_agent.on_rest_get("/openapi", OpenApiResponse)
+async def generate_openapi_documentation(_ctx: Context):
+    return cast(OpenApiResponse, spec.to_dict())
 
 
 def main():
