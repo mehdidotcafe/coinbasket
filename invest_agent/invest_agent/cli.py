@@ -1,7 +1,5 @@
 import sys
 
-from protocol.token import Token
-
 from web3 import Web3
 
 from invest_agent.configuration import Configuration
@@ -21,7 +19,7 @@ def get_balances():
     print(f"Native token ({chain.base_token.ticker}) Balance: {balance.amount}")
 
     for arg in sys.argv[2:]:
-        balance_amount = chain.get_token_balance_amount(Web3.to_checksum_address(arg))
+        balance_amount = chain.get_token_balance_amount(arg)
         print(f"{arg} Balance: {balance_amount}")
 
 

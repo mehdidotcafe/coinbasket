@@ -129,7 +129,7 @@ class ZeroXSwapper(Exchange):
                 if quote.transaction.gasPrice
                 else None,
             ),
-            to_address=self.w3.to_checksum_address(quote.transaction.to),
+            to_address=quote.transaction.to,
             encoded_input=transaction_data,
             amount=int(quote.transaction.value) if quote.transaction.value else 0,
         )
@@ -223,7 +223,7 @@ class ZeroXSwapper(Exchange):
                 if quote.transaction.gasPrice
                 else None,
             ),
-            to_address=self.w3.to_checksum_address(quote.transaction.to),
+            to_address=quote.transaction.to,
             encoded_input=transaction_data,
             amount=int(quote.transaction.value) if quote.transaction.value else 0,
         )
@@ -375,7 +375,7 @@ class ZeroXSwapper(Exchange):
         receipt = self.chain.sign_send_wait_transaction(
             amount=0,
             encoded_input=encoded_input,
-            to_address=self.w3.to_checksum_address(token.address),
+            to_address=token.address,
         )
 
         return receipt

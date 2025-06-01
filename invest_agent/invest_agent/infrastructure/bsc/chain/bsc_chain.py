@@ -84,10 +84,10 @@ class BscChain(Chain):
             amount=Decimal(balance_in_ether),
         )
 
-    def get_token_balance_amount(self, token_address_checksum: str) -> Decimal:
+    def get_token_balance_amount(self, token_address: str) -> Decimal:
         """Get the balance of a specific token."""
         token_contract = self.w3.eth.contract(
-            address=cast(ChecksumAddress, token_address_checksum),
+            address=self.w3.to_checksum_address(token_address),
             abi=self.erc20_token_abi,
         )
         balance = token_contract.functions.balanceOf(self.account.address).call()
@@ -121,7 +121,7 @@ class BscChain(Chain):
         self,
         amount: int,
         gas: Gas | None = None,
-        # address checksum
+        # address (not checksum)
         to_address: str | None = None,
         encoded_input: HexStr | None = None,
     ) -> Any:
@@ -135,7 +135,7 @@ class BscChain(Chain):
             transaction_params["data"] = encoded_input
 
         if to_address is not None:
-            transaction_params["to"] = to_address
+            transaction_params["to"] = self.w3.to_checksum_address(to_address)
 
         if gas is None:
             eip1559Gas = self.__compute_eip1559_gas_estimate()

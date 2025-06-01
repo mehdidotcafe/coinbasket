@@ -42,7 +42,7 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_token_balance_amount(self, token_address_checksum: str) -> Decimal:
+    def get_token_balance_amount(self, token_address: str) -> Decimal:
         raise NotImplementedError
 
     @abstractmethod
