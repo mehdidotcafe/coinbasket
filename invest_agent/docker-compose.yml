@@ -9,4 +9,11 @@ services:
     ports:
       - "8545:8545"
     entrypoint: ["anvil"]
-    command: [ "--balance", "10", "--chain-id", "56", "--fork-url", "${ANVIL_FORK_URL}", "--mnemonic", "${ANVIL_MNEMONIC}" ]
+    command: [ "--balance", "10", "--chain-id", "${ANVIL_CHAIN_ID}", "--fork-url", "${ANVIL_FORK_URL}", "--mnemonic", "${ANVIL_MNEMONIC}" ]
+  redoc:
+    container_name: redoc
+    image: redocly/redoc
+    ports:
+      - "${REDOC_PORT}:80"
+    environment:
+      SPEC_URL: "http://127.0.0.1:${AGENT_PORT}/openapi"
