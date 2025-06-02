@@ -78,6 +78,7 @@ print(f"Thread ID: {configuration.langchain_thread_id}")
 if configuration.langsmith_tracing:
     os.environ["LANGSMITH_TRACING"] = str(configuration.langsmith_tracing)
     os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
+    os.environ["LANGSMITH_PROJECT"] = configuration.langsmith_project
 
 
 spec = APISpec(
