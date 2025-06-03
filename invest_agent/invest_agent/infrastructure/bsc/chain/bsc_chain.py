@@ -63,7 +63,7 @@ class BscChain(Chain):
     def get_min_balance(self) -> Balance:
         """Get the minimum balance required for the agent wallet."""
         gas_used = 200_000
-        transaction_count = 100
+        transaction_count = 20
 
         total_gas = gas_used * transaction_count
         gas_price = self.w3.eth.gas_price

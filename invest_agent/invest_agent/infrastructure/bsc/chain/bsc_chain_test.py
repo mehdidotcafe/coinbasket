@@ -84,7 +84,7 @@ def test_bsc_chain_get_min_balance(bsc_chain: BscChain, base_token: Token, w3: W
     assert min_balance.token == base_token
 
     w3.from_wei.assert_called_once_with(
-        1_000_000_000 * 200_000 * 100,
+        1_000_000_000 * 200_000 * 20,
         "ether",
     )
 
