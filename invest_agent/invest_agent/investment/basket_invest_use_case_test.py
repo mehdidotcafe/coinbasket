@@ -90,10 +90,18 @@ def test_invest_use_case_execute_success(
                     ticker="TKA",
                     address="0x1234567890abcdef1234567890abcdef12345678",
                 ),
-                amount=Decimal("100"),
+                sell_balance=Balance(
+                    amount=Decimal("100"),
+                    token=Token(
+                        name="Base Token",
+                        display_name="Base",
+                        ticker="BASE",
+                        address="0xabcdef1234567890abcdef1234567890abcdef12",
+                    ),
+                ),
             )
         ],
-        balance=Balance(
+        sell_total_balance=Balance(
             amount=Decimal("100"),
             token=Token(
                 name="Base Token",

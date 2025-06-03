@@ -4,6 +4,7 @@ from invest_agent.chain.chain import Chain
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.divestment_planner import DivestmentPlanner
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
+from protocol.token import Token
 
 
 class TotalDivestmentPlanner(DivestmentPlanner):
@@ -16,16 +17,23 @@ class TotalDivestmentPlanner(DivestmentPlanner):
         """Create a divestment plan for the total divestment of the basket."""
         token = self.chain.get_base_token()
         divestment_plan = InvestmentPlan(
-            steps=[self.__map_bid_to_step(bid) for bid in basket_investment.bids],
-            balance=Balance(amount=Decimal(0), token=token),
+            steps=[
+                self.__map_bid_to_step(bid, token) for bid in basket_investment.bids
+            ],
+            sell_total_balance=Balance(amount=Decimal(0), token=token),
         )
 
         print(f"Divestment plan: {divestment_plan}")
         return divestment_plan
 
-    def __map_bid_to_step(self, basket_investment_bid: Bid) -> InvestmentPlanStep:
+    def __map_bid_to_step(
+        self, basket_investment_bid: Bid, buy_token: Token
+    ) -> InvestmentPlanStep:
         """Map a bid to a divestment step."""
         return InvestmentPlanStep(
-            token=basket_investment_bid.buy_balance.token,
-            amount=basket_investment_bid.buy_balance.amount,
+            token=buy_token,
+            sell_balance=Balance(
+                token=basket_investment_bid.buy_balance.token,
+                amount=basket_investment_bid.buy_balance.amount,
+            ),
         )

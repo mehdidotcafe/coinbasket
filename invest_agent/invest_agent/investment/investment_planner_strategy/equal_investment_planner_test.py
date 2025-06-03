@@ -23,7 +23,7 @@ def chain():
 
 
 @fixture
-def base_token():
+def sell_token():
     return Token(name="BNB", display_name="BNB", ticker="BNB", address="")
 
 
@@ -58,10 +58,10 @@ def test_make_investment_plan(
     investment_planner: EqualInvestmentPlanner,
     basket: Basket,
     chain: Chain,
-    base_token: Token,
+    sell_token: Token,
 ):
-    chain.get_balance.return_value = Balance(amount=Decimal("1000.0"), token=base_token)
-    chain.get_min_balance.return_value = Balance(amount=Decimal("2"), token=base_token)
+    chain.get_balance.return_value = Balance(amount=Decimal("1000.0"), token=sell_token)
+    chain.get_min_balance.return_value = Balance(amount=Decimal("2"), token=sell_token)
 
     result = investment_planner.make_investment_plan(basket)
 
@@ -72,14 +72,14 @@ def test_make_investment_plan(
         steps=[
             InvestmentPlanStep(
                 token=basket.tokens[0],
-                amount=Decimal("499.0"),
+                sell_balance=Balance(token=sell_token, amount=Decimal("499.0")),
             ),
             InvestmentPlanStep(
                 token=basket.tokens[1],
-                amount=Decimal("499.0"),
+                sell_balance=Balance(token=sell_token, amount=Decimal("499.0")),
             ),
         ],
-        balance=Balance(token=base_token, amount=Decimal("998.0")),
+        sell_total_balance=Balance(token=sell_token, amount=Decimal("998.0")),
     )
 
 
@@ -87,11 +87,11 @@ def test_make_investment_plan_insufficient_balance(
     investment_planner: EqualInvestmentPlanner,
     basket: Basket,
     chain: Chain,
-    base_token: Token,
+    sell_token: Token,
 ):
-    chain.get_balance.return_value = Balance(amount=Decimal("1000.0"), token=base_token)
+    chain.get_balance.return_value = Balance(amount=Decimal("1000.0"), token=sell_token)
     chain.get_min_balance.return_value = Balance(
-        amount=Decimal("9999.9"), token=base_token
+        amount=Decimal("9999.9"), token=sell_token
     )
 
     with raises(InsufficientBalance):

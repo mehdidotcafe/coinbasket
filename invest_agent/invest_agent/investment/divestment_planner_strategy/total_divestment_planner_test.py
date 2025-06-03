@@ -70,16 +70,19 @@ def test_make_divestment_plan_success(chain: Chain):
     assert investment_plan == InvestmentPlan(
         steps=[
             InvestmentPlanStep(
-                token=Token(
-                    name="Test Token 2",
-                    display_name="Test 2",
-                    ticker="TTK2",
-                    address="0x2",
+                token=base_token,
+                sell_balance=Balance(
+                    amount=Decimal("200"),
+                    token=Token(
+                        name="Test Token 2",
+                        display_name="Test 2",
+                        ticker="TTK2",
+                        address="0x2",
+                    ),
                 ),
-                amount=Decimal("200"),
             )
         ],
-        balance=Balance(
+        sell_total_balance=Balance(
             amount=Decimal("0"),
             token=base_token,
         ),

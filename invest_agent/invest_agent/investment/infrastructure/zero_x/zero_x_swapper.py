@@ -70,8 +70,10 @@ class ZeroXSwapper(Exchange):
     ) -> list[Bid]:
         bids: list[Bid] = []
 
-        base_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(investment_plan.balance.token.address),
+        sell_token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(
+                investment_plan.sell_total_balance.token.address
+            ),
             abi=self.erc20_token_abi,
         )
 
@@ -80,8 +82,8 @@ class ZeroXSwapper(Exchange):
                 bids.append(
                     self.__execute_investment_step(
                         step=step,
-                        base_token_contract=base_token_contract,
-                        base_token=investment_plan.balance.token,
+                        sell_token_contract=sell_token_contract,
+                        sell_token=investment_plan.sell_total_balance.token,
                         investment_parameters=investment_parameters,
                     )
                 )
@@ -94,12 +96,12 @@ class ZeroXSwapper(Exchange):
     def __execute_investment_step(
         self,
         step: InvestmentPlanStep,
-        base_token_contract: Contract,
-        base_token: Token,
+        sell_token_contract: Contract,
+        sell_token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Bid:
         print(
-            f"=== {step.token.display_name} - {step.token.address} ({step.amount}) ==="
+            f"=== {step.token.display_name} - {step.token.address} ({step.sell_balance.amount}) ==="
         )
 
         step_token_contract = self.w3.eth.contract(
@@ -109,16 +111,16 @@ class ZeroXSwapper(Exchange):
 
         amount = int(
             self.__get_token_amount(
-                token_contract=base_token_contract,
-                token=base_token,
-                raw_amount=step.amount,
+                token_contract=sell_token_contract,
+                token=sell_token,
+                raw_amount=step.sell_balance.amount,
             )
         )
 
         quote_result = self.api_client.get_quote(
             chain_id=self.chain.get_chain_id(),
             taker=self.account.address,
-            sell_token=base_token.address,
+            sell_token=sell_token.address,
             buy_token=step.token.address,
             amount=amount,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
@@ -146,10 +148,10 @@ class ZeroXSwapper(Exchange):
 
         return self.__make_bid(
             quote=quote,
-            token_in_contract=base_token_contract,
-            token_in=base_token,
-            token_out_contract=step_token_contract,
-            token_out=step.token,
+            sell_token_contract=sell_token_contract,
+            sell_token=sell_token,
+            buy_token_contract=step_token_contract,
+            buy_token=step.token,
         )
 
     def execute_divestment_plan(
@@ -159,8 +161,10 @@ class ZeroXSwapper(Exchange):
     ) -> list[Bid]:
         bids: list[Bid] = []
 
-        base_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(divestment_plan.balance.token.address),
+        buy_token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(
+                divestment_plan.sell_total_balance.token.address
+            ),
             abi=self.erc20_token_abi,
         )
 
@@ -169,8 +173,8 @@ class ZeroXSwapper(Exchange):
                 bids.append(
                     self.__execute_divestment_plan_step(
                         step=step,
-                        base_token_contract=base_token_contract,
-                        base_token=divestment_plan.balance.token,
+                        buy_token_contract=buy_token_contract,
+                        buy_token=divestment_plan.sell_total_balance.token,
                         investment_parameters=investment_parameters,
                     )
                 )
@@ -183,33 +187,35 @@ class ZeroXSwapper(Exchange):
     def __execute_divestment_plan_step(
         self,
         step: InvestmentPlanStep,
-        base_token_contract: Contract,
-        base_token: Token,
+        buy_token_contract: Contract,
+        buy_token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Bid:
+        sell_token = step.sell_balance.token
+
         print(
-            f"=== {step.token.display_name} - {step.token.address} ({step.amount}) ==="
+            f"=== {sell_token.display_name} - {sell_token.address} ({step.sell_balance.amount}) ==="
         )
 
-        step_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(step.token.address),
+        sell_token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(sell_token.address),
             abi=self.erc20_token_abi,
         )
 
         amount = int(
             self.__get_token_amount(
-                token_contract=step_token_contract,
-                token=step.token,
-                raw_amount=step.amount,
+                token_contract=sell_token_contract,
+                token=step.sell_balance.token,
+                raw_amount=step.sell_balance.amount,
             )
         )
 
         price = self.api_client.get_price(
             chain_id=self.chain.get_chain_id(),
             taker=self.account.address,
-            sell_token=step.token.address,
+            sell_token=step.sell_balance.token.address,
             amount=amount,
-            buy_token=base_token.address,
+            buy_token=buy_token.address,
             sell_entire_balance=True,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
@@ -217,14 +223,14 @@ class ZeroXSwapper(Exchange):
         )
 
         self.__approve_allowance(
-            price=price, token_contract=step_token_contract, token=step.token
+            price=price, token_contract=sell_token_contract, token=sell_token
         )
 
         quote_result = self.api_client.get_quote(
             chain_id=self.chain.get_chain_id(),
             taker=self.account.address,
-            sell_token=step.token.address,
-            buy_token=base_token.address,
+            sell_token=sell_token.address,
+            buy_token=buy_token.address,
             amount=amount,
             sell_entire_balance=True,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
@@ -254,10 +260,10 @@ class ZeroXSwapper(Exchange):
 
         return self.__make_bid(
             quote=quote,
-            token_in_contract=base_token_contract,
-            token_in=base_token,
-            token_out_contract=step_token_contract,
-            token_out=step.token,
+            buy_token_contract=buy_token_contract,
+            buy_token=buy_token,
+            sell_token_contract=sell_token_contract,
+            sell_token=sell_token,
         )
 
     def get_wallet_in_token(
@@ -265,7 +271,7 @@ class ZeroXSwapper(Exchange):
     ) -> Wallet:
         balances: list[ConvertedBalance] = []
 
-        base_token_contract = self.w3.eth.contract(
+        buy_token_contract = self.w3.eth.contract(
             address=self.w3.to_checksum_address(token.address),
             abi=self.erc20_token_abi,
         )
@@ -305,7 +311,7 @@ class ZeroXSwapper(Exchange):
                     buy_balance=Balance(
                         token=token,
                         amount=self.__get_raw_amount(
-                            token_contract=base_token_contract,
+                            token_contract=buy_token_contract,
                             token=token,
                             amount=Decimal(price.buyAmount),
                         ),
@@ -329,23 +335,23 @@ class ZeroXSwapper(Exchange):
     def __make_bid(
         self,
         quote: Quote,
-        token_in_contract: Contract,
-        token_in: Token,
-        token_out_contract: Contract,
-        token_out: Token,
+        sell_token_contract: Contract,
+        sell_token: Token,
+        buy_token_contract: Contract,
+        buy_token: Token,
     ) -> Bid:
         return Bid(
-            token=token_out,
+            token=buy_token,
             sell_balance=Balance(
-                token=token_in,
+                token=sell_token,
                 amount=self.__get_raw_amount(
-                    token_in_contract, token_in, Decimal(quote.sellAmount)
+                    sell_token_contract, sell_token, Decimal(quote.sellAmount)
                 ),
             ),
             buy_balance=Balance(
-                token=token_out,
+                token=buy_token,
                 amount=self.__get_raw_amount(
-                    token_out_contract, token_out, Decimal(quote.buyAmount)
+                    buy_token_contract, buy_token, Decimal(quote.buyAmount)
                 ),
             ),
         )

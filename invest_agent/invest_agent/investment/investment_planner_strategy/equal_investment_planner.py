@@ -34,10 +34,18 @@ class EqualInvestmentPlanner(InvestmentPlanner):
         step_amount = investment_balance.amount / len(basket.tokens)
 
         steps = [
-            InvestmentPlanStep(token=coin, amount=step_amount) for coin in basket.tokens
+            InvestmentPlanStep(
+                token=coin,
+                sell_balance=Balance(
+                    token=investment_balance.token, amount=step_amount
+                ),
+            )
+            for coin in basket.tokens
         ]
 
-        investment_plan = InvestmentPlan(steps=steps, balance=investment_balance)
+        investment_plan = InvestmentPlan(
+            steps=steps, sell_total_balance=investment_balance
+        )
 
         print(f"Investment plan: {investment_plan}")
         return investment_plan

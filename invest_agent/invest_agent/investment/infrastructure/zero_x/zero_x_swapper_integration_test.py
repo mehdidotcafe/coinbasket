@@ -55,26 +55,41 @@ def test_integration_zero_x_swapper_execute_investment_plan():
         steps=[
             InvestmentPlanStep(
                 token=btc_token,
-                amount=Decimal("1.39283831092838"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("1.39283831092838"),
+                ),
             ),
             InvestmentPlanStep(
                 token=eth_token,
-                amount=Decimal("1.289891283838"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("1.289891283838"),
+                ),
             ),
             InvestmentPlanStep(
                 token=wbnb_token,
-                amount=Decimal("3.189234898934589"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("3.189234898934589"),
+                ),
             ),
             InvestmentPlanStep(
                 token=sol_token,
-                amount=Decimal("2.0000000000"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("2.0000000000"),
+                ),
             ),
             InvestmentPlanStep(
                 token=usdt_token,
-                amount=Decimal("0.9213909028917891"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("0.9213909028917891"),
+                ),
             ),
         ],
-        balance=Balance(
+        sell_total_balance=Balance(
             token=bnb_token,
             amount=Decimal(10),
         ),
@@ -115,18 +130,18 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
         steps=[
             InvestmentPlanStep(
                 token=eth_token,
-                amount=Decimal(1),
+                sell_balance=Balance(token=bnb_token, amount=Decimal(1)),
             ),
             InvestmentPlanStep(
                 token=wbnb_token,
-                amount=Decimal(3),
+                sell_balance=Balance(token=bnb_token, amount=Decimal(3)),
             ),
             InvestmentPlanStep(
                 token=sol_token,
-                amount=Decimal(2),
+                sell_balance=Balance(token=bnb_token, amount=Decimal(2)),
             ),
         ],
-        balance=Balance(
+        sell_total_balance=Balance(
             token=bnb_token,
             amount=Decimal(10),
         ),
@@ -144,18 +159,27 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
         steps=[
             InvestmentPlanStep(
                 token=eth_token,
-                amount=bids[0].buy_balance.amount,
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=bids[0].buy_balance.amount,
+                ),
             ),
             InvestmentPlanStep(
                 token=wbnb_token,
-                amount=bids[1].buy_balance.amount,
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=bids[1].buy_balance.amount,
+                ),
             ),
             InvestmentPlanStep(
                 token=sol_token,
-                amount=bids[2].buy_balance.amount,
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=bids[2].buy_balance.amount,
+                ),
             ),
         ],
-        balance=Balance(
+        sell_total_balance=Balance(
             token=bnb_token,
             amount=Decimal(5),
         ),

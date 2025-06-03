@@ -66,7 +66,15 @@ def test_basket_divest_use_case_execute_exception(
                     ticker="TTK1",
                     address="0x1",
                 ),
-                amount=Decimal("100"),
+                sell_balance=Balance(
+                    token=Token(
+                        name="Test Token",
+                        display_name="Test",
+                        ticker="TTK",
+                        address="0x123",
+                    ),
+                    amount=Decimal("100"),
+                ),
             ),
             InvestmentPlanStep(
                 token=Token(
@@ -75,10 +83,18 @@ def test_basket_divest_use_case_execute_exception(
                     ticker="TTK2",
                     address="0x2",
                 ),
-                amount=Decimal("200"),
+                sell_balance=Balance(
+                    token=Token(
+                        name="Test Token",
+                        display_name="Test",
+                        ticker="TTK",
+                        address="0x123",
+                    ),
+                    amount=Decimal("200"),
+                ),
             ),
         ],
-        balance=Balance(
+        sell_total_balance=Balance(
             amount=Decimal("0"),
             token=Token(
                 name="Test Token",
@@ -186,7 +202,15 @@ def test_basket_divest_use_case_execute_success(
                     ticker="TTK1",
                     address="0x1",
                 ),
-                amount=Decimal("100"),
+                sell_balance=Balance(
+                    amount=Decimal("100"),
+                    token=Token(
+                        name="Test Token",
+                        display_name="Test",
+                        ticker="TTK",
+                        address="0x123",
+                    ),
+                ),
             ),
             InvestmentPlanStep(
                 token=Token(
@@ -195,10 +219,18 @@ def test_basket_divest_use_case_execute_success(
                     ticker="TTK2",
                     address="0x2",
                 ),
-                amount=Decimal("200"),
+                sell_balance=Balance(
+                    amount=Decimal("200"),
+                    token=Token(
+                        name="Test Token",
+                        display_name="Test",
+                        ticker="TTK",
+                        address="0x123",
+                    ),
+                ),
             ),
         ],
-        balance=Balance(
+        sell_total_balance=Balance(
             amount=Decimal("0"),
             token=Token(
                 name="Test Token",

@@ -3,6 +3,7 @@ import json
 from typing import cast
 from eth_typing import ChecksumAddress
 from invest_agent.investment.basket_investment import Bid
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from protocol.token import Token
 from web3 import Account, Web3
 from web3.contract import Contract
@@ -82,7 +83,7 @@ class PancakeSwapUniversalRouter(Exchange):
             Web3.to_checksum_address(self.universal_router_address),
         )
 
-        amount = self.w3.to_wei(investment_plan.balance.amount, "ether")
+        amount = self.w3.to_wei(investment_plan.sell_balance.amount, "ether")
 
         swap_chain = (
             self.codec.encode.chain()
@@ -101,7 +102,7 @@ class PancakeSwapUniversalRouter(Exchange):
             if step.token.address == self.base_token:
                 continue
 
-            amount_in = self.w3.to_wei(step.amount, "ether")
+            amount_in = self.w3.to_wei(step.sell_balance.amount, "ether")
             path = [
                 Web3.to_checksum_address(self.base_token),
                 Web3.to_checksum_address(step.token.address),
@@ -145,7 +146,11 @@ class PancakeSwapUniversalRouter(Exchange):
 
         return bids
 
-    def execute_divestment_plan(self, divestment_plan: InvestmentPlan) -> list[Bid]:
+    def execute_divestment_plan(
+        self,
+        divestment_plan: InvestmentPlan,
+        divestment_parameters: InvestmentParameters,
+    ) -> list[Bid]:
         amount = 0
         swap_chain = self.codec.encode.chain()
 
@@ -157,7 +162,7 @@ class PancakeSwapUniversalRouter(Exchange):
                 swap_chain = swap_chain.permit2_transfer_from(
                     FunctionRecipient.ROUTER,
                     Web3.to_checksum_address(step.token.address),
-                    self.w3.to_wei(step.amount, "ether"),
+                    self.w3.to_wei(step.sell_balance.amount, "ether"),
                 )
             else:
                 contract = self.w3.eth.contract(
@@ -176,7 +181,7 @@ class PancakeSwapUniversalRouter(Exchange):
                     )
                 )
 
-                amount_in = self.__get_raw_amount(contract, step.amount)
+                amount_in = self.__get_raw_amount(contract, step.sell_balance.amount)
                 path = [
                     Web3.to_checksum_address(step.token.address),
                     Web3.to_checksum_address(self.base_token),
@@ -316,7 +321,7 @@ class PancakeSwapUniversalRouter(Exchange):
                         token=step.token,
                         sell_balance=Balance(
                             token=step.token,
-                            amount=step.amount,
+                            amount=step.sell_balance.amount,
                         ),
                         buy_balance=Balance(
                             token=step.token, amount=base_token_balance
@@ -344,7 +349,7 @@ class PancakeSwapUniversalRouter(Exchange):
                                         token=step.token,
                                         sell_balance=Balance(
                                             token=self.chain.get_base_token(),
-                                            amount=step.amount,
+                                            amount=step.sell_balance.amount,
                                         ),
                                         buy_balance=Balance(
                                             token=step.token,

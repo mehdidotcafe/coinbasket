@@ -20,6 +20,7 @@ class Configuration:
         self.langchain_thread_id = env.str("LANGCHAIN_THREAD_ID")
         self.langsmith_tracing = env.bool("LANGSMITH_TRACING")
         self.langsmith_api_key = env.str("LANGSMITH_API_KEY")
+        self.langsmith_project = env.str("LANGSMITH_PROJECT")
 
         self.pancakeswap_universal_router_address = env.str(
             "PANCAKESWAP_UNIVERSAL_ROUTER_ADDRESS"

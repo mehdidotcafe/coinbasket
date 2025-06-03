@@ -91,10 +91,13 @@ def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
         steps=[
             InvestmentPlanStep(
                 token=eth_token,
-                amount=Decimal("1"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("1"),
+                ),
             ),
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("1")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("1")),
     )
 
     chain.is_native_token.return_value = True
@@ -160,10 +163,13 @@ def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
         steps=[
             InvestmentPlanStep(
                 token=eth_token,
-                amount=Decimal("1"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("1"),
+                ),
             ),
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("1")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("1")),
     )
 
     chain.is_native_token.return_value = True
@@ -253,10 +259,13 @@ def test_zero_x_swapper_execute_investment_plan_bids(
         steps=[
             InvestmentPlanStep(
                 token=eth_token,
-                amount=Decimal("1"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("1"),
+                ),
             )
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("3")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("3")),
     )
 
     chain.is_native_token.return_value = True
@@ -322,10 +331,13 @@ def test_zero_x_swapper_execute_investment_plan_retry(
         steps=[
             InvestmentPlanStep(
                 token=eth_token,
-                amount=Decimal("1"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("1"),
+                ),
             )
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("3")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("3")),
     )
 
     chain.is_native_token.return_value = True
@@ -379,12 +391,14 @@ def test_zero_x_swapper_execute_investment_plan_no_liquidity(
         steps=[
             InvestmentPlanStep(
                 token=eth_token,
-                amount=Decimal("1"),
+                sell_balance=Balance(
+                    token=bnb_token,
+                    amount=Decimal("1"),
+                ),
             )
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("3")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("3")),
     )
-
     chain.is_native_token.return_value = True
     chain.get_chain_id.return_value = 42
 
@@ -416,11 +430,14 @@ def test_zero_x_swapper_execute_divestment_plan(
     divestment_plan = InvestmentPlan(
         steps=[
             InvestmentPlanStep(
-                token=eth_token,
-                amount=Decimal("1"),
-            ),
+                token=bnb_token,
+                sell_balance=Balance(
+                    token=eth_token,
+                    amount=Decimal("1"),
+                ),
+            )
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("0")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("0")),
     )
 
     chain.is_native_token.return_value = True
@@ -503,11 +520,14 @@ def test_zero_x_swapper_execute_divestment_plan_with_allowance(
     divestment_plan = InvestmentPlan(
         steps=[
             InvestmentPlanStep(
-                token=eth_token,
-                amount=Decimal("1"),
+                token=bnb_token,
+                sell_balance=Balance(
+                    token=eth_token,
+                    amount=Decimal("1"),
+                ),
             ),
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("0")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("0")),
     )
 
     chain.is_native_token.return_value = False
@@ -658,11 +678,14 @@ def test_zero_x_swapper_execute_divestment_plan_retry(
     divestment_plan = InvestmentPlan(
         steps=[
             InvestmentPlanStep(
-                token=eth_token,
-                amount=Decimal("1"),
+                token=bnb_token,
+                sell_balance=Balance(
+                    token=eth_token,
+                    amount=Decimal("1"),
+                ),
             ),
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("0")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("0")),
     )
 
     chain.is_native_token.return_value = True
@@ -722,11 +745,14 @@ def test_zero_x_swapper_execute_divestment_plan_no_liquidity(
     divestment_plan = InvestmentPlan(
         steps=[
             InvestmentPlanStep(
-                token=eth_token,
-                amount=Decimal("1"),
+                token=bnb_token,
+                sell_balance=Balance(
+                    token=eth_token,
+                    amount=Decimal("1"),
+                ),
             ),
         ],
-        balance=Balance(token=bnb_token, amount=Decimal("0")),
+        sell_total_balance=Balance(token=bnb_token, amount=Decimal("0")),
     )
 
     chain.is_native_token.return_value = True
