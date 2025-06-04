@@ -283,6 +283,21 @@ class ZeroXSwapper(Exchange):
         )
 
         for balance in tokens_balance:
+            if self.__is_same_token(balance.token, token):
+                balances.append(
+                    ConvertedBalance(
+                        sell_balance=Balance(
+                            token=balance.token,
+                            amount=balance.amount,
+                        ),
+                        buy_balance=Balance(
+                            token=token,
+                            amount=balance.amount,
+                        ),
+                    )
+                )
+                continue
+
             balance_token_contract = self.w3.eth.contract(
                 address=self.w3.to_checksum_address(balance.token.address),
                 abi=self.erc20_token_abi,
@@ -440,3 +455,6 @@ class ZeroXSwapper(Exchange):
         self, slippage_tolerance_in_percentage: Decimal
     ) -> Decimal:
         return slippage_tolerance_in_percentage * 100
+
+    def __is_same_token(self, token1: Token, token2: Token) -> bool:
+        return token1.address.lower() == token2.address.lower()
