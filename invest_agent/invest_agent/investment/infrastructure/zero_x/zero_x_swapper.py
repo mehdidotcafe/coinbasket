@@ -126,6 +126,7 @@ class ZeroXSwapper(Exchange):
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
             ),
+            investment_parameters=investment_parameters,
         )
         quote = quote_result.root
 
@@ -220,6 +221,7 @@ class ZeroXSwapper(Exchange):
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
             ),
+            investment_parameters=investment_parameters,
         )
 
         self.__approve_allowance(
@@ -236,6 +238,7 @@ class ZeroXSwapper(Exchange):
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
             ),
+            investment_parameters=investment_parameters,
         )
         quote = quote_result.root
 
@@ -267,7 +270,10 @@ class ZeroXSwapper(Exchange):
         )
 
     def get_wallet_in_token(
-        self, tokens_balance: list[Balance], token: Token
+        self,
+        tokens_balance: list[Balance],
+        token: Token,
+        investment_parameters: InvestmentParameters,
     ) -> Wallet:
         balances: list[ConvertedBalance] = []
 
@@ -296,6 +302,7 @@ class ZeroXSwapper(Exchange):
                 sell_token=balance.token.address,
                 buy_token=token.address,
                 amount=amount,
+                investment_parameters=investment_parameters,
             )
 
             balances.append(

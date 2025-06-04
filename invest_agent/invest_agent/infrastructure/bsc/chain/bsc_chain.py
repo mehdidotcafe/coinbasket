@@ -94,6 +94,30 @@ class BscChain(Chain):
 
         return Decimal(self.w3.from_wei(balance, "ether"))
 
+    def get_address_balance(self, address: str) -> Balance:
+        """Get the balance of the address."""
+        balance = self.w3.eth.get_balance(self.w3.to_checksum_address(address))
+        balance_in_ether = self.w3.from_wei(balance, "ether")
+
+        return Balance(
+            token=self.base_token,
+            amount=Decimal(balance_in_ether),
+        )
+
+    def get_address_token_balance_amount(
+        self, address: str, token_address: str
+    ) -> Decimal:
+        """Get the balance of a specific token."""
+        token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(token_address),
+            abi=self.erc20_token_abi,
+        )
+        balance = token_contract.functions.balanceOf(
+            self.w3.to_checksum_address(address)
+        ).call()
+
+        return Decimal(self.w3.from_wei(balance, "ether"))
+
     def get_base_token(self):
         return self.base_token
 

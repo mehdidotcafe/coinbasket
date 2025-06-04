@@ -23,9 +23,23 @@ def get_balances():
         print(f"{arg} Balance: {balance_amount}")
 
 
+def get_address_balances():
+    address = sys.argv[2]
+    balance = chain.get_address_balance(address=sys.argv[2])
+
+    print(f"Native token ({chain.base_token.ticker}) Balance: {balance.amount}")
+
+    for arg in sys.argv[3:]:
+        balance_amount = chain.get_address_token_balance_amount(address, arg)
+        print(f"{arg} Balance: {balance_amount}")
+
+
 def main():
     if sys.argv[1] == "get_balances":
         get_balances()
+
+    elif sys.argv[1] == "get_address_balances":
+        get_address_balances()
 
     else:
         print("Invalid command.")

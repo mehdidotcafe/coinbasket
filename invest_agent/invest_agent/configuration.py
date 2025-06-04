@@ -34,5 +34,10 @@ class Configuration:
         self.chat_provider_api_key = env.str("CHAT_PROVIDER_API_KEY")
         self.chat_model = env.str("CHAT_MODEL")
 
+        self.fee_integrator_address = env.str("FEE_INTEGRATOR_ADDRESS", default=None)
+        self.fee_value_in_percentage = env.decimal(
+            "FEE_VALUE_IN_PERCENTAGE", default=None
+        )
+
         self.zero_x_api_url = env.str("ZERO_X_API_URL")
         self.zero_x_api_key = env.str("ZERO_X_API_KEY")

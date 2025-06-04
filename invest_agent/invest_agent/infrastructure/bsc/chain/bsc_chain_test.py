@@ -126,6 +126,48 @@ def test_bsc_chain_get_token_balance_amount(bsc_chain: BscChain, w3: Web3):
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
 
 
+def test_bsc_chain_get_address_balance(
+    bsc_chain: BscChain, w3: Web3, base_token: Token
+):
+    address = "0x2B5616d51Cd04862a6BD16cE63B47364A2261125"
+
+    w3.eth.get_balance.return_value = Wei(1000000000000000000)
+    w3.from_wei.return_value = Decimal("1")
+
+    balance = bsc_chain.get_address_balance(address)
+
+    assert balance.amount == Decimal("1")
+    assert balance.token == base_token
+
+    w3.eth.get_balance.assert_called_once_with(
+        "0x2B5616d51Cd04862a6BD16cE63B47364A2261125_checksum",
+    )
+    w3.from_wei.assert_called_once_with(
+        Wei(1000000000000000000),
+        "ether",
+    )
+
+
+def test_bsc_chain_get_address_token_balance_amount(bsc_chain: BscChain, w3: Web3):
+    address = "0x2B5616d51Cd04862a6BD16cE63B47364A2261125"
+    token_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
+
+    token_contract = mock.Mock()
+    token_contract.functions.balanceOf.return_value.call.return_value = 1000
+    w3.eth.contract.return_value = token_contract
+
+    w3.from_wei.return_value = Decimal("1")
+
+    balance = bsc_chain.get_address_token_balance_amount(address, token_address)
+
+    assert balance == Decimal("1")
+
+    token_contract.functions.balanceOf.assert_called_once_with(
+        "0x2B5616d51Cd04862a6BD16cE63B47364A2261125_checksum",
+    )
+    token_contract.functions.balanceOf.return_value.call.assert_called_once()
+
+
 def test_bsc_chain_get_base_token(bsc_chain: BscChain, base_token: Token):
     base_token_result = bsc_chain.get_base_token()
 
