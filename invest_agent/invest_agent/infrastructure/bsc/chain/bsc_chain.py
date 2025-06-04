@@ -49,7 +49,7 @@ class BscChain(Chain):
         )
 
     def is_native_token(self, token: Token) -> bool:
-        return token.address == self.base_token.address
+        return token.address.lower() == self.base_token.address.lower()
 
     @cache
     def get_chain_id(self) -> int:  # type: ignore

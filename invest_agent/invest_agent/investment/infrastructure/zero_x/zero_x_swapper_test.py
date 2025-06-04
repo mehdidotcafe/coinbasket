@@ -614,7 +614,7 @@ def test_zero_x_swapper_get_wallet_in_token(
     tokens_balance = [
         Balance(token=sol_token, amount=Decimal("1.0")),
         Balance(token=eth_token, amount=Decimal("4.0")),
-        Balance(token=usdt_token, amount=Decimal("10.0")),
+        Balance(token=bnb_token, amount=Decimal("10.0")),
     ]
 
     zero_x_api_client.get_price.side_effect = [
@@ -639,7 +639,7 @@ def test_zero_x_swapper_get_wallet_in_token(
             buyAmount="10000000000000000000",
             sellAmount="10000000000000000000",
             buyToken=usdt_token.address,
-            sellToken=usdt_token.address,
+            sellToken=bnb_token.address,
             fees=Fees(),
         ),
     ]
@@ -663,11 +663,45 @@ def test_zero_x_swapper_get_wallet_in_token(
                 buy_balance=Balance(token=usdt_token, amount=Decimal("1100.0")),
             ),
             ConvertedBalance(
-                sell_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
+                sell_balance=Balance(token=bnb_token, amount=Decimal("10.0")),
                 buy_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
             ),
         ],
         total_balance=Balance(token=usdt_token, amount=Decimal("1410.0")),
+    )
+
+
+def test_zero_x_swapper_get_wallet_in_token_same_token(
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    configuration: Configuration,
+    w3: Web3,
+    investment_parameters: InvestmentParameters,
+):
+    token = usdt_token
+
+    tokens_balance = [
+        Balance(token=usdt_token, amount=Decimal("10.0")),
+    ]
+
+    zero_x_swapper = ZeroXSwapper(
+        api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
+    )
+
+    wallet = zero_x_swapper.get_wallet_in_token(
+        tokens_balance, token, investment_parameters
+    )
+
+    zero_x_swapper.api_client.get_price.assert_not_called()
+
+    assert wallet == Wallet(
+        balances=[
+            ConvertedBalance(
+                sell_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
+                buy_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
+            ),
+        ],
+        total_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
     )
 
 
