@@ -4,7 +4,12 @@ from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.exchange.exchange import Wallet, Exchange
+from invest_agent.investment.investment_parameters import (
+    IntegratorFee,
+    InvestmentParameters,
+)
 from invest_agent.metrics.get_wallet_in_token_use_case import (
+    Configuration,
     GetWalletInTokenUseCase,
 )
 from invest_agent.storage.storage import Storage
@@ -92,11 +97,9 @@ def basket_investment():
     )
 
 
-def test_get_wallet_in_token_use_case_basket_investment_not_found(
-    storage: Storage[BasketInvestment], exchange: Exchange, chain: Chain
-):
-    storage.get.return_value = None
-    chain.get_balance.return_value = Balance(
+@fixture
+def balance():
+    return Balance(
         amount=Decimal("0"),
         token=Token(
             name="BNB",
@@ -106,50 +109,18 @@ def test_get_wallet_in_token_use_case_basket_investment_not_found(
         ),
     )
 
-    use_case = GetWalletInTokenUseCase(storage, exchange, chain)
 
-    use_case.execute(
-        Token(
-            name="Tether USD",
-            display_name="Tether USD",
-            ticker="USDT",
-            address="0x55d398326f99059ff775485246999027b3197955",
-        ),
-    )
-
-    exchange.get_wallet_in_token.assert_called_once_with(
-        [
-            Balance(
-                amount=Decimal("0"),
-                token=Token(
-                    name="BNB",
-                    display_name="BNB",
-                    ticker="BNB",
-                    address="0x00000",
-                ),
-            ),
-        ],
-        mock.ANY,
-    )
+@fixture
+def configuration() -> Configuration:
+    return {
+        "fee_integrator_address": "0x1234567890abcdef1234567890abcdef12345678",
+        "fee_value_in_percentage": Decimal(0.15),
+    }
 
 
-def test_get_wallet_in_token_use_case_basket_investment(
-    storage: Storage[BasketInvestment],
-    exchange: Exchange,
-    basket_investment: BasketInvestment,
-    chain: Chain,
-):
-    storage.get.return_value = [basket_investment, 1]
-    chain.get_balance.return_value = Balance(
-        amount=Decimal("0"),
-        token=Token(
-            name="BNB",
-            display_name="BNB",
-            ticker="BNB",
-            address="0x00000",
-        ),
-    )
-    exchange.get_wallet_in_token.return_value = Wallet(
+@fixture
+def wallet():
+    return Wallet(
         balances=[],
         total_balance=Balance(
             amount=Decimal("0"),
@@ -162,7 +133,61 @@ def test_get_wallet_in_token_use_case_basket_investment(
         ),
     )
 
-    use_case = GetWalletInTokenUseCase(storage, exchange, chain)
+
+def test_get_wallet_in_token_use_case_basket_investment_not_found(
+    storage: Storage[BasketInvestment],
+    exchange: Exchange,
+    chain: Chain,
+    configuration: Configuration,
+    balance: Balance,
+):
+    storage.get.return_value = None
+    chain.get_balance.return_value = balance
+
+    use_case = GetWalletInTokenUseCase(
+        storage=storage, exchange=exchange, chain=chain, configuration=configuration
+    )
+
+    use_case.execute(
+        Token(
+            name="Tether USD",
+            display_name="Tether USD",
+            ticker="USDT",
+            address="0x55d398326f99059ff775485246999027b3197955",
+        ),
+    )
+
+    exchange.get_wallet_in_token.assert_called_once_with(
+        tokens_balance=[
+            Balance(
+                amount=Decimal("0"),
+                token=Token(
+                    name="BNB",
+                    display_name="BNB",
+                    ticker="BNB",
+                    address="0x00000",
+                ),
+            ),
+        ],
+        token=mock.ANY,
+        investment_parameters=mock.ANY,
+    )
+
+
+def test_get_wallet_in_token_use_case_basket_investment(
+    storage: Storage[BasketInvestment],
+    exchange: Exchange,
+    basket_investment: BasketInvestment,
+    chain: Chain,
+    configuration: Configuration,
+    balance: Balance,
+    wallet: Wallet,
+):
+    storage.get.return_value = [basket_investment, 1]
+    chain.get_balance.return_value = balance
+    exchange.get_wallet_in_token.return_value = wallet
+
+    use_case = GetWalletInTokenUseCase(storage, exchange, chain, configuration)
 
     result = use_case.execute(
         Token(
@@ -188,7 +213,7 @@ def test_get_wallet_in_token_use_case_basket_investment(
 
     storage.get.assert_called_once_with("basket_investment")
     exchange.get_wallet_in_token.assert_called_once_with(
-        [
+        tokens_balance=[
             Balance(
                 amount=Decimal("0"),
                 token=Token(
@@ -217,10 +242,65 @@ def test_get_wallet_in_token_use_case_basket_investment(
                 ),
             ),
         ],
+        token=Token(
+            name="Tether USD",
+            display_name="Tether USD",
+            ticker="USDT",
+            address="0x55d398326f99059ff775485246999027b3197955",
+        ),
+        investment_parameters=InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+            integrator_fee=IntegratorFee(
+                recipient="0x1234567890abcdef1234567890abcdef12345678",
+                value_in_percentage=Decimal(0.15),
+                token=Token(
+                    name="Tether USD",
+                    display_name="Tether USD",
+                    ticker="USDT",
+                    address="0x55d398326f99059ff775485246999027b3197955",
+                ),
+            ),
+        ),
+    )
+
+
+def test_get_wallet_in_token_use_case_basket_investment_with_no_integrator_fee(
+    storage: Storage[BasketInvestment],
+    exchange: Exchange,
+    basket_investment: BasketInvestment,
+    chain: Chain,
+    balance: Balance,
+    wallet: Wallet,
+):
+    storage.get.return_value = [basket_investment, 1]
+    chain.get_balance.return_value = balance
+    exchange.get_wallet_in_token.return_value = wallet
+
+    use_case = GetWalletInTokenUseCase(
+        storage=storage,
+        exchange=exchange,
+        chain=chain,
+        configuration=Configuration(
+            fee_integrator_address=None,
+            fee_value_in_percentage=None,
+        ),
+    )
+
+    use_case.execute(
         Token(
             name="Tether USD",
             display_name="Tether USD",
             ticker="USDT",
             address="0x55d398326f99059ff775485246999027b3197955",
+        ),
+    )
+
+    storage.get.assert_called_once_with("basket_investment")
+    exchange.get_wallet_in_token.assert_called_once_with(
+        tokens_balance=mock.ANY,
+        token=mock.ANY,
+        investment_parameters=InvestmentParameters(
+            slippage_tolerance_in_percentage=mock.ANY,
+            integrator_fee=None,
         ),
     )

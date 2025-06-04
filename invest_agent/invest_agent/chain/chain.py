@@ -46,6 +46,16 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_address_balance(self, address: str) -> Balance:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_address_token_balance_amount(
+        self, address: str, token_address: str
+    ) -> Decimal:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_base_token(self) -> Token:
         raise NotImplementedError
 

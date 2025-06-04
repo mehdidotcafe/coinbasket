@@ -1,11 +1,21 @@
 from decimal import Decimal
+from typing import Optional, TypedDict
+from invest_agent.chain.chain import Chain
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.divestment_planner import DivestmentPlanner
 from invest_agent.investment.exception.no_basket_investment import NoBasketInvestment
 from invest_agent.investment.exchange.exchange import Exchange
-from invest_agent.investment.investment_parameters import InvestmentParameters
+from invest_agent.investment.investment_parameters import (
+    IntegratorFee,
+    InvestmentParameters,
+)
 from invest_agent.storage.storage import Storage
+
+
+class Configuration(TypedDict):
+    fee_integrator_address: Optional[str]
+    fee_value_in_percentage: Optional[Decimal]
 
 
 class BasketDivestUseCase:
@@ -17,11 +27,15 @@ class BasketDivestUseCase:
         exchange: Exchange,
         storage: Storage[BasketInvestment],
         date_time: DateTime,
+        chain: Chain,
+        configuration: Configuration,
     ):
         self.divestment_planner = divestment_planner
         self.exchange = exchange
         self.storage = storage
         self.date_time = date_time
+        self.chain = chain
+        self.configuration = configuration
 
     def execute(self):
         """Execute the divestment of the basket."""
@@ -34,6 +48,7 @@ class BasketDivestUseCase:
 
         investment_parameters = InvestmentParameters(
             slippage_tolerance_in_percentage=Decimal("1"),
+            integrator_fee=self.__make_integrator_fee(),
         )
 
         try:
@@ -62,4 +77,16 @@ class BasketDivestUseCase:
             invested_at=self.date_time.now_str(),
             bids=bids,
             status="invested",
+        )
+
+    def __make_integrator_fee(self) -> IntegratorFee | None:
+        return (
+            None
+            if self.configuration["fee_integrator_address"] is None
+            or self.configuration["fee_value_in_percentage"] is None
+            else IntegratorFee(
+                recipient=self.configuration["fee_integrator_address"],
+                value_in_percentage=self.configuration["fee_value_in_percentage"],
+                token=self.chain.get_base_token(),
+            )
         )

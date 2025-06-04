@@ -26,7 +26,7 @@ class Exchange(ABC):
         self,
         investment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
-    ) -> list[Bid]:  # noqa: F821
+    ) -> list[Bid]:
         raise NotImplementedError
 
     @abstractmethod
@@ -39,6 +39,9 @@ class Exchange(ABC):
 
     @abstractmethod
     def get_wallet_in_token(
-        self, tokens_balance: list[Balance], token: Token
+        self,
+        tokens_balance: list[Balance],
+        token: Token,
+        investment_parameters: InvestmentParameters,
     ) -> Wallet:
         raise NotImplementedError

@@ -140,6 +140,7 @@ def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
         buy_token="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
         amount=1000000000000000000,
         slippage_bps=Decimal("100"),
+        investment_parameters=investment_parameters,
     )
     chain.sign_send_wait_transaction.assert_called_once_with(
         gas=Gas(gas=21000, gas_price=1000000000),
@@ -489,6 +490,7 @@ def test_zero_x_swapper_execute_divestment_plan(
         amount=1000000000000000000,
         sell_entire_balance=True,
         slippage_bps=Decimal("100"),
+        investment_parameters=investment_parameters,
     )
     zero_x_api_client.get_price.assert_called_once_with(
         taker="0x1234567890abcdef1234567890abcdef12345678",
@@ -498,6 +500,7 @@ def test_zero_x_swapper_execute_divestment_plan(
         amount=1000000000000000000,
         sell_entire_balance=True,
         slippage_bps=Decimal("100"),
+        investment_parameters=investment_parameters,
     )
     chain.sign_send_wait_transaction.assert_called_once_with(
         gas=Gas(gas=21000, gas_price=1000000000),
@@ -604,6 +607,7 @@ def test_zero_x_swapper_get_wallet_in_token(
     chain: Chain,
     configuration: Configuration,
     w3: Web3,
+    investment_parameters: InvestmentParameters,
 ):
     token = usdt_token
 
@@ -644,7 +648,9 @@ def test_zero_x_swapper_get_wallet_in_token(
         api_client=zero_x_api_client, chain=chain, configuration=configuration, w3=w3
     )
 
-    wallet = zero_x_swapper.get_wallet_in_token(tokens_balance, token)
+    wallet = zero_x_swapper.get_wallet_in_token(
+        tokens_balance, token, investment_parameters
+    )
 
     assert wallet == Wallet(
         balances=[

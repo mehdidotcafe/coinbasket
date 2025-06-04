@@ -137,11 +137,22 @@ basket_divest_use_case = BasketDivestUseCase(
     exchange=exchange,
     storage=storage,
     date_time=date_time,
+    chain=chain,
+    configuration={
+        "fee_integrator_address": configuration.fee_integrator_address,
+        "fee_value_in_percentage": configuration.fee_value_in_percentage,
+    },
 )
 get_basket_investment_use_case = GetBasketInvestmentUseCase(storage=storage)
 
 get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
-    storage=storage, exchange=exchange, chain=chain
+    storage=storage,
+    exchange=exchange,
+    chain=chain,
+    configuration={
+        "fee_integrator_address": configuration.fee_integrator_address,
+        "fee_value_in_percentage": configuration.fee_value_in_percentage,
+    },
 )
 
 
@@ -281,7 +292,7 @@ def create_agent_executor(conn: aiosqlite.Connection):
             "Your goal is to create and then invest in crypto coin baskets.  "
             "You operate only on the Binance Smart Chain (BSC) network.  "
             f"Today is {date_time.now_str()}.  "
-            "Always give a name to the basket you are creating. Reevaluate the basket name after each update.  "
+            "Always give a name and a description to the basket you are creating. Reevaluate them after each update.  "
             "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
             "When you display a token or coin, always show its address as a link using this link 'https://bscscan.com/token/[token_address]'.  "
             "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
