@@ -14,4 +14,5 @@ name: {self.name}
 display_name: {self.display_name}
 ticker: {self.ticker}
 address: {self.address}
+type: token
 """

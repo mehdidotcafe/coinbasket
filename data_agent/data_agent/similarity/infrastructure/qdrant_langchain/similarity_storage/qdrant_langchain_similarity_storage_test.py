@@ -133,7 +133,7 @@ async def test_qdrant_langchain_similarity_storage_search(
         collection_name="datasets",
         embedding=embeddings,
     )
-    qdrant_vector_store.asimilarity_search.assert_called_once_with(query)
+    qdrant_vector_store.asimilarity_search.assert_called_once_with(query, 10)
 
 
 def test_qdrant_langchain_similarity_storage_get(

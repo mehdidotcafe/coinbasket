@@ -13,6 +13,7 @@ class Basket:
         return f"""
 name: {self.name}
 description: {self.description}
+type: basket
 {"\n".join([self.__flatten_token(token, index) for index, token in enumerate(self.tokens)])}
 """
 
@@ -20,4 +21,5 @@ description: {self.description}
         return f"""{index + 1}. name: {token.name}
  display_name: {token.display_name}
  ticker: {token.ticker}
- address: {token.address}"""
+ address: {token.address}
+"""

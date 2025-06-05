@@ -52,7 +52,7 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
 
         return [
             self.__map_document_to_similarity_document(doc)
-            for doc in await self.qdrant.asimilarity_search(query)
+            for doc in await self.qdrant.asimilarity_search(query, 10)
         ]
 
     def get(self, ids: list[str]):
