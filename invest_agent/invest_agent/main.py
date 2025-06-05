@@ -542,7 +542,7 @@ class TokenResponse(Model):
 
 
 class BalanceResponse(Model):
-    balance: str
+    amount: str
     token: TokenResponse
 
 
@@ -623,7 +623,7 @@ async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
         balances=[
             ConvertedBalanceResponse(
                 sell_balance=BalanceResponse(
-                    balance=str(balance.sell_balance.amount),
+                    amount=str(balance.sell_balance.amount),
                     token=TokenResponse(
                         name=balance.sell_balance.token.name,
                         display_name=balance.sell_balance.token.display_name,
@@ -632,7 +632,7 @@ async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
                     ),
                 ),
                 buy_balance=BalanceResponse(
-                    balance=str(balance.buy_balance.amount),
+                    amount=str(balance.buy_balance.amount),
                     token=TokenResponse(
                         name=balance.buy_balance.token.name,
                         display_name=balance.buy_balance.token.display_name,
@@ -644,7 +644,7 @@ async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
             for balance in converted_token_balances.balances
         ],
         total_balance=BalanceResponse(
-            balance=str(converted_token_balances.total_balance.amount),
+            amount=str(converted_token_balances.total_balance.amount),
             token=TokenResponse(
                 name=converted_token_balances.total_balance.token.name,
                 display_name=converted_token_balances.total_balance.token.display_name,
