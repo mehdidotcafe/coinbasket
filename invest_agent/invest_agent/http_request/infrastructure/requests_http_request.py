@@ -12,12 +12,17 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class RequestsHttpRequest(HttpRequest[T], Generic[T]):
+    TIMEOUT = 20  # seconds
+
     def get(self, params: GetParams, schema: T) -> T:
         """
         Fetches data from a given URL using the requests library.
         """
         response = requests.get(
-            params.get("url"), params.get("params"), headers=params.get("headers")
+            params.get("url"),
+            params.get("params"),
+            headers=params.get("headers"),
+            timeout=self.TIMEOUT,
         )
         if response.status_code >= 200 and response.status_code < 400:
             return schema.model_validate(response.json())
@@ -34,7 +39,10 @@ class RequestsHttpRequest(HttpRequest[T], Generic[T]):
         Sends a POST request to a given URL using the requests library.
         """
         response = requests.post(
-            params.get("url"), json=params.get("body"), headers=params.get("headers")
+            params.get("url"),
+            json=params.get("body"),
+            headers=params.get("headers"),
+            timeout=self.TIMEOUT,
         )
         if response.status_code >= 200 and response.status_code < 400:
             print(f"Response: {response.json()}")
