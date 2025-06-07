@@ -8,7 +8,7 @@ from invest_agent.investment.exception.basked_already_invested import (
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from protocol.basket import Basket
 from protocol.token import Token
-from pytest import fixture, raises
+from pytest import fixture, raises, mark
 
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.exchange.exchange import Exchange
@@ -19,6 +19,8 @@ from invest_agent.investment.basket_invest_use_case import BasketInvestUseCase
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from invest_agent.investment.investment_planner import InvestmentPlanner
 from invest_agent.storage.storage import Storage
+
+pytestmark = mark.anyio
 
 
 @fixture
@@ -73,7 +75,7 @@ def investment_use_case(
     return BasketInvestUseCase(investment_planner, exchange, storage, date_time)
 
 
-def test_invest_use_case_execute_success(
+async def test_invest_use_case_execute_success(
     investment_use_case: BasketInvestUseCase,
     investment_planner: InvestmentPlanner,
     exchange: Exchange,
@@ -152,7 +154,7 @@ def test_invest_use_case_execute_success(
     exchange.execute_investment_plan.return_value = basket_investment.bids
     date_time.now_str.return_value = "2020-05-09"
 
-    message, result = investment_use_case.execute(basket)
+    message, result = await investment_use_case.execute(basket)
 
     assert message == "Investment success."
     assert result == basket_investment
@@ -169,7 +171,7 @@ def test_invest_use_case_execute_success(
     date_time.now_str.assert_called_once()
 
 
-def test_invest_use_case_execute_insufficient_balance(
+async def test_invest_use_case_execute_insufficient_balance(
     investment_use_case: BasketInvestUseCase,
     investment_planner: InvestmentPlanner,
     exchange: Exchange,
@@ -190,7 +192,7 @@ def test_invest_use_case_execute_insufficient_balance(
 
     storage.has.return_value = False
     investment_planner.make_investment_plan.side_effect = exception
-    message, result = investment_use_case.execute(basket)
+    message, result = await investment_use_case.execute(basket)
 
     assert message == exception.message
     assert result is None
@@ -200,7 +202,7 @@ def test_invest_use_case_execute_insufficient_balance(
     storage.set.assert_not_called()
 
 
-def test_invest_use_case_execute_already_invested(
+async def test_invest_use_case_execute_already_invested(
     investment_use_case: BasketInvestUseCase,
     storage: Storage[BasketInvestment],
     basket: Basket,
@@ -208,4 +210,4 @@ def test_invest_use_case_execute_already_invested(
     storage.has.return_value = True
 
     with raises(BasketAlreadyInvested):
-        investment_use_case.execute(basket)
+        await investment_use_case.execute(basket)

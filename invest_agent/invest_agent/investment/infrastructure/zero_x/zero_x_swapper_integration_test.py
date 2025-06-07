@@ -24,9 +24,13 @@ from protocol.fixture.token import (
     usdt_token,
 )
 from web3 import Web3
+from pytest import mark
 
 
-def test_integration_zero_x_swapper_execute_investment_plan():
+pytestmark = mark.anyio
+
+
+async def test_integration_zero_x_swapper_execute_investment_plan():
     configuration = Configuration()
 
     api_client = ZeroXApiClient(
@@ -98,10 +102,10 @@ def test_integration_zero_x_swapper_execute_investment_plan():
         slippage_tolerance_in_percentage=Decimal(5),
     )
 
-    zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
+    await zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
 
 
-def test_integration_zero_x_swapper_execute_divestment_plan():
+async def test_integration_zero_x_swapper_execute_divestment_plan():
     configuration = Configuration()
 
     api_client = ZeroXApiClient(
@@ -151,7 +155,7 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
     )
 
     # TODO: Find a way to set the balance of the account directly
-    bids = zero_x_swapper.execute_investment_plan(
+    bids = await zero_x_swapper.execute_investment_plan(
         investment_plan, investment_parameters
     )
 

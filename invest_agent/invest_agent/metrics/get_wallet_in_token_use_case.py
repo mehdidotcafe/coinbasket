@@ -29,7 +29,7 @@ class GetWalletInTokenUseCase:
         self.chain = chain
         self.configuration = configuration
 
-    def execute(self, token: Token):
+    async def execute(self, token: Token):
         basket_investment = self.storage.get("basket_investment")
 
         investment_parameters = InvestmentParameters(
@@ -37,7 +37,7 @@ class GetWalletInTokenUseCase:
             integrator_fee=self.__make_integrator_fee(token),
         )
 
-        return self.exchange.get_wallet_in_token(
+        return await self.exchange.get_wallet_in_token(
             tokens_balance=[self.chain.get_balance()]
             + self.__map_basket_investment_bids_to_balances(
                 basket_investment[0].bids if basket_investment else []

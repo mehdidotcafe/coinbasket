@@ -19,8 +19,10 @@ from invest_agent.investment.investment_parameters import (
     IntegratorFee,
     InvestmentParameters,
 )
-from pytest import fixture
+from pytest import fixture, mark
 from protocol.fixture.token import bnb_token
+
+pytestmark = mark.anyio
 
 
 @fixture
@@ -48,7 +50,7 @@ def investment_parameters():
     )
 
 
-def test_zero_x_api_client_get_price_success(
+async def test_zero_x_api_client_get_price_success(
     configuration: Configuration,
     http_request: HttpRequest[Price],
     investment_parameters: InvestmentParameters,
@@ -72,7 +74,7 @@ def test_zero_x_api_client_get_price_success(
 
     http_request.get.return_value = expected_price
 
-    price = client.get_price(
+    price = await client.get_price(
         taker=taker,
         chain_id=chain_id,
         sell_token=sell_token,
@@ -108,7 +110,7 @@ def test_zero_x_api_client_get_price_success(
     )
 
 
-def test_zero_x_api_client_get_quote_success(
+async def test_zero_x_api_client_get_quote_success(
     configuration: Configuration,
     http_request: HttpRequest[QuoteResult],
     investment_parameters: InvestmentParameters,
@@ -148,7 +150,7 @@ def test_zero_x_api_client_get_quote_success(
 
     http_request.get.return_value = expected_quote
 
-    quote = client.get_quote(
+    quote = await client.get_quote(
         taker=taker,
         chain_id=chain_id,
         sell_token=sell_token,

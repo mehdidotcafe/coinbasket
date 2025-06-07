@@ -63,7 +63,7 @@ class ZeroXSwapper(Exchange):
         ) as f:
             self.erc20_token_abi = json.load(f)
 
-    def execute_investment_plan(
+    async def execute_investment_plan(
         self,
         investment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
@@ -80,7 +80,7 @@ class ZeroXSwapper(Exchange):
         for step in investment_plan.steps:
             try:
                 bids.append(
-                    self.__execute_investment_step(
+                    await self.__execute_investment_step(
                         step=step,
                         sell_token_contract=sell_token_contract,
                         sell_token=investment_plan.sell_total_balance.token,
@@ -93,7 +93,7 @@ class ZeroXSwapper(Exchange):
         return bids
 
     @retry(stop=stop_after_attempt(RETRY_ATTEMPTS), reraise=True)
-    def __execute_investment_step(
+    async def __execute_investment_step(
         self,
         step: InvestmentPlanStep,
         sell_token_contract: Contract,
@@ -117,7 +117,7 @@ class ZeroXSwapper(Exchange):
             )
         )
 
-        quote_result = self.api_client.get_quote(
+        quote_result = await self.api_client.get_quote(
             chain_id=self.chain.get_chain_id(),
             taker=self.account.address,
             sell_token=sell_token.address,
@@ -155,7 +155,7 @@ class ZeroXSwapper(Exchange):
             buy_token=step.token,
         )
 
-    def execute_divestment_plan(
+    async def execute_divestment_plan(
         self,
         divestment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
@@ -172,7 +172,7 @@ class ZeroXSwapper(Exchange):
         for step in divestment_plan.steps:
             try:
                 bids.append(
-                    self.__execute_divestment_plan_step(
+                    await self.__execute_divestment_plan_step(
                         step=step,
                         buy_token_contract=buy_token_contract,
                         buy_token=divestment_plan.sell_total_balance.token,
@@ -185,7 +185,7 @@ class ZeroXSwapper(Exchange):
         return bids
 
     @retry(stop=stop_after_attempt(RETRY_ATTEMPTS), reraise=True)
-    def __execute_divestment_plan_step(
+    async def __execute_divestment_plan_step(
         self,
         step: InvestmentPlanStep,
         buy_token_contract: Contract,
@@ -211,7 +211,7 @@ class ZeroXSwapper(Exchange):
             )
         )
 
-        price = self.api_client.get_price(
+        price = await self.api_client.get_price(
             chain_id=self.chain.get_chain_id(),
             taker=self.account.address,
             sell_token=step.sell_balance.token.address,
@@ -228,7 +228,7 @@ class ZeroXSwapper(Exchange):
             price=price, token_contract=sell_token_contract, token=sell_token
         )
 
-        quote_result = self.api_client.get_quote(
+        quote_result = await self.api_client.get_quote(
             chain_id=self.chain.get_chain_id(),
             taker=self.account.address,
             sell_token=sell_token.address,
@@ -269,7 +269,7 @@ class ZeroXSwapper(Exchange):
             sell_token=sell_token,
         )
 
-    def get_wallet_in_token(
+    async def get_wallet_in_token(
         self,
         tokens_balance: list[Balance],
         token: Token,
@@ -311,7 +311,7 @@ class ZeroXSwapper(Exchange):
                 )
             )
 
-            price = self.api_client.get_price(
+            price = await self.api_client.get_price(
                 chain_id=self.chain.get_chain_id(),
                 taker=self.account.address,
                 sell_token=balance.token.address,

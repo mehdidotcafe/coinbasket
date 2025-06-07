@@ -22,7 +22,7 @@ class Wallet:
 
 class Exchange(ABC):
     @abstractmethod
-    def execute_investment_plan(
+    async def execute_investment_plan(
         self,
         investment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
@@ -30,7 +30,7 @@ class Exchange(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def execute_divestment_plan(
+    async def execute_divestment_plan(
         self,
         divestment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
@@ -38,7 +38,7 @@ class Exchange(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_wallet_in_token(
+    async def get_wallet_in_token(
         self,
         tokens_balance: list[Balance],
         token: Token,

@@ -259,7 +259,7 @@ def get_invested_basket_balance_in_native_and_usd_value():
 
 
 @tool(response_format="content_and_artifact")
-def invest_basket(basket: Basket):
+async def invest_basket(basket: Basket):
     """Invest / fund / buy the basket create by the user.
     Each basket coin needs to have a name, ticker and address.
     A basket can't be invested if it already has been invested.
@@ -271,7 +271,7 @@ def invest_basket(basket: Basket):
     Returns:
         BasketInvestment: The basket investment made of the bids that were made by the agent when investing in the basket.
     """
-    message, basket_investment = basket_invest_use_case.execute(basket)
+    message, basket_investment = await basket_invest_use_case.execute(basket)
 
     if basket_investment is None:
         return message, None
@@ -285,7 +285,7 @@ def invest_basket(basket: Basket):
 
 
 @tool()
-def divest_basket():
+async def divest_basket():
     """Divest / sell the whole basket create by the user.
     This tool cannot be used if the basket has not been invested yet.
     This tool cannot be used if to divest just a part of the basket, it divests the whole basket.
@@ -294,7 +294,7 @@ def divest_basket():
     Args:
         basket: The basket to Invest / fund / buy.
     """
-    return basket_divest_use_case.execute()
+    return await basket_divest_use_case.execute()
 
 
 llm = init_chat_model(
@@ -644,7 +644,7 @@ class MetricsWalletResponse(Model):
 )
 @authentication(configuration.agent_key)
 async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
-    converted_token_balances = get_basket_balance_in_token_use_case.execute(
+    converted_token_balances = await get_basket_balance_in_token_use_case.execute(
         Token(
             name=req.token.name,
             display_name=req.token.display_name,

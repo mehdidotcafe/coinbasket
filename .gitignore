@@ -1,5 +1,7 @@
 # Global
 .env
+.env.local
+.env.production
 
 # NX
 node_modules

@@ -20,8 +20,8 @@ class PostParams(TypedDict):
 
 
 class HttpRequest(ABC, Generic[T]):
-    def get(self, params: GetParams, schema: T) -> T:
+    async def get(self, params: GetParams, schema: T) -> T:
         raise NotImplementedError
 
-    def post(self, params: PostParams, schema: T) -> T:
+    async def post(self, params: PostParams, schema: T) -> T:
         raise NotImplementedError

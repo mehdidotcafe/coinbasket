@@ -37,7 +37,7 @@ class BasketDivestUseCase:
         self.chain = chain
         self.configuration = configuration
 
-    def execute(self):
+    async def execute(self):
         """Execute the divestment of the basket."""
         basket_investment = self.storage.get("basket_investment")
 
@@ -52,7 +52,7 @@ class BasketDivestUseCase:
         )
 
         try:
-            bids = self.exchange.execute_divestment_plan(
+            bids = await self.exchange.execute_divestment_plan(
                 self.divestment_planner.make_divestment_plan(basket_investment[0]),
                 investment_parameters,
             )

@@ -14,7 +14,10 @@ from invest_agent.metrics.get_wallet_in_token_use_case import (
 )
 from invest_agent.storage.storage import Storage
 from protocol.token import Token
-from pytest import fixture
+from pytest import fixture, mark
+
+
+pytestmark = mark.anyio
 
 
 @fixture
@@ -134,7 +137,7 @@ def wallet():
     )
 
 
-def test_get_wallet_in_token_use_case_basket_investment_not_found(
+async def test_get_wallet_in_token_use_case_basket_investment_not_found(
     storage: Storage[BasketInvestment],
     exchange: Exchange,
     chain: Chain,
@@ -148,7 +151,7 @@ def test_get_wallet_in_token_use_case_basket_investment_not_found(
         storage=storage, exchange=exchange, chain=chain, configuration=configuration
     )
 
-    use_case.execute(
+    await use_case.execute(
         Token(
             name="Tether USD",
             display_name="Tether USD",
@@ -174,7 +177,7 @@ def test_get_wallet_in_token_use_case_basket_investment_not_found(
     )
 
 
-def test_get_wallet_in_token_use_case_basket_investment(
+async def test_get_wallet_in_token_use_case_basket_investment(
     storage: Storage[BasketInvestment],
     exchange: Exchange,
     basket_investment: BasketInvestment,
@@ -189,7 +192,7 @@ def test_get_wallet_in_token_use_case_basket_investment(
 
     use_case = GetWalletInTokenUseCase(storage, exchange, chain, configuration)
 
-    result = use_case.execute(
+    result = await use_case.execute(
         Token(
             name="Tether USD",
             display_name="Tether USD",
@@ -264,7 +267,7 @@ def test_get_wallet_in_token_use_case_basket_investment(
     )
 
 
-def test_get_wallet_in_token_use_case_basket_investment_with_no_integrator_fee(
+async def test_get_wallet_in_token_use_case_basket_investment_with_no_integrator_fee(
     storage: Storage[BasketInvestment],
     exchange: Exchange,
     basket_investment: BasketInvestment,
@@ -286,7 +289,7 @@ def test_get_wallet_in_token_use_case_basket_investment_with_no_integrator_fee(
         ),
     )
 
-    use_case.execute(
+    await use_case.execute(
         Token(
             name="Tether USD",
             display_name="Tether USD",
