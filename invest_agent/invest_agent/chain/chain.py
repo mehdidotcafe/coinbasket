@@ -26,7 +26,7 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_chain_id(self) -> int:
+    async def get_chain_id(self) -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -34,23 +34,23 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_min_balance(self) -> Balance:
+    async def get_min_balance(self) -> Balance:
         raise NotImplementedError
 
     @abstractmethod
-    def get_balance(self) -> Balance:
+    async def get_balance(self) -> Balance:
         raise NotImplementedError
 
     @abstractmethod
-    def get_token_balance_amount(self, token_address: str) -> Decimal:
+    async def get_token_balance_amount(self, token_address: str) -> Decimal:
         raise NotImplementedError
 
     @abstractmethod
-    def get_address_balance(self, address: str) -> Balance:
+    async def get_address_balance(self, address: str) -> Balance:
         raise NotImplementedError
 
     @abstractmethod
-    def get_address_token_balance_amount(
+    async def get_address_token_balance_amount(
         self, address: str, token_address: str
     ) -> Decimal:
         raise NotImplementedError
@@ -60,7 +60,7 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def sign_send_wait_transaction(
+    async def sign_send_wait_transaction(
         self,
         amount: int,
         gas: Gas | None = None,
@@ -70,7 +70,7 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def compute_gas_estimate(
+    async def compute_gas_estimate(
         self, amount: int, to_address: str, encoded_input: Any | None = None
     ) -> int:
         raise NotImplementedError

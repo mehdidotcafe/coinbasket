@@ -8,7 +8,7 @@ from invest_agent.investment.investment_parameters import (
     IntegratorFee,
     InvestmentParameters,
 )
-from pytest import fixture, raises
+from pytest import fixture, raises, mark
 
 from protocol.token import Token
 from protocol.fixture.token import bnb_token
@@ -185,7 +185,8 @@ def basket_divestment():
     )
 
 
-def test_basket_divest_use_case_execute_no_investment(
+@mark.asyncio
+async def test_basket_divest_use_case_execute_no_investment(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
     storage: Storage[BasketInvestment],
@@ -205,12 +206,13 @@ def test_basket_divest_use_case_execute_no_investment(
     )
 
     with raises(NoBasketInvestment):
-        use_case.execute()
+        await use_case.execute()
 
     storage.get.assert_called_once_with("basket_investment")
 
 
-def test_basket_divest_use_case_execute_exception(
+@mark.asyncio
+async def test_basket_divest_use_case_execute_exception(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
     storage: Storage[BasketInvestment],
@@ -314,13 +316,14 @@ def test_basket_divest_use_case_execute_exception(
         configuration=configuration,
     )
 
-    message, result = use_case.execute()
+    message, result = await use_case.execute()
 
     assert message == "Divestment error: Error"
     assert result is None
 
 
-def test_basket_divest_use_case_execute_success(
+@mark.asyncio
+async def test_basket_divest_use_case_execute_success(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
     storage: Storage[BasketInvestment],
@@ -346,7 +349,7 @@ def test_basket_divest_use_case_execute_success(
         configuration=configuration,
     )
 
-    message, result = use_case.execute()
+    message, result = await use_case.execute()
 
     assert message == "Divestment success."
     assert result == basket_divestment
@@ -368,7 +371,8 @@ def test_basket_divest_use_case_execute_success(
     date_time.now_str.assert_called_once()
 
 
-def test_basket_divest_use_case_execute_with_no_integrator_fee(
+@mark.asyncio
+async def test_basket_divest_use_case_execute_with_no_integrator_fee(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
     storage: Storage[BasketInvestment],
@@ -395,7 +399,7 @@ def test_basket_divest_use_case_execute_with_no_integrator_fee(
         ),
     )
 
-    use_case.execute()
+    await use_case.execute()
 
     exchange.execute_divestment_plan.assert_called_once_with(
         mock.ANY,

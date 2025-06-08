@@ -53,6 +53,9 @@
         "command": "poetry run python -m invest_agent.main",
         "cwd": "{projectRoot}"
       },
+      "configurations": {
+        "production": {}
+      },
       "cache": true
     },
     "dev": {

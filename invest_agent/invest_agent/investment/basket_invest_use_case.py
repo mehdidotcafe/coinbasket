@@ -24,7 +24,7 @@ class BasketInvestUseCase:
         self.storage = storage
         self.date_time = date_time
 
-    def execute(self, basket: Basket):
+    async def execute(self, basket: Basket):
         if self.storage.has("basket_investment"):
             raise BasketAlreadyInvested()
 
@@ -33,8 +33,8 @@ class BasketInvestUseCase:
         )
 
         try:
-            bids = self.exchange.execute_investment_plan(
-                self.investment_planner.make_investment_plan(basket),
+            bids = await self.exchange.execute_investment_plan(
+                await self.investment_planner.make_investment_plan(basket),
                 investment_parameters,
             )
             basket_investment = self.__map_bids_and_basket_to_basket_investment(

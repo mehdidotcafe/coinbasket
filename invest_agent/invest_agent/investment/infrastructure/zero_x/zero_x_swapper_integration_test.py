@@ -23,10 +23,12 @@ from protocol.fixture.token import (
     btc_token,
     usdt_token,
 )
-from web3 import Web3
+from web3 import AsyncWeb3, AsyncHTTPProvider
+from pytest import mark
 
 
-def test_integration_zero_x_swapper_execute_investment_plan():
+@mark.asyncio
+async def test_integration_zero_x_swapper_execute_investment_plan():
     configuration = Configuration()
 
     api_client = ZeroXApiClient(
@@ -38,7 +40,7 @@ def test_integration_zero_x_swapper_execute_investment_plan():
     )
 
     chain = BscChain(
-        w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
         private_key=configuration.bsc_private_key,
     )
     zero_x_swapper = ZeroXSwapper(
@@ -48,7 +50,7 @@ def test_integration_zero_x_swapper_execute_investment_plan():
             "bsc_rpc_url": configuration.bsc_rpc_url,
             "private_key": configuration.bsc_private_key,
         },
-        w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
     )
 
     investment_plan = InvestmentPlan(
@@ -98,10 +100,11 @@ def test_integration_zero_x_swapper_execute_investment_plan():
         slippage_tolerance_in_percentage=Decimal(5),
     )
 
-    zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
+    await zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
 
 
-def test_integration_zero_x_swapper_execute_divestment_plan():
+@mark.asyncio
+async def test_integration_zero_x_swapper_execute_divestment_plan():
     configuration = Configuration()
 
     api_client = ZeroXApiClient(
@@ -113,7 +116,7 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
     )
 
     chain = BscChain(
-        w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
         private_key=configuration.bsc_private_key,
     )
     zero_x_swapper = ZeroXSwapper(
@@ -123,7 +126,7 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
             "bsc_rpc_url": configuration.bsc_rpc_url,
             "private_key": configuration.bsc_private_key,
         },
-        w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
     )
 
     investment_plan = InvestmentPlan(
@@ -151,7 +154,7 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
     )
 
     # TODO: Find a way to set the balance of the account directly
-    bids = zero_x_swapper.execute_investment_plan(
+    bids = await zero_x_swapper.execute_investment_plan(
         investment_plan, investment_parameters
     )
 
@@ -184,5 +187,8 @@ def test_integration_zero_x_swapper_execute_divestment_plan():
             amount=Decimal(5),
         ),
     )
+    investment_parameters = InvestmentParameters(
+        slippage_tolerance_in_percentage=Decimal(5),
+    )
 
-    zero_x_swapper.execute_divestment_plan(divestment_plan)
+    await zero_x_swapper.execute_divestment_plan(divestment_plan, investment_parameters)

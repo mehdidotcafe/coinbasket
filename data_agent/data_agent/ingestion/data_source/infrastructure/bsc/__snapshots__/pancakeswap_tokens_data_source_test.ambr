@@ -1,0 +1,6 @@
+# serializer version: 1
+# name: test_pancakeswap_tokens_data_source_get
+  list([
+    SimilarityDocument(metadata={'source': {'name': 'Lithosphere', 'display_name': 'Lithosphere', 'ticker': 'LITHO', 'address': '0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93'}, 'type': 'token', 'version': 1}, page_content='\nname: Lithosphere\ndisplay_name: Lithosphere\nticker: LITHO\naddress: 0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93\ntype: token\n', id='d179fa30-808d-48a9-98f3-93c8702e78d8'),
+  ])
+# ---

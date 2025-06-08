@@ -2,11 +2,11 @@ from unittest import mock
 from eth_typing import HexStr
 from hexbytes import HexBytes
 from invest_agent.chain.chain import Gas, TransactionFailure
-from pytest import fixture, raises
+from pytest import fixture, mark, raises
 from decimal import Decimal
-from web3 import Web3
+from web3 import AsyncWeb3
 from web3.types import Wei
-from web3.eth import Eth
+from web3.eth import AsyncEth
 
 
 from protocol.token import Token
@@ -18,17 +18,17 @@ from eth_account.signers.local import LocalAccount
 
 @fixture
 def w3():
-    w3 = mock.Mock(spec=Web3)
+    w3 = mock.Mock(spec=AsyncWeb3)
 
-    w3.eth = mock.Mock(spec=Eth)
+    w3.eth = mock.Mock(spec=AsyncEth)
 
     account = mock.Mock(spec=LocalAccount)
     account.address = "0x1234567890abcdef1234567890abcdef12345678"
 
     w3.to_checksum_address.side_effect = lambda x: f"{x}_checksum"
-    w3.eth.gas_price = Wei(1_000_000_000)
+    w3.eth._gas_price = mock.AsyncMock(return_value=Wei(1_000_000_000))
     w3.eth.account.from_key.return_value = account
-    w3.eth.chain_id = 42
+    w3.eth._chain_id = mock.AsyncMock(return_value=42)
 
     return w3
 
@@ -44,7 +44,7 @@ def base_token():
 
 
 @fixture
-def bsc_chain(w3: Web3):
+def bsc_chain(w3: AsyncWeb3):
     return BscChain(
         w3=w3,
         private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -59,8 +59,9 @@ def test_bsc_chain_is_native_token_failure(bsc_chain: BscChain):
     assert bsc_chain.is_native_token(eth_token) is False
 
 
-def test_bsc_chain_get_chain_id(bsc_chain: BscChain):
-    chain_id = bsc_chain.get_chain_id()
+@mark.asyncio
+async def test_bsc_chain_get_chain_id(bsc_chain: BscChain):
+    chain_id = await bsc_chain.get_chain_id()
 
     assert chain_id == 42
 
@@ -75,10 +76,13 @@ def test_bsc_chain_get_address(bsc_chain: BscChain):
     )
 
 
-def test_bsc_chain_get_min_balance(bsc_chain: BscChain, base_token: Token, w3: Web3):
+@mark.asyncio
+async def test_bsc_chain_get_min_balance(
+    bsc_chain: BscChain, base_token: Token, w3: AsyncWeb3
+):
     w3.from_wei.return_value = Decimal("1")
 
-    min_balance = bsc_chain.get_min_balance()
+    min_balance = await bsc_chain.get_min_balance()
 
     assert min_balance.amount == Decimal("1")
     assert min_balance.token == base_token
@@ -89,11 +93,14 @@ def test_bsc_chain_get_min_balance(bsc_chain: BscChain, base_token: Token, w3: W
     )
 
 
-def test_bsc_chain_get_balance(bsc_chain: BscChain, w3: Web3, base_token: Token):
+@mark.asyncio
+async def test_bsc_chain_get_balance(
+    bsc_chain: BscChain, w3: AsyncWeb3, base_token: Token
+):
     w3.eth.get_balance.return_value = Wei(1000000000000000000)
     w3.from_wei.return_value = Decimal("1")
 
-    balance = bsc_chain.get_balance()
+    balance = await bsc_chain.get_balance()
 
     assert balance.amount == Decimal("1")
     assert balance.token == base_token
@@ -107,16 +114,19 @@ def test_bsc_chain_get_balance(bsc_chain: BscChain, w3: Web3, base_token: Token)
     )
 
 
-def test_bsc_chain_get_token_balance_amount(bsc_chain: BscChain, w3: Web3):
+@mark.asyncio
+async def test_bsc_chain_get_token_balance_amount(bsc_chain: BscChain, w3: AsyncWeb3):
     token_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
 
     token_contract = mock.Mock()
-    token_contract.functions.balanceOf.return_value.call.return_value = 1000
+    token_contract.functions.balanceOf.return_value.call = mock.AsyncMock(
+        return_value=1000
+    )
     w3.eth.contract.return_value = token_contract
 
     w3.from_wei.return_value = Decimal("1")
 
-    balance = bsc_chain.get_token_balance_amount(token_address)
+    balance = await bsc_chain.get_token_balance_amount(token_address)
 
     assert balance == Decimal("1")
 
@@ -126,15 +136,16 @@ def test_bsc_chain_get_token_balance_amount(bsc_chain: BscChain, w3: Web3):
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
 
 
-def test_bsc_chain_get_address_balance(
-    bsc_chain: BscChain, w3: Web3, base_token: Token
+@mark.asyncio
+async def test_bsc_chain_get_address_balance(
+    bsc_chain: BscChain, w3: AsyncWeb3, base_token: Token
 ):
     address = "0x2B5616d51Cd04862a6BD16cE63B47364A2261125"
 
     w3.eth.get_balance.return_value = Wei(1000000000000000000)
     w3.from_wei.return_value = Decimal("1")
 
-    balance = bsc_chain.get_address_balance(address)
+    balance = await bsc_chain.get_address_balance(address)
 
     assert balance.amount == Decimal("1")
     assert balance.token == base_token
@@ -148,17 +159,22 @@ def test_bsc_chain_get_address_balance(
     )
 
 
-def test_bsc_chain_get_address_token_balance_amount(bsc_chain: BscChain, w3: Web3):
+@mark.asyncio
+async def test_bsc_chain_get_address_token_balance_amount(
+    bsc_chain: BscChain, w3: AsyncWeb3
+):
     address = "0x2B5616d51Cd04862a6BD16cE63B47364A2261125"
     token_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
 
     token_contract = mock.Mock()
-    token_contract.functions.balanceOf.return_value.call.return_value = 1000
+    token_contract.functions.balanceOf.return_value.call = mock.AsyncMock(
+        return_value=1000
+    )
     w3.eth.contract.return_value = token_contract
 
     w3.from_wei.return_value = Decimal("1")
 
-    balance = bsc_chain.get_address_token_balance_amount(address, token_address)
+    balance = await bsc_chain.get_address_token_balance_amount(address, token_address)
 
     assert balance == Decimal("1")
 
@@ -174,7 +190,8 @@ def test_bsc_chain_get_base_token(bsc_chain: BscChain, base_token: Token):
     assert base_token_result == base_token
 
 
-def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: Web3):
+@mark.asyncio
+async def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: AsyncWeb3):
     amount = 1000
     to_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
     encoded_input = HexStr("0x1234567890abcdef")
@@ -182,7 +199,9 @@ def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: Web3):
 
     w3.eth.estimate_gas.return_value = 21000
 
-    gas_estimate = bsc_chain.compute_gas_estimate(amount, to_address, encoded_input)
+    gas_estimate = await bsc_chain.compute_gas_estimate(
+        amount, to_address, encoded_input
+    )
 
     assert gas_estimate == gas
 
@@ -196,15 +215,16 @@ def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: Web3):
     )
 
 
-def test_bsc_chain_compute_gas_estimate_without_encoded_input(
-    bsc_chain: BscChain, w3: Web3
+@mark.asyncio
+async def test_bsc_chain_compute_gas_estimate_without_encoded_input(
+    bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount = 1000
     to_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
 
     w3.eth.estimate_gas.return_value = 21000
 
-    bsc_chain.compute_gas_estimate(amount, to_address)
+    await bsc_chain.compute_gas_estimate(amount, to_address)
 
     w3.eth.estimate_gas.assert_called_once_with(
         {
@@ -215,21 +235,25 @@ def test_bsc_chain_compute_gas_estimate_without_encoded_input(
     )
 
 
-def test_bsc_chain_sign_send_wait_transaction_without_gas_params(
-    bsc_chain: BscChain, w3: Web3
+@mark.asyncio
+async def test_bsc_chain_sign_send_wait_transaction_without_gas_params(
+    bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount = 1000
     encoded_input = HexStr("0xbadf00d")
 
     w3.eth.send_transaction.return_value = "0xtransactionhash"
-    w3.eth.get_transaction_count.return_value = 9
+    w3.eth.get_transaction_count = mock.AsyncMock(return_value=9)
     w3.eth.wait_for_transaction_receipt.return_value = {
         "status": 1,
     }
-    w3.eth.get_block.return_value.get.return_value = Wei(1_000_000_000)
+    block_data = mock.Mock()
+    block_data.get.return_value = Wei(1_000_000_000)
+
+    w3.eth.get_block = mock.AsyncMock(return_value=block_data)
     w3.to_wei.return_value = Wei(5_000_000)
 
-    bsc_chain.sign_send_wait_transaction(
+    await bsc_chain.sign_send_wait_transaction(
         amount=amount,
         encoded_input=encoded_input,
         to_address="0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
@@ -250,7 +274,10 @@ def test_bsc_chain_sign_send_wait_transaction_without_gas_params(
     )
 
 
-def test_bsc_chain_sign_send_wait_transaction_success(bsc_chain: BscChain, w3: Web3):
+@mark.asyncio
+async def test_bsc_chain_sign_send_wait_transaction_success(
+    bsc_chain: BscChain, w3: AsyncWeb3
+):
     amount = 1000
     gas = Gas(gas=21000, gas_price=1_000_000_000)
     encoded_input = HexStr("0xbadf00d")
@@ -261,7 +288,7 @@ def test_bsc_chain_sign_send_wait_transaction_success(bsc_chain: BscChain, w3: W
         "status": 1,
     }
 
-    receipt = bsc_chain.sign_send_wait_transaction(
+    receipt = await bsc_chain.sign_send_wait_transaction(
         amount=amount,
         gas=gas,
         encoded_input=encoded_input,
@@ -287,8 +314,9 @@ def test_bsc_chain_sign_send_wait_transaction_success(bsc_chain: BscChain, w3: W
     }
 
 
-def test_bsc_chain_sign_send_wait_transaction_failure_call_no_raise(
-    bsc_chain: BscChain, w3: Web3
+@mark.asyncio
+async def test_bsc_chain_sign_send_wait_transaction_failure_call_no_raise(
+    bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount = 1000
     gas = Gas(gas=21000, gas_price=1_000_000_000)
@@ -304,7 +332,7 @@ def test_bsc_chain_sign_send_wait_transaction_failure_call_no_raise(
     w3.eth.call.return_value = HexBytes("0x12345")
 
     with raises(TransactionFailure):
-        bsc_chain.sign_send_wait_transaction(
+        await bsc_chain.sign_send_wait_transaction(
             amount=amount,
             gas=gas,
             encoded_input=encoded_input,
@@ -324,8 +352,9 @@ def test_bsc_chain_sign_send_wait_transaction_failure_call_no_raise(
     )
 
 
-def test_bsc_chain_sign_send_wait_transaction_failure_call_raise(
-    bsc_chain: BscChain, w3: Web3
+@mark.asyncio
+async def test_bsc_chain_sign_send_wait_transaction_failure_call_raise(
+    bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount = 1000
     gas = Gas(gas=21000, gas_price=1_000_000_000)
@@ -341,7 +370,7 @@ def test_bsc_chain_sign_send_wait_transaction_failure_call_raise(
     w3.eth.call.side_effect = TransactionFailure()
 
     with raises(TransactionFailure):
-        bsc_chain.sign_send_wait_transaction(
+        await bsc_chain.sign_send_wait_transaction(
             amount=amount,
             gas=gas,
             encoded_input=encoded_input,

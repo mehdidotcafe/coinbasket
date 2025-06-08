@@ -23,7 +23,7 @@ class ZeroXApiClient:
 
         self.http_request = http_request
 
-    def get_price(
+    async def get_price(
         self,
         taker: str,
         chain_id: int,
@@ -46,7 +46,7 @@ class ZeroXApiClient:
             slippage_bps,
         )
 
-        return self.http_request.get(
+        return await self.http_request.get(
             {
                 "url": url,
                 "params": params,
@@ -55,7 +55,7 @@ class ZeroXApiClient:
             Price,
         )
 
-    def get_quote(
+    async def get_quote(
         self,
         taker: str,
         chain_id: int,
@@ -78,7 +78,7 @@ class ZeroXApiClient:
             slippage_bps,
         )
 
-        return self.http_request.get(
+        return await self.http_request.get(
             {
                 "url": url,
                 "params": params,

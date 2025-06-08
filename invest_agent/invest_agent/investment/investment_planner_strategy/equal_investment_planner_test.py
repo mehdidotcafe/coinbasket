@@ -2,7 +2,7 @@ from decimal import Decimal
 from unittest import mock
 from protocol.basket import Basket
 from protocol.token import Token
-from pytest import fixture, raises
+from pytest import fixture, raises, mark
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
 from invest_agent.investment.exception.insufficient_balance import (
@@ -54,7 +54,8 @@ def investment_planner(chain: Chain):
     return EqualInvestmentPlanner(chain=chain)
 
 
-def test_make_investment_plan(
+@mark.asyncio
+async def test_make_investment_plan(
     investment_planner: EqualInvestmentPlanner,
     basket: Basket,
     chain: Chain,
@@ -63,7 +64,7 @@ def test_make_investment_plan(
     chain.get_balance.return_value = Balance(amount=Decimal("1000.0"), token=sell_token)
     chain.get_min_balance.return_value = Balance(amount=Decimal("2"), token=sell_token)
 
-    result = investment_planner.make_investment_plan(basket)
+    result = await investment_planner.make_investment_plan(basket)
 
     chain.get_min_balance.assert_called_once()
     chain.get_balance.assert_called_once()
@@ -83,7 +84,8 @@ def test_make_investment_plan(
     )
 
 
-def test_make_investment_plan_insufficient_balance(
+@mark.asyncio
+async def test_make_investment_plan_insufficient_balance(
     investment_planner: EqualInvestmentPlanner,
     basket: Basket,
     chain: Chain,
@@ -95,4 +97,4 @@ def test_make_investment_plan_insufficient_balance(
     )
 
     with raises(InsufficientBalance):
-        investment_planner.make_investment_plan(basket)
+        await investment_planner.make_investment_plan(basket)

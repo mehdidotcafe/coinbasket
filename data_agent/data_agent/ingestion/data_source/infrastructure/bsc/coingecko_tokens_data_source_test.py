@@ -24,7 +24,7 @@ def http_request():
 
 
 def test_coingecko_tokens_data_source_get(
-    http_request: RequestsHttpRequest[Response], id_generator: IdGenerator
+    http_request: RequestsHttpRequest[Response], id_generator: IdGenerator, snapshot
 ):
     http_request.get.return_value = {
         "tokens": [
@@ -46,29 +46,7 @@ def test_coingecko_tokens_data_source_get(
     # Call the get method and check the result
     similarity_documents = data_source.get()
 
-    assert similarity_documents == [
-        SimilarityDocument(
-            metadata={
-                "version": 1,
-                "source": asdict(
-                    Token(
-                        name="Lithosphere",
-                        display_name="Lithosphere",
-                        ticker="LITHO",
-                        address="0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93",
-                    )
-                ),
-                "type": "token",
-            },
-            page_content="""
-name: Lithosphere
-display_name: Lithosphere
-ticker: LITHO
-address: 0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93
-""",
-            id="d179fa30-808d-48a9-98f3-93c8702e78d8",
-        ),
-    ]
+    assert similarity_documents == snapshot
 
     http_request.get.assert_called_once_with(
         {

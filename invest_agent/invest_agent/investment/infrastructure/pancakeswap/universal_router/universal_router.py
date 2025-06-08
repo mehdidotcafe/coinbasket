@@ -5,8 +5,8 @@ from eth_typing import ChecksumAddress
 from invest_agent.investment.basket_investment import Bid
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from protocol.token import Token
-from web3 import Account, Web3
-from web3.contract import Contract
+from web3 import Account, Web3, AsyncWeb3
+from web3.contract import AsyncContract
 from web3.types import TxReceipt, Wei
 from uniswap_universal_router_decoder import FunctionRecipient, RouterCodec
 
@@ -36,7 +36,7 @@ class PancakeSwapUniversalRouter(Exchange):
         private_key: str,
         chain: Chain,
         permit2: Permit2,
-        w3: Web3,
+        w3: AsyncWeb3,
     ):
         self.universal_router_address = universal_router_address
         self.v2_router_address = v2_router_address
@@ -58,7 +58,7 @@ class PancakeSwapUniversalRouter(Exchange):
             "./invest_agent/investment/infrastructure/pancakeswap/universal_router/v2_router_abi.json",
             "r",
         ) as f:
-            self.v2_router = json.load(f)
+            self.v2_router_abi = json.load(f)
 
         with open(
             "./invest_agent/infrastructure/bsc/chain/erc20_token_abi.json",
@@ -72,13 +72,17 @@ class PancakeSwapUniversalRouter(Exchange):
         )
         self.v2_router = self.w3.eth.contract(
             address=Web3.to_checksum_address(v2_router_address),
-            abi=self.v2_router,
+            abi=self.v2_router_abi,
         )
 
-    def execute_investment_plan(self, investment_plan: InvestmentPlan):
+    async def execute_investment_plan(
+        self,
+        investment_plan: InvestmentPlan,
+        investment_parameters: InvestmentParameters,
+    ) -> list[Bid]:
         self.permit2.approve_permit2_contract(Web3.to_checksum_address(self.base_token))
 
-        signed_message, permit_data, deadline = self.permit2.sign_permit2_message(
+        signed_message, permit_data, deadline = await self.permit2.sign_permit2_message(
             Web3.to_checksum_address(self.base_token),
             Web3.to_checksum_address(self.universal_router_address),
         )
@@ -134,7 +138,7 @@ class PancakeSwapUniversalRouter(Exchange):
             self.permit2.get_default_deadline()  # 180 seconds
         )
 
-        receipt = self.chain.sign_send_wait_transaction(
+        receipt = await self.chain.sign_send_wait_transaction(
             amount=amount,
             to_address=self.universal_router_address,
             encoded_input=encoded_input,
@@ -146,10 +150,10 @@ class PancakeSwapUniversalRouter(Exchange):
 
         return bids
 
-    def execute_divestment_plan(
+    async def execute_divestment_plan(
         self,
         divestment_plan: InvestmentPlan,
-        divestment_parameters: InvestmentParameters,
+        investment_parameters: InvestmentParameters,
     ) -> list[Bid]:
         amount = 0
         swap_chain = self.codec.encode.chain()
@@ -170,23 +174,27 @@ class PancakeSwapUniversalRouter(Exchange):
                     abi=self.erc20_token_abi,
                 )
 
-                self.permit2.approve_permit2_contract(
+                await self.permit2.approve_permit2_contract(
                     Web3.to_checksum_address(step.token.address)
                 )
 
-                signed_message, permit_data, _deadline = (
-                    self.permit2.sign_permit2_message(
-                        Web3.to_checksum_address(step.token.address),
-                        Web3.to_checksum_address(self.universal_router_address),
-                    )
+                (
+                    signed_message,
+                    permit_data,
+                    _deadline,
+                ) = await self.permit2.sign_permit2_message(
+                    Web3.to_checksum_address(step.token.address),
+                    Web3.to_checksum_address(self.universal_router_address),
                 )
 
-                amount_in = self.__get_raw_amount(contract, step.sell_balance.amount)
+                amount_in = await self.__get_raw_amount(
+                    contract, step.sell_balance.amount
+                )
                 path = [
                     Web3.to_checksum_address(step.token.address),
                     Web3.to_checksum_address(self.base_token),
                 ]
-                amount_out_min = self.__compute_amount_out_min(
+                amount_out_min = await self.__compute_amount_out_min(
                     amount_in,
                     path,
                 )
@@ -210,7 +218,7 @@ class PancakeSwapUniversalRouter(Exchange):
         print("Executing batch transaction")
 
         try:
-            receipt = self.chain.sign_send_wait_transaction(
+            receipt = await self.chain.sign_send_wait_transaction(
                 amount=amount,
                 to_address=self.universal_router_address,
                 encoded_input=encoded_input,
@@ -225,8 +233,11 @@ class PancakeSwapUniversalRouter(Exchange):
             print(f"Error executing batch transaction: {e}")
             raise e
 
-    def get_wallet_in_token(
-        self, tokens_balance: list[Balance], token: Token
+    async def get_wallet_in_token(
+        self,
+        tokens_balance: list[Balance],
+        token: Token,
+        investment_parameters: InvestmentParameters,
     ) -> Wallet:
         balances: list[ConvertedBalance] = []
 
@@ -249,8 +260,8 @@ class PancakeSwapUniversalRouter(Exchange):
                     abi=self.erc20_token_abi,
                 )
 
-                amounts_out = self.v2_router.functions.getAmountsOut(
-                    self.__get_raw_amount(balance_token_contract, balance.amount),
+                amounts_out = await self.v2_router.functions.getAmountsOut(
+                    await self.__get_raw_amount(balance_token_contract, balance.amount),
                     [
                         Web3.to_checksum_address(balance.token.address),
                         Web3.to_checksum_address(token.address),
@@ -262,7 +273,7 @@ class PancakeSwapUniversalRouter(Exchange):
                         sell_balance=balance,
                         buy_balance=Balance(
                             token=token,
-                            amount=self.__get_token_amount(
+                            amount=await self.__get_token_amount(
                                 token_contract, amounts_out[1]
                             ),
                         ),
@@ -282,13 +293,15 @@ class PancakeSwapUniversalRouter(Exchange):
             ),
         )
 
-    def __compute_amount_out_min(
+    async def __compute_amount_out_min(
         self,
         amount_in: int,
         path: list[ChecksumAddress],
     ) -> Wei:
         slipping_tolerance = 0.05  # 5% slippage
-        amounts_out = self.v2_router.functions.getAmountsOut(amount_in, path).call()
+        amounts_out = await self.v2_router.functions.getAmountsOut(
+            amount_in, path
+        ).call()
         amount_out_min = Wei(int(amounts_out[-1] * (1 - slipping_tolerance)))
 
         print(f"amount_out_min: {amount_out_min}")
@@ -302,7 +315,7 @@ class PancakeSwapUniversalRouter(Exchange):
             step.token.address == self.base_token for step in investment_plan.steps
         )
 
-    def __parse_bids_from_receipt(
+    async def __parse_bids_from_receipt(
         self, receipt: TxReceipt, investment_plan: InvestmentPlan
     ) -> list[Bid]:
         bids: list[Bid] = []
@@ -310,7 +323,7 @@ class PancakeSwapUniversalRouter(Exchange):
         for step in investment_plan.steps:
             # Special case for base token that is not swapped hence not in transaction logs
             if step.token.address == self.base_token:
-                base_token_balance = self.chain.get_token_balance_amount(
+                base_token_balance = await self.chain.get_token_balance_amount(
                     self.base_token,
                 )
 
@@ -353,7 +366,7 @@ class PancakeSwapUniversalRouter(Exchange):
                                         ),
                                         buy_balance=Balance(
                                             token=step.token,
-                                            amount=self.__get_token_amount(
+                                            amount=await self.__get_token_amount(
                                                 contract, decoded["args"]["value"]
                                             ),
                                         ),
@@ -366,14 +379,16 @@ class PancakeSwapUniversalRouter(Exchange):
 
         return bids
 
-    def __get_token_amount(
-        self, token_contract: Contract, raw_amount: int | Decimal
+    async def __get_token_amount(
+        self, token_contract: AsyncContract, raw_amount: int | Decimal
     ) -> Decimal:
-        decimals = token_contract.functions.decimals().call()
+        decimals = await token_contract.functions.decimals().call()
 
         return Decimal(raw_amount) / Decimal(10**decimals)
 
     # TODO: See how to store the decimals in the Token class
-    def __get_raw_amount(self, token_contract: Contract, amount: Decimal) -> int:
-        decimals = token_contract.functions.decimals().call()
+    async def __get_raw_amount(
+        self, token_contract: AsyncContract, amount: Decimal
+    ) -> int:
+        decimals = await token_contract.functions.decimals().call()
         return int(amount * Decimal(10**decimals))
