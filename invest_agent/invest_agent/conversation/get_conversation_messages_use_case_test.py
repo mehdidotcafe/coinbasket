@@ -9,14 +9,13 @@ from invest_agent.conversation.get_conversation_messages_use_case import (
 )
 from invest_agent.conversation.message import Message
 
-pytestmark = mark.anyio
-
 
 @fixture
 def conversation_repository():
     return mock.Mock(spec=ConversationRepository)
 
 
+@mark.asyncio
 async def test_get_conversation_messages_use_case(
     conversation_repository: ConversationRepository,
 ):

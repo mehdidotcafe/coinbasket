@@ -16,9 +16,6 @@ from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 from eth_account.signers.local import LocalAccount
 
 
-pytestmark = mark.anyio
-
-
 @fixture
 def w3():
     w3 = mock.Mock(spec=AsyncWeb3)
@@ -62,6 +59,7 @@ def test_bsc_chain_is_native_token_failure(bsc_chain: BscChain):
     assert bsc_chain.is_native_token(eth_token) is False
 
 
+@mark.asyncio
 async def test_bsc_chain_get_chain_id(bsc_chain: BscChain):
     chain_id = await bsc_chain.get_chain_id()
 
@@ -78,6 +76,7 @@ def test_bsc_chain_get_address(bsc_chain: BscChain):
     )
 
 
+@mark.asyncio
 async def test_bsc_chain_get_min_balance(
     bsc_chain: BscChain, base_token: Token, w3: AsyncWeb3
 ):
@@ -94,6 +93,7 @@ async def test_bsc_chain_get_min_balance(
     )
 
 
+@mark.asyncio
 async def test_bsc_chain_get_balance(
     bsc_chain: BscChain, w3: AsyncWeb3, base_token: Token
 ):
@@ -114,6 +114,7 @@ async def test_bsc_chain_get_balance(
     )
 
 
+@mark.asyncio
 async def test_bsc_chain_get_token_balance_amount(bsc_chain: BscChain, w3: AsyncWeb3):
     token_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
 
@@ -135,6 +136,7 @@ async def test_bsc_chain_get_token_balance_amount(bsc_chain: BscChain, w3: Async
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
 
 
+@mark.asyncio
 async def test_bsc_chain_get_address_balance(
     bsc_chain: BscChain, w3: AsyncWeb3, base_token: Token
 ):
@@ -157,6 +159,7 @@ async def test_bsc_chain_get_address_balance(
     )
 
 
+@mark.asyncio
 async def test_bsc_chain_get_address_token_balance_amount(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
@@ -187,6 +190,7 @@ def test_bsc_chain_get_base_token(bsc_chain: BscChain, base_token: Token):
     assert base_token_result == base_token
 
 
+@mark.asyncio
 async def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: AsyncWeb3):
     amount = 1000
     to_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
@@ -211,6 +215,7 @@ async def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: AsyncWeb3
     )
 
 
+@mark.asyncio
 async def test_bsc_chain_compute_gas_estimate_without_encoded_input(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
@@ -230,6 +235,7 @@ async def test_bsc_chain_compute_gas_estimate_without_encoded_input(
     )
 
 
+@mark.asyncio
 async def test_bsc_chain_sign_send_wait_transaction_without_gas_params(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
@@ -268,6 +274,7 @@ async def test_bsc_chain_sign_send_wait_transaction_without_gas_params(
     )
 
 
+@mark.asyncio
 async def test_bsc_chain_sign_send_wait_transaction_success(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
@@ -307,6 +314,7 @@ async def test_bsc_chain_sign_send_wait_transaction_success(
     }
 
 
+@mark.asyncio
 async def test_bsc_chain_sign_send_wait_transaction_failure_call_no_raise(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
@@ -344,6 +352,7 @@ async def test_bsc_chain_sign_send_wait_transaction_failure_call_no_raise(
     )
 
 
+@mark.asyncio
 async def test_bsc_chain_sign_send_wait_transaction_failure_call_raise(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):

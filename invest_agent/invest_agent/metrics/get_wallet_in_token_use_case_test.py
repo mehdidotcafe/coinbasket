@@ -17,9 +17,6 @@ from protocol.token import Token
 from pytest import fixture, mark
 
 
-pytestmark = mark.anyio
-
-
 @fixture
 def storage():
     return mock.Mock(spec=Storage[BasketInvestment])
@@ -137,6 +134,7 @@ def wallet():
     )
 
 
+@mark.asyncio
 async def test_get_wallet_in_token_use_case_basket_investment_not_found(
     storage: Storage[BasketInvestment],
     exchange: Exchange,
@@ -177,6 +175,7 @@ async def test_get_wallet_in_token_use_case_basket_investment_not_found(
     )
 
 
+@mark.asyncio
 async def test_get_wallet_in_token_use_case_basket_investment(
     storage: Storage[BasketInvestment],
     exchange: Exchange,
@@ -267,6 +266,7 @@ async def test_get_wallet_in_token_use_case_basket_investment(
     )
 
 
+@mark.asyncio
 async def test_get_wallet_in_token_use_case_basket_investment_with_no_integrator_fee(
     storage: Storage[BasketInvestment],
     exchange: Exchange,

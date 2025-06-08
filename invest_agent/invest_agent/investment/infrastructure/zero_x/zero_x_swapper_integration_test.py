@@ -27,9 +27,7 @@ from web3 import AsyncWeb3, AsyncHTTPProvider
 from pytest import mark
 
 
-pytestmark = mark.anyio
-
-
+@mark.asyncio
 async def test_integration_zero_x_swapper_execute_investment_plan():
     configuration = Configuration()
 
@@ -105,6 +103,7 @@ async def test_integration_zero_x_swapper_execute_investment_plan():
     await zero_x_swapper.execute_investment_plan(investment_plan, investment_parameters)
 
 
+@mark.asyncio
 async def test_integration_zero_x_swapper_execute_divestment_plan():
     configuration = Configuration()
 

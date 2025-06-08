@@ -22,8 +22,6 @@ from invest_agent.investment.investment_parameters import (
 from pytest import fixture, mark
 from protocol.fixture.token import bnb_token
 
-pytestmark = mark.anyio
-
 
 @fixture
 def configuration():
@@ -50,6 +48,7 @@ def investment_parameters():
     )
 
 
+@mark.asyncio
 async def test_zero_x_api_client_get_price_success(
     configuration: Configuration,
     http_request: HttpRequest[Price],
@@ -110,6 +109,7 @@ async def test_zero_x_api_client_get_price_success(
     )
 
 
+@mark.asyncio
 async def test_zero_x_api_client_get_quote_success(
     configuration: Configuration,
     http_request: HttpRequest[QuoteResult],

@@ -17,9 +17,6 @@ from invest_agent.investment.investment_plan import (
 )
 
 
-pytestmark = mark.anyio
-
-
 @fixture
 def chain():
     return mock.Mock(spec=Chain)
@@ -57,6 +54,7 @@ def investment_planner(chain: Chain):
     return EqualInvestmentPlanner(chain=chain)
 
 
+@mark.asyncio
 async def test_make_investment_plan(
     investment_planner: EqualInvestmentPlanner,
     basket: Basket,
@@ -86,6 +84,7 @@ async def test_make_investment_plan(
     )
 
 
+@mark.asyncio
 async def test_make_investment_plan_insufficient_balance(
     investment_planner: EqualInvestmentPlanner,
     basket: Basket,

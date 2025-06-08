@@ -1,3 +1,4 @@
+import asyncio
 from decimal import Decimal
 import json
 from typing import TypedDict, cast
@@ -68,8 +69,6 @@ class ZeroXSwapper(Exchange):
         investment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
     ) -> list[Bid]:
-        bids: list[Bid] = []
-
         sell_token_contract = self.w3.eth.contract(
             address=self.w3.to_checksum_address(
                 investment_plan.sell_total_balance.token.address
@@ -77,18 +76,25 @@ class ZeroXSwapper(Exchange):
             abi=self.erc20_token_abi,
         )
 
-        for step in investment_plan.steps:
-            try:
-                bids.append(
-                    await self.__execute_investment_step(
-                        step=step,
-                        sell_token_contract=sell_token_contract,
-                        sell_token=investment_plan.sell_total_balance.token,
-                        investment_parameters=investment_parameters,
-                    )
-                )
-            except Exception as e:
-                print(f"Investment step failed: {e}")
+        tasks = [
+            self.__execute_investment_step(
+                step=step,
+                sell_token_contract=sell_token_contract,
+                sell_token=investment_plan.sell_total_balance.token,
+                investment_parameters=investment_parameters,
+            )
+            for step in investment_plan.steps
+        ]
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        bids: list[Bid] = []
+
+        for i, result in enumerate(results):
+            if isinstance(result, BaseException):
+                print(f"Investment step {i} failed: {result!r}")
+            else:
+                bids.append(result)
 
         return bids
 
@@ -160,8 +166,6 @@ class ZeroXSwapper(Exchange):
         divestment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
     ) -> list[Bid]:
-        bids: list[Bid] = []
-
         buy_token_contract = self.w3.eth.contract(
             address=self.w3.to_checksum_address(
                 divestment_plan.sell_total_balance.token.address
@@ -169,18 +173,24 @@ class ZeroXSwapper(Exchange):
             abi=self.erc20_token_abi,
         )
 
-        for step in divestment_plan.steps:
-            try:
-                bids.append(
-                    await self.__execute_divestment_plan_step(
-                        step=step,
-                        buy_token_contract=buy_token_contract,
-                        buy_token=divestment_plan.sell_total_balance.token,
-                        investment_parameters=investment_parameters,
-                    )
-                )
-            except Exception as e:
-                print(f"Divestment step failed: {e}")
+        tasks = [
+            self.__execute_divestment_plan_step(
+                step=step,
+                buy_token_contract=buy_token_contract,
+                buy_token=divestment_plan.sell_total_balance.token,
+                investment_parameters=investment_parameters,
+            )
+            for step in divestment_plan.steps
+        ]
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        bids: list[Bid] = []
+        for i, result in enumerate(results):
+            if isinstance(result, BaseException):
+                print(f"Divestment step {i} failed: {result!r}")
+            else:
+                bids.append(result)
 
         return bids
 
@@ -282,68 +292,87 @@ class ZeroXSwapper(Exchange):
             abi=self.erc20_token_abi,
         )
 
-        for balance in tokens_balance:
-            if self.__is_same_token(balance.token, token):
-                balances.append(
-                    ConvertedBalance(
-                        sell_balance=Balance(
-                            token=balance.token,
-                            amount=balance.amount,
-                        ),
-                        buy_balance=Balance(
-                            token=token,
-                            amount=balance.amount,
-                        ),
-                    )
-                )
-                continue
-
-            balance_token_contract = self.w3.eth.contract(
-                address=self.w3.to_checksum_address(balance.token.address),
-                abi=self.erc20_token_abi,
-            )
-
-            amount = int(
-                await self.__get_token_amount(
-                    token_contract=balance_token_contract,
-                    token=balance.token,
-                    raw_amount=balance.amount,
-                )
-            )
-
-            price = await self.api_client.get_price(
-                chain_id=await self.chain.get_chain_id(),
-                taker=self.account.address,
-                sell_token=balance.token.address,
-                buy_token=token.address,
-                amount=amount,
+        tasks = [
+            self.__convert_balance_to_token(
+                balance=balance,
+                token=token,
+                buy_token_contract=buy_token_contract,
                 investment_parameters=investment_parameters,
             )
+            for balance in tokens_balance
+        ]
 
-            balances.append(
-                ConvertedBalance(
-                    sell_balance=Balance(
-                        token=balance.token,
-                        amount=await self.__get_raw_amount(
-                            token_contract=balance_token_contract,
-                            token=balance.token,
-                            amount=Decimal(price.sellAmount),
-                        ),
-                    ),
-                    buy_balance=Balance(
-                        token=token,
-                        amount=await self.__get_raw_amount(
-                            token_contract=buy_token_contract,
-                            token=token,
-                            amount=Decimal(price.buyAmount),
-                        ),
-                    ),
-                )
-            )
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for i, result in enumerate(results):
+            if isinstance(result, BaseException):
+                print(f"Divestment step {i} failed: {result!r}")
+            else:
+                balances.append(result)
 
         return Wallet(
             balances=balances,
             total_balance=self.__sum_balances(balances, token),
+        )
+
+    async def __convert_balance_to_token(
+        self,
+        balance: Balance,
+        token: Token,
+        buy_token_contract: AsyncContract,
+        investment_parameters: InvestmentParameters,
+    ):
+        if self.__is_same_token(balance.token, token):
+            return ConvertedBalance(
+                sell_balance=Balance(
+                    token=balance.token,
+                    amount=balance.amount,
+                ),
+                buy_balance=Balance(
+                    token=token,
+                    amount=balance.amount,
+                ),
+            )
+
+        balance_token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(balance.token.address),
+            abi=self.erc20_token_abi,
+        )
+
+        amount = int(
+            await self.__get_token_amount(
+                token_contract=balance_token_contract,
+                token=balance.token,
+                raw_amount=balance.amount,
+            )
+        )
+
+        price = await self.api_client.get_price(
+            chain_id=await self.chain.get_chain_id(),
+            taker=self.account.address,
+            sell_token=balance.token.address,
+            buy_token=token.address,
+            amount=amount,
+            investment_parameters=investment_parameters,
+        )
+
+        return ConvertedBalance(
+            sell_balance=Balance(
+                token=balance.token,
+                amount=await self.__get_raw_amount(
+                    token_contract=balance_token_contract,
+                    token=balance.token,
+                    amount=Decimal(price.sellAmount),
+                ),
+            ),
+            buy_balance=Balance(
+                token=token,
+                amount=await self.__get_raw_amount(
+                    token_contract=buy_token_contract,
+                    token=token,
+                    amount=Decimal(price.buyAmount),
+                ),
+            ),
         )
 
     def __sum_balances(self, balances: list[ConvertedBalance], token: Token):

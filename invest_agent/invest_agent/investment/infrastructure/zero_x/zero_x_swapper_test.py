@@ -32,9 +32,6 @@ from web3.eth import Eth
 from eth_account.signers.local import LocalAccount
 
 
-pytestmark = mark.anyio
-
-
 @fixture
 def w3():
     w3 = mock.Mock(spec=AsyncWeb3)
@@ -80,6 +77,7 @@ def investment_parameters():
     )
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -153,6 +151,7 @@ async def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
     )
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -249,6 +248,7 @@ async def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
     )
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_investment_plan_bids(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -321,6 +321,7 @@ async def test_zero_x_swapper_execute_investment_plan_bids(
     ]
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_investment_plan_retry(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -381,6 +382,7 @@ async def test_zero_x_swapper_execute_investment_plan_retry(
     assert chain.sign_send_wait_transaction.call_count == 5
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_investment_plan_no_liquidity(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -421,6 +423,7 @@ async def test_zero_x_swapper_execute_investment_plan_no_liquidity(
     assert not bids
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_divestment_plan(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -513,6 +516,7 @@ async def test_zero_x_swapper_execute_divestment_plan(
     )
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_divestment_plan_with_allowance(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -607,6 +611,7 @@ async def test_zero_x_swapper_execute_divestment_plan_with_allowance(
     )
 
 
+@mark.asyncio
 async def test_zero_x_swapper_get_wallet_in_token(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -676,6 +681,7 @@ async def test_zero_x_swapper_get_wallet_in_token(
     )
 
 
+@mark.asyncio
 async def test_zero_x_swapper_get_wallet_in_token_same_token(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -710,6 +716,7 @@ async def test_zero_x_swapper_get_wallet_in_token_same_token(
     )
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_divestment_plan_retry(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
@@ -777,6 +784,7 @@ async def test_zero_x_swapper_execute_divestment_plan_retry(
     assert chain.sign_send_wait_transaction.call_count == 5
 
 
+@mark.asyncio
 async def test_zero_x_swapper_execute_divestment_plan_no_liquidity(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,

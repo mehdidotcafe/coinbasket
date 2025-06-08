@@ -9,14 +9,12 @@ from data_agent.similarity.similarity_storage.similarity_storage import (
 )
 
 
-pytestmark = mark.anyio
-
-
 @fixture
 def similarity_storage():
     return mock.Mock(spec=SimilarityStorage)
 
 
+@mark.asyncio
 async def test_get_similarities_use_case_execute_success(
     similarity_storage: SimilarityStorage,
 ):

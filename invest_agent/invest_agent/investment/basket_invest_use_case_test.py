@@ -20,8 +20,6 @@ from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPl
 from invest_agent.investment.investment_planner import InvestmentPlanner
 from invest_agent.storage.storage import Storage
 
-pytestmark = mark.anyio
-
 
 @fixture
 def investment_planner():
@@ -75,6 +73,7 @@ def investment_use_case(
     return BasketInvestUseCase(investment_planner, exchange, storage, date_time)
 
 
+@mark.asyncio
 async def test_invest_use_case_execute_success(
     investment_use_case: BasketInvestUseCase,
     investment_planner: InvestmentPlanner,
@@ -171,6 +170,7 @@ async def test_invest_use_case_execute_success(
     date_time.now_str.assert_called_once()
 
 
+@mark.asyncio
 async def test_invest_use_case_execute_insufficient_balance(
     investment_use_case: BasketInvestUseCase,
     investment_planner: InvestmentPlanner,
@@ -202,6 +202,7 @@ async def test_invest_use_case_execute_insufficient_balance(
     storage.set.assert_not_called()
 
 
+@mark.asyncio
 async def test_invest_use_case_execute_already_invested(
     investment_use_case: BasketInvestUseCase,
     storage: Storage[BasketInvestment],

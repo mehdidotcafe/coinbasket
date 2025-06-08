@@ -12,9 +12,6 @@ from data_agent.similarity.infrastructure.qdrant_langchain.similarity_storage.qd
 from qdrant_client import QdrantClient
 
 
-pytestmark = mark.anyio
-
-
 @fixture
 def qdrant_client():
     qdrant_client = mock.Mock(spec=QdrantClient)
@@ -89,6 +86,7 @@ def test_qdrant_langchain_similarity_storage_init_with_collection(
     qdrant_client.create_collection.assert_not_called()
 
 
+@mark.asyncio
 async def test_qdrant_langchain_similarity_storage_search(
     qdrant_client: type[QdrantClient],
     qdrant_vector_store: type[QdrantVectorStore],

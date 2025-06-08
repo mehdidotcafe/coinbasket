@@ -22,8 +22,6 @@ from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
 from invest_agent.storage.storage import Storage
 
-pytestmark = mark.anyio
-
 
 @fixture
 def divestment_planner():
@@ -187,6 +185,7 @@ def basket_divestment():
     )
 
 
+@mark.asyncio
 async def test_basket_divest_use_case_execute_no_investment(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
@@ -212,6 +211,7 @@ async def test_basket_divest_use_case_execute_no_investment(
     storage.get.assert_called_once_with("basket_investment")
 
 
+@mark.asyncio
 async def test_basket_divest_use_case_execute_exception(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
@@ -322,6 +322,7 @@ async def test_basket_divest_use_case_execute_exception(
     assert result is None
 
 
+@mark.asyncio
 async def test_basket_divest_use_case_execute_success(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
@@ -370,6 +371,7 @@ async def test_basket_divest_use_case_execute_success(
     date_time.now_str.assert_called_once()
 
 
+@mark.asyncio
 async def test_basket_divest_use_case_execute_with_no_integrator_fee(
     divestment_planner: DivestmentPlanner,
     exchange: Exchange,
