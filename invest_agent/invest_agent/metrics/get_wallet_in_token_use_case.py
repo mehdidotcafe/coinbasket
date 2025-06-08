@@ -38,7 +38,7 @@ class GetWalletInTokenUseCase:
         )
 
         return await self.exchange.get_wallet_in_token(
-            tokens_balance=[self.chain.get_balance()]
+            tokens_balance=[await self.chain.get_balance()]
             + self.__map_basket_investment_bids_to_balances(
                 basket_investment[0].bids if basket_investment else []
             ),

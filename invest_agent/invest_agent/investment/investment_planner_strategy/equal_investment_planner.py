@@ -15,13 +15,13 @@ class EqualInvestmentPlanner(InvestmentPlanner):
     def __init__(self, chain: Chain):
         self.chain = chain
 
-    def make_investment_plan(self, basket: Basket) -> InvestmentPlan:
+    async def make_investment_plan(self, basket: Basket) -> InvestmentPlan:
         """
         Create an investment plan from a basket.
         Throws an InsufficientBalanceException if the total balance is less than the minimum balance.
         """
-        total_balance = self.chain.get_balance()
-        min_balance = self.chain.get_min_balance()
+        total_balance = await self.chain.get_balance()
+        min_balance = await self.chain.get_min_balance()
 
         investment_balance = Balance(
             amount=total_balance.amount - min_balance.amount,

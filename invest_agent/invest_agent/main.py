@@ -45,7 +45,7 @@ from langgraph.prebuilt import create_react_agent
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
-from web3 import Web3
+from web3 import AsyncWeb3, AsyncHTTPProvider
 
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 from invest_agent.configuration import Configuration
@@ -94,7 +94,7 @@ invest_agent = Agent(
     endpoint=f"http://localhost:{configuration.agent_port}/submit",
 )
 
-w3 = Web3(Web3.HTTPProvider(configuration.bsc_rpc_url))
+w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
 
 chain = BscChain(w3=w3, private_key=configuration.bsc_private_key)
 
@@ -227,12 +227,12 @@ def get_address():
 
 
 @tool()
-def get_balance(query: str):
+async def get_balance(query: str):
     """Retrieve agent's current wallet balance in BNB."""
     print("IN get_balance")
     print(f"Query: {query}")
 
-    return chain.get_balance()
+    return await chain.get_balance()
 
 
 @tool()
@@ -248,19 +248,19 @@ def get_invested_basket():
 
 
 @tool()
-def get_invested_basket_balance_in_native_and_usd_value():
+async def get_invested_basket_balance_in_native_and_usd_value():
     """Retrieve the invested basket in native and USD Value.
 
     Returns:
         The basket balance is made of the balances of each token in the basket, both in native and USD value.
         The token has a name, display_name, ticker and address (contract address) property.
     """
-    return get_basket_balance_in_token_use_case.execute(usdt_token)
+    return await get_basket_balance_in_token_use_case.execute(usdt_token)
 
 
 @tool(response_format="content_and_artifact")
 async def invest_basket(basket: Basket):
-    """Invest / fund / buy the basket create by the user.
+    """Invest / fund / buy the basket created by the user by spending all the available BNB in the agent's wallet.
     Each basket coin needs to have a name, ticker and address.
     A basket can't be invested if it already has been invested.
     Always ask for user confirmation before investing in the basket.

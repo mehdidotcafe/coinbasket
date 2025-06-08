@@ -2,7 +2,7 @@ import json
 from eth_typing import ChecksumAddress
 from eth_account.signers.local import LocalAccount
 from uniswap_universal_router_decoder import RouterCodec
-from web3 import Web3
+from web3 import AsyncWeb3, Web3
 from web3.types import TxReceipt, Wei
 
 from invest_agent.chain.chain import Chain
@@ -14,7 +14,7 @@ class Permit2:
     def __init__(
         self,
         chain: Chain,
-        w3: Web3,
+        w3: AsyncWeb3,
         permit2_contract_address: str,
         private_key: str,
     ):
@@ -39,7 +39,7 @@ class Permit2:
         ) as f:
             self.erc20_token_abi = json.load(f)
 
-    def approve_permit2_contract(
+    async def approve_permit2_contract(
         self,
         token_address: ChecksumAddress,
     ) -> TxReceipt:
@@ -57,7 +57,7 @@ class Permit2:
         )
         encoded_input = contract_function._encode_transaction_data()
 
-        receipt = self.chain.sign_send_wait_transaction(
+        receipt = await self.chain.sign_send_wait_transaction(
             amount=amount,
             encoded_input=encoded_input,
             to_address=token_address,
@@ -66,7 +66,7 @@ class Permit2:
 
         return receipt
 
-    def sign_permit2_message(
+    async def sign_permit2_message(
         self, token_address: ChecksumAddress, spender: ChecksumAddress
     ):
         allowance_amount = Wei(2**160 - 1)  # max/infinite
@@ -80,7 +80,7 @@ class Permit2:
             nonce=permit2_nonce,
             spender=spender,
             deadline=deadline,
-            chain_id=self.chain.get_chain_id(),
+            chain_id=await self.chain.get_chain_id(),
             verifying_contract=self.permit2_contract_address,
         )
         signed_message = self.account.sign_message(signable_message)

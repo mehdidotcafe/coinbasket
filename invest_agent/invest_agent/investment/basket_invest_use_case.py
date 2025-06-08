@@ -34,7 +34,7 @@ class BasketInvestUseCase:
 
         try:
             bids = await self.exchange.execute_investment_plan(
-                self.investment_planner.make_investment_plan(basket),
+                await self.investment_planner.make_investment_plan(basket),
                 investment_parameters,
             )
             basket_investment = self.__map_bids_and_basket_to_basket_investment(

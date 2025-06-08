@@ -23,7 +23,7 @@ from protocol.fixture.token import (
     btc_token,
     usdt_token,
 )
-from web3 import Web3
+from web3 import AsyncWeb3, AsyncHTTPProvider
 from pytest import mark
 
 
@@ -42,7 +42,7 @@ async def test_integration_zero_x_swapper_execute_investment_plan():
     )
 
     chain = BscChain(
-        w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
         private_key=configuration.bsc_private_key,
     )
     zero_x_swapper = ZeroXSwapper(
@@ -52,7 +52,7 @@ async def test_integration_zero_x_swapper_execute_investment_plan():
             "bsc_rpc_url": configuration.bsc_rpc_url,
             "private_key": configuration.bsc_private_key,
         },
-        w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
     )
 
     investment_plan = InvestmentPlan(
@@ -117,7 +117,7 @@ async def test_integration_zero_x_swapper_execute_divestment_plan():
     )
 
     chain = BscChain(
-        w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
         private_key=configuration.bsc_private_key,
     )
     zero_x_swapper = ZeroXSwapper(
@@ -127,7 +127,7 @@ async def test_integration_zero_x_swapper_execute_divestment_plan():
             "bsc_rpc_url": configuration.bsc_rpc_url,
             "private_key": configuration.bsc_private_key,
         },
-        w3=Web3(Web3.HTTPProvider(configuration.bsc_rpc_url)),
+        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
     )
 
     investment_plan = InvestmentPlan(
@@ -188,5 +188,8 @@ async def test_integration_zero_x_swapper_execute_divestment_plan():
             amount=Decimal(5),
         ),
     )
+    investment_parameters = InvestmentParameters(
+        slippage_tolerance_in_percentage=Decimal(5),
+    )
 
-    zero_x_swapper.execute_divestment_plan(divestment_plan)
+    await zero_x_swapper.execute_divestment_plan(divestment_plan, investment_parameters)

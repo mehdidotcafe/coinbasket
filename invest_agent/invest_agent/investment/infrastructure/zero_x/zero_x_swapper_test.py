@@ -27,7 +27,7 @@ from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPl
 from pytest import fixture, mark
 from protocol.fixture.token import bnb_token, eth_token, usdt_token, sol_token
 
-from web3 import Web3
+from web3 import AsyncWeb3
 from web3.eth import Eth
 from eth_account.signers.local import LocalAccount
 
@@ -37,7 +37,7 @@ pytestmark = mark.anyio
 
 @fixture
 def w3():
-    w3 = mock.Mock(spec=Web3)
+    w3 = mock.Mock(spec=AsyncWeb3)
 
     w3.eth = mock.Mock(spec=Eth)
 
@@ -49,7 +49,7 @@ def w3():
     w3.to_wei.return_value = 1000000000000000000
 
     token_contract = mock.Mock()
-    token_contract.functions.decimals.return_value.call.return_value = 18
+    token_contract.functions.decimals.return_value.call = 18
     w3.eth.contract.return_value = token_contract
 
     return w3
@@ -84,7 +84,7 @@ async def test_zero_x_swapper_execute_investment_plan_without_permit2_signature(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
@@ -157,7 +157,7 @@ async def test_zero_x_swapper_execute_investment_plan_with_permit2_signature(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
@@ -253,7 +253,7 @@ async def test_zero_x_swapper_execute_investment_plan_bids(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
@@ -325,7 +325,7 @@ async def test_zero_x_swapper_execute_investment_plan_retry(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
@@ -385,7 +385,7 @@ async def test_zero_x_swapper_execute_investment_plan_no_liquidity(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
@@ -425,7 +425,7 @@ async def test_zero_x_swapper_execute_divestment_plan(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
@@ -517,7 +517,7 @@ async def test_zero_x_swapper_execute_divestment_plan_with_allowance(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
@@ -540,7 +540,9 @@ async def test_zero_x_swapper_execute_divestment_plan_with_allowance(
     chain.get_chain_id.return_value = 42
 
     token_contract = mock.Mock()
-    token_contract.functions.decimals.return_value.call.return_value = 18
+    token_contract.functions.decimals.return_value.call = mock.AsyncMock(
+        return_value=18
+    )
 
     approve = mock.Mock()
     approve.return_value._encode_transaction_data.return_value = HexStr("0x29404c3b")
@@ -609,7 +611,7 @@ async def test_zero_x_swapper_get_wallet_in_token(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     token = usdt_token
@@ -678,7 +680,7 @@ async def test_zero_x_swapper_get_wallet_in_token_same_token(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     token = usdt_token
@@ -712,7 +714,7 @@ async def test_zero_x_swapper_execute_divestment_plan_retry(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
@@ -779,7 +781,7 @@ async def test_zero_x_swapper_execute_divestment_plan_no_liquidity(
     zero_x_api_client: ZeroXApiClient,
     chain: Chain,
     configuration: Configuration,
-    w3: Web3,
+    w3: AsyncWeb3,
     investment_parameters: InvestmentParameters,
 ):
     zero_x_swapper = ZeroXSwapper(
