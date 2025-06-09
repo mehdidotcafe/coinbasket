@@ -105,14 +105,14 @@
     "infra": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose up -d",
+        "command": "docker-compose up -d",
         "cwd": "{projectRoot}"
       }
     },
     "infra:down": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose down",
+        "command": "docker-compose down",
         "cwd": "{projectRoot}"
       }
     }
