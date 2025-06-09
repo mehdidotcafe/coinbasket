@@ -1,11 +1,49 @@
-![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
-![tag:ASI](https://img.shields.io/badge/asi-3D8BD3)
+[<img src="../assets/coinbasket_banner_thin.png"/>](../assets/coinbasket_banner_thin.png)
+
+# coinbasket invest agent ![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3) ![tag:ASI](https://img.shields.io/badge/asi-3D8BD3)
+
+The coinbasket invest agent is a Fetch.ai agent designed to manage and execute investment strategies based on data retrieved from the coinbasket data agent. It uses the Fetch.ai framework to interact with other agents and perform trades on the BNB Chain.
+
+Currently, the invest agent relies on the data agent to retrieve relevant information based on user queries. Soon, it will also subscribe to basket rebalancing events broadcasted by the data agent and automatically execute trades accordingly.
+
+## Installation
+### Prerequisites
+Ensure you have the following dependencies installed:
+- Python (>= 3.10)
+- Node.js (>= 22.0.0)
+
+### Environment variables
+In the invest_agent directory, copy .env.example to .env and fill in the required environment variables. Once configured, the agent is ready to run in either development or production mode.
 
 
+## Development Mode
+In development mode, the agent will launch:
+- an anvil container (a local BNB Chain clone)
+- a redoc container (for API documentation)
+- the invest agent itself
 
-[<img src="../assets/coinbasket.svg" width="164"/>](../assets/coinbasket.svg)
+This setup enables easy local development and testing, without needing to connect to a real blockchain.
+
+You’ll also need:
+- Docker
+- Docker Compose
+
+### Running in Dev Mode
+From the root of the repository, run:
+
+```bash	
+./nx dev invest_agent
+```
+This will install any required Python dependencies, start the necessary containers, and launch the invest agent.
 
 
+## Production Mode
+In production, no containers are started. Use this mode to connect the agent to a live blockchain for deployment.
 
-# coinbasket
-🧺coinbasket invest agent
+### Running in Production
+From the root of the repository, run:
+
+```bash
+./nx start invest_agent
+```
+This will install Python dependencies if needed and start the invest agent.
