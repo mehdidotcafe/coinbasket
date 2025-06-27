@@ -79,18 +79,19 @@
     "test": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry run pytest",
+        "command": "poetry run pytest -k \"not test_integration\"",
         "cwd": "{projectRoot}"
       },
       "cache": true
     },
     "test:integration": {
+      "dependsOn": ["infra:test"],
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry run pytest",
+        "command": "env-cmd -f .env.test poetry run pytest -k \"test_integration\"",
         "cwd": "{projectRoot}"
       },
-      "cache": false
+      "cache": true
     },
     "install": {
       "executor": "@nxlv/python:install",
@@ -109,10 +110,24 @@
         "cwd": "{projectRoot}"
       }
     },
+    "infra:test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker-compose -f docker-compose-test.yml up -d --force-recreate",
+        "cwd": "{projectRoot}"
+      }
+    },
     "infra:down": {
       "executor": "nx:run-commands",
       "options": {
         "command": "docker-compose down",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:test:down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker-compose -f docker-compose-test.yml down",
         "cwd": "{projectRoot}"
       }
     }

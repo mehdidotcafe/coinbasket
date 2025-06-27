@@ -1,5 +1,6 @@
 {
   "devDependencies": {
-    "@nxlv/python": "^20.14.0"
+    "@nxlv/python": "^20.14.0",
+    "env-cmd": "^10.1.0"
   }
 }
