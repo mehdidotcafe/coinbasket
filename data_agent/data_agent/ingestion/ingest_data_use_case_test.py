@@ -2,7 +2,7 @@ from unittest import mock
 
 from protocol.basket import Basket
 from protocol.token import Token
-from pytest import fixture
+from pytest import fixture, mark
 
 from data_agent.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
@@ -27,7 +27,8 @@ def basket_data_source():
     return mock.Mock(spec=DataSource)
 
 
-def test_ingest_data_use_case(
+@mark.asyncio
+async def test_ingest_data_use_case(
     similarity_storage: SimilarityStorage,
     token_data_source: DataSource,
     basket_data_source: DataSource,
@@ -94,7 +95,7 @@ def test_ingest_data_use_case(
         ],
     )
 
-    use_case.execute()
+    await use_case.execute()
 
     token_data_source.get.assert_called_once()
     basket_data_source.get.assert_called_once()
@@ -109,7 +110,8 @@ def test_ingest_data_use_case(
     )
 
 
-def test_ingest_data_use_case_with_existing_documents_lower_version(
+@mark.asyncio
+async def test_ingest_data_use_case_with_existing_documents_lower_version(
     similarity_storage: SimilarityStorage,
     token_data_source: DataSource,
 ):
@@ -137,7 +139,7 @@ def test_ingest_data_use_case_with_existing_documents_lower_version(
         ],
     )
 
-    use_case.execute()
+    await use_case.execute()
 
     similarity_storage.set.assert_called_once_with(
         [
@@ -150,7 +152,8 @@ def test_ingest_data_use_case_with_existing_documents_lower_version(
     )
 
 
-def test_ingest_data_use_case_with_existing_documents_same_version(
+@mark.asyncio
+async def test_ingest_data_use_case_with_existing_documents_same_version(
     similarity_storage: SimilarityStorage,
     token_data_source: DataSource,
 ):
@@ -178,6 +181,6 @@ def test_ingest_data_use_case_with_existing_documents_same_version(
         ],
     )
 
-    use_case.execute()
+    await use_case.execute()
 
     similarity_storage.set.assert_not_called()

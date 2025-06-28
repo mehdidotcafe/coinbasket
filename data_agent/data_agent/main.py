@@ -1,12 +1,10 @@
 from dataclasses import asdict
 import json
-from typing import Any
 
 from pydantic import SecretStr
 from data_agent.ingestion.id.id_generator import IdGenerator
-from data_agent.http_request.exception.invalid_agent_key import (
-    InvalidAgentKey,
-)
+from data_agent.authentication.exception.invalid_agent_key import InvalidAgentKey
+
 from data_agent.ingestion.data_source.infrastructure.bsc.ai_basket_data_source import (
     AiBasketDataSource,
 )
@@ -29,11 +27,8 @@ from uagents import Agent, Context
 from langchain_openai import OpenAIEmbeddings
 
 from data_agent.configuration import Configuration
-from data_agent.http_request.infrastructure.requests_http_request import (
+from shared.http_request.infrastructure.requests_http_request import (
     RequestsHttpRequest,
-)
-from data_agent.ingestion.data_source.infrastructure.bsc.coingecko_tokens_data_source import (
-    CoingeckoTokenListDataSource,
 )
 from data_agent.ingestion.data_source.infrastructure.bsc.pancakeswap_tokens_data_source import (
     PancakeswapTokenListDataSource,
@@ -56,7 +51,7 @@ data_agent = Agent(
 
 id_generator = IdGenerator()
 
-http_request = RequestsHttpRequest[Any]()
+http_request = RequestsHttpRequest()
 
 similarity_storage = QdrantLangChainSimilarityStorage(
     {
@@ -77,10 +72,6 @@ get_similarities_use_case = GetSimilaritiesUseCase(similarity_storage)
 ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
     data_sources=[
-        # CoingeckoTokenListDataSource(
-        #     http_request,
-        #     id_generator,
-        # ),
         PancakeswapTokenListDataSource(http_request, id_generator),
         Big4BasketDataSource(),
         AiBasketDataSource(),
@@ -95,7 +86,7 @@ ingest_data_use_case = IngestDataUseCase(
 async def on_startup(ctx: Context):
     ctx.logger.info(f"{configuration.agent_name} ready, address ${ctx.agent.address}.")
 
-    ingest_data_use_case.execute()
+    await ingest_data_use_case.execute()
 
 
 @data_agent.on_rest_post("/", SimilarityQuery, SimilarityResponse)

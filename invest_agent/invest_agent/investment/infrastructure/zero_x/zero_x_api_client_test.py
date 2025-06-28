@@ -1,6 +1,6 @@
 from decimal import Decimal
 from unittest import mock
-from invest_agent.http_request.http_request import HttpRequest
+from shared.http_request.http_request import HttpRequest
 from invest_agent.investment.infrastructure.zero_x.fee import Fee, Fees
 from invest_agent.investment.infrastructure.zero_x.quote import (
     Quote,
@@ -51,7 +51,7 @@ def investment_parameters():
 @mark.asyncio
 async def test_zero_x_api_client_get_price_success(
     configuration: Configuration,
-    http_request: HttpRequest[Price],
+    http_request: HttpRequest,
     investment_parameters: InvestmentParameters,
 ):
     client = ZeroXApiClient(configuration, http_request)
@@ -112,7 +112,7 @@ async def test_zero_x_api_client_get_price_success(
 @mark.asyncio
 async def test_zero_x_api_client_get_quote_success(
     configuration: Configuration,
-    http_request: HttpRequest[QuoteResult],
+    http_request: HttpRequest,
     investment_parameters: InvestmentParameters,
 ):
     client = ZeroXApiClient(configuration, http_request)

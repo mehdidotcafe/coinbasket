@@ -1,11 +1,13 @@
 from data_agent.ingestion.data_source.infrastructure.bsc.ai_basket_data_source import (
     AiBasketDataSource,
 )
+from pytest import mark
 
 
-def test_ai_basket_data_source_get(snapshot):
+@mark.asyncio
+async def test_ai_basket_data_source_get(snapshot):
     data_source = AiBasketDataSource()
-    data = data_source.get()
+    data = await data_source.get()
 
     assert data == snapshot
 

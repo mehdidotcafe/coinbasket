@@ -1,6 +1,6 @@
 from decimal import Decimal
-from typing import Any, TypedDict
-from invest_agent.http_request.http_request import HttpRequest
+from typing import TypedDict
+from shared.http_request.http_request import HttpRequest
 from invest_agent.investment.infrastructure.zero_x.price import Price
 from invest_agent.investment.infrastructure.zero_x.quote import QuoteResult
 from invest_agent.investment.investment_parameters import InvestmentParameters
@@ -12,7 +12,7 @@ class Configuration(TypedDict):
 
 
 class ZeroXApiClient:
-    def __init__(self, configuration: Configuration, http_request: HttpRequest[Any]):
+    def __init__(self, configuration: Configuration, http_request: HttpRequest):
         self.api_url = configuration["zero_x_api_url"]
 
         self.default_headers = {

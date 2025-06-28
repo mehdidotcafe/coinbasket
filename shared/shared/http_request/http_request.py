@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Any, Generic, NotRequired, TypeVar, TypedDict
+from typing import Any, NotRequired, Type, TypeVar, TypedDict
 
 from pydantic import BaseModel
 
@@ -19,9 +19,9 @@ class PostParams(TypedDict):
     headers: NotRequired[dict[str, Any]]
 
 
-class HttpRequest(ABC, Generic[T]):
-    async def get(self, params: GetParams, schema: T) -> T:
+class HttpRequest(ABC):
+    async def get(self, params: GetParams, schema: Type[T]) -> T:
         raise NotImplementedError
 
-    async def post(self, params: PostParams, schema: T) -> T:
+    async def post(self, params: PostParams, schema: Type[T]) -> T:
         raise NotImplementedError

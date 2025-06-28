@@ -1,11 +1,13 @@
 from data_agent.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_data_source import (
     MemecoinManiaBasketDataSource,
 )
+from pytest import mark
 
 
-def test_memecoin_mania_basket_data_source_get(snapshot):
+@mark.asyncio
+async def test_memecoin_mania_basket_data_source_get(snapshot):
     data_source = MemecoinManiaBasketDataSource()
-    data = data_source.get()
+    data = await data_source.get()
 
     assert data == snapshot
 

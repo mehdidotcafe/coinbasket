@@ -1,6 +1,6 @@
 from decimal import Decimal
 from invest_agent.configuration import Configuration
-from invest_agent.http_request.infrastructure.requests_http_request import (
+from shared.http_request.infrastructure.requests_http_request import (
     RequestsHttpRequest,
 )
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
