@@ -11,6 +11,8 @@ from protocol.token import Token
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain, Gas, TransactionFailure
 
+from async_lru import alru_cache
+
 
 class Eip1559Gas(TypedDict):
     type: int
@@ -50,7 +52,7 @@ class BscChain(Chain):
     def is_native_token(self, token: Token) -> bool:
         return token.address.lower() == self.base_token.address.lower()
 
-    # TODO: Fetch chain ID from env
+    @alru_cache
     async def get_chain_id(self):  # type: ignore
         """Get the chain ID of the BSC network."""
         return await self.w3.eth._chain_id()  # type: ignore

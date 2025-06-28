@@ -60,10 +60,19 @@ def test_bsc_chain_is_native_token_failure(bsc_chain: BscChain):
 
 
 @mark.asyncio
-async def test_bsc_chain_get_chain_id(bsc_chain: BscChain):
+async def test_bsc_chain_get_chain_id_with_cache(bsc_chain: BscChain):
     chain_id = await bsc_chain.get_chain_id()
 
     assert chain_id == 42
+
+    bsc_chain.w3.eth._chain_id.assert_called_once()
+
+    chain_id_cached = await bsc_chain.get_chain_id()
+
+    assert chain_id_cached == 42
+
+    # Ensure the cached value is used on subsequent calls
+    bsc_chain.w3.eth._chain_id.assert_called_once()
 
 
 def test_bsc_chain_get_address(bsc_chain: BscChain):

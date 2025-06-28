@@ -4,6 +4,7 @@ from invest_agent.http_request.infrastructure.requests_http_request import (
     RequestsHttpRequest,
 )
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
+from invest_agent.infrastructure.bsc.chain.bsc_contract import BscContract
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
@@ -23,13 +24,15 @@ from protocol.fixture.token import (
     btc_token,
     usdt_token,
 )
-from web3 import AsyncWeb3, AsyncHTTPProvider
-from pytest import mark
+from web3 import AsyncHTTPProvider, AsyncWeb3
+from pytest import fixture, mark
 
 
-@mark.asyncio
-async def test_integration_zero_x_swapper_execute_investment_plan():
+@fixture
+def zero_x_swapper():
     configuration = Configuration()
+
+    w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
 
     api_client = ZeroXApiClient(
         {
@@ -40,19 +43,27 @@ async def test_integration_zero_x_swapper_execute_investment_plan():
     )
 
     chain = BscChain(
-        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
+        w3=w3,
         private_key=configuration.bsc_private_key,
     )
-    zero_x_swapper = ZeroXSwapper(
+    contract = BscContract(w3=w3)
+
+    return ZeroXSwapper(
         api_client=api_client,
         chain=chain,
+        contract=contract,
         configuration={
             "bsc_rpc_url": configuration.bsc_rpc_url,
             "private_key": configuration.bsc_private_key,
         },
-        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
+        w3=w3,
     )
 
+
+@mark.asyncio
+async def test_integration_zero_x_swapper_execute_investment_plan(
+    zero_x_swapper: ZeroXSwapper,
+):
     investment_plan = InvestmentPlan(
         steps=[
             InvestmentPlanStep(
@@ -104,31 +115,9 @@ async def test_integration_zero_x_swapper_execute_investment_plan():
 
 
 @mark.asyncio
-async def test_integration_zero_x_swapper_execute_divestment_plan():
-    configuration = Configuration()
-
-    api_client = ZeroXApiClient(
-        {
-            "zero_x_api_url": configuration.zero_x_api_url,
-            "zero_x_api_key": configuration.zero_x_api_key,
-        },
-        RequestsHttpRequest(),
-    )
-
-    chain = BscChain(
-        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
-        private_key=configuration.bsc_private_key,
-    )
-    zero_x_swapper = ZeroXSwapper(
-        api_client=api_client,
-        chain=chain,
-        configuration={
-            "bsc_rpc_url": configuration.bsc_rpc_url,
-            "private_key": configuration.bsc_private_key,
-        },
-        w3=AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url)),
-    )
-
+async def test_integration_zero_x_swapper_execute_divestment_plan(
+    zero_x_swapper: ZeroXSwapper,
+):
     investment_plan = InvestmentPlan(
         steps=[
             InvestmentPlanStep(

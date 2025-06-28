@@ -48,6 +48,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
+from invest_agent.infrastructure.bsc.chain.bsc_contract import BscContract
 from invest_agent.configuration import Configuration
 from invest_agent.investment.basket_divest_use_case import BasketDivestUseCase
 from invest_agent.investment.divestment_planner_strategy.total_divestment_planner import (
@@ -98,6 +99,8 @@ w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
 
 chain = BscChain(w3=w3, private_key=configuration.bsc_private_key)
 
+contract = BscContract(w3=w3)
+
 http_request = RequestsHttpRequest[Any]()
 
 api_client = ZeroXApiClient(
@@ -111,6 +114,7 @@ api_client = ZeroXApiClient(
 exchange = ZeroXSwapper(
     api_client=api_client,
     chain=chain,
+    contract=contract,
     w3=w3,
     configuration={
         "bsc_rpc_url": configuration.bsc_rpc_url,
