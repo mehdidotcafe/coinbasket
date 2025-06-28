@@ -1,10 +1,10 @@
 import asyncio
 from decimal import Decimal
-import json
 from typing import TypedDict, cast
 from hexbytes import HexBytes
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain, Gas
+from invest_agent.chain.contract import Contract
 from invest_agent.investment.basket_investment import Bid
 from invest_agent.investment.exchange.exchange import ConvertedBalance, Exchange, Wallet
 from invest_agent.investment.infrastructure.zero_x.exception.swap_insufficient_liquidity import (
@@ -23,7 +23,6 @@ from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPl
 from protocol.token import Token
 from tenacity import retry, stop_after_attempt
 from web3 import AsyncWeb3
-from web3.contract import AsyncContract
 
 from eth_account.signers.local import LocalAccount
 from eth_account.datastructures import (
@@ -45,11 +44,13 @@ class ZeroXSwapper(Exchange):
         self,
         api_client: ZeroXApiClient,
         chain: Chain,
+        contract: Contract,
         configuration: Configuration,
         w3: AsyncWeb3,
     ):
         self.api_client = api_client
         self.chain = chain
+        self.contract = contract
         self.bsc_rpc_url = configuration["bsc_rpc_url"]
 
         self.w3 = w3
@@ -57,29 +58,14 @@ class ZeroXSwapper(Exchange):
             private_key=configuration["private_key"]
         )
 
-        with open(
-            "./invest_agent/infrastructure/bsc/chain/erc20_token_abi.json",
-            "r",
-            encoding="utf-8",
-        ) as f:
-            self.erc20_token_abi = json.load(f)
-
     async def execute_investment_plan(
         self,
         investment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
     ) -> list[Bid]:
-        sell_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(
-                investment_plan.sell_total_balance.token.address
-            ),
-            abi=self.erc20_token_abi,
-        )
-
         tasks = [
             self.__execute_investment_step(
                 step=step,
-                sell_token_contract=sell_token_contract,
                 sell_token=investment_plan.sell_total_balance.token,
                 investment_parameters=investment_parameters,
             )
@@ -102,7 +88,6 @@ class ZeroXSwapper(Exchange):
     async def __execute_investment_step(
         self,
         step: InvestmentPlanStep,
-        sell_token_contract: AsyncContract,
         sell_token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Bid:
@@ -110,14 +95,8 @@ class ZeroXSwapper(Exchange):
             f"=== {step.token.display_name} - {step.token.address} ({step.sell_balance.amount}) ==="
         )
 
-        step_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(step.token.address),
-            abi=self.erc20_token_abi,
-        )
-
         amount = int(
             await self.__get_token_amount(
-                token_contract=sell_token_contract,
                 token=sell_token,
                 raw_amount=step.sell_balance.amount,
             )
@@ -155,9 +134,7 @@ class ZeroXSwapper(Exchange):
 
         return await self.__make_bid(
             quote=quote,
-            sell_token_contract=sell_token_contract,
             sell_token=sell_token,
-            buy_token_contract=step_token_contract,
             buy_token=step.token,
         )
 
@@ -166,17 +143,9 @@ class ZeroXSwapper(Exchange):
         divestment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
     ) -> list[Bid]:
-        buy_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(
-                divestment_plan.sell_total_balance.token.address
-            ),
-            abi=self.erc20_token_abi,
-        )
-
         tasks = [
             self.__execute_divestment_plan_step(
                 step=step,
-                buy_token_contract=buy_token_contract,
                 buy_token=divestment_plan.sell_total_balance.token,
                 investment_parameters=investment_parameters,
             )
@@ -198,7 +167,6 @@ class ZeroXSwapper(Exchange):
     async def __execute_divestment_plan_step(
         self,
         step: InvestmentPlanStep,
-        buy_token_contract: AsyncContract,
         buy_token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Bid:
@@ -208,14 +176,8 @@ class ZeroXSwapper(Exchange):
             f"=== {sell_token.display_name} - {sell_token.address} ({step.sell_balance.amount}) ==="
         )
 
-        sell_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(sell_token.address),
-            abi=self.erc20_token_abi,
-        )
-
         amount = int(
             await self.__get_token_amount(
-                token_contract=sell_token_contract,
                 token=step.sell_balance.token,
                 raw_amount=step.sell_balance.amount,
             )
@@ -234,9 +196,7 @@ class ZeroXSwapper(Exchange):
             investment_parameters=investment_parameters,
         )
 
-        await self.__approve_allowance(
-            price=price, token_contract=sell_token_contract, token=sell_token
-        )
+        await self.__approve_allowance(price=price, token=sell_token)
 
         quote_result = await self.api_client.get_quote(
             chain_id=await self.chain.get_chain_id(),
@@ -273,9 +233,7 @@ class ZeroXSwapper(Exchange):
 
         return await self.__make_bid(
             quote=quote,
-            buy_token_contract=buy_token_contract,
             buy_token=buy_token,
-            sell_token_contract=sell_token_contract,
             sell_token=sell_token,
         )
 
@@ -287,16 +245,10 @@ class ZeroXSwapper(Exchange):
     ) -> Wallet:
         balances: list[ConvertedBalance] = []
 
-        buy_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(token.address),
-            abi=self.erc20_token_abi,
-        )
-
         tasks = [
             self.__convert_balance_to_token(
                 balance=balance,
                 token=token,
-                buy_token_contract=buy_token_contract,
                 investment_parameters=investment_parameters,
             )
             for balance in tokens_balance
@@ -319,7 +271,6 @@ class ZeroXSwapper(Exchange):
         self,
         balance: Balance,
         token: Token,
-        buy_token_contract: AsyncContract,
         investment_parameters: InvestmentParameters,
     ):
         if self.__is_same_token(balance.token, token):
@@ -334,14 +285,8 @@ class ZeroXSwapper(Exchange):
                 ),
             )
 
-        balance_token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(balance.token.address),
-            abi=self.erc20_token_abi,
-        )
-
         amount = int(
             await self.__get_token_amount(
-                token_contract=balance_token_contract,
                 token=balance.token,
                 raw_amount=balance.amount,
             )
@@ -360,7 +305,6 @@ class ZeroXSwapper(Exchange):
             sell_balance=Balance(
                 token=balance.token,
                 amount=await self.__get_raw_amount(
-                    token_contract=balance_token_contract,
                     token=balance.token,
                     amount=Decimal(price.sellAmount),
                 ),
@@ -368,7 +312,6 @@ class ZeroXSwapper(Exchange):
             buy_balance=Balance(
                 token=token,
                 amount=await self.__get_raw_amount(
-                    token_contract=buy_token_contract,
                     token=token,
                     amount=Decimal(price.buyAmount),
                 ),
@@ -386,9 +329,7 @@ class ZeroXSwapper(Exchange):
     async def __make_bid(
         self,
         quote: Quote,
-        sell_token_contract: AsyncContract,
         sell_token: Token,
-        buy_token_contract: AsyncContract,
         buy_token: Token,
     ) -> Bid:
         return Bid(
@@ -396,14 +337,12 @@ class ZeroXSwapper(Exchange):
             sell_balance=Balance(
                 token=sell_token,
                 amount=await self.__get_raw_amount(
-                    sell_token_contract, sell_token, Decimal(quote.sellAmount)
+                    sell_token, Decimal(quote.sellAmount)
                 ),
             ),
             buy_balance=Balance(
                 token=buy_token,
-                amount=await self.__get_raw_amount(
-                    buy_token_contract, buy_token, Decimal(quote.buyAmount)
-                ),
+                amount=await self.__get_raw_amount(buy_token, Decimal(quote.buyAmount)),
             ),
         )
 
@@ -441,17 +380,15 @@ class ZeroXSwapper(Exchange):
         sig_len_hex = "0x" + sig_len.to_bytes(32, "big").hex()
         return sig_len_hex
 
-    async def __approve_allowance(
-        self, price: Price, token_contract: AsyncContract, token: Token
-    ):
+    async def __approve_allowance(self, price: Price, token: Token):
         if self.chain.is_native_token(token) or price.issues.allowance is None:
             return
 
-        contract_function = token_contract.functions.approve(
-            self.w3.to_checksum_address(price.issues.allowance.spender), 2**256 - 1
+        encoded_input = self.contract.make_approve_transaction_input(
+            token_address=token.address,
+            spender_address=price.issues.allowance.spender,
+            amount=Decimal(2**256 - 1),
         )
-
-        encoded_input = contract_function._encode_transaction_data()
 
         receipt = await self.chain.sign_send_wait_transaction(
             amount=0,
@@ -461,23 +398,19 @@ class ZeroXSwapper(Exchange):
 
         return receipt
 
-    async def __get_token_amount(
-        self, token_contract: AsyncContract, token: Token, raw_amount: Decimal
-    ) -> Decimal:
+    async def __get_token_amount(self, token: Token, raw_amount: Decimal) -> Decimal:
         if self.chain.is_native_token(token):
             return Decimal(self.w3.to_wei(raw_amount, "ether"))
 
-        decimals = await token_contract.functions.decimals().call()
+        decimals = await self.contract.get_decimals(token.address)
 
         return raw_amount * (10**decimals)
 
-    async def __get_raw_amount(
-        self, token_contract: AsyncContract, token: Token, amount: Decimal
-    ) -> Decimal:
+    async def __get_raw_amount(self, token: Token, amount: Decimal) -> Decimal:
         decimals = (
             18
             if self.chain.is_native_token(token)
-            else await token_contract.functions.decimals().call()
+            else await self.contract.get_decimals(token.address)
         )
 
         return amount / (10**decimals)

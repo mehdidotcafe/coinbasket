@@ -208,6 +208,21 @@ tests = ["apispec[marshmallow,yaml]", "openapi-spec-validator (==0.7.1)", "pytes
 yaml = ["PyYAML (>=3.10)"]
 
 [[package]]
+name = "async-lru"
+version = "2.0.5"
+description = "Simple LRU cache for asyncio"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "async_lru-2.0.5-py3-none-any.whl", hash = "sha256:ab95404d8d2605310d345932697371a5f40def0487c03d6d0ad9138de52c9943"},
+    {file = "async_lru-2.0.5.tar.gz", hash = "sha256:481d52ccdd27275f42c43a928b4a50c3bfb2d67af4e78b170e3e0bb39c66e5bb"},
+]
+
+[package.dependencies]
+typing_extensions = {version = ">=4.0.0", markers = "python_version < \"3.11\""}
+
+[[package]]
 name = "async-timeout"
 version = "4.0.3"
 description = "Timeout context manager for asyncio programs"
@@ -4519,4 +4534,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "a2683613fdfddd5ed2d8ce21eabf2f26ce2f61dbc54d356dd6b647cc17264d95"
+content-hash = "6960291ed1515573e49fea332f08e6ba796c6a109c4d7021f4e55fe46180730a"
