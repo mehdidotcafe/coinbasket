@@ -58,7 +58,7 @@ class MemecoinManiaBasketDataSource(DataSource):
             ],
         )
 
-    def get(self):
+    async def get(self):
         return [self.__map_basket_to_similarity_document(self.basket)]
 
     def version(self):

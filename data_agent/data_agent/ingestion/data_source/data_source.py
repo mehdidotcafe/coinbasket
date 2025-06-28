@@ -5,7 +5,7 @@ from data_agent.similarity.similarity_document import SimilarityDocument
 
 class DataSource(ABC):
     @abstractmethod
-    def get(self) -> list[SimilarityDocument]:
+    async def get(self) -> list[SimilarityDocument]:
         raise NotImplementedError
 
     @abstractmethod

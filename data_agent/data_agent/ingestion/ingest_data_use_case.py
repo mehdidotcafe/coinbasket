@@ -21,9 +21,9 @@ class IngestDataUseCase:
         self.data_sources = data_sources
 
     # TODO: Current use case does NOT remove documents from the storage if not in the data source (use qdrant `scroll` API)
-    def execute(self):
+    async def execute(self):
         for data_source in self.data_sources:
-            documents = data_source.get()
+            documents = await data_source.get()
 
             stored_documents = self.similarity_storage.get(
                 [doc.id for doc in documents]

@@ -1,5 +1,5 @@
 from uagents import Agent, Model
-from typing import TypeVar, TypedDict
+from typing import TypeVar, TypedDict, cast
 from aiohttp import ClientSession
 from uagents.communication import send_message
 
@@ -36,7 +36,7 @@ class FetchAiAgentToAgentClient(AgentToAgentClient):
         res = await send_message(
             destination=self.configuration["data_agent_address"],
             message=message,
-            response_type=response_model,
+            response_type=cast(type[Model], response_model),
             sender=self.agent._identity,
         )
 

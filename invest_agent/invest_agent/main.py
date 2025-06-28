@@ -1,7 +1,6 @@
 import os
 from typing import Any, Dict, Optional, cast
 
-import aiohttp
 from apispec import APISpec
 from invest_agent.authentication.authentication import authentication
 from invest_agent.conversation.get_conversation_messages_use_case import (
@@ -17,7 +16,8 @@ from invest_agent.documentation.response.invalid_authentication_key import (
 from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_client import (
     AiohttpAgentToAgentClient,
 )
-from invest_agent.http_request.infrastructure.requests_http_request import (
+from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
+from shared.http_request.infrastructure.requests_http_request import (
     RequestsHttpRequest,
 )
 from invest_agent.investment.basket_investment import BasketInvestment
@@ -101,14 +101,17 @@ chain = BscChain(w3=w3, private_key=configuration.bsc_private_key)
 
 contract = BscContract(w3=w3)
 
-http_request = RequestsHttpRequest[Any]()
+requests_http_request = RequestsHttpRequest()
+
+aiohttp_http_request = AiohttpHttpRequest()
+
 
 api_client = ZeroXApiClient(
     configuration={
         "zero_x_api_url": configuration.zero_x_api_url,
         "zero_x_api_key": configuration.zero_x_api_key,
     },
-    http_request=http_request,
+    http_request=requests_http_request,
 )
 
 exchange = ZeroXSwapper(
@@ -127,7 +130,7 @@ storage = FetchAiStorage[Any](
 )
 agent_to_agent_client = AiohttpAgentToAgentClient(
     configuration={"agent_url": configuration.data_agent_url},
-    aiohttp_client_session=aiohttp.ClientSession,
+    aiohttp_http_request=aiohttp_http_request,
 )
 
 basket_invest_use_case = BasketInvestUseCase(

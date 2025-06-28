@@ -54,6 +54,10 @@ readme = "README.md"
     path = "../protocol"
     develop = true
 
+    [tool.poetry.dependencies.shared]
+    path = "../shared"
+    develop = true
+
 [tool.poetry.group.dev.dependencies]
 autopep8 = "2.3.1"
 eth-typing = "^5.2.1"

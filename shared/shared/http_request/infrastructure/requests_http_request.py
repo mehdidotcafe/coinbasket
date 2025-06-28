@@ -1,20 +1,20 @@
-from typing import Generic, TypeVar
+from typing import Type, TypeVar
 from pydantic import BaseModel
 import requests
 
-from invest_agent.http_request.exception.failed_request import (
+from shared.http_request.exception.failed_request import (
     FailedRequest,
 )
-from invest_agent.http_request.http_request import GetParams, HttpRequest, PostParams
+from shared.http_request.http_request import GetParams, HttpRequest, PostParams
 
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class RequestsHttpRequest(HttpRequest[T], Generic[T]):
+class RequestsHttpRequest(HttpRequest):
     TIMEOUT = 20  # seconds
 
-    async def get(self, params: GetParams, schema: T) -> T:
+    async def get(self, params: GetParams, schema: Type[T]) -> T:
         """
         Fetches data from a given URL using the requests library.
         """
@@ -34,7 +34,7 @@ class RequestsHttpRequest(HttpRequest[T], Generic[T]):
                 response=response.text,
             )
 
-    async def post(self, params: PostParams, schema: T) -> T:
+    async def post(self, params: PostParams, schema: Type[T]) -> T:
         """
         Sends a POST request to a given URL using the requests library.
         """

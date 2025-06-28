@@ -1,16 +1,16 @@
 from dataclasses import asdict
-from typing import TypedDict
+from pydantic import BaseModel
 import re
 
 from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.ingestion.data_source.data_source import DataSource
-from data_agent.http_request.http_request import HttpRequest
+from shared.http_request.http_request import HttpRequest
 
 from protocol.token import Token
 
 
-class PancakeswapToken(TypedDict):
+class PancakeswapToken(BaseModel):
     chainId: int
     address: str
     name: str
@@ -19,12 +19,12 @@ class PancakeswapToken(TypedDict):
     logoURI: str
 
 
-class Response(TypedDict):
+class Response(BaseModel):
     tokens: list[PancakeswapToken]
 
 
 class PancakeswapTokenListDataSource(DataSource):
-    def __init__(self, http_request: HttpRequest[Response], id_generator: IdGenerator):
+    def __init__(self, http_request: HttpRequest, id_generator: IdGenerator):
         self.url = "https://tokens.pancakeswap.finance/pancakeswap-extended.json"
         self.http_request = http_request
         self.id_generator = id_generator
@@ -40,20 +40,21 @@ class PancakeswapTokenListDataSource(DataSource):
         display_name = re.sub(r"\s+", " ", display_name)
         return display_name
 
-    def get(self) -> list[SimilarityDocument]:
+    async def get(self) -> list[SimilarityDocument]:
         """
         Fetches the token list from the Pancakeswap API.
         """
-        tokens = self.http_request.get(
+        tokens = await self.http_request.get(
             {
                 "url": self.url,
                 "headers": self.headers,
-            }
+            },
+            Response,
         )
 
         return [
             self.__map_pancakeswap_token_to_similarity_document(token)
-            for token in tokens["tokens"]
+            for token in tokens.tokens
         ]
 
     def version(self):
@@ -66,10 +67,10 @@ class PancakeswapTokenListDataSource(DataSource):
         Maps a PancakeswapToken to a Token.
         """
         token = Token(
-            name=pancakeswap_token["name"],
-            display_name=self.__clean_display_name(pancakeswap_token["name"]),
-            ticker=pancakeswap_token["symbol"],
-            address=pancakeswap_token["address"],
+            name=pancakeswap_token.name,
+            display_name=self.__clean_display_name(pancakeswap_token.name),
+            ticker=pancakeswap_token.symbol,
+            address=pancakeswap_token.address,
         )
 
         return SimilarityDocument(

@@ -1,11 +1,13 @@
 from data_agent.ingestion.data_source.infrastructure.bsc.cryptoummah_halal_basket_data_source import (
     CryptoUmmahHalalBasketDataSource,
 )
+from pytest import mark
 
 
-def test_crypto_ummah_halal_basket_data_source_get(snapshot):
+@mark.asyncio
+async def test_crypto_ummah_halal_basket_data_source_get(snapshot):
     data_source = CryptoUmmahHalalBasketDataSource()
-    data = data_source.get()
+    data = await data_source.get()
 
     assert data == snapshot
 
