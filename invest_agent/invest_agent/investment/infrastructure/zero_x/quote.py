@@ -1,6 +1,6 @@
 from typing import Any, Dict, Literal, Optional, Union, Annotated
 from invest_agent.investment.infrastructure.zero_x.fee import Fees
-from pydantic import BaseModel, Field, RootModel, TypeAdapter
+from pydantic import BaseModel, Field, RootModel
 
 
 class Permit2(BaseModel):

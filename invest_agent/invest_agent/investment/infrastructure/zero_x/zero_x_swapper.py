@@ -229,7 +229,7 @@ class ZeroXSwapper(Exchange):
             amount=int(quote.transaction.value) if quote.transaction.value else 0,
         )
 
-        print(f"==================")
+        print("==================")
 
         return await self.__make_bid(
             quote=quote,

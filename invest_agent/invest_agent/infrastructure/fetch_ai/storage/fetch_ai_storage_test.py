@@ -1,6 +1,6 @@
 from unittest import mock
 from uagents.storage import KeyValueStore
-from jsonpickle import encode, decode
+from jsonpickle import encode
 
 from pytest import fixture
 

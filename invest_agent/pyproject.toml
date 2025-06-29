@@ -59,7 +59,6 @@ readme = "README.md"
     develop = true
 
 [tool.poetry.group.dev.dependencies]
-autopep8 = "2.3.1"
 eth-typing = "^5.2.1"
 ruff = ">=0.11.4,<0.12.0"
 pytest = "8.3.5"

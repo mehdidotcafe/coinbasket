@@ -42,7 +42,15 @@
     "lint": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry run ruff format .",
+        "command": "poetry run ruff check --fix",
+        "cwd": "{projectRoot}"
+      },
+      "cache": true
+    },
+    "lint:check": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "poetry run ruff check",
         "cwd": "{projectRoot}"
       },
       "cache": true

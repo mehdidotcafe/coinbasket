@@ -27,12 +27,18 @@
       "options": {}
     },
     "lint": {
-      "executor": "@nxlv/python:flake8",
-      "outputs": [
-        "{workspaceRoot}/reports/{projectRoot}/pylint.txt"
-      ],
+      "executor": "@nxlv/python:run-commands",
       "options": {
-        "outputFile": "reports/{projectRoot}/pylint.txt"
+        "command": "poetry run ruff check --fix",
+        "cwd": "{projectRoot}"
+      },
+      "cache": true
+    },
+    "lint:check": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "poetry run ruff check",
+        "cwd": "{projectRoot}"
       },
       "cache": true
     },
