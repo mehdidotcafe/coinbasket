@@ -1,4 +1,6 @@
-from invest_agent.conversation.repository.conversation_repository import ConversationRepository
+from invest_agent.conversation.repository.conversation_repository import (
+    ConversationRepository,
+)
 from invest_agent.conversation.message import Message
 
 
