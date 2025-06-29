@@ -184,3 +184,20 @@ async def test_ingest_data_use_case_with_existing_documents_same_version(
     await use_case.execute()
 
     similarity_storage.set.assert_not_called()
+
+
+@mark.asyncio
+async def test_ingest_data_use_case_with_datasource_throw(
+    similarity_storage: SimilarityStorage,
+    token_data_source: DataSource,
+):
+    token_data_source.get.side_effect = Exception("Data source error")
+
+    use_case = IngestDataUseCase(
+        similarity_storage,
+        [
+            token_data_source,
+        ],
+    )
+
+    await use_case.execute()

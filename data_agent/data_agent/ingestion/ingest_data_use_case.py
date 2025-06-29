@@ -23,23 +23,26 @@ class IngestDataUseCase:
     # TODO: Current use case does NOT remove documents from the storage if not in the data source (use qdrant `scroll` API)
     async def execute(self):
         for data_source in self.data_sources:
-            documents = await data_source.get()
+            try:
+                documents = await data_source.get()
 
-            stored_documents = self.similarity_storage.get(
-                [doc.id for doc in documents]
-            )
-
-            documents_to_update = self.filter_documents_to_update(
-                documents, stored_documents
-            )
-
-            if (len(documents_to_update)) > 0:
-                print(
-                    f"Updating {data_source.__class__.__name__} documents in the storage."
+                stored_documents = self.similarity_storage.get(
+                    [doc.id for doc in documents]
                 )
-                self.similarity_storage.set(documents_to_update)
-            else:
-                print(f"No update for datasource {data_source.__class__.__name__}.")
+
+                documents_to_update = self.filter_documents_to_update(
+                    documents, stored_documents
+                )
+
+                if (len(documents_to_update)) > 0:
+                    print(
+                        f"Updating {data_source.__class__.__name__} documents in the storage."
+                    )
+                    self.similarity_storage.set(documents_to_update)
+                else:
+                    print(f"No update for datasource {data_source.__class__.__name__}.")
+            except Exception as e:
+                print(f"Error for datasource {data_source.__class__.__name__}: {e}")
 
     def filter_documents_to_update(
         self,
