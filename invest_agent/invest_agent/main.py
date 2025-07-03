@@ -6,6 +6,7 @@ from invest_agent.authentication.authentication import authentication
 from invest_agent.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
+from invest_agent.conversation.message import Message
 from invest_agent.conversation.repository.infrastructure.langchain_sqlite_conversation_repository import (
     LangchainSqliteConversationRepository,
 )
@@ -16,6 +17,7 @@ from invest_agent.documentation.response.invalid_authentication_key import (
 from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_client import (
     AiohttpAgentToAgentClient,
 )
+from invest_agent.conversation.conversation_use_case import ConversationUseCase
 from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
 from shared.http_request.infrastructure.requests_http_request import (
     RequestsHttpRequest,
@@ -35,15 +37,7 @@ from pydantic import RootModel
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
-import aiosqlite
-
-from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.tools import tool
-from langchain_core.runnables import RunnableConfig
-from langchain.chat_models import init_chat_model
-from langgraph.prebuilt import create_react_agent
-
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
@@ -162,6 +156,16 @@ get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
     },
 )
 
+conversation_use_case = ConversationUseCase(
+    date_time=date_time,
+    configuration={
+        "langchain_thread_id": configuration.langchain_thread_id,
+        "agent_name": configuration.agent_name,
+        "chat_model": configuration.chat_model,
+        "chat_provider": configuration.chat_provider,
+        "chat_provider_api_key": configuration.chat_provider_api_key,
+    },
+)
 
 conversation_repository = LangchainSqliteConversationRepository(
     db_path="./database/langchain_graphs.db", date_time=date_time
@@ -304,48 +308,16 @@ async def divest_basket():
     return await basket_divest_use_case.execute()
 
 
-llm = init_chat_model(
-    model=configuration.chat_model,
-    model_provider=configuration.chat_provider,
-    api_key=configuration.chat_provider_api_key,
-)
-
-
-def create_agent_executor(conn: aiosqlite.Connection):
-    sqliteMemory = AsyncSqliteSaver(conn)
-
-    agent_executor = create_react_agent(
-        llm,
-        [
-            get_preset_basket_info,
-            get_token_info,
-            invest_basket,
-            get_address,
-            get_balance,
-            get_invested_basket,
-            get_invested_basket_balance_in_native_and_usd_value,
-            divest_basket,
-        ],
-        checkpointer=sqliteMemory,
-        prompt=SystemMessage(
-            f"Your name is {configuration.agent_name}.  "
-            "Your goal is to create and then invest in crypto coin baskets. You can invest in a single coin by creating a basket with a single coin.  "
-            # "You operate only on the Binance Smart Chain (BSC) network.  "
-            f"Today is {date_time.now_str()}.  "
-            "Always give a name and a description to the basket you are creating. Reevaluate them after each update.  "
-            "Always show the user the basket you are creating by showing its name and listing the coins in a single list with the coin display name, ticker and address. Don't mention excluded coins.  "
-            "When you display a token or coin, always show its address as a link using this link 'https://bscscan.com/token/[token_address]'.  "
-            "After each answer, ask the user if he wants to add or remove any coins from the basket or if he wants to invest in the basket.  "
-            "Always ask for the user's confirmation before investing in the basket and show a message mentioning that he should do his own research (DYOR) before investing.  "
-            "Always ask for the user's confirmation before divesting the basket. "
-            "Always use get_preset_basket_info to retrieve the list of available preset baskets to invest in.  "
-            "Always use get_token_info to retrieve the list of available tokens / coins.  "
-            "You can't manage more than one basket.  "
-            "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
-        ),
-    )
-
-    return agent_executor
+tools = [
+    get_preset_basket_info,
+    get_token_info,
+    invest_basket,
+    get_address,
+    get_balance,
+    get_invested_basket,
+    get_invested_basket_balance_in_native_and_usd_value,
+    divest_basket,
+]
 
 
 class MessageRequest(Model):
@@ -400,30 +372,22 @@ class MessageResponse(Model):
 @invest_agent.on_rest_post("/conversation", PromptRequest, MessageResponse)
 @authentication(configuration.agent_key)
 async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
-    async with aiosqlite.connect("./database/langchain_graphs.db") as conn:
-        agent_executor = create_agent_executor(conn)
+    message = await conversation_use_case.execute(
+        tools=tools,
+        message=Message(
+            id=req.message.id,
+            role=req.message.role,
+            content=req.message.content,
+            created_at=req.message.created_at or date_time.now_str(),
+        ),
+    )
 
-        graph_config: RunnableConfig = {
-            "configurable": {
-                "thread_id": configuration.langchain_thread_id,
-            }
-        }
-
-        async for step in agent_executor.astream(
-            {"messages": [{"role": "user", "content": req.message.content}]},
-            stream_mode="values",
-            config=graph_config,
-        ):
-            step["messages"][-1].pretty_print()
-
-        last_message = step["messages"][-1]
-
-        return MessageResponse(
-            id=cast(str, last_message.id),
-            role=isinstance(last_message, HumanMessage) and "user" or "assistant",
-            content=cast(str, last_message.content),
-            created_at=date_time.now_str(),
-        )
+    return MessageResponse(
+        id=message.id,
+        role=message.role,
+        content=message.content,
+        created_at=message.created_at,
+    )
 
 
 class MessagesRequest(Model):
