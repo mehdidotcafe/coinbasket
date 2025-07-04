@@ -66,12 +66,12 @@ class ConversationUseCase:
             )
 
     def __create_agent_executor(self, conn: aiosqlite.Connection, tools: list[Tool]):
-        sqliteMemory = AsyncSqliteSaver(conn)
+        sqlite_memory = AsyncSqliteSaver(conn)
 
         agent_executor = create_react_agent(
             self.llm,
             tools,
-            checkpointer=sqliteMemory,
+            checkpointer=sqlite_memory,
             prompt=SystemMessage(
                 f"Your name is {self.configuration['agent_name']}.  "
                 "Your goal is to create and then invest in crypto coin baskets. You can invest in a single coin by creating a basket with a single coin.  "
