@@ -1,9 +1,9 @@
 from protocol.token import Token
 
 bnb_token = Token(
-    name="WBNB Token",
+    name="BNB Token",
     display_name="Binance Coin",
-    ticker="WBNB",
+    ticker="BNB",
     address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
 )
 

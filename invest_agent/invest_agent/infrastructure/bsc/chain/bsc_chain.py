@@ -179,7 +179,6 @@ class BscChain(Chain):
         transaction_hash = await self.w3.eth.send_transaction(transaction_params)
 
         receipt = await self.w3.eth.wait_for_transaction_receipt(transaction_hash)
-        print(f"Receipt: {receipt}")
 
         if receipt["status"] != 1:
             try:

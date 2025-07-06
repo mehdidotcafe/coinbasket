@@ -152,21 +152,21 @@ async def test_integration_zero_x_swapper_execute_divestment_plan(
             InvestmentPlanStep(
                 token=eth_token,
                 sell_balance=Balance(
-                    token=bnb_token,
+                    token=eth_token,
                     amount=bids[0].buy_balance.amount,
                 ),
             ),
             InvestmentPlanStep(
                 token=wbnb_token,
                 sell_balance=Balance(
-                    token=bnb_token,
+                    token=wbnb_token,
                     amount=bids[1].buy_balance.amount,
                 ),
             ),
             InvestmentPlanStep(
                 token=sol_token,
                 sell_balance=Balance(
-                    token=bnb_token,
+                    token=sol_token,
                     amount=bids[2].buy_balance.amount,
                 ),
             ),

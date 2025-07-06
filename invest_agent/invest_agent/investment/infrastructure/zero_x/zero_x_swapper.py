@@ -72,15 +72,13 @@ class ZeroXSwapper(Exchange):
             for step in investment_plan.steps
         ]
 
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
         bids: list[Bid] = []
 
-        for i, result in enumerate(results):
-            if isinstance(result, BaseException):
-                print(f"Investment step {i} failed: {result!r}")
-            else:
-                bids.append(result)
+        for task in tasks:
+            try:
+                bids.append(await task)
+            except BaseException as e:
+                print(f"Investment step failed: {e!r}")
 
         return bids
 
@@ -120,7 +118,7 @@ class ZeroXSwapper(Exchange):
 
         transaction_data = self.__make_transaction_data(quote)
 
-        await self.chain.sign_send_wait_transaction(
+        receipt = await self.chain.sign_send_wait_transaction(
             gas=Gas(
                 gas=int(quote.transaction.gas) if quote.transaction.gas else None,
                 gas_price=int(quote.transaction.gasPrice)
@@ -130,6 +128,10 @@ class ZeroXSwapper(Exchange):
             to_address=quote.transaction.to,
             encoded_input=transaction_data,
             amount=int(quote.transaction.value) if quote.transaction.value else 0,
+        )
+
+        print(
+            f"Receipt for {sell_token.display_name} -> {step.token.display_name}: {receipt}"
         )
 
         return await self.__make_bid(
@@ -152,14 +154,12 @@ class ZeroXSwapper(Exchange):
             for step in divestment_plan.steps
         ]
 
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
         bids: list[Bid] = []
-        for i, result in enumerate(results):
-            if isinstance(result, BaseException):
-                print(f"Divestment step {i} failed: {result!r}")
-            else:
-                bids.append(result)
+        for task in tasks:
+            try:
+                bids.append(await task)
+            except BaseException as e:
+                print(f"Divestment step failed: {e!r}")
 
         return bids
 
@@ -217,7 +217,7 @@ class ZeroXSwapper(Exchange):
 
         transaction_data = self.__make_transaction_data(quote)
 
-        await self.chain.sign_send_wait_transaction(
+        receipt = await self.chain.sign_send_wait_transaction(
             gas=Gas(
                 gas=int(quote.transaction.gas) if quote.transaction.gas else None,
                 gas_price=int(quote.transaction.gasPrice)
@@ -228,8 +228,9 @@ class ZeroXSwapper(Exchange):
             encoded_input=transaction_data,
             amount=int(quote.transaction.value) if quote.transaction.value else 0,
         )
-
-        print("==================")
+        print(
+            f"Receipt for {sell_token.display_name} -> {buy_token.display_name}: {receipt}"
+        )
 
         return await self.__make_bid(
             quote=quote,
