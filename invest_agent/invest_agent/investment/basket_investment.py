@@ -5,6 +5,7 @@ from invest_agent.chain.balance import Balance
 from protocol.token import Token
 
 
+# @deprecated
 @dataclass
 class Bid:
     token: Token
@@ -12,6 +13,7 @@ class Bid:
     buy_balance: Balance
 
 
+# @deprecated
 @dataclass
 class BasketInvestment:
     name: str
