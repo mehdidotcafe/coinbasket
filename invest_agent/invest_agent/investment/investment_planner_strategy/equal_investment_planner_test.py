@@ -15,6 +15,7 @@ from invest_agent.investment.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
 )
+from protocol.fixture.token import bnb_token
 
 
 @fixture
@@ -24,22 +25,25 @@ def chain():
 
 @fixture
 def sell_token():
-    return Token(name="BNB", display_name="BNB", ticker="BNB", address="")
+    return bnb_token
 
 
 @fixture
 def basket():
     return Basket(
+        id="5c1753e1-f94f-4212-9949-1d64e3ad455c",
         name="Test Basket",
         description="A test basket",
         tokens=[
             Token(
+                id="bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
                 name="Binance Pegged Bitcoin",
                 display_name="Bitcoin",
                 ticker="BTC",
                 address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
             ),
             Token(
+                id="bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
                 name="Binance Pegged ETH",
                 display_name="Ethereum",
                 ticker="ETH",

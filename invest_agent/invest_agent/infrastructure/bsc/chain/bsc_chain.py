@@ -30,8 +30,9 @@ class BscChain(Chain):
 
         self.private_key = private_key
         self.base_token = Token(
-            name="BNB",
-            display_name="BNB",
+            id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            name="Binance Coin",
+            display_name="Binance Coin",
             ticker="BNB",
             address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         )

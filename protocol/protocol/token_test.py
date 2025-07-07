@@ -3,6 +3,7 @@ from protocol.token import Token
 
 def test_token__str__():
     token = Token(
+        id="1234",
         name="Wrapped BNB",
         display_name="Wrapped BNB",
         ticker="WBNB",

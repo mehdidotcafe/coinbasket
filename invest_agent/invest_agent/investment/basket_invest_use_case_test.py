@@ -44,16 +44,19 @@ def date_time():
 @fixture
 def basket():
     return Basket(
+        id="4637bbc5-5a71-4e38-9b98-adaa6aa1e7ed",
         name="Test Basket",
         description="A test basket",
         tokens=[
             Token(
+                id="bsc:0x1234567890abcdef1234567890abcdef12345678",
                 name="TokenA",
                 display_name="Token A",
                 ticker="TKA",
                 address="0x1234567890abcdef1234567890abcdef12345678",
             ),
             Token(
+                id="bsc:0xabcdef1234567890abcdef1234567890abcdef12",
                 name="TokenB",
                 display_name="Token B",
                 ticker="TKB",
@@ -86,6 +89,7 @@ async def test_invest_use_case_execute_success(
         steps=[
             InvestmentPlanStep(
                 token=Token(
+                    id="bsc:0x1234567890abcdef1234567890abcdef12345678",
                     name="TokenA",
                     display_name="Token A",
                     ticker="TKA",
@@ -94,6 +98,7 @@ async def test_invest_use_case_execute_success(
                 sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
+                        id="bsc:0xabcdef1234567890abcdef1234567890abcdef12",
                         name="Base Token",
                         display_name="Base",
                         ticker="BASE",
@@ -105,6 +110,7 @@ async def test_invest_use_case_execute_success(
         sell_total_balance=Balance(
             amount=Decimal("100"),
             token=Token(
+                id="bsc:0xabcdef1234567890abcdef1234567890abcdef12",
                 name="Base Token",
                 display_name="Base",
                 ticker="BASE",
@@ -120,6 +126,7 @@ async def test_invest_use_case_execute_success(
         bids=[
             Bid(
                 token=Token(
+                    id="bsc:0x1234567890abcdef1234567890abcdef12345678",
                     name="TokenA",
                     display_name="Token A",
                     ticker="TKA",
@@ -128,6 +135,7 @@ async def test_invest_use_case_execute_success(
                 sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
+                        id="bsc:0xabcdef1234567890abcdef1234567890abcdef12",
                         name="Base Token",
                         display_name="Base",
                         ticker="BASE",
@@ -137,6 +145,7 @@ async def test_invest_use_case_execute_success(
                 buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
+                        id="bsc:0x1234567890abcdef1234567890abcdef12345678",
                         name="TokenA",
                         display_name="Token A",
                         ticker="TKA",
@@ -182,6 +191,7 @@ async def test_invest_use_case_execute_insufficient_balance(
         Balance(
             amount=Decimal("0"),
             token=Token(
+                id="bsc:0xabcdef1234567890abcdef1234567890abcdef12",
                 name="Base Token",
                 display_name="Base",
                 ticker="BASE",

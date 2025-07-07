@@ -5,6 +5,7 @@ from protocol.token import Token
 
 @dataclass
 class Basket:
+    id: str
     name: str
     description: str
     tokens: list[Token]

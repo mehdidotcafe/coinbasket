@@ -20,6 +20,7 @@ def chain():
 def test_make_divestment_plan_success(chain: Chain):
     """Test the divestment plan creation."""
     base_token = Token(
+        id="0x123",
         name="Base Token",
         display_name="Base Token",
         ticker="BTK",
@@ -33,6 +34,7 @@ def test_make_divestment_plan_success(chain: Chain):
         bids=[
             Bid(
                 token=Token(
+                    id="0x123",
                     name="Test Token",
                     display_name="Test",
                     ticker="TTK",
@@ -41,6 +43,7 @@ def test_make_divestment_plan_success(chain: Chain):
                 sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
+                        id="0x1",
                         name="Test Token 1",
                         display_name="Test 1",
                         ticker="TTK1",
@@ -50,6 +53,7 @@ def test_make_divestment_plan_success(chain: Chain):
                 buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
+                        id="0x2",
                         name="Test Token 2",
                         display_name="Test 2",
                         ticker="TTK2",
@@ -74,6 +78,7 @@ def test_make_divestment_plan_success(chain: Chain):
                 sell_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
+                        id="0x2",
                         name="Test Token 2",
                         display_name="Test 2",
                         ticker="TTK2",

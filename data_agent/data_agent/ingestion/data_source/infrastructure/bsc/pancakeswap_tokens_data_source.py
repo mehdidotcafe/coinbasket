@@ -67,6 +67,7 @@ class PancakeswapTokenListDataSource(DataSource):
         Maps a PancakeswapToken to a Token.
         """
         token = Token(
+            id=f"bsc:{pancakeswap_token.address}",
             name=pancakeswap_token.name,
             display_name=self.__clean_display_name(pancakeswap_token.name),
             ticker=pancakeswap_token.symbol,

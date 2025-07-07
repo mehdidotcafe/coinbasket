@@ -29,6 +29,7 @@ def test_get_basket_investment_use_case(storage: Storage[BasketInvestment]):
         bids=[
             Bid(
                 token=Token(
+                    id="bsc:0x123",
                     name="Test Token",
                     display_name="Test",
                     ticker="TTK",
@@ -37,6 +38,7 @@ def test_get_basket_investment_use_case(storage: Storage[BasketInvestment]):
                 sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
+                        id="bsc:0x123",
                         name="Test Token",
                         display_name="Test",
                         ticker="TTK",
@@ -46,6 +48,7 @@ def test_get_basket_investment_use_case(storage: Storage[BasketInvestment]):
                 buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
+                        id="bsc:0x123",
                         name="Test Token",
                         display_name="Test",
                         ticker="TTK",

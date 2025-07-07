@@ -66,6 +66,7 @@ def basket_investment():
         bids=[
             Bid(
                 token=Token(
+                    id="bsc:0x123",
                     name="Test Token",
                     display_name="Test",
                     ticker="TTK",
@@ -74,6 +75,7 @@ def basket_investment():
                 sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
+                        id="bsc:0x1",
                         name="Test Token 1",
                         display_name="Test 1",
                         ticker="TTK1",
@@ -83,6 +85,7 @@ def basket_investment():
                 buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
+                        id="bsc:0x2",
                         name="Test Token 2",
                         display_name="Test 2",
                         ticker="TTK2",
@@ -101,6 +104,7 @@ def divestment_plan():
         steps=[
             InvestmentPlanStep(
                 token=Token(
+                    id="bsc:0x1",
                     name="Test Token 1",
                     display_name="Test 1",
                     ticker="TTK1",
@@ -109,6 +113,7 @@ def divestment_plan():
                 sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
+                        id="bsc:0x123",
                         name="Test Token",
                         display_name="Test",
                         ticker="TTK",
@@ -118,6 +123,7 @@ def divestment_plan():
             ),
             InvestmentPlanStep(
                 token=Token(
+                    id="bsc:0x2",
                     name="Test Token 2",
                     display_name="Test 2",
                     ticker="TTK2",
@@ -126,6 +132,7 @@ def divestment_plan():
                 sell_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
+                        id="bsc:0x123",
                         name="Test Token",
                         display_name="Test",
                         ticker="TTK",
@@ -137,6 +144,7 @@ def divestment_plan():
         sell_total_balance=Balance(
             amount=Decimal("0"),
             token=Token(
+                id="bsc:0x123",
                 name="Test Token",
                 display_name="Test",
                 ticker="TTK",
@@ -156,6 +164,7 @@ def basket_divestment():
         bids=[
             Bid(
                 token=Token(
+                    id="bsc:0x238928933434",
                     name="WBNB",
                     display_name="WBNB",
                     ticker="WBNB",
@@ -164,6 +173,7 @@ def basket_divestment():
                 sell_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
+                        id="bsc:0x123",
                         name="Test Token",
                         display_name="Test",
                         ticker="TTK",
@@ -173,6 +183,7 @@ def basket_divestment():
                 buy_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
+                        id="bsc:0x238928933434",
                         name="WBNB",
                         display_name="WBNB",
                         ticker="WBNB",
@@ -224,6 +235,7 @@ async def test_basket_divest_use_case_execute_exception(
         steps=[
             InvestmentPlanStep(
                 token=Token(
+                    id="bsc:0x1",
                     name="Test Token 1",
                     display_name="Test 1",
                     ticker="TTK1",
@@ -231,6 +243,7 @@ async def test_basket_divest_use_case_execute_exception(
                 ),
                 sell_balance=Balance(
                     token=Token(
+                        id="bsc:0x123",
                         name="Test Token",
                         display_name="Test",
                         ticker="TTK",
@@ -241,6 +254,7 @@ async def test_basket_divest_use_case_execute_exception(
             ),
             InvestmentPlanStep(
                 token=Token(
+                    id="bsc:0x2",
                     name="Test Token 2",
                     display_name="Test 2",
                     ticker="TTK2",
@@ -248,6 +262,7 @@ async def test_basket_divest_use_case_execute_exception(
                 ),
                 sell_balance=Balance(
                     token=Token(
+                        id="bsc:0x123",
                         name="Test Token",
                         display_name="Test",
                         ticker="TTK",
@@ -260,6 +275,7 @@ async def test_basket_divest_use_case_execute_exception(
         sell_total_balance=Balance(
             amount=Decimal("0"),
             token=Token(
+                id="bsc:0x123",
                 name="Test Token",
                 display_name="Test",
                 ticker="TTK",
@@ -275,6 +291,7 @@ async def test_basket_divest_use_case_execute_exception(
         bids=[
             Bid(
                 token=Token(
+                    id="bsc:0x123",
                     name="Test Token",
                     display_name="Test",
                     ticker="TTK",
@@ -283,6 +300,7 @@ async def test_basket_divest_use_case_execute_exception(
                 sell_balance=Balance(
                     amount=Decimal("100"),
                     token=Token(
+                        id="bsc:0x1",
                         name="Test Token 1",
                         display_name="Test 1",
                         ticker="TTK1",
@@ -292,6 +310,7 @@ async def test_basket_divest_use_case_execute_exception(
                 buy_balance=Balance(
                     amount=Decimal("200"),
                     token=Token(
+                        id="bsc:0x2",
                         name="Test Token 2",
                         display_name="Test 2",
                         ticker="TTK2",

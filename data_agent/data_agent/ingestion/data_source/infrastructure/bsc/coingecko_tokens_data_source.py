@@ -59,6 +59,7 @@ class CoingeckoTokenListDataSource(DataSource):
         Maps a CoingeckoToken to a Token.
         """
         token = Token(
+            id=f"bsc:{coingecko_token.address}",
             name=coingecko_token.name,
             display_name=coingecko_token.name,
             ticker=coingecko_token.symbol,

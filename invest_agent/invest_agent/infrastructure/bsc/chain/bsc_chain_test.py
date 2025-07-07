@@ -15,6 +15,8 @@ from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 
 from eth_account.signers.local import LocalAccount
 
+from protocol.fixture.token import bnb_token
+
 
 @fixture
 def w3():
@@ -35,12 +37,7 @@ def w3():
 
 @fixture
 def base_token():
-    return Token(
-        name="BNB",
-        display_name="BNB",
-        ticker="BNB",
-        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    )
+    return bnb_token
 
 
 @fixture

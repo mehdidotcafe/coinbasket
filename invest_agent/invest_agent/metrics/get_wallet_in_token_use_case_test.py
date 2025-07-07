@@ -42,6 +42,7 @@ def basket_investment():
         bids=[
             Bid(
                 token=Token(
+                    id="bsc:0x00001",
                     name="Token 1",
                     display_name="Token 1",
                     ticker="TK1",
@@ -50,6 +51,7 @@ def basket_investment():
                 sell_balance=Balance(
                     amount=Decimal("1000"),
                     token=Token(
+                        id="bsc:0x00001",
                         name="Token 1",
                         display_name="Token 1",
                         ticker="TK1",
@@ -59,6 +61,7 @@ def basket_investment():
                 buy_balance=Balance(
                     amount=Decimal("333"),
                     token=Token(
+                        id="bsc:0x00008",
                         name="Token 8",
                         display_name="Token 8",
                         ticker="TK8",
@@ -68,6 +71,7 @@ def basket_investment():
             ),
             Bid(
                 token=Token(
+                    id="bsc:0x00002",
                     name="Token 2",
                     display_name="Token 2",
                     ticker="TK2",
@@ -76,6 +80,7 @@ def basket_investment():
                 sell_balance=Balance(
                     amount=Decimal("99999"),
                     token=Token(
+                        id="bsc:0x00002",
                         name="Token 2",
                         display_name="Token 2",
                         ticker="TK2",
@@ -85,6 +90,7 @@ def basket_investment():
                 buy_balance=Balance(
                     amount=Decimal("9384"),
                     token=Token(
+                        id="bsc:0x00009",
                         name="Token 9",
                         display_name="Token 9",
                         ticker="TK9",
@@ -102,6 +108,7 @@ def balance():
     return Balance(
         amount=Decimal("0"),
         token=Token(
+            id="bsc:0x00000",
             name="BNB",
             display_name="BNB",
             ticker="BNB",
@@ -125,6 +132,7 @@ def wallet():
         total_balance=Balance(
             amount=Decimal("0"),
             token=Token(
+                id="bsc:0x55d398326f99059ff775485246999027b3197955",
                 name="Tether USD",
                 display_name="Tether USD",
                 ticker="USDT",
@@ -151,6 +159,7 @@ async def test_get_wallet_in_token_use_case_basket_investment_not_found(
 
     await use_case.execute(
         Token(
+            id="bsc:0x55d398326f99059ff775485246999027b3197955",
             name="Tether USD",
             display_name="Tether USD",
             ticker="USDT",
@@ -163,6 +172,7 @@ async def test_get_wallet_in_token_use_case_basket_investment_not_found(
             Balance(
                 amount=Decimal("0"),
                 token=Token(
+                    id="bsc:0x00000",
                     name="BNB",
                     display_name="BNB",
                     ticker="BNB",
@@ -193,6 +203,7 @@ async def test_get_wallet_in_token_use_case_basket_investment(
 
     result = await use_case.execute(
         Token(
+            id="bsc:0x55d398326f99059ff775485246999027b3197955",
             name="Tether USD",
             display_name="Tether USD",
             ticker="USDT",
@@ -205,6 +216,7 @@ async def test_get_wallet_in_token_use_case_basket_investment(
         total_balance=Balance(
             amount=Decimal("0"),
             token=Token(
+                id="bsc:0x55d398326f99059ff775485246999027b3197955",
                 name="Tether USD",
                 display_name="Tether USD",
                 ticker="USDT",
@@ -219,6 +231,7 @@ async def test_get_wallet_in_token_use_case_basket_investment(
             Balance(
                 amount=Decimal("0"),
                 token=Token(
+                    id="bsc:0x00000",
                     name="BNB",
                     display_name="BNB",
                     ticker="BNB",
@@ -228,6 +241,7 @@ async def test_get_wallet_in_token_use_case_basket_investment(
             Balance(
                 amount=Decimal("333"),
                 token=Token(
+                    id="bsc:0x00008",
                     name="Token 8",
                     display_name="Token 8",
                     ticker="TK8",
@@ -237,6 +251,7 @@ async def test_get_wallet_in_token_use_case_basket_investment(
             Balance(
                 amount=Decimal("9384"),
                 token=Token(
+                    id="bsc:0x00009",
                     name="Token 9",
                     display_name="Token 9",
                     ticker="TK9",
@@ -245,6 +260,7 @@ async def test_get_wallet_in_token_use_case_basket_investment(
             ),
         ],
         token=Token(
+            id="bsc:0x55d398326f99059ff775485246999027b3197955",
             name="Tether USD",
             display_name="Tether USD",
             ticker="USDT",
@@ -256,6 +272,7 @@ async def test_get_wallet_in_token_use_case_basket_investment(
                 recipient="0x1234567890abcdef1234567890abcdef12345678",
                 value_in_percentage=Decimal(0.15),
                 token=Token(
+                    id="bsc:0x55d398326f99059ff775485246999027b3197955",
                     name="Tether USD",
                     display_name="Tether USD",
                     ticker="USDT",
@@ -291,6 +308,7 @@ async def test_get_wallet_in_token_use_case_basket_investment_with_no_integrator
 
     await use_case.execute(
         Token(
+            id="bsc:0x55d398326f99059ff775485246999027b3197955",
             name="Tether USD",
             display_name="Tether USD",
             ticker="USDT",
