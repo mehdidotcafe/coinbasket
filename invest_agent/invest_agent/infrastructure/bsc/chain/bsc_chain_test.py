@@ -2,6 +2,7 @@ from unittest import mock
 from eth_typing import HexStr
 from hexbytes import HexBytes
 from invest_agent.chain.chain import Gas, TransactionFailure
+from invest_agent.chain.exception.insufficient_balance import InsufficientBalance
 from pytest import fixture, mark, raises
 from decimal import Decimal
 from web3 import AsyncWeb3
@@ -117,6 +118,36 @@ async def test_bsc_chain_get_balance(
     w3.from_wei.assert_called_once_with(
         Wei(1000000000000000000),
         "ether",
+    )
+
+
+@mark.asyncio
+async def test_bsc_chain_get_available_balance_insufficient_balance(
+    bsc_chain: BscChain, w3: AsyncWeb3
+):
+    w3.eth.get_balance.return_value = Wei(100)
+    w3.from_wei.side_effect = lambda x, _unit: x
+
+    with raises(InsufficientBalance):
+        await bsc_chain.get_available_balance()
+
+
+@mark.asyncio
+async def test_bsc_chain_get_available_balance(
+    bsc_chain: BscChain, w3: AsyncWeb3, base_token: Token
+):
+    w3.eth.get_balance.return_value = Wei(1000000000000000000)
+    w3.from_wei.side_effect = lambda x, _unit: x
+
+    balance = await bsc_chain.get_available_balance()
+
+    assert balance.amount == Decimal(
+        1000000000000000000 - (1_000_000_000 * 200_000 * 20)
+    )
+    assert balance.token == base_token
+
+    w3.eth.get_balance.assert_called_once_with(
+        "0x1234567890abcdef1234567890abcdef12345678",
     )
 
 

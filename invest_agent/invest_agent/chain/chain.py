@@ -42,6 +42,12 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def get_available_balance(
+        self,
+    ) -> Balance:
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_token_balance_amount(self, token_address: str) -> Decimal:
         raise NotImplementedError
 

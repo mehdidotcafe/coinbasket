@@ -23,7 +23,7 @@ class Order:
     id: Id
     sell_balance: Balance
     buy_token: Token
-    type: Literal["SELL", "BUY"]
+    type: Literal["SELL", "BUY", "SWAP"]
     tries: list[Try]
     created_at: int
     status: Literal["PENDING", "SUCCESS", "FAIL"]

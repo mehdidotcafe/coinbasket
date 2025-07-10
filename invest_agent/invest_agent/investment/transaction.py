@@ -11,7 +11,7 @@ class Transaction:
     id: Id
     sell_balance: Balance
     buy_balance: Balance
-    type: Literal["SELL", "BUY"]
+    type: Literal["SELL", "BUY", "SWAP"]
     created_at: int
     fee: Fees
     transaction_hash: str

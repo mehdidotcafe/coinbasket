@@ -2,9 +2,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from invest_agent.chain.balance import Balance
-from invest_agent.investment.basket_investment import Bid
+
+# from invest_agent.investment.basket_investment import Bid
 from invest_agent.investment.investment_parameters import InvestmentParameters
-from invest_agent.investment.investment_plan import InvestmentPlan
+
+from invest_agent.investment.investment_planner.investment_plan import InvestmentPlan
+from invest_agent.investment.order import Order
 from protocol.token import Token
 
 
@@ -26,16 +29,16 @@ class Exchange(ABC):
         self,
         investment_plan: InvestmentPlan,
         investment_parameters: InvestmentParameters,
-    ) -> list[Bid]:
+    ) -> list[Order]:
         raise NotImplementedError
 
-    @abstractmethod
-    async def execute_divestment_plan(
-        self,
-        divestment_plan: InvestmentPlan,
-        investment_parameters: InvestmentParameters,
-    ) -> list[Bid]:
-        raise NotImplementedError
+    # @abstractmethod
+    # async def execute_divestment_plan(
+    #     self,
+    #     divestment_plan: InvestmentPlan,
+    #     investment_parameters: InvestmentParameters,
+    # ) -> list[Order]:
+    #     raise NotImplementedError
 
     @abstractmethod
     async def get_wallet_in_token(

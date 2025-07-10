@@ -3,6 +3,7 @@ import json
 from typing import Any, TypedDict
 from eth_typing import HexStr
 from eth_account.signers.local import LocalAccount
+from invest_agent.chain.exception.insufficient_balance import InsufficientBalance
 from web3 import AsyncWeb3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
 from web3.types import TxParams, Wei
@@ -84,6 +85,24 @@ class BscChain(Chain):
         return Balance(
             token=self.base_token,
             amount=Decimal(balance_in_ether),
+        )
+
+    async def get_available_balance(self) -> Balance:
+        """Get the available balance of the agent address."""
+        balance = await self.get_balance()
+        min_balance = await self.get_min_balance()
+
+        print(f"Balance: {balance}")
+        print(f"Min balance: {min_balance}")
+
+        if balance.amount < min_balance.amount:
+            raise InsufficientBalance(
+                min_balance=min_balance,
+            )
+
+        return Balance(
+            token=self.base_token,
+            amount=Decimal(balance.amount - min_balance.amount),
         )
 
     async def get_token_balance_amount(self, token_address: str) -> Decimal:

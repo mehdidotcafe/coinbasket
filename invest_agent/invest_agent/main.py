@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional, cast
 
 from apispec import APISpec
 from invest_agent.authentication.authentication import authentication
+from invest_agent.chain.balance import Balance
 from invest_agent.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
@@ -18,11 +19,13 @@ from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_clie
     AiohttpAgentToAgentClient,
 )
 from invest_agent.conversation.conversation_use_case import ConversationUseCase
+from invest_agent.investment.investment_planner.intent_investment_plan import (
+    IntentInvestmentPlan,
+)
 from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
 from shared.http_request.infrastructure.requests_http_request import (
     RequestsHttpRequest,
 )
-from invest_agent.investment.basket_investment import BasketInvestment
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
@@ -44,17 +47,6 @@ from web3 import AsyncWeb3, AsyncHTTPProvider
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 from invest_agent.infrastructure.bsc.chain.bsc_contract import BscContract
 from invest_agent.configuration import Configuration
-from invest_agent.investment.basket_divest_use_case import BasketDivestUseCase
-from invest_agent.investment.divestment_planner_strategy.total_divestment_planner import (
-    TotalDivestmentPlanner,
-)
-from invest_agent.investment.get_basket_investment_use_case import (
-    GetBasketInvestmentUseCase,
-)
-from invest_agent.investment.basket_invest_use_case import BasketInvestUseCase
-from invest_agent.investment.investment_planner_strategy.equal_investment_planner import (
-    EqualInvestmentPlanner,
-)
 from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
     FetchAiStorage,
 )
@@ -127,25 +119,6 @@ agent_to_agent_client = AiohttpAgentToAgentClient(
     aiohttp_http_request=aiohttp_http_request,
 )
 
-basket_invest_use_case = BasketInvestUseCase(
-    investment_planner=EqualInvestmentPlanner(chain),
-    exchange=exchange,
-    storage=storage,
-    date_time=date_time,
-)
-basket_divest_use_case = BasketDivestUseCase(
-    divestment_planner=TotalDivestmentPlanner(chain),
-    exchange=exchange,
-    storage=storage,
-    date_time=date_time,
-    chain=chain,
-    configuration={
-        "fee_integrator_address": configuration.fee_integrator_address,
-        "fee_value_in_percentage": configuration.fee_value_in_percentage,
-    },
-)
-get_basket_investment_use_case = GetBasketInvestmentUseCase(storage=storage)
-
 get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
     storage=storage,
     exchange=exchange,
@@ -204,15 +177,15 @@ async def get_token_info(query: str):
 
 
 @tool(response_format="content_and_artifact")
-async def get_preset_basket_info(query: str):
+async def get_basket_info(query: str):
     """
-    Retrieve a list of available preset baskets to invest in.
+    Retrieve a list of available baskets.
 
     Args:
         query: The query to search for.
 
     Returns:
-        A list of documents containing available preset baskets.
+        A list of documents containing baskets.
         Each basket is made of a name, a description and a list of tokens.
         Each token has a name, display_name, ticker and address (contract address) property.
     """
@@ -232,13 +205,13 @@ async def get_preset_basket_info(query: str):
 
 
 @tool()
-def get_address():
+def get_agent_address():
     """Retrieve agent's current wallet address."""
     return chain.get_address()
 
 
 @tool()
-async def get_balance(query: str):
+async def get_agent_balance(query: str):
     """Retrieve agent's current wallet balance in BNB."""
     print("IN get_balance")
     print(f"Query: {query}")
@@ -255,7 +228,7 @@ def get_invested_basket():
         Each bid has a token and a balance_in and balance_out property.
         The token has a name, display_name, ticker and address (contract address) property.
     """
-    return get_basket_investment_use_case.execute()
+    return None
 
 
 @tool()
@@ -269,54 +242,59 @@ async def get_invested_basket_balance_in_native_and_usd_value():
     return await get_basket_balance_in_token_use_case.execute(usdt_token)
 
 
-@tool(response_format="content_and_artifact")
-async def invest_basket(basket: Basket):
-    """Invest / fund / buy the basket created by the user by spending all the available BNB in the agent's wallet.
-    Each basket coin needs to have a name, ticker and address.
-    A basket can't be invested if it already has been invested.
-    Always ask for user confirmation before investing in the basket.
+@tool()
+async def get_token_balance(token: Token):
+    """Retrieve the balance of a specific token in the agent's wallet.
 
     Args:
-        basket: The basket to Invest / fund / buy.
+        token: The token to retrieve the balance for.
 
     Returns:
-        BasketInvestment: The basket investment made of the bids that were made by the agent when investing in the basket.
+        The balance of the token in the agent's wallet.
     """
-    message, basket_investment = await basket_invest_use_case.execute(basket)
+    print(f"Token: {token}")
 
-    if basket_investment is None:
-        return message, None
+    balance = await chain.get_token_balance_amount(token.address)
 
-    content: Dict[str, str | BasketInvestment] = {
-        "message": message,
-        "basket_investment": basket_investment,
-    }
-
-    return content, basket_investment
+    return Balance(
+        token=token,
+        amount=balance,
+    )
 
 
-@tool()
-async def divest_basket():
-    """Divest / sell the whole basket create by the user.
-    This tool cannot be used if the basket has not been invested yet.
-    This tool cannot be used if to divest just a part of the basket, it divests the whole basket.
-    Always ask for user confirmation before divesting the basket.
-
+@tool(response_format="content_and_artifact")
+async def buy_sell_or_swap_assets(intent_investment_plan: IntentInvestmentPlan):
+    """Buy or sell assets in the agent's wallet.
+    If not provided the default buy or sell asset should be chain base token.
     Args:
-        basket: The basket to Invest / fund / buy.
+        intent_investment_plan: The intent investment plan containing the assets to buy, sell or swap.
+    Returns:
+        An updated Portfolio containing the new Orders for each asset
     """
-    return await basket_divest_use_case.execute()
+
+    print(f"Intent Investment Plan: {intent_investment_plan}")
+
+    # message, portfolio = await buy_or_sell_assets_use_case.execute(
+    #     intent_investment_plan
+    # )
+
+    # content: Dict[str] = {
+    #     "message": message,
+    #     "basket_investment": portfolio,
+    # }
+
+    return "Success", "Success"
 
 
 tools = [
-    get_preset_basket_info,
+    get_basket_info,
     get_token_info,
-    invest_basket,
-    get_address,
-    get_balance,
-    get_invested_basket,
-    get_invested_basket_balance_in_native_and_usd_value,
-    divest_basket,
+    buy_sell_or_swap_assets,
+    get_agent_address,
+    get_agent_balance,
+    get_token_balance,
+    # get_invested_basket,
+    # get_invested_basket_balance_in_native_and_usd_value,
 ]
 
 
@@ -533,6 +511,7 @@ async def health_check(_ctx: Context) -> HealthResponse:
 
 
 class TokenRequest(Model):
+    id: str
     name: str
     display_name: str
     ticker: str
@@ -617,6 +596,7 @@ class MetricsWalletResponse(Model):
 async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
     converted_token_balances = await get_basket_balance_in_token_use_case.execute(
         Token(
+            id=req.token.id,
             name=req.token.name,
             display_name=req.token.display_name,
             ticker=req.token.ticker,
