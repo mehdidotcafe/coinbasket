@@ -437,7 +437,7 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "platform_system == \"Windows\" or sys_platform == \"win32\""}
+markers = {main = "platform_system == \"Windows\""}
 
 [[package]]
 name = "cosmpy"
@@ -1038,7 +1038,7 @@ version = "2.1.0"
 description = "brain-dead simple config-ini parsing"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["dev"]
 files = [
     {file = "iniconfig-2.1.0-py3-none-any.whl", hash = "sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760"},
     {file = "iniconfig-2.1.0.tar.gz", hash = "sha256:3abbd2e30b36733fee78f9c7f7308f2d0050e88f0087fd25c2645f63c773e1c7"},
@@ -1902,7 +1902,7 @@ version = "1.5.0"
 description = "plugin and hook calling mechanisms for python"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["dev"]
 files = [
     {file = "pluggy-1.5.0-py3-none-any.whl", hash = "sha256:44e1ad92c8ca002de6377e165f3e0f1be63266ab4d554740532335b9d75ea669"},
     {file = "pluggy-1.5.0.tar.gz", hash = "sha256:2cffa88e94fdc978c4c574f15f9e59b7f4201d439195c3715ca9e2486f1d0cf1"},
@@ -2270,7 +2270,7 @@ version = "8.3.5"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["dev"]
 files = [
     {file = "pytest-8.3.5-py3-none-any.whl", hash = "sha256:c69214aa47deac29fad6c2a4f590b9c4a9fdb16a403176fe154b79c0b4d4d820"},
     {file = "pytest-8.3.5.tar.gz", hash = "sha256:f4efe70cc14e511565ac476b57c279e12a855b11f48f212af1080ef2263d3845"},
@@ -3005,7 +3005,7 @@ version = "4.9.1"
 description = "Pytest Snapshot Test Utility"
 optional = false
 python-versions = ">=3.8.1"
-groups = ["main"]
+groups = ["dev"]
 files = [
     {file = "syrupy-4.9.1-py3-none-any.whl", hash = "sha256:b94cc12ed0e5e75b448255430af642516842a2374a46936dd2650cfb6dd20eda"},
     {file = "syrupy-4.9.1.tar.gz", hash = "sha256:b7d0fcadad80a7d2f6c4c71917918e8ebe2483e8c703dfc8d49cdbb01081f9a4"},
@@ -3099,7 +3099,8 @@ version = "2.2.1"
 description = "A lil' TOML parser"
 optional = false
 python-versions = ">=3.8"
-groups = ["main", "dev"]
+groups = ["dev"]
+markers = "python_full_version <= \"3.11.0a6\""
 files = [
     {file = "tomli-2.2.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:678e4fa69e4575eb77d103de3df8a895e1591b48e740211bd1067378c69e8249"},
     {file = "tomli-2.2.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:023aa114dd824ade0100497eb2318602af309e5a55595f76b626d6d9f3b7b0a6"},
@@ -3134,7 +3135,6 @@ files = [
     {file = "tomli-2.2.1-py3-none-any.whl", hash = "sha256:cb55c73c5f4408779d0cf3eef9f762b9c9f147a77de7b258bef0a5628adc85cc"},
     {file = "tomli-2.2.1.tar.gz", hash = "sha256:cd45e1dc79c835ce60f7404ec8119f2eb06d38b1deba146f07ced3bbc44505ff"},
 ]
-markers = {main = "python_version == \"3.10\"", dev = "python_full_version <= \"3.11.0a6\""}
 
 [[package]]
 name = "tqdm"
@@ -3563,4 +3563,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "f46372f891df307c140ba72b2b876385d08685c4e98f86e10a9103dd149d3769"
+content-hash = "db737fdd971db51e5e9fb9d982cb03bd32e443988b29deff622292b3321749fd"
