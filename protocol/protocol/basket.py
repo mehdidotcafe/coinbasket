@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 
 from protocol.token import Token
 
@@ -8,6 +9,7 @@ class Basket:
     id: str
     name: str
     description: str
+    unit: Decimal
     tokens: list[Token]
 
     def __str__(self) -> str:

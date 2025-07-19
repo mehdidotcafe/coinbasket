@@ -1,8 +1,17 @@
+import uuid
 from environs import env
+from marshmallow.validate import OneOf
 
 
 class Configuration:
     def __init__(self):
+        self.agent_env = env.str(
+            "AGENT_ENV",
+            validate=OneOf(
+                ["development", "production", "test"],
+                error="AGENT_ENV must be one of: {choices}",
+            ),
+        )
         self.agent_name = env.str("AGENT_NAME")
         self.agent_seed = env.str("AGENT_SEED")
         self.agent_port = env.int("AGENT_PORT")
@@ -15,7 +24,9 @@ class Configuration:
         self.data_agent_key = env.str("DATA_AGENT_KEY")
         self.data_agent_url = env.str("DATA_AGENT_URL")
 
-        self.langchain_thread_id = env.str("LANGCHAIN_THREAD_ID")
+        self.langchain_thread_id = env.str(
+            "LANGCHAIN_THREAD_ID", default=uuid.uuid4().hex
+        )
         self.langsmith_tracing = env.bool("LANGSMITH_TRACING")
         self.langsmith_api_key = env.str("LANGSMITH_API_KEY")
         self.langsmith_project = env.str("LANGSMITH_PROJECT")

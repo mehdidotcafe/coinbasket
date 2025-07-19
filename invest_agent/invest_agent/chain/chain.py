@@ -66,13 +66,20 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def sign_send_wait_transaction(
+    async def sign_send_transaction(
         self,
         amount: int,
         gas: Gas | None = None,
         to_address: str | None = None,
         encoded_input: Any | None = None,
-    ) -> Any:
+    ) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def wait_transaction(
+        self,
+        transaction_hash: str,
+    ) -> bool:
         raise NotImplementedError
 
     @abstractmethod

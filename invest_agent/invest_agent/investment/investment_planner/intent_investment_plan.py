@@ -7,12 +7,23 @@ from protocol.asset import Asset
 @dataclass
 class AssetBalance:
     asset: Asset
-    amount: Decimal = Decimal(1)
+    amount: Decimal | None = None
+
+
+@dataclass
+class BuyIntentInvestmentPlanStep:
+    buy_token_or_basket: Asset
+    buy_token_or_basket_quantity: Decimal | None = None
+
+
+@dataclass
+class BuyIntentInvestmentPlan:
+    steps: list[BuyIntentInvestmentPlanStep]
 
 
 @dataclass
 class IntentInvestmentPlanStep:
-    buy_asset: Asset | None = None
+    buy_balance: AssetBalance | None = None
     sell_balance: AssetBalance | None = None
 
 

@@ -45,6 +45,8 @@ readme = "README.md"
   pydantic = "^2.11.5"
   apispec = "^6.8.2"
   async-lru = "^2.0.5"
+  yoyo-migrations = "^9.0.0"
+  sqlalchemy = "^2.0.41"
 
     [tool.poetry.dependencies.langchain]
     extras = [ "openapi" ]

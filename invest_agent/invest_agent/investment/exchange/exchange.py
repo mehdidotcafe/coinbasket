@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any, Literal
 
 from invest_agent.chain.balance import Balance
 
-# from invest_agent.investment.basket_investment import Bid
+from invest_agent.chain.chain import Gas
 from invest_agent.investment.investment_parameters import InvestmentParameters
 
-from invest_agent.investment.investment_planner.investment_plan import InvestmentPlan
-from invest_agent.investment.order import Order
+from invest_agent.investment.order.order import Order
 from protocol.token import Token
 
 
@@ -23,22 +23,24 @@ class Wallet:
     total_balance: Balance
 
 
+@dataclass
+class TransactionData:
+    type: Literal["SIGN", "SEND"]
+    amount: int
+    encoded_input: Any
+    gas: Gas | None = None
+    to_address: str | None = None
+
+
 class Exchange(ABC):
     @abstractmethod
-    async def execute_investment_plan(
+    async def build_transactions(
         self,
-        investment_plan: InvestmentPlan,
+        order: Order,
         investment_parameters: InvestmentParameters,
-    ) -> list[Order]:
+    ) -> list[TransactionData]:
+        """Creates transaction data to be sent on-chain for the given order."""
         raise NotImplementedError
-
-    # @abstractmethod
-    # async def execute_divestment_plan(
-    #     self,
-    #     divestment_plan: InvestmentPlan,
-    #     investment_parameters: InvestmentParameters,
-    # ) -> list[Order]:
-    #     raise NotImplementedError
 
     @abstractmethod
     async def get_wallet_in_token(
@@ -47,4 +49,9 @@ class Exchange(ABC):
         token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Wallet:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_name(self) -> str:
+        """Returns the name of the exchange."""
         raise NotImplementedError

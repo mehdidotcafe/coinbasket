@@ -1,6 +1,17 @@
+from dataclasses import asdict
 import os
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Literal, Optional, TypedDict, cast
 
+import aiosqlite
+from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
+    SqlAlchemyOrderRepository,
+)
+from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
+    SqlAlchemyTransactionRepository,
+)
+from sqlalchemy import StaticPool
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 from apispec import APISpec
 from invest_agent.authentication.authentication import authentication
 from invest_agent.chain.balance import Balance
@@ -19,13 +30,26 @@ from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_clie
     AiohttpAgentToAgentClient,
 )
 from invest_agent.conversation.conversation_use_case import ConversationUseCase
+from invest_agent.infrastructure.bsc.chain.nonce_manager import NonceManager
+from invest_agent.investment.execute_pending_orders_use_case import (
+    ExecutePendingOrdersUseCase,
+)
 from invest_agent.investment.investment_planner.intent_investment_plan import (
+    AssetBalance,
+    BuyIntentInvestmentPlan,
     IntentInvestmentPlan,
+    IntentInvestmentPlanStep,
 )
+from invest_agent.investment.investment_planner.investment_plan import (
+    InvestmentPlan,
+)
+from invest_agent.investment.execute_investment_plan_use_case import (
+    ExecuteInvestmentPlanUseCase,
+)
+from invest_agent.investment.order.order_submitter import OrderSubmitter
 from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
-from shared.http_request.infrastructure.requests_http_request import (
-    RequestsHttpRequest,
-)
+from shared.http_request.infrastructure.requests_http_request import RequestsHttpRequest
+from shared.id_generator.id_generator import IdGenerator
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
@@ -34,13 +58,13 @@ from invest_agent.metrics.get_wallet_in_token_use_case import (
     GetWalletInTokenUseCase,
 )
 from invest_agent.documentation.openapi import openapi
-from protocol.basket import Basket
 from protocol.token import Token
 from pydantic import RootModel
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
 from langchain_core.tools import tool
+from langchain_core.messages import SystemMessage
 
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
@@ -53,6 +77,11 @@ from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
 
 from protocol import SimilarityQuery, SimilarityResponse
 from protocol.fixture.token import usdt_token
+
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from langchain.chat_models import init_chat_model
+from langgraph.prebuilt import create_react_agent
+
 
 date_time = PythonDateTime()
 
@@ -80,10 +109,18 @@ invest_agent = Agent(
     port=configuration.agent_port,
     endpoint=f"http://localhost:{configuration.agent_port}/submit",
 )
-
 w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
 
-chain = BscChain(w3=w3, private_key=configuration.bsc_private_key)
+nonce_manager = NonceManager(
+    w3=w3,
+    configuration={
+        "private_key": configuration.bsc_private_key,
+    },
+)
+
+chain = BscChain(
+    w3=w3, nonce_manager=nonce_manager, private_key=configuration.bsc_private_key
+)
 
 contract = BscContract(w3=w3)
 
@@ -91,6 +128,7 @@ requests_http_request = RequestsHttpRequest()
 
 aiohttp_http_request = AiohttpHttpRequest()
 
+id_generator = IdGenerator()
 
 api_client = ZeroXApiClient(
     configuration={
@@ -119,6 +157,27 @@ agent_to_agent_client = AiohttpAgentToAgentClient(
     aiohttp_http_request=aiohttp_http_request,
 )
 
+db_path = f"./database/{configuration.agent_env}/{configuration.agent_name}.db"
+langgraph_db_path = (
+    f"./database/{configuration.agent_env}/langgraph/{configuration.agent_name}.db"
+)
+
+engine = create_async_engine(
+    f"sqlite+aiosqlite:///{db_path}",
+    connect_args={"check_same_thread": False, "timeout": 60},
+    poolclass=StaticPool,
+)
+AsyncSessionLocal = cast(
+    type[AsyncSession], sessionmaker(expire_on_commit=False, class_=AsyncSession)
+)
+
+order_repository = SqlAlchemyOrderRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+transaction_repository = SqlAlchemyTransactionRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+
 get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
     storage=storage,
     exchange=exchange,
@@ -133,19 +192,35 @@ conversation_use_case = ConversationUseCase(
     date_time=date_time,
     configuration={
         "langchain_thread_id": configuration.langchain_thread_id,
-        "agent_name": configuration.agent_name,
-        "chat_model": configuration.chat_model,
-        "chat_provider": configuration.chat_provider,
-        "chat_provider_api_key": configuration.chat_provider_api_key,
     },
 )
 
 conversation_repository = LangchainSqliteConversationRepository(
-    db_path="./database/langchain_graphs.db", date_time=date_time
+    db_path=langgraph_db_path, date_time=date_time
 )
 
 get_conversation_messages_use_case = GetConversationMessagesUseCase(
     conversation_repository=conversation_repository
+)
+
+order_submitter = OrderSubmitter(
+    chain=chain,
+    exchange=exchange,
+    id_generator=id_generator,
+    date_time=date_time,
+    order_repository=order_repository,
+    transaction_repository=transaction_repository,
+)
+
+execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
+    id_generator=id_generator,
+    date_time=date_time,
+    chain=chain,
+    order_submitter=order_submitter,
+)
+execute_pending_orders_use_case = ExecutePendingOrdersUseCase(
+    order_submitter=order_submitter,
+    order_repository=order_repository,
 )
 
 
@@ -213,9 +288,6 @@ def get_agent_address():
 @tool()
 async def get_agent_balance(query: str):
     """Retrieve agent's current wallet balance in BNB."""
-    print("IN get_balance")
-    print(f"Query: {query}")
-
     return await chain.get_balance()
 
 
@@ -252,8 +324,6 @@ async def get_token_balance(token: Token):
     Returns:
         The balance of the token in the agent's wallet.
     """
-    print(f"Token: {token}")
-
     balance = await chain.get_token_balance_amount(token.address)
 
     return Balance(
@@ -262,26 +332,68 @@ async def get_token_balance(token: Token):
     )
 
 
+class ToolContent(TypedDict):
+    ui: str
+    args: Dict[str, Any]
+
+
+@tool(return_direct=True)
+async def prepare_investment_plan(
+    buy_intent_investment_plan: BuyIntentInvestmentPlan,
+) -> ToolContent:
+    """Prepare the investment plan for buying, selling or swapping assets.
+    Args:
+        intent_investment_plan: The intent investment plan containing the assets to buy, sell or swap. This investment plan may have blank values for sell assets or buy assets.
+        It interrupts the current graph execution and returns the intent investment plan to the user to fill the missing values.
+    """
+
+    print(f"Intent Investment Plan: {buy_intent_investment_plan}")
+
+    return {
+        "ui": "prepare_investment_plan",
+        "args": {
+            "intent_investment_plan": asdict(
+                convert_buy_intent_investment_plan_to_intent_investment_plan(
+                    buy_intent_investment_plan
+                )
+            ),
+        },
+    }
+
+
+def convert_buy_intent_investment_plan_to_intent_investment_plan(
+    buy_intent_investment_plan: BuyIntentInvestmentPlan,
+) -> IntentInvestmentPlan:
+    """Convert a BuyIntentInvestmentPlan to an InvestmentPlan."""
+    return IntentInvestmentPlan(
+        steps=[
+            IntentInvestmentPlanStep(
+                sell_balance=AssetBalance(asset=chain.get_base_token(), amount=None),
+                buy_balance=AssetBalance(
+                    asset=step.buy_token_or_basket,
+                    amount=step.buy_token_or_basket_quantity,
+                ),
+            )
+            for step in buy_intent_investment_plan.steps
+        ]
+    )
+
+
 @tool(response_format="content_and_artifact")
-async def buy_sell_or_swap_assets(intent_investment_plan: IntentInvestmentPlan):
+async def buy_assets_use_case(
+    investment_plan: InvestmentPlan,
+):
     """Buy or sell assets in the agent's wallet.
     If not provided the default buy or sell asset should be chain base token.
     Args:
-        intent_investment_plan: The intent investment plan containing the assets to buy, sell or swap.
+        investment_plan: The investment plan containing the assets to buy.
     Returns:
         An updated Portfolio containing the new Orders for each asset
     """
 
-    print(f"Intent Investment Plan: {intent_investment_plan}")
+    print(f"Investment Plan: {investment_plan}")
 
-    # message, portfolio = await buy_or_sell_assets_use_case.execute(
-    #     intent_investment_plan
-    # )
-
-    # content: Dict[str] = {
-    #     "message": message,
-    #     "basket_investment": portfolio,
-    # }
+    message, portfolio = await execute_investment_plan_use_case.execute(investment_plan)
 
     return "Success", "Success"
 
@@ -289,7 +401,8 @@ async def buy_sell_or_swap_assets(intent_investment_plan: IntentInvestmentPlan):
 tools = [
     get_basket_info,
     get_token_info,
-    buy_sell_or_swap_assets,
+    prepare_investment_plan,
+    buy_assets_use_case,
     get_agent_address,
     get_agent_balance,
     get_token_balance,
@@ -298,9 +411,15 @@ tools = [
 ]
 
 
+@invest_agent.on_event("startup")
+async def on_startup(_ctx: Context):
+    await nonce_manager.resync()
+    await execute_pending_orders_use_case.execute()
+
+
 class MessageRequest(Model):
     id: str
-    role: str
+    role: Literal["user"]
     content: str
     created_at: Optional[str]
 
@@ -312,7 +431,7 @@ class PromptRequest(Model):
 
 class MessageResponse(Model):
     id: str
-    role: str
+    role: Literal["user", "assistant", "tool"]
     content: str
     created_at: Optional[str]
 
@@ -350,15 +469,20 @@ class MessageResponse(Model):
 @invest_agent.on_rest_post("/conversation", PromptRequest, MessageResponse)
 @authentication(configuration.agent_key)
 async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
-    message = await conversation_use_case.execute(
-        tools=tools,
-        message=Message(
-            id=req.message.id,
-            role=req.message.role,
-            content=req.message.content,
-            created_at=req.message.created_at or date_time.now_str(),
-        ),
-    )
+    async with aiosqlite.connect(f"./database/{configuration.agent_name}.db") as conn:
+        agent_executor = __create_agent_executor(conn)
+
+        message = await conversation_use_case.execute(
+            agent_executor=agent_executor,
+            message=Message(
+                id=req.message.id,
+                role=req.message.role,
+                content=req.message.content,
+                created_at=req.message.created_at or date_time.now_str(),
+            ),
+        )
+
+    print(f"Message: {message}")
 
     return MessageResponse(
         id=message.id,
@@ -366,6 +490,33 @@ async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
         content=message.content,
         created_at=message.created_at,
     )
+
+
+def __create_agent_executor(conn: aiosqlite.Connection):
+    sqlite_memory = AsyncSqliteSaver(conn)
+
+    agent_executor = create_react_agent(
+        init_chat_model(
+            model=configuration.chat_model,
+            model_provider=configuration.chat_provider,
+            api_key=configuration.chat_provider_api_key,
+        ),
+        tools,
+        checkpointer=sqlite_memory,
+        prompt=SystemMessage(
+            f"Your name is {configuration.agent_name}.  "
+            f"Today is {date_time.now_str()}.  "
+            "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket of tokens.  "
+            "Users can buy, sell, or swap assets in their portfolio.  "
+            "Before buying, selling or swapping assets, always show the user the investment plan you are creating by showing the list of assets to buy, sell or swap.  "
+            "When you display a token, always display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't mention excluded assets.  "
+            "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  "
+            # "Always ask for the user's confirmation before updating the portfolio and show a message mentioning that he should do his own research (DYOR) before investing.  "
+            "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
+        ),
+    )
+
+    return agent_executor
 
 
 class MessagesRequest(Model):

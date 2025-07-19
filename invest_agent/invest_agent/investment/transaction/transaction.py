@@ -13,8 +13,9 @@ class Transaction:
     buy_balance: Balance
     type: Literal["SELL", "BUY", "SWAP"]
     created_at: int
-    fee: Fees
     transaction_hash: str
     order_id: Id
     trigger: Literal["MANUAL", "AUTOMATIC"]
+    # TODO: Make fees required
+    fees: Fees | None = None
     basket_id: Id | None = None

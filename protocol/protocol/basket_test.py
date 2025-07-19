@@ -1,3 +1,4 @@
+from decimal import Decimal
 from protocol.basket import Basket
 from protocol.token import Token
 
@@ -7,6 +8,7 @@ def test_basket__str__():
         id="1234",
         name="Big2",
         description="Big2",
+        unit=Decimal("1.0"),
         tokens=[
             Token(
                 id="456",

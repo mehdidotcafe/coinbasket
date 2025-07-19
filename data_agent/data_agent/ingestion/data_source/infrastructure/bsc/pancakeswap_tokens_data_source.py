@@ -58,7 +58,7 @@ class PancakeswapTokenListDataSource(DataSource):
         ]
 
     def version(self):
-        return 1
+        return 2
 
     def __map_pancakeswap_token_to_similarity_document(
         self, pancakeswap_token: PancakeswapToken

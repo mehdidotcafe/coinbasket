@@ -1,16 +1,19 @@
 from decimal import Decimal
 import json
-from typing import Any, TypedDict
+from typing import TypedDict, cast
 from eth_typing import HexStr
 from eth_account.signers.local import LocalAccount
+from hexbytes import HexBytes
 from invest_agent.chain.exception.insufficient_balance import InsufficientBalance
+from invest_agent.infrastructure.bsc.chain.nonce_manager import NonceManager
+from tenacity import retry, stop_after_attempt, wait_fixed
 from web3 import AsyncWeb3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
 from web3.types import TxParams, Wei
 
 from protocol.token import Token
 from invest_agent.chain.balance import Balance
-from invest_agent.chain.chain import Chain, Gas, TransactionFailure
+from invest_agent.chain.chain import Chain, Gas
 
 from async_lru import alru_cache
 
@@ -25,10 +28,11 @@ class BscChain(Chain):
     def __init__(
         self,
         w3: AsyncWeb3,
+        nonce_manager: NonceManager,
         private_key: str,
     ):
         self.w3 = w3
-
+        self.nonce_manager = nonce_manager
         self.private_key = private_key
         self.base_token = Token(
             id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
@@ -91,9 +95,6 @@ class BscChain(Chain):
         """Get the available balance of the agent address."""
         balance = await self.get_balance()
         min_balance = await self.get_min_balance()
-
-        print(f"Balance: {balance}")
-        print(f"Min balance: {min_balance}")
 
         if balance.amount < min_balance.amount:
             raise InsufficientBalance(
@@ -162,18 +163,27 @@ class BscChain(Chain):
 
         return gas_estimate
 
-    async def sign_send_wait_transaction(
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(5),
+        reraise=True,
+    )
+    async def sign_send_transaction(
         self,
         amount: int,
         gas: Gas | None = None,
         to_address: str | None = None,
         encoded_input: HexStr | None = None,
-    ) -> Any:
+    ) -> str:
+        nonce = await self.nonce_manager.get_and_increment()
+
+        print(f"Nonce: {nonce}")
+
         transaction_params: TxParams = {
             "from": self.account.address,
             "chainId": await self.get_chain_id(),
             "value": Wei(amount),
-            "nonce": await self.w3.eth.get_transaction_count(self.account.address),
+            "nonce": nonce,
         }
         if encoded_input is not None:
             transaction_params["data"] = encoded_input
@@ -196,22 +206,27 @@ class BscChain(Chain):
         if gas is not None and gas.gas_price is not None:
             transaction_params["gasPrice"] = Wei(gas.gas_price)
 
-        transaction_hash = await self.w3.eth.send_transaction(transaction_params)
+        try:
+            transaction_hash = await self.w3.eth.send_transaction(transaction_params)
 
-        receipt = await self.w3.eth.wait_for_transaction_receipt(transaction_hash)
+            return cast(str, transaction_hash)
+        except Exception as e:
+            error_message = str(e).lower()
 
-        if receipt["status"] != 1:
-            try:
-                await self.w3.eth.call(
-                    transaction_params,
-                    block_identifier=receipt["blockNumber"],
-                )
-            except Exception as e:
-                print(f"Transaction failed: {e}")
-                raise TransactionFailure() from e
-            print("Transaction failed.")
-            raise TransactionFailure()
-        return receipt
+            if "nonce too low" in error_message or "already used" in error_message:
+                await self.nonce_manager.resync()
+                raise e
+            raise e
+
+    async def wait_transaction(
+        self,
+        transaction_hash: str,
+    ) -> bool:
+        receipt = await self.w3.eth.wait_for_transaction_receipt(
+            cast(HexBytes, transaction_hash)
+        )
+
+        return receipt["status"] == 1
 
     async def __compute_eip1559_gas_estimate(self):
         """Compute gas estimate for EIP-1559 transactions."""

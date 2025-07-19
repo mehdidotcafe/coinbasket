@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from decimal import Decimal
 from data_agent.ingestion.data_source.data_source import DataSource
 from data_agent.similarity.similarity_document import SimilarityDocument
 
@@ -13,6 +14,7 @@ class Big4BasketDataSource(DataSource):
             id=self.id,
             name="Big4",
             description="This curated basket offers broad exposure to the crypto market through a selection of established, high-liquidity digital assets spanning different blockchain ecosystems. It is designed to balance long-term value preservation with growth potential, reflecting both foundational and emerging trends in decentralized technology. The combination supports diversification across transaction layers, use cases, and network adoption, making it a resilient core holding for crypto-oriented portfolios.",
+            unit=Decimal("10.0"),
             tokens=[
                 Token(
                     id="bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
@@ -49,7 +51,7 @@ class Big4BasketDataSource(DataSource):
         return [self.__map_basket_to_similarity_document(self.basket)]
 
     def version(self):
-        return 1
+        return 2
 
     def __map_basket_to_similarity_document(self, basket: Basket) -> SimilarityDocument:
         """

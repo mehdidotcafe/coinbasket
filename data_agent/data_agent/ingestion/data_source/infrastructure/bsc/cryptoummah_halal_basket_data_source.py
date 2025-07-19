@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from decimal import Decimal
 from data_agent.ingestion.data_source.data_source import DataSource
 from data_agent.similarity.similarity_document import SimilarityDocument
 
@@ -13,6 +14,7 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
             id=self.id,
             name="Cryptoummah.com Certified Halal",
             description="This basket features a curated selection of major blockchain assets that align with Cryptoummah.com's halal screening framework. Focused on transparency, utility, and real-world adoption, these assets represent foundational layers of the global crypto economy while adhering to ethical and Shariah-compliant investment principles. This basket is designed for faith-conscious investors seeking exposure to leading digital assets without compromising on religious values.",
+            unit=Decimal("10.0"),
             tokens=[
                 Token(
                     id="bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
@@ -70,7 +72,7 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
         return [self.__map_basket_to_similarity_document(self.basket)]
 
     def version(self):
-        return 1
+        return 2
 
     def __map_basket_to_similarity_document(self, basket: Basket) -> SimilarityDocument:
         """

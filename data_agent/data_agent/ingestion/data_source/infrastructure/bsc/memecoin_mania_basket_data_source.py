@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from decimal import Decimal
 from data_agent.ingestion.data_source.data_source import DataSource
 from data_agent.similarity.similarity_document import SimilarityDocument
 
@@ -13,6 +14,7 @@ class MemecoinManiaBasketDataSource(DataSource):
             id=self.id,
             name="Memecoin mania",
             description="This basket offers concentrated exposure to the memecoin sector—tokens driven by internet culture, viral trends, and highly engaged online communities. Often fueled by humor, speculation, and social media influence, memecoins represent a unique and volatile niche within the crypto landscape. This basket is designed for investors who understand the high-risk, high-reward nature of memecoins and are looking to capture upside from rapidly shifting narratives and collective enthusiasm in the digital economy.",
+            unit=Decimal("0.1"),
             tokens=[
                 Token(
                     id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
@@ -70,7 +72,7 @@ class MemecoinManiaBasketDataSource(DataSource):
         return [self.__map_basket_to_similarity_document(self.basket)]
 
     def version(self):
-        return 1
+        return 2
 
     def __map_basket_to_similarity_document(self, basket: Basket) -> SimilarityDocument:
         """

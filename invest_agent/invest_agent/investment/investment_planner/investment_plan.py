@@ -1,15 +1,12 @@
 from dataclasses import dataclass
 
-from protocol.basket import Basket
-from protocol.token import Token
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.asset_balance import AssetBalance
 
 
 @dataclass
 class InvestmentPlanStep:
-    buy_token: Token
-    sell_balance: Balance
-    basket: Basket | None = None
+    buy_balance: AssetBalance
+    sell_balance: AssetBalance
 
 
 @dataclass

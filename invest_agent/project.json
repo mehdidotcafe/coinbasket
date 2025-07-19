@@ -93,10 +93,10 @@
       "cache": true
     },
     "test:integration": {
-      "dependsOn": ["infra:test"],
+      "dependsOn": ["infra:test", "migration:test:apply"],
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.test poetry run pytest -k \"test_integration\"",
+        "command": "../script/run_integration_tests.sh",
         "cwd": "{projectRoot}"
       },
       "cache": true
@@ -136,6 +136,49 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "docker compose -f docker-compose-test.yml down",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:init": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "yoyo init migration",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:new": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "yoyo new --database \"sqlite:///database/$AGENT_ENV/$AGENT_NAME.db\" -m \"{args}\"",
+        "cwd": "{projectRoot}",
+        "args": ""
+      }
+    },
+    "migration:apply": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "yoyo apply --database \"sqlite:///database/$AGENT_ENV/$AGENT_NAME.db\" -b",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:test:apply": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test --use-shell 'echo '' > database/$AGENT_ENV/$AGENT_NAME.db ; yoyo apply --database \"sqlite:///database/$AGENT_ENV/$AGENT_NAME.db\" -b'",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:rollback": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "yoyo rollback --database \"sqlite:///database/$AGENT_ENV/$AGENT_NAME.db\" -b",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:list": {
+      "executor": "@nxlv/python:run-commands --database \"sqlite:///database/$AGENT_ENV/$AGENT_NAME.db\"",
+      "options": {
+        "command": "yoyo list",
         "cwd": "{projectRoot}"
       }
     }

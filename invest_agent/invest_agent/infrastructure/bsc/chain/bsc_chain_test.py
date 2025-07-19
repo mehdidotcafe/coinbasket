@@ -1,8 +1,8 @@
 from unittest import mock
 from eth_typing import HexStr
-from hexbytes import HexBytes
-from invest_agent.chain.chain import Gas, TransactionFailure
+from invest_agent.chain.chain import Gas
 from invest_agent.chain.exception.insufficient_balance import InsufficientBalance
+from invest_agent.infrastructure.bsc.chain.nonce_manager import NonceManager
 from pytest import fixture, mark, raises
 from decimal import Decimal
 from web3 import AsyncWeb3
@@ -42,10 +42,18 @@ def base_token():
 
 
 @fixture
-def bsc_chain(w3: AsyncWeb3):
+def nonce_manager():
+    nonce_manager = mock.Mock(spec=NonceManager)
+    nonce_manager.get_and_increment = mock.AsyncMock(return_value=9)
+    return nonce_manager
+
+
+@fixture
+def bsc_chain(w3: AsyncWeb3, nonce_manager: NonceManager):
     return BscChain(
         w3=w3,
         private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        nonce_manager=nonce_manager,
     )
 
 
@@ -273,24 +281,20 @@ async def test_bsc_chain_compute_gas_estimate_without_encoded_input(
 
 
 @mark.asyncio
-async def test_bsc_chain_sign_send_wait_transaction_without_gas_params(
+async def test_bsc_chain_sign_send_transaction_without_gas_params(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount = 1000
     encoded_input = HexStr("0xbadf00d")
 
     w3.eth.send_transaction.return_value = "0xtransactionhash"
-    w3.eth.get_transaction_count = mock.AsyncMock(return_value=9)
-    w3.eth.wait_for_transaction_receipt.return_value = {
-        "status": 1,
-    }
     block_data = mock.Mock()
     block_data.get.return_value = Wei(1_000_000_000)
 
     w3.eth.get_block = mock.AsyncMock(return_value=block_data)
     w3.to_wei.return_value = Wei(5_000_000)
 
-    await bsc_chain.sign_send_wait_transaction(
+    await bsc_chain.sign_send_transaction(
         amount=amount,
         encoded_input=encoded_input,
         to_address="0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
@@ -312,7 +316,7 @@ async def test_bsc_chain_sign_send_wait_transaction_without_gas_params(
 
 
 @mark.asyncio
-async def test_bsc_chain_sign_send_wait_transaction_success(
+async def test_bsc_chain_sign_send_transaction_success(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount = 1000
@@ -320,12 +324,8 @@ async def test_bsc_chain_sign_send_wait_transaction_success(
     encoded_input = HexStr("0xbadf00d")
 
     w3.eth.send_transaction.return_value = "0xtransactionhash"
-    w3.eth.get_transaction_count.return_value = 9
-    w3.eth.wait_for_transaction_receipt.return_value = {
-        "status": 1,
-    }
 
-    receipt = await bsc_chain.sign_send_wait_transaction(
+    transaction_hash = await bsc_chain.sign_send_transaction(
         amount=amount,
         gas=gas,
         encoded_input=encoded_input,
@@ -344,84 +344,41 @@ async def test_bsc_chain_sign_send_wait_transaction_success(
             "to": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef_checksum",
         }
     )
-    w3.eth.wait_for_transaction_receipt.assert_called_once_with("0xtransactionhash")
 
-    assert receipt == {
+    assert transaction_hash == "0xtransactionhash"
+
+
+@mark.asyncio
+async def test_bsc_chain_wait_transaction_success(bsc_chain: BscChain, w3: AsyncWeb3):
+    transaction_hash = "0xtransactionhash"
+
+    w3.eth.wait_for_transaction_receipt.return_value = {
         "status": 1,
+        "blockNumber": 123456,
     }
+
+    is_success = await bsc_chain.wait_transaction(transaction_hash)
+
+    w3.eth.wait_for_transaction_receipt.assert_called_once_with(
+        HexStr(transaction_hash)
+    )
+
+    assert is_success == True
 
 
 @mark.asyncio
-async def test_bsc_chain_sign_send_wait_transaction_failure_call_no_raise(
-    bsc_chain: BscChain, w3: AsyncWeb3
-):
-    amount = 1000
-    gas = Gas(gas=21000, gas_price=1_000_000_000)
-    encoded_input = HexStr("0xbadf00d")
+async def test_bsc_chain_wait_transaction_failure(bsc_chain: BscChain, w3: AsyncWeb3):
+    transaction_hash = "0xtransactionhash"
 
-    w3.eth.send_transaction.return_value = "0xtransactionhash"
-    w3.eth.get_transaction_count.return_value = 9
     w3.eth.wait_for_transaction_receipt.return_value = {
         "status": 0,
         "blockNumber": 123456,
     }
 
-    w3.eth.call.return_value = HexBytes("0x12345")
+    is_success = await bsc_chain.wait_transaction(transaction_hash)
 
-    with raises(TransactionFailure):
-        await bsc_chain.sign_send_wait_transaction(
-            amount=amount,
-            gas=gas,
-            encoded_input=encoded_input,
-        )
-
-    w3.eth.call.assert_called_once_with(
-        {
-            "from": "0x1234567890abcdef1234567890abcdef12345678",
-            "chainId": 42,
-            "value": Wei(1000),
-            "nonce": 9,
-            "data": HexStr("0xbadf00d"),
-            "gas": 21000,
-            "gasPrice": Wei(1_000_000_000),
-        },
-        block_identifier=123456,
+    w3.eth.wait_for_transaction_receipt.assert_called_once_with(
+        HexStr(transaction_hash)
     )
 
-
-@mark.asyncio
-async def test_bsc_chain_sign_send_wait_transaction_failure_call_raise(
-    bsc_chain: BscChain, w3: AsyncWeb3
-):
-    amount = 1000
-    gas = Gas(gas=21000, gas_price=1_000_000_000)
-    encoded_input = HexStr("0xbadf00d")
-
-    w3.eth.send_transaction.return_value = "0xtransactionhash"
-    w3.eth.get_transaction_count.return_value = 9
-    w3.eth.wait_for_transaction_receipt.return_value = {
-        "status": 0,
-        "blockNumber": 123456,
-    }
-
-    w3.eth.call.side_effect = TransactionFailure()
-
-    with raises(TransactionFailure):
-        await bsc_chain.sign_send_wait_transaction(
-            amount=amount,
-            gas=gas,
-            encoded_input=encoded_input,
-        )
-
-    w3.eth.call.assert_called_once_with(
-        {
-            "from": "0x1234567890abcdef1234567890abcdef12345678",
-            "chainId": 42,
-            "value": Wei(1000),
-            "nonce": 9,
-            "data": HexStr("0xbadf00d"),
-            "gas": 21000,
-            "gasPrice": Wei(1_000_000_000),
-        },
-        block_identifier=123456,
-    )
+    assert is_success == False

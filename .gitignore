@@ -18,6 +18,17 @@ package-lock.json
 .venv
 __pycache__
 
-# Invest Agent Local databases
+# Invest Agent database. Keep the structure but ignore contents.
 invest_agent/database/*
-!invest_agent/database/.gitkeep
+
+!invest_agent/database/production/
+!invest_agent/database/development/
+!invest_agent/database/test/
+
+invest_agent/database/production/*
+invest_agent/database/development/*
+invest_agent/database/test/*
+
+!invest_agent/database/production/.gitkeep
+!invest_agent/database/development/.gitkeep
+!invest_agent/database/test/.gitkeep
