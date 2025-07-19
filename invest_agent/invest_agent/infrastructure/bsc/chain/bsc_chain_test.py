@@ -363,7 +363,7 @@ async def test_bsc_chain_wait_transaction_success(bsc_chain: BscChain, w3: Async
         HexStr(transaction_hash)
     )
 
-    assert is_success == True
+    assert is_success
 
 
 @mark.asyncio
@@ -381,4 +381,4 @@ async def test_bsc_chain_wait_transaction_failure(bsc_chain: BscChain, w3: Async
         HexStr(transaction_hash)
     )
 
-    assert is_success == False
+    assert not is_success

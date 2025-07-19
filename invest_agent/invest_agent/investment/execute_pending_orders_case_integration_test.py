@@ -1,6 +1,6 @@
 from asyncio import sleep
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.order.order import ChainTransaction, Order, Try
 from pytest import fixture

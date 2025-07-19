@@ -5,17 +5,11 @@ from invest_agent.chain.chain import Chain
 
 # from invest_agent.investment.basket_investment import BasketInvestment, Bid
 from invest_agent.investment.exchange.exchange import Wallet, Exchange
-from invest_agent.investment.investment_parameters import (
-    IntegratorFee,
-    InvestmentParameters,
-)
 from invest_agent.metrics.get_wallet_in_token_use_case import (
     Configuration,
-    GetWalletInTokenUseCase,
 )
-from invest_agent.storage.storage import Storage
 from protocol.token import Token
-from pytest import fixture, mark
+from pytest import fixture
 
 
 # @fixture

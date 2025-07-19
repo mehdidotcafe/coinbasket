@@ -380,7 +380,7 @@ def convert_buy_intent_investment_plan_to_intent_investment_plan(
 
 
 @tool(response_format="content_and_artifact")
-async def buy_assets_use_case(
+async def buy_assets_from_investment_plan_use_case(
     investment_plan: InvestmentPlan,
 ):
     """Buy or sell assets in the agent's wallet.
@@ -402,7 +402,7 @@ tools = [
     get_basket_info,
     get_token_info,
     prepare_investment_plan,
-    buy_assets_use_case,
+    buy_assets_from_investment_plan_use_case,
     get_agent_address,
     get_agent_balance,
     get_token_balance,

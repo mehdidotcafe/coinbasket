@@ -6,7 +6,6 @@ from invest_agent.chain.balance import Balance
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_parameters import (
     IntegratorFee,
-    InvestmentParameters,
 )
 from invest_agent.storage.storage import Storage
 from protocol.token import Token

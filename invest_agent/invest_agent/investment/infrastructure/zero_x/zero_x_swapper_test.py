@@ -28,9 +28,6 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import (
     ZeroXSwapper,
 )
 from invest_agent.investment.investment_parameters import InvestmentParameters
-from invest_agent.investment.infrastructure.zero_x.quote import (
-    InsufficientLiquidityQuote,
-)
 
 from invest_agent.investment.order.order import Order
 from pytest import fixture, mark, raises
