@@ -6,7 +6,7 @@ from invest_agent.investment.order.order import ChainTransaction, Order, Try
 from pytest import fixture
 from sqlalchemy import select
 
-from invest_agent.main import execute_pending_orders_use_case, engine, AsyncSessionLocal
+from invest_agent.main import execute_pending_orders_use_case
 from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
     OrderModel,
     OrderTryChainTransactionModel,
@@ -18,6 +18,9 @@ from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository i
     OrderTryModel,
 )
 from protocol.fixture.token import bnb_token, eth_token, usdt_token, sol_token
+
+from invest_agent.test.database.make_session import make_session
+from invest_agent.test.database.cleanup_all import cleanup_all
 
 
 @fixture
@@ -61,7 +64,7 @@ def current_orders_no_try():
 
 @fixture(scope="function")
 async def seed_orders_no_try(current_orders_no_try: list[Order]):
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         async with session.begin():
             for order in current_orders_no_try:
                 order_model = OrderModel(
@@ -77,10 +80,6 @@ async def seed_orders_no_try(current_orders_no_try: list[Order]):
                 session.add(order_model)
 
     yield current_orders_no_try
-
-    async with AsyncSessionLocal(bind=engine) as session:
-        async with session.begin():
-            await session.execute(OrderModel.__table__.delete())
 
 
 @fixture
@@ -174,7 +173,7 @@ def current_orders_tries():
 
 @fixture(scope="function")
 async def seed_orders_tries(current_orders_tries: list[Order]):
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         async with session.begin():
             for order in current_orders_tries:
                 order_model = OrderModel(
@@ -214,27 +213,23 @@ async def seed_orders_tries(current_orders_tries: list[Order]):
 
     yield current_orders_tries
 
-    async with AsyncSessionLocal(bind=engine) as session:
-        async with session.begin():
-            await session.execute(OrderModel.__table__.delete())
-
 
 async def fetch_order_by_id(id: str):
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         result = await session.execute(select(OrderModel).where(OrderModel.id == id))
         row = result.scalar_one_or_none()
         return row
 
 
 async def fetch_all_orders():
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         result = await session.execute(select(OrderModel))
         rows = result.scalars().all()
         return rows
 
 
 async def fetch_order_tries_by_order_id(order_id: str):
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         result = await session.execute(
             select(OrderTryModel).where(OrderTryModel.order_id == order_id)
         )
@@ -243,7 +238,7 @@ async def fetch_order_tries_by_order_id(order_id: str):
 
 
 async def fetch_chain_transaction_by_id(chain_transaction_id: str):
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         result = await session.execute(
             select(OrderTryChainTransactionModel).where(
                 OrderTryChainTransactionModel.id == chain_transaction_id
@@ -254,7 +249,7 @@ async def fetch_chain_transaction_by_id(chain_transaction_id: str):
 
 
 async def fetch_chain_transactions_by_try_id(try_id: str):
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         result = await session.execute(
             select(OrderTryChainTransactionModel).where(
                 OrderTryChainTransactionModel.try_id == try_id
@@ -265,7 +260,7 @@ async def fetch_chain_transactions_by_try_id(try_id: str):
 
 
 async def fetch_transaction_by_order_id(order_id: str):
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         result = await session.execute(
             select(TransactionModel).where(TransactionModel.order_id == order_id)
         )
@@ -279,6 +274,7 @@ async def wait_for_orders():
 
 async def test_integration_execute_pending_orders_use_case_no_try(
     seed_orders_no_try: Any,
+    cleanup_all: Any,
 ):
     await execute_pending_orders_use_case.execute()
 
@@ -298,6 +294,7 @@ async def test_integration_execute_pending_orders_use_case_no_try(
 
 async def test_integration_execute_pending_orders_use_case_with_tries(
     seed_orders_tries: Any,
+    cleanup_all: Any,
 ):
     await execute_pending_orders_use_case.execute()
 

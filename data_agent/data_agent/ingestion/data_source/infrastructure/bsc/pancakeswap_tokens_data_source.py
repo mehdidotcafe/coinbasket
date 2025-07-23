@@ -1,7 +1,5 @@
-from dataclasses import asdict
 from pydantic import BaseModel
 import re
-
 from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.ingestion.data_source.data_source import DataSource
@@ -76,9 +74,9 @@ class PancakeswapTokenListDataSource(DataSource):
 
         return SimilarityDocument(
             id=self.__generate_id(token),
-            page_content=token.__str__(),
+            page_content=str(token),
             metadata={
-                "source": asdict(token),
+                "source": token.to_dict(),
                 "type": "token",
                 "version": self.version(),
             },

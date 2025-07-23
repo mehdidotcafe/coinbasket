@@ -317,7 +317,7 @@ async def test_order_submitter_submit_and_wait_order_failed(
     # 1 PENDING Try + 5 Attemps
     assert order_repository.set_order_try_chain_transaction_to_fail.call_count == 1 + 5
 
-    order_repository.set_order_to_failed.assert_called_once_with(order.id)
+    order_repository.set_order_to_fail.assert_called_once_with(order.id)
 
 
 @mark.asyncio
@@ -379,4 +379,4 @@ async def test_order_submitter_submit_and_wait_order_retries(
         ]
     )
     order_repository.set_order_to_success.assert_called_once_with(order.id)
-    order_repository.set_order_to_failed.assert_not_called()
+    order_repository.set_order_to_fail.assert_not_called()

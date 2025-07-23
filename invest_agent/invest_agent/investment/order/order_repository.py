@@ -20,7 +20,7 @@ class OrderRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def set_order_to_failed(self, order_id: Id) -> None:
+    async def set_order_to_fail(self, order_id: Id) -> None:
         """Set an order status to failed."""
         raise NotImplementedError
 

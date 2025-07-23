@@ -4,8 +4,6 @@ from typing import Any
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
     OrderModel,
-    OrderTryChainTransactionModel,
-    OrderTryModel,
 )
 from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
     TransactionModel,
@@ -14,8 +12,6 @@ from pytest import fixture, mark
 
 from invest_agent.main import (
     execute_investment_plan_use_case,
-    AsyncSessionLocal,
-    engine,
 )
 from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
@@ -24,6 +20,9 @@ from invest_agent.investment.investment_planner.investment_plan import (
 from protocol.token import Token
 from invest_agent.chain.asset_balance import BalancedBasket, BasketBalance, TokenBalance
 from sqlalchemy import select
+
+from invest_agent.test.database.make_session import make_session
+from invest_agent.test.database.cleanup_all import cleanup_all
 
 
 @fixture
@@ -35,7 +34,9 @@ def investment_plan():
                     amount=Decimal("1"),
                     basket=BalancedBasket(
                         id="c0e724d3-c4d0-4bd0-973d-edd3907ecf51",
-                        unit_value=Decimal("1"),
+                        name="Memecoin Mania",
+                        description="A basket of popular memecoins",
+                        denomination=Decimal("1"),
                         balances=[
                             TokenBalance(
                                 buy_balance=Balance(
@@ -232,38 +233,27 @@ def investment_plan():
 
 
 async def fetch_all_orders():
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         result = await session.execute(select(OrderModel))
         rows = result.scalars().all()
         return rows
 
 
 async def fetch_all_transactions():
-    async with AsyncSessionLocal(bind=engine) as session:
+    async with make_session() as session:
         result = await session.execute(select(TransactionModel))
         rows = result.scalars().all()
         return rows
 
 
 async def wait_for_orders():
-    await sleep(60)
-
-
-@fixture(scope="function")
-async def cleanup():
-    yield
-    async with AsyncSessionLocal(bind=engine) as session:
-        async with session.begin():
-            await session.execute(OrderModel.__table__.delete())
-            await session.execute(OrderTryModel.__table__.delete())
-            await session.execute(OrderTryChainTransactionModel.__table__.delete())
-            await session.execute(TransactionModel.__table__.delete())
+    await sleep(75)
 
 
 @mark.asyncio
 async def test_integration_execute_investment_plan_use_case(
     investment_plan: InvestmentPlan,
-    cleanup: Any,
+    cleanup_all: Any,
 ):
     await execute_investment_plan_use_case.execute(investment_plan)
 
@@ -288,5 +278,6 @@ async def test_integration_execute_investment_plan_use_case(
 
     # Check if all transactions are linked to the correct orders regardless of order
     assert all(
-        transaction.order_id in [order.id for order in orders] for transaction in transactions
+        transaction.order_id in [order.id for order in orders]
+        for transaction in transactions
     )

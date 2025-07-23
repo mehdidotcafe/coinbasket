@@ -1,5 +1,3 @@
-from dataclasses import asdict
-
 from pydantic import BaseModel
 
 from data_agent.ingestion.id.id_generator import IdGenerator
@@ -68,9 +66,9 @@ class CoingeckoTokenListDataSource(DataSource):
 
         return SimilarityDocument(
             id=self.__generate_id(token),
-            page_content=token.__str__(),
+            page_content=str(token),
             metadata={
-                "source": asdict(token),
+                "source": token.to_dict(),
                 "type": "token",
                 "version": self.version(),
             },

@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from decimal import Decimal
 from data_agent.ingestion.data_source.data_source import DataSource
 from data_agent.similarity.similarity_document import SimilarityDocument
@@ -14,7 +13,7 @@ class CmcTop102025BasketDataSource(DataSource):
             id=self.id,
             name="Coinmarketcap Top 10 2025",
             description="This basket features a diverse mix of leading Layer-1 and utility tokens that form the backbone of the blockchain ecosystem in 2025. Representing widely adopted smart contract platforms, cross-chain protocols, and decentralized infrastructure, these assets reflect the continued maturity and interoperability of the crypto space. By excluding stablecoins, the basket maintains direct exposure to market-driven value while focusing on assets that power network operations, governance, and user interaction across decentralized applications.",
-            unit=Decimal("10.0"),
+            denomination=Decimal("10.0"),
             tokens=[
                 Token(
                     id="bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
@@ -103,7 +102,7 @@ class CmcTop102025BasketDataSource(DataSource):
             id=self.id,
             page_content=str(basket),
             metadata={
-                "source": asdict(basket),
+                "source": basket.to_dict(),
                 "type": "basket",
                 "version": self.version(),
             },

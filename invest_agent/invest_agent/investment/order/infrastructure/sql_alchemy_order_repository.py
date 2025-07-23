@@ -132,13 +132,13 @@ class SqlAlchemyOrderRepository(OrderRepository):
                     .values(status="SUCCESS")
                 )
 
-    async def set_order_to_failed(self, order_id: Id) -> None:
+    async def set_order_to_fail(self, order_id: Id) -> None:
         async with self.AsyncSessionLocal(bind=self.engine) as session:
             async with session.begin():
                 await session.execute(
                     OrderModel.__table__.update()
                     .where(OrderModel.id == order_id)
-                    .values(status="FAILED")
+                    .values(status="FAIL")
                 )
 
     async def get_pending_orders(self) -> list[Order]:

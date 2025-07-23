@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Reset langgraph database
+env-cmd -f .env.test --use-shell 'echo '' > "../invest_agent/database/$AGENT_ENV/$AGENT_NAME.langgraph.db"' 
+
 env-cmd -f .env.test poetry run python -m invest_agent.main &
 API_PID=$!
 

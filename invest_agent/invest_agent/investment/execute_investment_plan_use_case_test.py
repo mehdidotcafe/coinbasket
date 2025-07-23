@@ -138,7 +138,9 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                         amount=Decimal(1),
                         basket=BalancedBasket(
                             id="basket1",
-                            unit_value=Decimal(1),
+                            name="Basket 1",
+                            description="A sample basket",
+                            denomination=Decimal(1),
                             balances=[
                                 TokenBalance(
                                     sell_balance=Balance(
@@ -166,7 +168,9 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                         amount=Decimal(1),
                         basket=BalancedBasket(
                             id="basket2",
-                            unit_value=Decimal(1),
+                            name="Basket 2",
+                            description="A sample basket",
+                            denomination=Decimal(1),
                             balances=[
                                 TokenBalance(
                                     sell_balance=Balance(
@@ -261,7 +265,9 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                         amount=Decimal(1),
                         basket=BalancedBasket(
                             id="basket1",
-                            unit_value=Decimal(1),
+                            name="Basket 1",
+                            description="A sample basket",
+                            denomination=Decimal(1),
                             balances=[
                                 TokenBalance(
                                     sell_balance=Balance(
@@ -353,7 +359,9 @@ async def test_execute_investment_plan_use_case_buy_basket_sell_basket(
                             amount=Decimal(1),
                             basket=BalancedBasket(
                                 id="basket1",
-                                unit_value=Decimal(1),
+                                name="Basket 1",
+                                description="A sample basket",
+                                denomination=Decimal(1),
                                 balances=[
                                     TokenBalance(
                                         sell_balance=Balance(
@@ -370,7 +378,9 @@ async def test_execute_investment_plan_use_case_buy_basket_sell_basket(
                             amount=Decimal(0.5),
                             basket=BalancedBasket(
                                 id="basket2",
-                                unit_value=Decimal(1),
+                                name="Basket 2",
+                                description="A sample basket",
+                                denomination=Decimal(1),
                                 balances=[
                                     TokenBalance(
                                         sell_balance=Balance(
@@ -473,7 +483,9 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                         amount=Decimal(1),
                         basket=BalancedBasket(
                             id="basket1",
-                            unit_value=Decimal(1),
+                            name="Basket 1",
+                            description="A sample basket",
+                            denomination=Decimal(1),
                             balances=[
                                 TokenBalance(
                                     sell_balance=Balance(
@@ -501,7 +513,9 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                         amount=Decimal(1),
                         basket=BalancedBasket(
                             id="basket2",
-                            unit_value=Decimal(1),
+                            name="Basket 2",
+                            description="A sample basket",
+                            denomination=Decimal(1),
                             balances=[
                                 TokenBalance(
                                     sell_balance=Balance(
@@ -596,7 +610,9 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                         amount=Decimal(1),
                         basket=BalancedBasket(
                             id="basket1",
-                            unit_value=Decimal(1),
+                            name="Basket 1",
+                            description="A sample basket",
+                            denomination=Decimal(1),
                             balances=[
                                 TokenBalance(
                                     sell_balance=Balance(

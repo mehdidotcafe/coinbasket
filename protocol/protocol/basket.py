@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 from protocol.token import Token
 
@@ -9,7 +10,7 @@ class Basket:
     id: str
     name: str
     description: str
-    unit: Decimal
+    denomination: Decimal
     tokens: list[Token]
 
     def __str__(self) -> str:
@@ -26,3 +27,12 @@ type: basket
  ticker: {token.ticker}
  address: {token.address}
 """
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "denomination": str(self.denomination),
+            "tokens": [token.to_dict() for token in self.tokens],
+        }

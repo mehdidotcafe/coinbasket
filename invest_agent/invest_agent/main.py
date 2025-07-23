@@ -1,8 +1,18 @@
-from dataclasses import asdict
+from decimal import Decimal
 import os
-from typing import Any, Dict, Literal, Optional, TypedDict, cast
+from typing import Any, Dict, Literal, Optional, cast
 
 import aiosqlite
+from invest_agent.chain.asset_balance import (
+    AssetBalance,
+    BalancedBasket,
+    BasketBalance,
+    TokenBalance,
+)
+from invest_agent.investment.investment_planner.investment_plan import (
+    InvestmentPlan,
+    InvestmentPlanStep,
+)
 from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
     SqlAlchemyOrderRepository,
 )
@@ -18,7 +28,7 @@ from invest_agent.chain.balance import Balance
 from invest_agent.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
-from invest_agent.conversation.message import Message
+from invest_agent.conversation.message import Message, QueryMessage
 from invest_agent.conversation.repository.infrastructure.langchain_sqlite_conversation_repository import (
     LangchainSqliteConversationRepository,
 )
@@ -35,13 +45,7 @@ from invest_agent.investment.execute_pending_orders_use_case import (
     ExecutePendingOrdersUseCase,
 )
 from invest_agent.investment.investment_planner.intent_investment_plan import (
-    AssetBalance,
-    BuyIntentInvestmentPlan,
     IntentInvestmentPlan,
-    IntentInvestmentPlanStep,
-)
-from invest_agent.investment.investment_planner.investment_plan import (
-    InvestmentPlan,
 )
 from invest_agent.investment.execute_investment_plan_use_case import (
     ExecuteInvestmentPlanUseCase,
@@ -81,6 +85,7 @@ from protocol.fixture.token import usdt_token
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langchain.chat_models import init_chat_model
 from langgraph.prebuilt import create_react_agent
+from langgraph.types import interrupt
 
 
 date_time = PythonDateTime()
@@ -159,7 +164,7 @@ agent_to_agent_client = AiohttpAgentToAgentClient(
 
 db_path = f"./database/{configuration.agent_env}/{configuration.agent_name}.db"
 langgraph_db_path = (
-    f"./database/{configuration.agent_env}/langgraph/{configuration.agent_name}.db"
+    f"./database/{configuration.agent_env}/{configuration.agent_name}.langgraph.db"
 )
 
 engine = create_async_engine(
@@ -190,6 +195,7 @@ get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
 
 conversation_use_case = ConversationUseCase(
     date_time=date_time,
+    id_generator=id_generator,
     configuration={
         "langchain_thread_id": configuration.langchain_thread_id,
     },
@@ -332,77 +338,200 @@ async def get_token_balance(token: Token):
     )
 
 
-class ToolContent(TypedDict):
-    ui: str
-    args: Dict[str, Any]
+class TokenRequest(Model):
+    id: str
+    name: str
+    display_name: str
+    ticker: str
+    address: str
+
+    def to_token(self) -> Token:
+        """Convert the request to a Token."""
+        return Token(
+            id=self.id,
+            name=self.name,
+            display_name=self.display_name,
+            ticker=self.ticker,
+            address=self.address,
+        )
 
 
-@tool(return_direct=True)
-async def prepare_investment_plan(
-    buy_intent_investment_plan: BuyIntentInvestmentPlan,
-) -> ToolContent:
-    """Prepare the investment plan for buying, selling or swapping assets.
+class BalanceRequest(Model):
+    token: TokenRequest
+    amount: str
+
+    def to_balance(self) -> Balance:
+        """Convert the request to a Balance."""
+        return Balance(
+            token=self.token.to_token(),
+            amount=Decimal(self.amount),
+        )
+
+
+class TokenBalanceRequest(Model):
+    buy_balance: BalanceRequest
+    sell_balance: BalanceRequest
+
+    def to_token_balance(self) -> TokenBalance:
+        """Convert the request to a TokenBalance."""
+        return TokenBalance(
+            buy_balance=self.buy_balance.to_balance(),
+            sell_balance=self.sell_balance.to_balance(),
+        )
+
+
+class BalancedBasketRequest(Model):
+    id: str
+    name: str
+    description: str
+    denomination: str
+    balances: list[TokenBalanceRequest]
+
+    def to_balanced_basket(self) -> BalancedBasket:
+        """Convert the request to a BalancedBasket."""
+        return BalancedBasket(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            denomination=Decimal(self.denomination),
+            balances=[balance.to_token_balance() for balance in self.balances],
+        )
+
+
+class BasketBalanceRequest(Model):
+    basket: BalancedBasketRequest
+    amount: str
+
+    def to_basket_balance(self) -> BasketBalance:
+        """Convert the request to a BasketBalance."""
+        return BasketBalance(
+            basket=self.basket.to_balanced_basket(),
+            amount=Decimal(self.amount),
+        )
+
+
+class InvestmentPlanStepRequest(Model):
+    buy_balance: BalanceRequest | BasketBalanceRequest
+    sell_balance: BalanceRequest | BasketBalanceRequest
+
+    def to_investment_plan_step(self) -> InvestmentPlanStep:
+        """Convert the request to an InvestmentPlanStep."""
+
+        def convert_balance(
+            balance: BalanceRequest | BasketBalanceRequest,
+        ) -> AssetBalance:
+            if isinstance(balance, BasketBalanceRequest):
+                return balance.to_basket_balance()
+            return balance.to_balance()
+
+        return InvestmentPlanStep(
+            buy_balance=convert_balance(self.buy_balance),
+            sell_balance=convert_balance(self.sell_balance),
+        )
+
+
+class InvestmentPlanRequest(Model):
+    steps: list[InvestmentPlanStepRequest]
+
+    def to_investment_plan(self) -> InvestmentPlan:
+        steps = [step.to_investment_plan_step() for step in self.steps]
+        return InvestmentPlan(steps=steps)
+
+
+@tool(
+    parse_docstring=True,
+)
+async def buy_assets_from_intent_investment_plan_use_case(
+    intent_investment_plan: IntentInvestmentPlan,
+) -> dict[str, Any]:
+    """Buy or sell assets in the agent's wallet.
+
     Args:
-        intent_investment_plan: The intent investment plan containing the assets to buy, sell or swap. This investment plan may have blank values for sell assets or buy assets.
-        It interrupts the current graph execution and returns the intent investment plan to the user to fill the missing values.
+        intent_investment_plan (IntentInvestmentPlan): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.
+
+    Returns:
+        list[Order]: A list of submitted orders for the assets in the investment plan.
+
+    Example:
+        IntentInvestmentPlan(
+            steps=[
+                IntentInvestmentPlanStep(
+                    buy_asset=Asset(
+                        id="bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                        name="Binance Pegged Ethereum",
+                        display_name="Ethereum",
+                        ticker="ETH",
+                        address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                    ),
+                    buy_asset_amount=Decimal("5.33"),
+                    sell_asset=Asset(
+                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                        name="Binance Coin",
+                        display_name="Binance Coin",
+                        ticker="BNB",
+                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeEEeE",
+                    ),
+                    sell_asset_amount=Decimal("10.95"),
+                ),
+                IntentInvestmentPlanStep(
+                    buy_asset=None,
+                    buy_asset_amount=None,
+                    sell_asset=Asset(
+                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                        name="Binance Coin",
+                        display_name="Binance Coin",
+                        ticker="BNB",
+                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeEEeE",
+                    ),
+                    sell_asset_amount=None,
+                ),
+                IntentInvestmentPlanStep(
+                    buy_asset=Asset(
+                        id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+                        name="Dogecoin",
+                        display_name="Dogecoin",
+                        ticker="DOGE",
+                        address="0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+                    ),
+                    buy_asset_amount=Decimal("1028983"),
+                    sell_asset=None,
+                    sell_asset_amount=None,
+                ),
+            ],
+        )
     """
 
-    print(f"Intent Investment Plan: {buy_intent_investment_plan}")
-
-    return {
-        "ui": "prepare_investment_plan",
-        "args": {
-            "intent_investment_plan": asdict(
-                convert_buy_intent_investment_plan_to_intent_investment_plan(
-                    buy_intent_investment_plan
-                )
-            ),
-        },
-    }
-
-
-def convert_buy_intent_investment_plan_to_intent_investment_plan(
-    buy_intent_investment_plan: BuyIntentInvestmentPlan,
-) -> IntentInvestmentPlan:
-    """Convert a BuyIntentInvestmentPlan to an InvestmentPlan."""
-    return IntentInvestmentPlan(
-        steps=[
-            IntentInvestmentPlanStep(
-                sell_balance=AssetBalance(asset=chain.get_base_token(), amount=None),
-                buy_balance=AssetBalance(
-                    asset=step.buy_token_or_basket,
-                    amount=step.buy_token_or_basket_quantity,
-                ),
-            )
-            for step in buy_intent_investment_plan.steps
-        ]
+    investment_plan_as_dict = interrupt(
+        {
+            "ui": {
+                "id": "prepare_investment_plan",
+                "args": {
+                    "intent_investment_plan": intent_investment_plan.to_dict(),
+                },
+            },
+            "content": None,
+        }
     )
 
+    investment_plan = InvestmentPlanRequest.model_validate(
+        investment_plan_as_dict["investment_plan"]
+    )
 
-@tool(response_format="content_and_artifact")
-async def buy_assets_from_investment_plan_use_case(
-    investment_plan: InvestmentPlan,
-):
-    """Buy or sell assets in the agent's wallet.
-    If not provided the default buy or sell asset should be chain base token.
-    Args:
-        investment_plan: The investment plan containing the assets to buy.
-    Returns:
-        An updated Portfolio containing the new Orders for each asset
-    """
+    orders = await execute_investment_plan_use_case.execute(
+        investment_plan.to_investment_plan()
+    )
 
-    print(f"Investment Plan: {investment_plan}")
-
-    message, portfolio = await execute_investment_plan_use_case.execute(investment_plan)
-
-    return "Success", "Success"
+    return {
+        "message": "Orders have been submitted successfully.",
+        "orders": orders,
+    }
 
 
 tools = [
     get_basket_info,
     get_token_info,
-    prepare_investment_plan,
-    buy_assets_from_investment_plan_use_case,
+    # prepare_investment_plan,
+    buy_assets_from_intent_investment_plan_use_case,
     get_agent_address,
     get_agent_balance,
     get_token_balance,
@@ -417,28 +546,50 @@ async def on_startup(_ctx: Context):
     await execute_pending_orders_use_case.execute()
 
 
-class MessageRequest(Model):
+class QueryMessageRequest(Model):
     id: str
+    is_resuming: bool = False
     role: Literal["user"]
     content: str
     created_at: Optional[str]
 
 
 class PromptRequest(Model):
-    message: MessageRequest
+    message: QueryMessageRequest
     agent_key: str
+
+
+class MessageUiResponse(Model):
+    id: str
+    args: Dict[str, Any]
 
 
 class MessageResponse(Model):
     id: str
-    role: Literal["user", "assistant", "tool"]
-    content: str
+    role: Literal["user", "assistant"]
+    is_interrupting: bool
+    ui: MessageUiResponse | None
+    content: str | None
     created_at: Optional[str]
+
+    @staticmethod
+    def from_message(message: Message) -> "MessageResponse":
+        """Convert a Message to a MessageResponse."""
+        return MessageResponse(
+            id=message.id,
+            role=message.role,
+            content=message.content,
+            created_at=message.created_at,
+            is_interrupting=message.is_interrupting,
+            ui=MessageUiResponse(id=message.ui.id, args=message.ui.args)
+            if message.ui
+            else None,
+        )
 
 
 @openapi(
     spec=spec,
-    schemas=[MessageRequest, PromptRequest, MessageResponse],
+    schemas=[QueryMessageRequest, PromptRequest, MessageResponse],
     path="/conversation",
     operations={
         "post": {
@@ -469,27 +620,21 @@ class MessageResponse(Model):
 @invest_agent.on_rest_post("/conversation", PromptRequest, MessageResponse)
 @authentication(configuration.agent_key)
 async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
-    async with aiosqlite.connect(f"./database/{configuration.agent_name}.db") as conn:
+    async with aiosqlite.connect(langgraph_db_path) as conn:
         agent_executor = __create_agent_executor(conn)
 
         message = await conversation_use_case.execute(
             agent_executor=agent_executor,
-            message=Message(
+            message=QueryMessage(
                 id=req.message.id,
+                is_resuming=req.message.is_resuming,
                 role=req.message.role,
                 content=req.message.content,
                 created_at=req.message.created_at or date_time.now_str(),
             ),
         )
 
-    print(f"Message: {message}")
-
-    return MessageResponse(
-        id=message.id,
-        role=message.role,
-        content=message.content,
-        created_at=message.created_at,
-    )
+    return MessageResponse.from_message(message)
 
 
 def __create_agent_executor(conn: aiosqlite.Connection):
@@ -574,15 +719,7 @@ async def get_conversation_messages(
     )
 
     return MessagesResponse(
-        messages=[
-            MessageResponse(
-                id=message.id,
-                role=message.role,
-                content=message.content,
-                created_at=message.created_at,
-            )
-            for message in messages
-        ]
+        messages=[MessageResponse.from_message(message) for message in messages]
     )
 
 
@@ -659,14 +796,6 @@ class HealthResponse(Model):
 async def health_check(_ctx: Context) -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse(status="OK")
-
-
-class TokenRequest(Model):
-    id: str
-    name: str
-    display_name: str
-    ticker: str
-    address: str
 
 
 class TokenResponse(Model):

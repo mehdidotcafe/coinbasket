@@ -17,6 +17,4 @@ class ExecutePendingOrdersUseCase:
         """Execute the pending orders."""
         orders = await self.order_repository.get_pending_orders()
 
-        print(f"Orders: {orders}")
-
         return await self.order_submitter.submit_orders(orders)

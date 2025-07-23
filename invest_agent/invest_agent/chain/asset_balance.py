@@ -13,7 +13,9 @@ class TokenBalance:
 @dataclass
 class BalancedBasket:
     id: str
-    unit_value: Decimal
+    name: str
+    description: str
+    denomination: Decimal
     balances: list[TokenBalance]
 
 

@@ -23,12 +23,16 @@ async def test_get_conversation_messages_use_case(
     messages = [
         Message(
             id="1",
+            is_interrupting=False,
+            ui=None,
             role="user",
             content="Hello, how are you?",
             created_at="2023-10-01T12:00:00Z",
         ),
         Message(
             id="2",
+            is_interrupting=False,
+            ui=None,
             role="assistant",
             content="Hello, how are you?",
             created_at="2023-10-01T12:00:00Z",

@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from decimal import Decimal
 from data_agent.ingestion.data_source.data_source import DataSource
 from data_agent.similarity.similarity_document import SimilarityDocument
@@ -14,7 +13,7 @@ class AiBasketDataSource(DataSource):
             id=self.id,
             name="AI",
             description="This basket provides targeted exposure to cutting-edge blockchain projects focused on infrastructure scalability, decentralized data, and artificial intelligence. These tokens represent foundational technologies driving the next wave of decentralized applications, offering a blend of utility, interoperability, and innovation. Ideal for forward-looking investors, the basket captures key narratives shaping the evolution of Web3—from smart contract optimization to intelligent agent networks.",
-            unit=Decimal("10.0"),
+            denomination=Decimal("10.0"),
             tokens=[
                 Token(
                     id="bsc:0x1Fa4a73a3F0133f0025378af00236f3aBDEE5D63",
@@ -57,11 +56,12 @@ class AiBasketDataSource(DataSource):
         """
         Map the basket to a similarity document.
         """
+
         return SimilarityDocument(
             id=self.id,
             page_content=str(basket),
             metadata={
-                "source": asdict(basket),
+                "source": basket.to_dict(),
                 "type": "basket",
                 "version": self.version(),
             },

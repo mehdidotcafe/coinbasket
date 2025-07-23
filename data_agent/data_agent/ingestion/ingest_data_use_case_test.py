@@ -67,7 +67,7 @@ async def test_ingest_data_use_case(
                     id="9760131e-8ca8-4d36-a636-2720e1d21bc7",
                     name="Wrapped BNB",
                     description="Just BNB",
-                    unit=Decimal("1.0"),
+                    denomination=Decimal("1.0"),
                     tokens=[
                         Token(
                             id="bsc:0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",

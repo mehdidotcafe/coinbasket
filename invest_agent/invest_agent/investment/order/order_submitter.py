@@ -110,7 +110,7 @@ class OrderSubmitter:
             except Exception as e:
                 print(f"Error submitting order {order.id}: {e}")
 
-        await self.order_repository.set_order_to_failed(order.id)
+        await self.order_repository.set_order_to_fail(order.id)
 
     def __self_map_order_to_transaction(
         self, order: Order, order_try: Try

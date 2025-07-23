@@ -1,6 +1,10 @@
 import asyncio
 import sys
 
+from invest_agent.infrastructure.bsc.chain.nonce_manager import (
+    NonceManager,
+    Configuration as ConfigurationNM,
+)
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
 from invest_agent.configuration import Configuration
@@ -9,8 +13,15 @@ from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 
 configuration = Configuration()
 w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
+nonce_manager = NonceManager(
+    w3=w3,
+    configuration=ConfigurationNM(
+        private_key=configuration.bsc_private_key,
+    ),
+)
 chain = BscChain(
     w3=w3,
+    nonce_manager=nonce_manager,
     private_key=configuration.bsc_private_key,
 )
 

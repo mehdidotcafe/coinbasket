@@ -10,29 +10,30 @@ class Configuration(TypedDict):
 
 
 class NonceManager:
+    _nonce: Nonce | None = None
+    _synced: bool = False
+    _lock = asyncio.Lock()
+
     def __init__(self, w3: AsyncWeb3, configuration: Configuration):
         self.w3 = w3
         self.account: LocalAccount = w3.eth.account.from_key(
             configuration["private_key"]
         )
-        self.lock = asyncio.Lock()
-        self._synced = False
-        self.nonce: Nonce | None = None
 
     async def _sync_nonce(self):
-        self.nonce = await self.w3.eth.get_transaction_count(
+        type(self)._nonce = await self.w3.eth.get_transaction_count(
             self.account.address, "pending"
         )
-        self._synced = True
+        type(self)._synced = True
 
     async def get_and_increment(self):
-        async with self.lock:
-            if not self._synced:
+        async with type(self)._lock:
+            if not type(self)._synced:
                 await self._sync_nonce()
-            nonce = self.nonce
-            self.nonce += 1  # type: ignore
+            nonce = type(self)._nonce
+            type(self)._nonce += 1  # type: ignore
             return cast(Nonce, nonce)
 
     async def resync(self):
-        async with self.lock:
+        async with type(self)._lock:
             await self._sync_nonce()

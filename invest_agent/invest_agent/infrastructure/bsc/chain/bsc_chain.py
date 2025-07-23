@@ -226,6 +226,11 @@ class BscChain(Chain):
             cast(HexBytes, transaction_hash)
         )
 
+        if receipt["status"] == 0:
+            print(
+                f"Transaction failed: {transaction_hash} {self.__simulate_transaction(transaction_hash, receipt['blockNumber'])}"
+            )
+
         return receipt["status"] == 1
 
     async def __compute_eip1559_gas_estimate(self):
@@ -240,3 +245,30 @@ class BscChain(Chain):
             maxFeePerGas=max_fee_per_gas,
             maxPriorityFeePerGas=max_priority_fee,
         )
+
+    async def __simulate_transaction(self, transaction_hash: str, block_number: int):
+        tx = await self.w3.eth.get_transaction(cast(HexBytes, transaction_hash))
+
+        tx_params_2: TxParams = {}
+
+        if "from" in tx:
+            tx_params_2["from"] = tx["from"]
+        if "chainId" in tx:
+            tx_params_2["chainId"] = tx["chainId"]
+        if "to" in tx:
+            tx_params_2["to"] = tx["to"]
+        if "input" in tx:
+            tx_params_2["data"] = tx["input"]
+        if "value" in tx:
+            tx_params_2["value"] = tx["value"]
+        if "gas" in tx:
+            tx_params_2["gas"] = tx["gas"]
+        if "gasPrice" in tx:
+            tx_params_2["gasPrice"] = tx["gasPrice"]
+
+        try:
+            await self.w3.eth.call(tx_params_2, block_identifier=block_number)
+        except Exception as e:
+            return str(e)
+
+        return None
