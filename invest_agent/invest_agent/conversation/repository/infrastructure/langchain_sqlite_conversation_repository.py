@@ -58,6 +58,8 @@ class LangchainSqliteConversationRepository(ConversationRepository):
         """
         return Message(
             id=cast(str, langchain_message.id),
+            is_interrupting=False,
+            ui=None,
             role=isinstance(langchain_message, HumanMessage) and "user" or "assistant",
             content=cast(str, langchain_message.content),
             created_at=self.date_time.now_str(),
