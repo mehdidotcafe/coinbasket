@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from invest_agent.chain.asset_balance import AssetBalance
 from invest_agent.chain.balance import Balance
 
 from invest_agent.chain.chain import Gas
@@ -11,15 +12,22 @@ from invest_agent.investment.order.order import Order
 from protocol.token import Token
 
 
+# TODO: Delete TokenConvertedBalance
 @dataclass
-class ConvertedBalance:
+class TokenConvertedBalance:
     sell_balance: Balance
     buy_balance: Balance
 
 
 @dataclass
+class ConvertedBalance:
+    sell_balance: AssetBalance
+    buy_balance: AssetBalance
+
+
+@dataclass
 class Wallet:
-    balances: list[ConvertedBalance]
+    balances: list[TokenConvertedBalance]
     total_balance: Balance
 
 
@@ -49,6 +57,16 @@ class Exchange(ABC):
         token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Wallet:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def convert_balance_to_token(
+        self,
+        balance: Balance,
+        token: Token,
+        investment_parameters: InvestmentParameters,
+    ) -> TokenConvertedBalance:
+        """Converts an asset balance to an asset."""
         raise NotImplementedError
 
     @abstractmethod

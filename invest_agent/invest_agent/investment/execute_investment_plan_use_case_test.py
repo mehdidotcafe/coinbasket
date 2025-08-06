@@ -1,6 +1,9 @@
 from decimal import Decimal
 from unittest import mock
-from invest_agent.chain.asset_balance import BasketBalance, BalancedBasket, TokenBalance
+from invest_agent.chain.asset_balance import (
+    BasketBalance,
+    TokenBalance,
+)
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
 from invest_agent.datetime.date_time import DateTime
@@ -136,7 +139,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 InvestmentPlanStep(
                     buy_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BalancedBasket(
+                        basket=BasketWithTokenBalances(
                             id="basket1",
                             name="Basket 1",
                             description="A sample basket",
@@ -166,7 +169,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 InvestmentPlanStep(
                     buy_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BalancedBasket(
+                        basket=BasketWithTokenBalances(
                             id="basket2",
                             name="Basket 2",
                             description="A sample basket",
@@ -263,7 +266,7 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                 InvestmentPlanStep(
                     buy_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BalancedBasket(
+                        basket=BasketWithTokenBalances(
                             id="basket1",
                             name="Basket 1",
                             description="A sample basket",
@@ -357,7 +360,7 @@ async def test_execute_investment_plan_use_case_buy_basket_sell_basket(
                     InvestmentPlanStep(
                         buy_balance=BasketBalance(
                             amount=Decimal(1),
-                            basket=BalancedBasket(
+                            basket=BasketWithTokenBalances(
                                 id="basket1",
                                 name="Basket 1",
                                 description="A sample basket",
@@ -376,7 +379,7 @@ async def test_execute_investment_plan_use_case_buy_basket_sell_basket(
                         ),
                         sell_balance=BasketBalance(
                             amount=Decimal(0.5),
-                            basket=BalancedBasket(
+                            basket=BasketWithTokenBalances(
                                 id="basket2",
                                 name="Basket 2",
                                 description="A sample basket",
@@ -481,7 +484,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     buy_balance=Balance(amount=Decimal("0.5"), token=bnb_token),
                     sell_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BalancedBasket(
+                        basket=BasketWithTokenBalances(
                             id="basket1",
                             name="Basket 1",
                             description="A sample basket",
@@ -511,7 +514,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     buy_balance=Balance(amount=Decimal("0.8"), token=bnb_token),
                     sell_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BalancedBasket(
+                        basket=BasketWithTokenBalances(
                             id="basket2",
                             name="Basket 2",
                             description="A sample basket",
@@ -608,7 +611,7 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     buy_balance=Balance(amount=Decimal("0.5"), token=bnb_token),
                     sell_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BalancedBasket(
+                        basket=BasketWithTokenBalances(
                             id="basket1",
                             name="Basket 1",
                             description="A sample basket",

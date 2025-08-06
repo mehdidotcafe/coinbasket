@@ -7,7 +7,7 @@ from invest_agent.chain.chain import Chain, Gas
 from invest_agent.chain.contract import Contract
 
 from invest_agent.investment.exchange.exchange import (
-    ConvertedBalance,
+    TokenConvertedBalance,
     Exchange,
     TransactionData,
     Wallet,
@@ -141,10 +141,10 @@ class ZeroXSwapper(Exchange):
         token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Wallet:
-        balances: list[ConvertedBalance] = []
+        balances: list[TokenConvertedBalance] = []
 
         tasks = [
-            self.__convert_balance_to_token(
+            self.convert_balance_to_token(
                 balance=balance,
                 token=token,
                 investment_parameters=investment_parameters,
@@ -165,14 +165,14 @@ class ZeroXSwapper(Exchange):
             total_balance=self.__sum_balances(balances, token),
         )
 
-    async def __convert_balance_to_token(
+    async def convert_balance_to_token(
         self,
         balance: Balance,
         token: Token,
         investment_parameters: InvestmentParameters,
     ):
         if self.__is_same_token(balance.token, token):
-            return ConvertedBalance(
+            return TokenConvertedBalance(
                 sell_balance=Balance(
                     token=balance.token,
                     amount=balance.amount,
@@ -199,7 +199,7 @@ class ZeroXSwapper(Exchange):
             investment_parameters=investment_parameters,
         )
 
-        return ConvertedBalance(
+        return TokenConvertedBalance(
             sell_balance=Balance(
                 token=balance.token,
                 amount=await self.__get_raw_amount(
@@ -216,7 +216,7 @@ class ZeroXSwapper(Exchange):
             ),
         )
 
-    def __sum_balances(self, balances: list[ConvertedBalance], token: Token):
+    def __sum_balances(self, balances: list[TokenConvertedBalance], token: Token):
         return Balance(
             token=token,
             amount=cast(

@@ -3,12 +3,16 @@ import os
 from typing import Any, Dict, Literal, Optional, cast
 
 import aiosqlite
+from invest_agent.asset.get_asset_swap_price_use_case import (
+    AssetSwapPriceInfo,
+    GetAssetSwapPriceUseCase,
+)
 from invest_agent.chain.asset_balance import (
     AssetBalance,
-    BalancedBasket,
     BasketBalance,
     TokenBalance,
 )
+from invest_agent.investment.exchange.exchange import ConvertedBalance
 from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
@@ -19,6 +23,7 @@ from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository i
 from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
     SqlAlchemyTransactionRepository,
 )
+from protocol.basket import Basket
 from sqlalchemy import StaticPool
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -230,6 +235,11 @@ execute_pending_orders_use_case = ExecutePendingOrdersUseCase(
 )
 
 
+get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
+    exchange=exchange,
+)
+
+
 @tool(response_format="content_and_artifact")
 async def get_token_info(query: str):
     """
@@ -345,7 +355,7 @@ class TokenRequest(Model):
     ticker: str
     address: str
 
-    def to_token(self) -> Token:
+    def to_domain(self) -> Token:
         """Convert the request to a Token."""
         return Token(
             id=self.id,
@@ -356,14 +366,32 @@ class TokenRequest(Model):
         )
 
 
+class BasketRequest(Model):
+    id: str
+    name: str
+    description: str
+    denomination: str
+    tokens: list[TokenRequest]
+
+    def to_domain(self) -> Basket:
+        """Convert the request to a Basket."""
+        return Basket(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            denomination=Decimal(self.denomination),
+            tokens=[token.to_domain() for token in self.tokens],
+        )
+
+
 class BalanceRequest(Model):
     token: TokenRequest
     amount: str
 
-    def to_balance(self) -> Balance:
+    def to_domain(self) -> Balance:
         """Convert the request to a Balance."""
         return Balance(
-            token=self.token.to_token(),
+            token=self.token.to_domain(),
             amount=Decimal(self.amount),
         )
 
@@ -372,40 +400,22 @@ class TokenBalanceRequest(Model):
     buy_balance: BalanceRequest
     sell_balance: BalanceRequest
 
-    def to_token_balance(self) -> TokenBalance:
+    def to_domain(self) -> TokenBalance:
         """Convert the request to a TokenBalance."""
         return TokenBalance(
-            buy_balance=self.buy_balance.to_balance(),
-            sell_balance=self.sell_balance.to_balance(),
-        )
-
-
-class BalancedBasketRequest(Model):
-    id: str
-    name: str
-    description: str
-    denomination: str
-    balances: list[TokenBalanceRequest]
-
-    def to_balanced_basket(self) -> BalancedBasket:
-        """Convert the request to a BalancedBasket."""
-        return BalancedBasket(
-            id=self.id,
-            name=self.name,
-            description=self.description,
-            denomination=Decimal(self.denomination),
-            balances=[balance.to_token_balance() for balance in self.balances],
+            buy_balance=self.buy_balance.to_domain(),
+            sell_balance=self.sell_balance.to_domain(),
         )
 
 
 class BasketBalanceRequest(Model):
-    basket: BalancedBasketRequest
+    basket: BasketRequest
     amount: str
 
-    def to_basket_balance(self) -> BasketBalance:
+    def to_domain(self) -> BasketBalance:
         """Convert the request to a BasketBalance."""
         return BasketBalance(
-            basket=self.basket.to_balanced_basket(),
+            basket=self.basket.to_domain(),
             amount=Decimal(self.amount),
         )
 
@@ -414,15 +424,15 @@ class InvestmentPlanStepRequest(Model):
     buy_balance: BalanceRequest | BasketBalanceRequest
     sell_balance: BalanceRequest | BasketBalanceRequest
 
-    def to_investment_plan_step(self) -> InvestmentPlanStep:
+    def to_domain(self) -> InvestmentPlanStep:
         """Convert the request to an InvestmentPlanStep."""
 
         def convert_balance(
             balance: BalanceRequest | BasketBalanceRequest,
         ) -> AssetBalance:
             if isinstance(balance, BasketBalanceRequest):
-                return balance.to_basket_balance()
-            return balance.to_balance()
+                return balance.to_domain()
+            return balance.to_domain()
 
         return InvestmentPlanStep(
             buy_balance=convert_balance(self.buy_balance),
@@ -433,8 +443,8 @@ class InvestmentPlanStepRequest(Model):
 class InvestmentPlanRequest(Model):
     steps: list[InvestmentPlanStepRequest]
 
-    def to_investment_plan(self) -> InvestmentPlan:
-        steps = [step.to_investment_plan_step() for step in self.steps]
+    def to_domain(self) -> InvestmentPlan:
+        steps = [step.to_domain() for step in self.steps]
         return InvestmentPlan(steps=steps)
 
 
@@ -517,9 +527,7 @@ async def buy_assets_from_intent_investment_plan_use_case(
         investment_plan_as_dict["investment_plan"]
     )
 
-    orders = await execute_investment_plan_use_case.execute(
-        investment_plan.to_investment_plan()
-    )
+    orders = await execute_investment_plan_use_case.execute(investment_plan.to_domain())
 
     return {
         "message": "Orders have been submitted successfully.",
@@ -589,7 +597,7 @@ class MessageResponse(Model):
 
 @openapi(
     spec=spec,
-    schemas=[QueryMessageRequest, PromptRequest, MessageResponse],
+    schemas=[QueryMessageRequest, PromptRequest, MessageUiResponse, MessageResponse],
     path="/conversation",
     operations={
         "post": {
@@ -723,6 +731,140 @@ async def get_conversation_messages(
     )
 
 
+class AssetSwapPriceInfoRequest(Model):
+    agent_key: str
+    sell_asset: TokenRequest | BasketRequest
+    sell_asset_amount: str
+    buy_asset: TokenRequest | BasketRequest
+
+    def to_domain(self) -> AssetSwapPriceInfo:
+        """Convert the request to an AssetSwapPriceInfo."""
+        return AssetSwapPriceInfo(
+            sell_asset=self.sell_asset.to_domain(),
+            sell_asset_amount=Decimal(self.sell_asset_amount),
+            buy_asset=self.buy_asset.to_domain(),
+        )
+
+
+class TokenResponse(Model):
+    name: str
+    display_name: str
+    ticker: str
+    address: str
+
+    @staticmethod
+    def from_domain(token: Token) -> "TokenResponse":
+        """Convert the domain Token to a TokenResponse."""
+        return TokenResponse(
+            name=token.name,
+            display_name=token.display_name,
+            ticker=token.ticker,
+            address=token.address,
+        )
+
+
+class BasketResponse(Model):
+    id: str
+    name: str
+    description: str
+    denomination: str
+    tokens: list[TokenResponse]
+
+    @staticmethod
+    def from_domain(basket: Basket) -> "BasketResponse":
+        """Convert the domain Basket to a BasketResponse."""
+        return BasketResponse(
+            id=basket.id,
+            name=basket.name,
+            description=basket.description,
+            denomination=str(basket.denomination),
+            tokens=[TokenResponse.from_domain(token) for token in basket.tokens],
+        )
+
+
+class BalanceResponse(Model):
+    amount: str
+    asset: TokenResponse | BasketResponse
+
+    @staticmethod
+    def from_domain(balance: AssetBalance) -> "BalanceResponse":
+        """Convert the domain Balance to a BalanceResponse."""
+        return BalanceResponse(
+            amount=str(balance.amount),
+            asset=TokenResponse.from_domain(balance.token)
+            if isinstance(balance, Balance)
+            else BasketResponse.from_domain(balance.basket),
+        )
+
+
+class ConvertedBalanceResponse(Model):
+    sell_balance: BalanceResponse
+    buy_balance: BalanceResponse
+
+    @staticmethod
+    def from_domain(
+        converted_balance: ConvertedBalance,
+    ) -> "ConvertedBalanceResponse":
+        return ConvertedBalanceResponse(
+            sell_balance=BalanceResponse.from_domain(converted_balance.sell_balance),
+            buy_balance=BalanceResponse.from_domain(converted_balance.buy_balance),
+        )
+
+
+@openapi(
+    spec=spec,
+    schemas=[
+        AssetSwapPriceInfoRequest,
+        TokenResponse,
+        BasketResponse,
+        BalanceResponse,
+        ConvertedBalanceResponse,
+    ],
+    path="/asset/swap/price",
+    operations={
+        "post": {
+            "summary": "Get price for asset swap",
+            "tags": ["Asset"],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/AssetSwapPriceInfoRequest"
+                        }
+                    }
+                },
+            },
+            "responses": {
+                "200": {
+                    "description": "Asset swap price information",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConvertedBalanceResponse"
+                            }
+                        }
+                    },
+                },
+                "500": invalid_authentication_key,
+            },
+        }
+    },
+)
+@invest_agent.on_rest_post(
+    "/asset/swap/price",
+    AssetSwapPriceInfoRequest,
+    ConvertedBalanceResponse,
+)
+@authentication(configuration.agent_key)
+async def get_asset_swap_price(_ctx: Context, req: AssetSwapPriceInfoRequest):
+    """Test authentication to the Agent."""
+
+    converted_balance = await get_asset_swap_price_use_case.execute(req.to_domain())
+
+    return ConvertedBalanceResponse.from_domain(converted_balance)
+
+
 class AuthRequest(Model):
     agent_key: str
 
@@ -798,23 +940,6 @@ async def health_check(_ctx: Context) -> HealthResponse:
     return HealthResponse(status="OK")
 
 
-class TokenResponse(Model):
-    name: str
-    display_name: str
-    ticker: str
-    address: str
-
-
-class BalanceResponse(Model):
-    amount: str
-    token: TokenResponse
-
-
-class ConvertedBalanceResponse(Model):
-    sell_balance: BalanceResponse
-    buy_balance: BalanceResponse
-
-
 class MetricsWalletRequest(Model):
     agent_key: str
     token: TokenRequest
@@ -829,9 +954,6 @@ class MetricsWalletResponse(Model):
     spec=spec,
     schemas=[
         TokenRequest,
-        TokenResponse,
-        BalanceResponse,
-        ConvertedBalanceResponse,
         MetricsWalletRequest,
         MetricsWalletResponse,
     ],

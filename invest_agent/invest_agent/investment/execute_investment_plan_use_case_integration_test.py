@@ -18,7 +18,11 @@ from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlanStep,
 )
 from protocol.token import Token
-from invest_agent.chain.asset_balance import BalancedBasket, BasketBalance, TokenBalance
+from invest_agent.chain.asset_balance import (
+    BasketWithTokenBalances,
+    BasketBalance,
+    TokenBalance,
+)
 from sqlalchemy import select
 
 from invest_agent.test.database.make_session import make_session
@@ -32,7 +36,7 @@ def investment_plan():
             InvestmentPlanStep(
                 buy_balance=BasketBalance(
                     amount=Decimal("1"),
-                    basket=BalancedBasket(
+                    basket=BasketWithTokenBalances(
                         id="c0e724d3-c4d0-4bd0-973d-edd3907ecf51",
                         name="Memecoin Mania",
                         description="A basket of popular memecoins",

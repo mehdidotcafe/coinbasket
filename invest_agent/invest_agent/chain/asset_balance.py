@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from decimal import Decimal
 from invest_agent.chain.balance import Balance
+from protocol.basket import Basket
 
 
 @dataclass
@@ -11,17 +12,8 @@ class TokenBalance:
 
 
 @dataclass
-class BalancedBasket:
-    id: str
-    name: str
-    description: str
-    denomination: Decimal
-    balances: list[TokenBalance]
-
-
-@dataclass
 class BasketBalance:
-    basket: BalancedBasket
+    basket: Basket
     amount: Decimal
 
 

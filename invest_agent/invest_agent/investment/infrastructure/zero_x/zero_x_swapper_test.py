@@ -16,7 +16,7 @@ from invest_agent.investment.infrastructure.zero_x.quote import (
     Transaction,
 )
 from invest_agent.investment.exchange.exchange import (
-    ConvertedBalance,
+    TokenConvertedBalance,
     TransactionData,
     Wallet,
 )
@@ -380,15 +380,15 @@ async def test_zero_x_swapper_get_wallet_in_token(
 
     assert wallet == Wallet(
         balances=[
-            ConvertedBalance(
+            TokenConvertedBalance(
                 sell_balance=Balance(token=sol_token, amount=Decimal("1.0")),
                 buy_balance=Balance(token=usdt_token, amount=Decimal("300")),
             ),
-            ConvertedBalance(
+            TokenConvertedBalance(
                 sell_balance=Balance(token=eth_token, amount=Decimal("4.0")),
                 buy_balance=Balance(token=usdt_token, amount=Decimal("1100.0")),
             ),
-            ConvertedBalance(
+            TokenConvertedBalance(
                 sell_balance=Balance(token=bnb_token, amount=Decimal("10.0")),
                 buy_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
             ),
@@ -428,7 +428,7 @@ async def test_zero_x_swapper_get_wallet_in_token_same_token(
 
     assert wallet == Wallet(
         balances=[
-            ConvertedBalance(
+            TokenConvertedBalance(
                 sell_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
                 buy_balance=Balance(token=usdt_token, amount=Decimal("10.0")),
             ),
