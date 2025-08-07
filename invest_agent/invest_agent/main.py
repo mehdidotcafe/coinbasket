@@ -369,6 +369,8 @@ class TokenRequest(Model):
 class BasketRequest(Model):
     id: str
     name: str
+    display_name: str
+    ticker: str
     description: str
     denomination: str
     tokens: list[TokenRequest]
@@ -378,6 +380,8 @@ class BasketRequest(Model):
         return Basket(
             id=self.id,
             name=self.name,
+            display_name=self.display_name,
+            ticker=self.ticker,
             description=self.description,
             denomination=Decimal(self.denomination),
             tokens=[token.to_domain() for token in self.tokens],

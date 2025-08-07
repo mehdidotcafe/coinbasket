@@ -9,13 +9,18 @@ from protocol.token import Token
 class Basket:
     id: str
     name: str
+    display_name: str
+    ticker: str
     description: str
     denomination: Decimal
+    # TODO: Use weight
     tokens: list[Token]
 
     def __str__(self) -> str:
         return f"""
 name: {self.name}
+display_name: {self.display_name}
+ticker: {self.ticker}
 description: {self.description}
 type: basket
 {"\n".join([self.__flatten_token(token, index) for index, token in enumerate(self.tokens)])}
@@ -32,6 +37,8 @@ type: basket
         return {
             "id": self.id,
             "name": self.name,
+            "display_name": self.display_name,
+            "ticker": self.ticker,
             "description": self.description,
             "denomination": str(self.denomination),
             "tokens": [token.to_dict() for token in self.tokens],

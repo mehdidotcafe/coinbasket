@@ -7,7 +7,9 @@ def test_basket__str__():
     basket = Basket(
         id="1234",
         name="Big2",
-        description="Big2",
+        display_name="Big2 Display",
+        ticker="B2",
+        description="Big2 Description",
         denomination=Decimal("1.0"),
         tokens=[
             Token(
@@ -31,7 +33,9 @@ def test_basket__str__():
         str(basket)
         == """
 name: Big2
-description: Big2
+display_name: Big2 Display
+ticker: B2
+description: Big2 Description
 type: basket
 1. name: Binance Pegged Bitcoin
  display_name: Bitcoin

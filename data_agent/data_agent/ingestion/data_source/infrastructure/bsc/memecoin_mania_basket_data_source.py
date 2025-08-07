@@ -12,6 +12,8 @@ class MemecoinManiaBasketDataSource(DataSource):
         self.basket = Basket(
             id=self.id,
             name="Memecoin mania",
+            display_name="Memecoin mania",
+            ticker="MEME",
             description="This basket offers concentrated exposure to the memecoin sector—tokens driven by internet culture, viral trends, and highly engaged online communities. Often fueled by humor, speculation, and social media influence, memecoins represent a unique and volatile niche within the crypto landscape. This basket is designed for investors who understand the high-risk, high-reward nature of memecoins and are looking to capture upside from rapidly shifting narratives and collective enthusiasm in the digital economy.",
             denomination=Decimal("0.1"),
             tokens=[

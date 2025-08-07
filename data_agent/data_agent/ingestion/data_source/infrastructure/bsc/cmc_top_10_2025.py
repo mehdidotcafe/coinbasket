@@ -12,6 +12,8 @@ class CmcTop102025BasketDataSource(DataSource):
         self.basket = Basket(
             id=self.id,
             name="Coinmarketcap Top 10 2025",
+            display_name="Coinmarketcap Top 10 2025",
+            ticker="CMC10",
             description="This basket features a diverse mix of leading Layer-1 and utility tokens that form the backbone of the blockchain ecosystem in 2025. Representing widely adopted smart contract platforms, cross-chain protocols, and decentralized infrastructure, these assets reflect the continued maturity and interoperability of the crypto space. By excluding stablecoins, the basket maintains direct exposure to market-driven value while focusing on assets that power network operations, governance, and user interaction across decentralized applications.",
             denomination=Decimal("10.0"),
             tokens=[

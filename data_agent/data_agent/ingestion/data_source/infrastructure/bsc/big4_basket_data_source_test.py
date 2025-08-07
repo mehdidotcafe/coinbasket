@@ -16,4 +16,4 @@ def test_big4_basket_data_source_version():
     data_source = Big4BasketDataSource()
     version = data_source.version()
 
-    assert version == 1
+    assert version == 2

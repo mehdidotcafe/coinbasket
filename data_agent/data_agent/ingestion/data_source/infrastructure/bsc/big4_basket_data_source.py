@@ -12,8 +12,10 @@ class Big4BasketDataSource(DataSource):
         self.basket = Basket(
             id=self.id,
             name="Big4",
+            display_name="Big4",
             description="This curated basket offers broad exposure to the crypto market through a selection of established, high-liquidity digital assets spanning different blockchain ecosystems. It is designed to balance long-term value preservation with growth potential, reflecting both foundational and emerging trends in decentralized technology. The combination supports diversification across transaction layers, use cases, and network adoption, making it a resilient core holding for crypto-oriented portfolios.",
             denomination=Decimal("10.0"),
+            ticker="B4",
             tokens=[
                 Token(
                     id="bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",

@@ -12,6 +12,8 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
         self.basket = Basket(
             id=self.id,
             name="Cryptoummah.com Certified Halal",
+            display_name="Cryptoummah.com Certified Halal",
+            ticker="HALLAL",
             description="This basket features a curated selection of major blockchain assets that align with Cryptoummah.com's halal screening framework. Focused on transparency, utility, and real-world adoption, these assets represent foundational layers of the global crypto economy while adhering to ethical and Shariah-compliant investment principles. This basket is designed for faith-conscious investors seeking exposure to leading digital assets without compromising on religious values.",
             denomination=Decimal("10.0"),
             tokens=[
