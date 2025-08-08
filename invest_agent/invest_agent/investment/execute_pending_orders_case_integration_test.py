@@ -20,7 +20,6 @@ from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository i
 from protocol.fixture.token import bnb_token, eth_token, usdt_token, sol_token
 
 from invest_agent.test.database.make_session import make_session
-from invest_agent.test.database.cleanup_all import cleanup_all
 
 
 @fixture

@@ -3,6 +3,7 @@ from typing import Literal
 
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.fees import Fees
+from invest_agent.investment.order.basket_order import BasketOrder
 
 Id = str
 
@@ -49,3 +50,4 @@ class Order:
     status: OrderStatus
     trigger: OrderTrigger
     basket_id: Id | None = None
+    basket_order: BasketOrder | None = None

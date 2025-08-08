@@ -5,7 +5,6 @@ from invest_agent.conversation.message import QueryMessage
 from pytest import fixture
 import requests
 from environs import env
-from invest_agent.test.database.cleanup_all import cleanup_all
 
 agent_port = env.int("AGENT_PORT")
 agent_key = env.str("AGENT_KEY")

@@ -72,6 +72,8 @@ class OrderModel(Base):
         "OrderTryModel", back_populates="order", lazy="selectin"
     )
 
+    # basket_order: Mapped[BasketOrder] = relationship("BasketOrder", lazy="selectin")
+
 
 class SqlAlchemyOrderRepository(OrderRepository):
     def __init__(self, engine: AsyncEngine, AsyncSessionLocal: type[AsyncSession]):

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Literal
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.fees import Fees
+from invest_agent.investment.transaction.basket_transaction import BasketTransaction
 
 Id = str
 
@@ -19,3 +20,4 @@ class Transaction:
     # TODO: Make fees required
     fees: Fees | None = None
     basket_id: Id | None = None
+    basket_transaction: BasketTransaction | None = None

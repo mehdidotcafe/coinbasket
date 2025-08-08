@@ -228,6 +228,7 @@ execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
     date_time=date_time,
     chain=chain,
     order_submitter=order_submitter,
+    exchange=exchange,
 )
 execute_pending_orders_use_case = ExecutePendingOrdersUseCase(
     order_submitter=order_submitter,

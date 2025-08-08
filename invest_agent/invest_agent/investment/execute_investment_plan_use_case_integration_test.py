@@ -18,15 +18,15 @@ from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlanStep,
 )
 from protocol.token import Token
+from protocol.fixture.basket import (
+    memecoinmania_basket,
+)
 from invest_agent.chain.asset_balance import (
-    BasketWithTokenBalances,
     BasketBalance,
-    TokenBalance,
 )
 from sqlalchemy import select
 
 from invest_agent.test.database.make_session import make_session
-from invest_agent.test.database.cleanup_all import cleanup_all
 
 
 @fixture
@@ -36,168 +36,7 @@ def investment_plan():
             InvestmentPlanStep(
                 buy_balance=BasketBalance(
                     amount=Decimal("1"),
-                    basket=BasketWithTokenBalances(
-                        id="c0e724d3-c4d0-4bd0-973d-edd3907ecf51",
-                        name="Memecoin Mania",
-                        description="A basket of popular memecoins",
-                        denomination=Decimal("1"),
-                        balances=[
-                            TokenBalance(
-                                buy_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-                                        name="Dogecoin",
-                                        display_name="Dogecoin",
-                                        ticker="DOGE",
-                                        address="0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-                                    ),
-                                    amount=Decimal("1000"),
-                                ),
-                                sell_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        name="Binance Coin",
-                                        display_name="Binance Coin",
-                                        ticker="BNB",
-                                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                    ),
-                                    amount=Decimal("1"),
-                                ),
-                            ),
-                            TokenBalance(
-                                buy_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
-                                        name="SHIBA INU",
-                                        display_name="Shiba Inu",
-                                        ticker="SHIB",
-                                        address="0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
-                                    ),
-                                    amount=Decimal("1000000"),
-                                ),
-                                sell_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        name="Binance Coin",
-                                        display_name="Binance Coin",
-                                        ticker="BNB",
-                                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                    ),
-                                    amount=Decimal("1"),
-                                ),
-                            ),
-                            TokenBalance(
-                                buy_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
-                                        name="Pepe",
-                                        display_name="Pepe",
-                                        ticker="PEPE",
-                                        address="0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
-                                    ),
-                                    amount=Decimal("1000000"),
-                                ),
-                                sell_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        name="Binance Coin",
-                                        display_name="Binance Coin",
-                                        ticker="BNB",
-                                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                    ),
-                                    amount=Decimal("1"),
-                                ),
-                            ),
-                            TokenBalance(
-                                buy_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xfb5b838b6cfeedc2873ab27866079ac55363d37e",
-                                        name="FLOKI",
-                                        display_name="FLOKI",
-                                        ticker="FLOKI",
-                                        address="0xfb5b838b6cfeedc2873ab27866079ac55363d37e",
-                                    ),
-                                    amount=Decimal("1000000"),
-                                ),
-                                sell_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        name="Binance Coin",
-                                        display_name="Binance Coin",
-                                        ticker="BNB",
-                                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                    ),
-                                    amount=Decimal("1"),
-                                ),
-                            ),
-                            TokenBalance(
-                                buy_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xA697e272a73744b343528C3Bc4702F2565b2F422",
-                                        name="Bonk",
-                                        display_name="Bonk",
-                                        ticker="BONK",
-                                        address="0xA697e272a73744b343528C3Bc4702F2565b2F422",
-                                    ),
-                                    amount=Decimal("1000000"),
-                                ),
-                                sell_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        name="Binance Coin",
-                                        display_name="Binance Coin",
-                                        ticker="BNB",
-                                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                    ),
-                                    amount=Decimal("1"),
-                                ),
-                            ),
-                            TokenBalance(
-                                buy_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0x86Bb94DdD16Efc8bc58e6b056e8df71D9e666429",
-                                        name="Test",
-                                        display_name="Test",
-                                        ticker="TST",
-                                        address="0x86Bb94DdD16Efc8bc58e6b056e8df71D9e666429",
-                                    ),
-                                    amount=Decimal("1000000"),
-                                ),
-                                sell_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        name="Binance Coin",
-                                        display_name="Binance Coin",
-                                        ticker="BNB",
-                                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                    ),
-                                    amount=Decimal("1"),
-                                ),
-                            ),
-                            TokenBalance(
-                                buy_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6",
-                                        name="mubarak",
-                                        display_name="mubarak",
-                                        ticker="MUBARAK",
-                                        address="0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6",
-                                    ),
-                                    amount=Decimal("100"),
-                                ),
-                                sell_balance=Balance(
-                                    token=Token(
-                                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        name="Binance Coin",
-                                        display_name="Binance Coin",
-                                        ticker="BNB",
-                                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                    ),
-                                    amount=Decimal("1"),
-                                ),
-                            ),
-                        ],
-                    ),
+                    basket=memecoinmania_basket,
                 ),
                 sell_balance=Balance(
                     token=Token(

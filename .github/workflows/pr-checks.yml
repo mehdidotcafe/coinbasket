@@ -71,7 +71,7 @@ jobs:
           npx nx install ${{ matrix.project }}
 
       - name: Run lint check
-        run: npx nx lint:check ${{ matrix.project }}
+        run: npx nx lint ${{ matrix.project }}
 
   test:
     needs: get-affected

@@ -20,7 +20,8 @@ class TransactionModel(Base):
     order_id = Column(String)
     trigger = Column(String)
     fees = Column(String)
-    basket_id = Column(String)
+    basket_id = Column(String, nullable=True)
+    # basket_transaction_id = Column(String, nullable=True)
 
 
 class SqlAlchemyTransactionRepository(TransactionRepository):
@@ -41,7 +42,7 @@ class SqlAlchemyTransactionRepository(TransactionRepository):
                     order_id=transaction.order_id,
                     trigger=transaction.trigger,
                     fees=transaction.fees,
-                    basket_id=transaction.basket_id,
+                    # basket_transaction_id=transaction.basket_transaction_id,
                 )
                 session.add(transaction_model)
         return transaction

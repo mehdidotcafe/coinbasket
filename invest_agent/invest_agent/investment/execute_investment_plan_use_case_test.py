@@ -1,8 +1,10 @@
 from decimal import Decimal
 from unittest import mock
+from invest_agent.investment.exchange.exchange import Exchange, TokenConvertedBalance
+from invest_agent.investment.investment_parameters import InvestmentParameters
+from pytest import fixture, raises, mark
 from invest_agent.chain.asset_balance import (
     BasketBalance,
-    TokenBalance,
 )
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
@@ -20,7 +22,7 @@ from invest_agent.investment.investment_planner.investment_plan import (
 )
 from invest_agent.investment.order.order import Order
 from invest_agent.investment.order.order_submitter import OrderSubmitter
-from pytest import fixture, raises, mark
+from protocol.basket import Basket
 from protocol.fixture.token import (
     bnb_token,
     wbnb_token,
@@ -56,17 +58,31 @@ def order_submitter():
 
 
 @fixture
+def exchange():
+    return mock.Mock(spec=Exchange)
+
+
+@fixture
+def investment_parameters():
+    return InvestmentParameters(
+        slippage_tolerance_in_percentage=Decimal("1"),
+    )
+
+
+@fixture
 def use_case(
     id_generator: IdGenerator,
     date_time: DateTime,
     chain: Chain,
     order_submitter: OrderSubmitter,
+    exchange: Exchange,
 ):
     return ExecuteInvestmentPlanUseCase(
         id_generator,
         date_time,
         chain,
         order_submitter,
+        exchange,
     )
 
 
@@ -128,10 +144,31 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
     id_generator: IdGenerator,
     date_time: DateTime,
     order_submitter: OrderSubmitter,
+    exchange: Exchange,
+    investment_parameters: InvestmentParameters,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+
+    exchange.convert_balance_to_token.side_effect = [
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+            buy_balance=Balance(amount=Decimal("0.25"), token=wbnb_token),
+        ),
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+            buy_balance=Balance(amount=Decimal("0.10"), token=eth_token),
+        ),
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.40"), token=bnb_token),
+            buy_balance=Balance(amount=Decimal("0.30"), token=sol_token),
+        ),
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.40"), token=bnb_token),
+            buy_balance=Balance(amount=Decimal("60"), token=usdt_token),
+        ),
+    ]
 
     await use_case.execute(
         InvestmentPlan(
@@ -139,29 +176,14 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 InvestmentPlanStep(
                     buy_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BasketWithTokenBalances(
+                        basket=Basket(
                             id="basket1",
                             name="Basket 1",
+                            display_name="Basket 1",
+                            ticker="BASK1",
                             description="A sample basket",
                             denomination=Decimal(1),
-                            balances=[
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.25"), token=bnb_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.25"), token=wbnb_token
-                                    ),
-                                ),
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.25"), token=bnb_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.10"), token=eth_token
-                                    ),
-                                ),
-                            ],
+                            tokens=[wbnb_token, eth_token],
                         ),
                     ),
                     sell_balance=Balance(amount=Decimal("0.5"), token=bnb_token),
@@ -169,28 +191,16 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 InvestmentPlanStep(
                     buy_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BasketWithTokenBalances(
+                        basket=Basket(
                             id="basket2",
                             name="Basket 2",
+                            display_name="Basket 2",
+                            ticker="BASK2",
                             description="A sample basket",
                             denomination=Decimal(1),
-                            balances=[
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.40"), token=bnb_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.30"), token=sol_token
-                                    ),
-                                ),
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.40"), token=bnb_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("60"), token=usdt_token
-                                    ),
-                                ),
+                            tokens=[
+                                sol_token,
+                                usdt_token,
                             ],
                         ),
                     ),
@@ -198,6 +208,31 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 ),
             ]
         )
+    )
+
+    exchange.assert_has_calls(
+        [
+            mock.call.convert_balance_to_token(
+                balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+                token=wbnb_token,
+                investment_parameters=investment_parameters,
+            ),
+            mock.call.convert_balance_to_token(
+                balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+                token=eth_token,
+                investment_parameters=investment_parameters,
+            ),
+            mock.call.convert_balance_to_token(
+                balance=Balance(amount=Decimal("0.40"), token=bnb_token),
+                token=sol_token,
+                investment_parameters=investment_parameters,
+            ),
+            mock.call.convert_balance_to_token(
+                balance=Balance(amount=Decimal("0.40"), token=bnb_token),
+                token=usdt_token,
+                investment_parameters=investment_parameters,
+            ),
+        ]
     )
 
     order_submitter.submit_orders.assert_called_once_with(
@@ -255,10 +290,22 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
     id_generator: IdGenerator,
     date_time: DateTime,
     order_submitter: OrderSubmitter,
+    exchange: Exchange,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+
+    exchange.convert_balance_to_token.side_effect = [
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+            buy_balance=Balance(amount=Decimal("0.25"), token=wbnb_token),
+        ),
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+            buy_balance=Balance(amount=Decimal("0.08"), token=eth_token),
+        ),
+    ]
 
     await use_case.execute(
         InvestmentPlan(
@@ -266,32 +313,16 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                 InvestmentPlanStep(
                     buy_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BasketWithTokenBalances(
+                        basket=Basket(
                             id="basket1",
                             name="Basket 1",
+                            display_name="Basket 1",
+                            ticker="BASK1",
                             description="A sample basket",
                             denomination=Decimal(1),
-                            balances=[
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.25"),
-                                        token=bnb_token,
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.25"),
-                                        token=wbnb_token,
-                                    ),
-                                ),
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.25"),
-                                        token=bnb_token,
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.08"),
-                                        token=eth_token,
-                                    ),
-                                ),
+                            tokens=[
+                                wbnb_token,
+                                eth_token,
                             ],
                         ),
                     ),
@@ -360,39 +391,29 @@ async def test_execute_investment_plan_use_case_buy_basket_sell_basket(
                     InvestmentPlanStep(
                         buy_balance=BasketBalance(
                             amount=Decimal(1),
-                            basket=BasketWithTokenBalances(
+                            basket=Basket(
                                 id="basket1",
                                 name="Basket 1",
+                                display_name="Basket 1",
+                                ticker="BASK1",
                                 description="A sample basket",
                                 denomination=Decimal(1),
-                                balances=[
-                                    TokenBalance(
-                                        sell_balance=Balance(
-                                            amount=Decimal("0.25"), token=wbnb_token
-                                        ),
-                                        buy_balance=Balance(
-                                            amount=Decimal("0.08"), token=eth_token
-                                        ),
-                                    ),
+                                tokens=[
+                                    eth_token,
                                 ],
                             ),
                         ),
                         sell_balance=BasketBalance(
                             amount=Decimal(0.5),
-                            basket=BasketWithTokenBalances(
+                            basket=Basket(
                                 id="basket2",
                                 name="Basket 2",
+                                display_name="Basket 2",
+                                ticker="BASK2",
                                 description="A sample basket",
                                 denomination=Decimal(1),
-                                balances=[
-                                    TokenBalance(
-                                        sell_balance=Balance(
-                                            amount=Decimal("0.25"), token=wbnb_token
-                                        ),
-                                        buy_balance=Balance(
-                                            amount=Decimal("0.08"), token=eth_token
-                                        ),
-                                    ),
+                                tokens=[
+                                    eth_token,
                                 ],
                             ),
                         ),
@@ -472,10 +493,30 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
     id_generator: IdGenerator,
     date_time: DateTime,
     order_submitter: OrderSubmitter,
+    exchange: Exchange,
+    investment_parameters: InvestmentParameters,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+    exchange.convert_balance_to_token.side_effect = [
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.25"), token=wbnb_token),
+            buy_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+        ),
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.08"), token=eth_token),
+            buy_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+        ),
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.6"), token=sol_token),
+            buy_balance=Balance(amount=Decimal("0.4"), token=bnb_token),
+        ),
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.2"), token=usdt_token),
+            buy_balance=Balance(amount=Decimal("0.4"), token=bnb_token),
+        ),
+    ]
 
     await use_case.execute(
         InvestmentPlan(
@@ -484,28 +525,16 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     buy_balance=Balance(amount=Decimal("0.5"), token=bnb_token),
                     sell_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BasketWithTokenBalances(
+                        basket=Basket(
                             id="basket1",
                             name="Basket 1",
+                            display_name="Basket 1",
+                            ticker="BASK1",
                             description="A sample basket",
                             denomination=Decimal(1),
-                            balances=[
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.25"), token=wbnb_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.25"), token=bnb_token
-                                    ),
-                                ),
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.08"), token=eth_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.25"), token=bnb_token
-                                    ),
-                                ),
+                            tokens=[
+                                wbnb_token,
+                                eth_token,
                             ],
                         ),
                     ),
@@ -514,34 +543,47 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     buy_balance=Balance(amount=Decimal("0.8"), token=bnb_token),
                     sell_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BasketWithTokenBalances(
+                        basket=Basket(
                             id="basket2",
                             name="Basket 2",
+                            display_name="Basket 2",
+                            ticker="BASK2",
                             description="A sample basket",
                             denomination=Decimal(1),
-                            balances=[
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.6"), token=sol_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.4"), token=bnb_token
-                                    ),
-                                ),
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.2"), token=usdt_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.4"), token=bnb_token
-                                    ),
-                                ),
+                            tokens=[
+                                sol_token,
+                                usdt_token,
                             ],
                         ),
                     ),
                 ),
             ]
         )
+    )
+
+    exchange.assert_has_calls(
+        [
+            mock.call.convert_balance_to_token(
+                balance=Balance(amount=Decimal("0"), token=wbnb_token),
+                token=bnb_token,
+                investment_parameters=investment_parameters,
+            ),
+            mock.call.convert_balance_to_token(
+                balance=Balance(amount=Decimal("0"), token=eth_token),
+                token=bnb_token,
+                investment_parameters=investment_parameters,
+            ),
+            mock.call.convert_balance_to_token(
+                balance=Balance(amount=Decimal("0"), token=sol_token),
+                token=bnb_token,
+                investment_parameters=investment_parameters,
+            ),
+            mock.call.convert_balance_to_token(
+                balance=Balance(amount=Decimal("0"), token=usdt_token),
+                token=bnb_token,
+                investment_parameters=investment_parameters,
+            ),
+        ]
     )
 
     order_submitter.submit_orders.assert_called_once_with(
@@ -599,10 +641,21 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
     id_generator: IdGenerator,
     date_time: DateTime,
     order_submitter: OrderSubmitter,
+    exchange: Exchange,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+    exchange.convert_balance_to_token.side_effect = [
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.25"), token=wbnb_token),
+            buy_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+        ),
+        TokenConvertedBalance(
+            sell_balance=Balance(amount=Decimal("0.10"), token=eth_token),
+            buy_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
+        ),
+    ]
 
     await use_case.execute(
         InvestmentPlan(
@@ -611,28 +664,16 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     buy_balance=Balance(amount=Decimal("0.5"), token=bnb_token),
                     sell_balance=BasketBalance(
                         amount=Decimal(1),
-                        basket=BasketWithTokenBalances(
+                        basket=Basket(
                             id="basket1",
                             name="Basket 1",
+                            display_name="Basket 1",
+                            ticker="BASK1",
                             description="A sample basket",
                             denomination=Decimal(1),
-                            balances=[
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.25"), token=wbnb_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.25"), token=bnb_token
-                                    ),
-                                ),
-                                TokenBalance(
-                                    sell_balance=Balance(
-                                        amount=Decimal("0.10"), token=eth_token
-                                    ),
-                                    buy_balance=Balance(
-                                        amount=Decimal("0.25"), token=bnb_token
-                                    ),
-                                ),
+                            tokens=[
+                                wbnb_token,
+                                eth_token,
                             ],
                         ),
                     ),
