@@ -7,12 +7,12 @@ from pydantic import BaseModel, model_validator
 
 
 @dataclass
-class AssetBalance(BaseModel):
+class IntentInvestmentPlanBalance(BaseModel):
     asset: Asset
     amount: Decimal | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the AssetBalance to a dictionary."""
+        """Convert the IntentInvestmentPlanBalance to a dictionary."""
         return {
             "asset": self.asset.to_dict(),
             "amount": str(self.amount) if self.amount is not None else None,
@@ -21,8 +21,8 @@ class AssetBalance(BaseModel):
 
 @dataclass
 class IntentInvestmentPlanStep(BaseModel):
-    buy_asset_with_amount: AssetBalance | None = None
-    sell_asset_with_amount: AssetBalance | None = None
+    buy_asset_with_amount: IntentInvestmentPlanBalance | None = None
+    sell_asset_with_amount: IntentInvestmentPlanBalance | None = None
 
     @model_validator(mode="before")
     @classmethod

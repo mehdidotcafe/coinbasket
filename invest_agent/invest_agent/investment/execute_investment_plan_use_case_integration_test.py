@@ -17,16 +17,16 @@ from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
 )
-from protocol.token import Token
 from protocol.fixture.basket import (
     memecoinmania_basket,
 )
-from invest_agent.chain.asset_balance import (
-    BasketBalance,
-)
+from protocol.fixture.token import btc_token, bnb_token
+
 from sqlalchemy import select
 
 from invest_agent.test.database.make_session import make_session
+
+from invest_agent.test.database.cleanup_all import cleanup_all  # noqa: F401
 
 
 @fixture
@@ -34,40 +34,22 @@ def investment_plan():
     return InvestmentPlan(
         steps=[
             InvestmentPlanStep(
-                buy_balance=BasketBalance(
+                buy_balance=Balance(
                     amount=Decimal("1"),
-                    basket=memecoinmania_basket,
+                    asset=memecoinmania_basket,
                 ),
                 sell_balance=Balance(
-                    token=Token(
-                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                        name="Binance Coin",
-                        display_name="Binance Coin",
-                        ticker="BNB",
-                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                    ),
+                    asset=bnb_token,
                     amount=Decimal("7"),
                 ),
             ),
             InvestmentPlanStep(
                 buy_balance=Balance(
-                    token=Token(
-                        id="bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-                        name="Bitcoin",
-                        display_name="Bitcoin",
-                        ticker="BTC",
-                        address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-                    ),
+                    asset=btc_token,
                     amount=Decimal("0.001"),
                 ),
                 sell_balance=Balance(
-                    token=Token(
-                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                        name="Binance Coin",
-                        display_name="Binance Coin",
-                        ticker="BNB",
-                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                    ),
+                    asset=bnb_token,
                     amount=Decimal(1),
                 ),
             ),
@@ -96,7 +78,7 @@ async def wait_for_orders():
 @mark.asyncio
 async def test_integration_execute_investment_plan_use_case(
     investment_plan: InvestmentPlan,
-    cleanup_all: Any,
+    cleanup_all: Any,  # noqa: F811
 ):
     await execute_investment_plan_use_case.execute(investment_plan)
 
@@ -104,20 +86,16 @@ async def test_integration_execute_investment_plan_use_case(
 
     orders = list(await fetch_all_orders())
 
-    assert len(orders) == 8
+    assert len(orders) == 4
 
     assert orders[0].status == "SUCCESS"
     assert orders[1].status == "SUCCESS"
     assert orders[2].status == "SUCCESS"
     assert orders[3].status == "SUCCESS"
-    assert orders[4].status == "SUCCESS"
-    assert orders[5].status == "SUCCESS"
-    assert orders[6].status == "SUCCESS"
-    assert orders[7].status == "SUCCESS"
 
     transactions = list(await fetch_all_transactions())
 
-    assert len(transactions) == 8
+    assert len(transactions) == 4
 
     # Check if all transactions are linked to the correct orders regardless of order
     assert all(

@@ -67,7 +67,7 @@ class BscChain(Chain):
         """Get the address of the agent wallet."""
         return self.account.address
 
-    async def get_min_balance(self) -> Balance:
+    async def get_min_balance(self) -> Balance[Token]:
         """Get the minimum balance required for the agent wallet."""
         gas_used = 200_000
         transaction_count = 20
@@ -77,21 +77,21 @@ class BscChain(Chain):
         total_gas_cost = gas_price * total_gas
 
         return Balance(
-            token=self.base_token,
+            asset=self.base_token,
             amount=Decimal(self.w3.from_wei(total_gas_cost, "ether")),
         )
 
-    async def get_balance(self) -> Balance:
+    async def get_balance(self) -> Balance[Token]:
         """Get the balance of the agent address."""
         balance = await self.w3.eth.get_balance(self.account.address)
         balance_in_ether = self.w3.from_wei(balance, "ether")
 
         return Balance(
-            token=self.base_token,
+            asset=self.base_token,
             amount=Decimal(balance_in_ether),
         )
 
-    async def get_available_balance(self) -> Balance:
+    async def get_available_balance(self) -> Balance[Token]:
         """Get the available balance of the agent address."""
         balance = await self.get_balance()
         min_balance = await self.get_min_balance()
@@ -102,7 +102,7 @@ class BscChain(Chain):
             )
 
         return Balance(
-            token=self.base_token,
+            asset=self.base_token,
             amount=Decimal(balance.amount - min_balance.amount),
         )
 
@@ -116,13 +116,13 @@ class BscChain(Chain):
 
         return Decimal(self.w3.from_wei(balance, "ether"))
 
-    async def get_address_balance(self, address: str) -> Balance:
+    async def get_address_balance(self, address: str) -> Balance[Token]:
         """Get the balance of the address."""
         balance = await self.w3.eth.get_balance(self.w3.to_checksum_address(address))
         balance_in_ether = self.w3.from_wei(balance, "ether")
 
         return Balance(
-            token=self.base_token,
+            asset=self.base_token,
             amount=Decimal(balance_in_ether),
         )
 
@@ -228,7 +228,7 @@ class BscChain(Chain):
 
         if receipt["status"] == 0:
             print(
-                f"Transaction failed: {transaction_hash} {self.__simulate_transaction(transaction_hash, receipt['blockNumber'])}"
+                f"Transaction failed: {transaction_hash} {await self.__simulate_transaction(transaction_hash, receipt['blockNumber'])}"
             )
 
         return receipt["status"] == 1

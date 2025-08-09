@@ -100,7 +100,7 @@ async def test_bsc_chain_get_min_balance(
     min_balance = await bsc_chain.get_min_balance()
 
     assert min_balance.amount == Decimal("1")
-    assert min_balance.token == base_token
+    assert min_balance.asset == base_token
 
     w3.from_wei.assert_called_once_with(
         1_000_000_000 * 200_000 * 20,
@@ -118,7 +118,7 @@ async def test_bsc_chain_get_balance(
     balance = await bsc_chain.get_balance()
 
     assert balance.amount == Decimal("1")
-    assert balance.token == base_token
+    assert balance.asset == base_token
 
     w3.eth.get_balance.assert_called_once_with(
         "0x1234567890abcdef1234567890abcdef12345678",
@@ -152,7 +152,7 @@ async def test_bsc_chain_get_available_balance(
     assert balance.amount == Decimal(
         1000000000000000000 - (1_000_000_000 * 200_000 * 20)
     )
-    assert balance.token == base_token
+    assert balance.asset == base_token
 
     w3.eth.get_balance.assert_called_once_with(
         "0x1234567890abcdef1234567890abcdef12345678",
@@ -193,7 +193,7 @@ async def test_bsc_chain_get_address_balance(
     balance = await bsc_chain.get_address_balance(address)
 
     assert balance.amount == Decimal("1")
-    assert balance.token == base_token
+    assert balance.asset == base_token
 
     w3.eth.get_balance.assert_called_once_with(
         "0x2B5616d51Cd04862a6BD16cE63B47364A2261125_checksum",

@@ -5,7 +5,6 @@ from invest_agent.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
     GetAssetSwapPriceUseCase,
 )
-from invest_agent.chain.asset_balance import BasketBalance
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
@@ -38,14 +37,14 @@ async def test_get_asset_swap_price_use_case_sell_token_buy_token(
     )
 
     exchange.convert_balance_to_token.return_value = ConvertedBalance(
-        sell_balance=Balance(token=wbnb_token, amount=Decimal("1.0")),
-        buy_balance=Balance(token=usdt_token, amount=Decimal("300.0")),
+        sell_balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
+        buy_balance=Balance(asset=usdt_token, amount=Decimal("300.0")),
     )
 
     asset_swap_price = await use_case.execute(asset_swap_price_info)
 
     exchange.convert_balance_to_token.assert_called_once_with(
-        balance=Balance(token=wbnb_token, amount=Decimal("1.0")),
+        balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
         token=usdt_token,
         investment_parameters=InvestmentParameters(
             slippage_tolerance_in_percentage=Decimal("1"),
@@ -53,8 +52,8 @@ async def test_get_asset_swap_price_use_case_sell_token_buy_token(
     )
 
     assert asset_swap_price == ConvertedBalance(
-        sell_balance=Balance(token=wbnb_token, amount=Decimal("1.0")),
-        buy_balance=Balance(token=usdt_token, amount=Decimal("300.0")),
+        sell_balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
+        buy_balance=Balance(asset=usdt_token, amount=Decimal("300.0")),
     )
 
 
@@ -69,14 +68,14 @@ async def test_get_asset_swap_price_use_case_buy_basket_sell_token(
     )
 
     exchange.convert_balance_to_token.return_value = ConvertedBalance(
-        sell_balance=Balance(token=wbnb_token, amount=Decimal("1.0")),
-        buy_balance=Balance(token=usdt_token, amount=Decimal("3000.0")),
+        sell_balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
+        buy_balance=Balance(asset=usdt_token, amount=Decimal("3000.0")),
     )
 
     asset_swap_price = await use_case.execute(asset_swap_price_info)
 
     exchange.convert_balance_to_token.assert_called_once_with(
-        balance=Balance(token=wbnb_token, amount=Decimal("1.0")),
+        balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
         token=usdt_token,
         investment_parameters=InvestmentParameters(
             slippage_tolerance_in_percentage=Decimal("1"),
@@ -84,8 +83,8 @@ async def test_get_asset_swap_price_use_case_buy_basket_sell_token(
     )
 
     assert asset_swap_price == ConvertedBalance(
-        sell_balance=Balance(token=wbnb_token, amount=Decimal("1.0")),
-        buy_balance=BasketBalance(basket=big4_basket, amount=Decimal("300.0")),
+        sell_balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
+        buy_balance=Balance(asset=big4_basket, amount=Decimal("300.0")),
     )
 
 
@@ -100,14 +99,14 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
     )
 
     exchange.convert_balance_to_token.return_value = ConvertedBalance(
-        sell_balance=Balance(token=usdt_token, amount=Decimal("500.0")),
-        buy_balance=Balance(token=wbnb_token, amount=Decimal("60.0")),
+        sell_balance=Balance(asset=usdt_token, amount=Decimal("500.0")),
+        buy_balance=Balance(asset=wbnb_token, amount=Decimal("60.0")),
     )
 
     asset_swap_price = await use_case.execute(asset_swap_price_info)
 
     exchange.convert_balance_to_token.assert_called_once_with(
-        balance=Balance(token=usdt_token, amount=Decimal("500.0")),
+        balance=Balance(asset=usdt_token, amount=Decimal("500.0")),
         token=wbnb_token,
         investment_parameters=InvestmentParameters(
             slippage_tolerance_in_percentage=Decimal("1"),
@@ -115,8 +114,8 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
     )
 
     assert asset_swap_price == ConvertedBalance(
-        buy_balance=Balance(token=wbnb_token, amount=Decimal("60.0")),
-        sell_balance=BasketBalance(basket=big4_basket, amount=Decimal("50.0")),
+        buy_balance=Balance(asset=wbnb_token, amount=Decimal("60.0")),
+        sell_balance=Balance(asset=big4_basket, amount=Decimal("50.0")),
     )
 
 

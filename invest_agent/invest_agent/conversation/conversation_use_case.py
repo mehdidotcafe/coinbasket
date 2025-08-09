@@ -6,7 +6,7 @@ from langgraph.types import Command
 from invest_agent.datetime.date_time import DateTime
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt
 
 from invest_agent.conversation.message import Message, QueryMessage, MessageUi
@@ -30,7 +30,7 @@ class ConversationUseCase:
 
     async def execute(
         self,
-        agent_executor: CompiledGraph,
+        agent_executor: CompiledStateGraph[Any],
         message: QueryMessage,
     ):
         step = None

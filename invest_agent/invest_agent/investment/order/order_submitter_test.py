@@ -92,7 +92,7 @@ def tries():
                 ),
             ],
             provider="MockExchange",
-            buy_balance=Balance(amount=Decimal(0), token=sol_token),
+            buy_balance=Balance(amount=Decimal(0), asset=sol_token),
         )
     ]
 
@@ -102,8 +102,8 @@ async def test_order_submitter_submit_orders(order_submitter: OrderSubmitter):
     orders = [
         Order(
             id="3",
-            sell_balance=Balance(amount=Decimal("0.40"), token=bnb_token),
-            buy_balance=Balance(amount=Decimal(0), token=sol_token),
+            sell_balance=Balance(amount=Decimal("0.40"), asset=bnb_token),
+            buy_balance=Balance(amount=Decimal(0), asset=sol_token),
             type="BUY",
             tries=[],
             created_at=1752268296,
@@ -130,8 +130,8 @@ async def test_order_submitter_submit_and_wait_order_without_tries(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), token=sol_token),
+        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
+        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
         type="BUY",
         tries=[],
         created_at=1752268296,
@@ -180,8 +180,8 @@ async def test_order_submitter_submit_and_wait_order_with_tries(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), token=sol_token),
+        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
+        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -223,8 +223,8 @@ async def test_order_submitter_submit_and_wait_order_success(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), token=sol_token),
+        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
+        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -279,8 +279,8 @@ async def test_order_submitter_submit_and_wait_order_failed(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), token=sol_token),
+        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
+        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -332,8 +332,8 @@ async def test_order_submitter_submit_and_wait_order_retries(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), token=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), token=sol_token),
+        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
+        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
         type="BUY",
         tries=tries,
         created_at=1752268296,

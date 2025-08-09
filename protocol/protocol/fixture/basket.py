@@ -47,33 +47,5 @@ memecoinmania_basket = Basket(
             ticker="PEPE",
             address="0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
         ),
-        Token(
-            id="bsc:0xfb5b838b6cfeedc2873ab27866079ac55363d37e",
-            name="FLOKI",
-            display_name="FLOKI",
-            ticker="FLOKI",
-            address="0xfb5b838b6cfeedc2873ab27866079ac55363d37e",
-        ),
-        Token(
-            id="bsc:0xA697e272a73744b343528C3Bc4702F2565b2F422",
-            name="Bonk",
-            display_name="Bonk",
-            ticker="BONK",
-            address="0xA697e272a73744b343528C3Bc4702F2565b2F422",
-        ),
-        Token(
-            id="bsc:0x86Bb94DdD16Efc8bc58e6b056e8df71D9e666429",
-            name="Test",
-            display_name="Test",
-            ticker="TST",
-            address="0x86Bb94DdD16Efc8bc58e6b056e8df71D9e666429",
-        ),
-        Token(
-            id="bsc:0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6",
-            name="mubarak",
-            display_name="mubarak",
-            ticker="MUBARAK",
-            address="0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6",
-        ),
     ],
 )

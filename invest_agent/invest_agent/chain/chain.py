@@ -34,17 +34,17 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_min_balance(self) -> Balance:
+    async def get_min_balance(self) -> Balance[Token]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_balance(self) -> Balance:
+    async def get_balance(self) -> Balance[Token]:
         raise NotImplementedError
 
     @abstractmethod
     async def get_available_balance(
         self,
-    ) -> Balance:
+    ) -> Balance[Token]:
         raise NotImplementedError
 
     @abstractmethod
@@ -52,7 +52,7 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_address_balance(self, address: str) -> Balance:
+    async def get_address_balance(self, address: str) -> Balance[Token]:
         raise NotImplementedError
 
     @abstractmethod

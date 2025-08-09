@@ -4,6 +4,7 @@ from typing import Literal
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.fees import Fees
 from invest_agent.investment.order.basket_order import BasketOrder
+from protocol.token import Token
 
 Id = str
 
@@ -29,7 +30,7 @@ class Try:
     created_at: int
     chain_transactions: list[ChainTransaction]
     provider: str
-    buy_balance: Balance
+    buy_balance: Balance[Token]
     # TODO: Make fees required
     fees: Fees | None = None
 
@@ -42,8 +43,8 @@ OrderTrigger = Literal["MANUAL", "AUTOMATIC"]
 @dataclass
 class Order:
     id: Id
-    sell_balance: Balance
-    buy_balance: Balance
+    sell_balance: Balance[Token]
+    buy_balance: Balance[Token]
     type: OrderType
     tries: list[Try]
     created_at: int

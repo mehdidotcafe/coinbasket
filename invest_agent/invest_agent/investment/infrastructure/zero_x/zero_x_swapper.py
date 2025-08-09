@@ -7,7 +7,7 @@ from invest_agent.chain.chain import Chain, Gas
 from invest_agent.chain.contract import Contract
 
 from invest_agent.investment.exchange.exchange import (
-    TokenConvertedBalance,
+    ConvertedBalance,
     Exchange,
     TransactionData,
     Wallet,
@@ -76,7 +76,7 @@ class ZeroXSwapper(Exchange):
 
         amount = int(
             await self.__get_token_amount(
-                token=order.sell_balance.token,
+                token=order.sell_balance.asset,
                 raw_amount=order.sell_balance.amount,
             )
         )
@@ -84,9 +84,9 @@ class ZeroXSwapper(Exchange):
         price = await self.api_client.get_price(
             chain_id=chain_id,
             taker=self.account.address,
-            sell_token=order.sell_balance.token.address,
+            sell_token=order.sell_balance.asset.address,
             amount=amount,
-            buy_token=order.buy_balance.token.address,
+            buy_token=order.buy_balance.asset.address,
             sell_entire_balance=True,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
@@ -95,14 +95,14 @@ class ZeroXSwapper(Exchange):
         )
 
         transactions_data.append(
-            self.__build_approve_allowance(price=price, token=order.sell_balance.token)
+            self.__build_approve_allowance(price=price, token=order.sell_balance.asset)
         )
 
         quote_result = await self.api_client.get_quote(
             chain_id=chain_id,
             taker=self.account.address,
-            sell_token=order.sell_balance.token.address,
-            buy_token=order.buy_balance.token.address,
+            sell_token=order.sell_balance.asset.address,
+            buy_token=order.buy_balance.asset.address,
             amount=amount,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
@@ -137,11 +137,11 @@ class ZeroXSwapper(Exchange):
 
     async def get_wallet_in_token(
         self,
-        tokens_balance: list[Balance],
+        tokens_balance: list[Balance[Token]],
         token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Wallet:
-        balances: list[TokenConvertedBalance] = []
+        balances: list[ConvertedBalance] = []
 
         tasks = [
             self.convert_balance_to_token(
@@ -167,25 +167,25 @@ class ZeroXSwapper(Exchange):
 
     async def convert_balance_to_token(
         self,
-        balance: Balance,
+        balance: Balance[Token],
         token: Token,
         investment_parameters: InvestmentParameters,
     ):
-        if self.__is_same_token(balance.token, token):
-            return TokenConvertedBalance(
+        if self.__is_same_token(balance.asset, token):
+            return ConvertedBalance(
                 sell_balance=Balance(
-                    token=balance.token,
+                    asset=balance.asset,
                     amount=balance.amount,
                 ),
                 buy_balance=Balance(
-                    token=token,
+                    asset=token,
                     amount=balance.amount,
                 ),
             )
 
         amount = int(
             await self.__get_token_amount(
-                token=balance.token,
+                token=balance.asset,
                 raw_amount=balance.amount,
             )
         )
@@ -193,22 +193,22 @@ class ZeroXSwapper(Exchange):
         price = await self.api_client.get_price(
             chain_id=await self.chain.get_chain_id(),
             taker=self.account.address,
-            sell_token=balance.token.address,
+            sell_token=balance.asset.address,
             buy_token=token.address,
             amount=amount,
             investment_parameters=investment_parameters,
         )
 
-        return TokenConvertedBalance(
+        return ConvertedBalance(
             sell_balance=Balance(
-                token=balance.token,
+                asset=balance.asset,
                 amount=await self.__get_raw_amount(
-                    token=balance.token,
+                    token=balance.asset,
                     amount=Decimal(price.sellAmount),
                 ),
             ),
             buy_balance=Balance(
-                token=token,
+                asset=token,
                 amount=await self.__get_raw_amount(
                     token=token,
                     amount=Decimal(price.buyAmount),
@@ -216,9 +216,9 @@ class ZeroXSwapper(Exchange):
             ),
         )
 
-    def __sum_balances(self, balances: list[TokenConvertedBalance], token: Token):
+    def __sum_balances(self, balances: list[ConvertedBalance], token: Token):
         return Balance(
-            token=token,
+            asset=token,
             amount=cast(
                 Decimal, sum([balance.buy_balance.amount for balance in balances])
             ),

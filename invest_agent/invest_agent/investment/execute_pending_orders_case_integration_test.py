@@ -21,14 +21,16 @@ from protocol.fixture.token import bnb_token, eth_token, usdt_token, sol_token
 
 from invest_agent.test.database.make_session import make_session
 
+from invest_agent.test.database.cleanup_all import cleanup_all  # noqa: F401
+
 
 @fixture
 def current_orders_no_try():
     return [
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c1",
-            sell_balance=Balance(token=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(token=eth_token, amount=Decimal(0.1)),
+            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
+            buy_balance=Balance(asset=eth_token, amount=Decimal(0.1)),
             type="BUY",
             created_at=1939494,
             status="PENDING",
@@ -38,8 +40,8 @@ def current_orders_no_try():
         ),
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c2",
-            sell_balance=Balance(token=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(token=usdt_token, amount=Decimal(0.1)),
+            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
+            buy_balance=Balance(asset=usdt_token, amount=Decimal(0.1)),
             type="BUY",
             created_at=1939494,
             status="SUCCESS",
@@ -49,8 +51,8 @@ def current_orders_no_try():
         ),
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c3",
-            sell_balance=Balance(token=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(token=sol_token, amount=Decimal(0.1)),
+            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
+            buy_balance=Balance(asset=sol_token, amount=Decimal(0.1)),
             type="BUY",
             created_at=1939494,
             status="FAIL",
@@ -86,8 +88,8 @@ def current_orders_tries():
     return [
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c1",
-            sell_balance=Balance(token=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(token=eth_token, amount=Decimal(0.1)),
+            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
+            buy_balance=Balance(asset=eth_token, amount=Decimal(0.1)),
             type="BUY",
             created_at=1939494,
             status="PENDING",
@@ -99,7 +101,7 @@ def current_orders_tries():
                     order_id="641763c2-41e2-4af0-936f-32c1a84499c1",
                     created_at=1939494,
                     provider="provider1",
-                    buy_balance=Balance(token=eth_token, amount=Decimal(0.1)),
+                    buy_balance=Balance(asset=eth_token, amount=Decimal(0.1)),
                     fees=None,
                     chain_transactions=[
                         ChainTransaction(
@@ -117,8 +119,8 @@ def current_orders_tries():
         ),
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c2",
-            sell_balance=Balance(token=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(token=usdt_token, amount=Decimal(0.1)),
+            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
+            buy_balance=Balance(asset=usdt_token, amount=Decimal(0.1)),
             type="BUY",
             created_at=1939494,
             status="PENDING",
@@ -130,7 +132,7 @@ def current_orders_tries():
                     order_id="641763c2-41e2-4af0-936f-32c1a84499c2",
                     created_at=1939494,
                     provider="provider2",
-                    buy_balance=Balance(token=usdt_token, amount=Decimal(0.1)),
+                    buy_balance=Balance(asset=usdt_token, amount=Decimal(0.1)),
                     fees=None,
                     chain_transactions=[
                         ChainTransaction(
@@ -148,8 +150,8 @@ def current_orders_tries():
         ),
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c3",
-            sell_balance=Balance(token=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(token=sol_token, amount=Decimal(0.1)),
+            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
+            buy_balance=Balance(asset=sol_token, amount=Decimal(0.1)),
             type="BUY",
             created_at=1939494,
             status="PENDING",
@@ -161,7 +163,7 @@ def current_orders_tries():
                     order_id="641763c2-41e2-4af0-936f-32c1a84499c3",
                     created_at=1939494,
                     provider="provider3",
-                    buy_balance=Balance(token=usdt_token, amount=Decimal(0.1)),
+                    buy_balance=Balance(asset=usdt_token, amount=Decimal(0.1)),
                     fees=None,
                     chain_transactions=[],
                 )
@@ -273,7 +275,7 @@ async def wait_for_orders():
 
 async def test_integration_execute_pending_orders_use_case_no_try(
     seed_orders_no_try: Any,
-    cleanup_all: Any,
+    cleanup_all: Any,  # noqa: F811
 ):
     await execute_pending_orders_use_case.execute()
 
@@ -293,7 +295,7 @@ async def test_integration_execute_pending_orders_use_case_no_try(
 
 async def test_integration_execute_pending_orders_use_case_with_tries(
     seed_orders_tries: Any,
-    cleanup_all: Any,
+    cleanup_all: Any,  # noqa: F811
 ):
     await execute_pending_orders_use_case.execute()
 

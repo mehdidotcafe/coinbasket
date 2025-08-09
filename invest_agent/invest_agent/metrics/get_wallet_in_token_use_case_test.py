@@ -102,7 +102,7 @@ def chain():
 def balance():
     return Balance(
         amount=Decimal("0"),
-        token=Token(
+        asset=Token(
             id="bsc:0x00000",
             name="BNB",
             display_name="BNB",
@@ -126,7 +126,7 @@ def wallet():
         balances=[],
         total_balance=Balance(
             amount=Decimal("0"),
-            token=Token(
+            asset=Token(
                 id="bsc:0x55d398326f99059ff775485246999027b3197955",
                 name="Tether USD",
                 display_name="Tether USD",

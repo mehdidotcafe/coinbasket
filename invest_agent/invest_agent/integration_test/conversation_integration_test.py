@@ -5,6 +5,7 @@ from invest_agent.conversation.message import QueryMessage
 from pytest import fixture
 import requests
 from environs import env
+from invest_agent.test.database.cleanup_all import cleanup_all  # noqa: F401
 
 agent_port = env.int("AGENT_PORT")
 agent_key = env.str("AGENT_KEY")
@@ -17,62 +18,34 @@ def investment_plan() -> dict[str, Any]:
             "steps": [
                 {
                     "buy_balance": {
-                        "basket": {
+                        "asset": {
                             "id": "c0e724d3-c4d0-4bd0-973d-edd3907ecf51",
                             "description": "A basket of memecoins",
                             "name": "Memecoin Mania",
+                            "display_name": "Memecoin Mania",
+                            "ticker": "MEME",
                             "denomination": "0.1",
-                            "balances": [
+                            "tokens": [
                                 {
-                                    "sell_balance": {
-                                        "token": {
-                                            "id": "bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                            "name": "Binance Coin",
-                                            "display_name": "Binance Coin",
-                                            "ticker": "BNB",
-                                            "address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        },
-                                        "amount": "10.95",
-                                    },
-                                    "buy_balance": {
-                                        "token": {
-                                            "id": "bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-                                            "name": "Dogecoin",
-                                            "display_name": "Dogecoin",
-                                            "ticker": "DOGE",
-                                            "address": "0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-                                        },
-                                        "amount": "1028983",
-                                    },
+                                    "id": "bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+                                    "name": "Dogecoin",
+                                    "display_name": "Dogecoin",
+                                    "ticker": "DOGE",
+                                    "address": "0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
                                 },
                                 {
-                                    "sell_balance": {
-                                        "token": {
-                                            "id": "bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                            "name": "Binance Coin",
-                                            "display_name": "Binance Coin",
-                                            "ticker": "BNB",
-                                            "address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                                        },
-                                        "amount": "5.00",
-                                    },
-                                    "buy_balance": {
-                                        "token": {
-                                            "id": "bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
-                                            "name": "Shiba Inu",
-                                            "display_name": "Shiba Inu",
-                                            "ticker": "SHIB",
-                                            "address": "0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
-                                        },
-                                        "amount": "1028983",
-                                    },
+                                    "id": "bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
+                                    "name": "Shiba Inu",
+                                    "display_name": "Shiba Inu",
+                                    "ticker": "SHIB",
+                                    "address": "0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
                                 },
                             ],
                         },
                         "amount": "10.95",
                     },
                     "sell_balance": {
-                        "token": {
+                        "asset": {
                             "id": "bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
                             "name": "Binance Coin",
                             "display_name": "Binance Coin",
@@ -87,9 +60,7 @@ def investment_plan() -> dict[str, Any]:
     }
 
 
-def test_integration_conversation(
-    investment_plan: dict[str, Any], cleanup_all: Any, snapshot: Any
-):
+def test_integration_conversation(investment_plan: dict[str, Any], cleanup_all: Any):  # noqa: F811
     response_1 = requests.post(
         f"http://localhost:{agent_port}/conversation",
         json={

@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import dataclass
 from decimal import Decimal
 import itertools
-from invest_agent.chain.asset_balance import BasketBalance
+from typing import cast
 from invest_agent.chain.balance import Balance
 from invest_agent.chain.chain import Chain
 from invest_agent.datetime.date_time import DateTime
@@ -24,8 +24,8 @@ from shared.id_generator.id_generator import IdGenerator
 
 @dataclass
 class FlattenedInvestmentStep:
-    sell_balance: Balance
-    buy_balance: Balance
+    sell_balance: Balance[Token]
+    buy_balance: Balance[Token]
     basket_id: str | None = None
 
 
@@ -90,7 +90,7 @@ class ExecuteInvestmentPlanUseCase:
                 sell_balance=step.sell_balance,
                 buy_balance=step.buy_balance,
                 type=self.__get_order_type(
-                    step.sell_balance.token, step.buy_balance.token
+                    step.sell_balance.asset, step.buy_balance.asset
                 ),
                 tries=[],
                 created_at=self.date_time.now(),
@@ -127,36 +127,48 @@ class ExecuteInvestmentPlanUseCase:
         buy_balance = step.buy_balance
         sell_balance = step.sell_balance
 
-        if isinstance(buy_balance, BasketBalance) and isinstance(
-            sell_balance, BasketBalance
+        if isinstance(buy_balance.asset, Basket) and isinstance(
+            sell_balance.asset, Basket
         ):
             raise CannotSwapBasketForAnotherException()
 
-        if isinstance(buy_balance, BasketBalance) and isinstance(sell_balance, Balance):
-            return await self.__build_steps_for_buy_basket(buy_balance, sell_balance)
-        if isinstance(sell_balance, BasketBalance) and isinstance(buy_balance, Balance):
-            return await self.__build_steps_for_sell_basket(sell_balance, buy_balance)
-        if isinstance(sell_balance, Balance) and isinstance(buy_balance, Balance):
+        if isinstance(buy_balance.asset, Basket) and isinstance(
+            sell_balance.asset, Token
+        ):
+            return await self.__build_steps_for_buy_basket(
+                buy_balance=cast(Balance[Basket], buy_balance),
+                sell_balance=cast(Balance[Token], sell_balance),
+            )
+        if isinstance(sell_balance.asset, Basket) and isinstance(
+            buy_balance.asset, Token
+        ):
+            return await self.__build_steps_for_sell_basket(
+                sell_balance=cast(Balance[Basket], sell_balance),
+                buy_balance=cast(Balance[Token], buy_balance),
+            )
+        if isinstance(sell_balance.asset, Token) and isinstance(
+            buy_balance.asset, Token
+        ):
             return [
                 FlattenedInvestmentStep(
-                    sell_balance=sell_balance,
-                    buy_balance=buy_balance,
+                    sell_balance=cast(Balance[Token], sell_balance),
+                    buy_balance=cast(Balance[Token], buy_balance),
                 )
             ]
         return []
 
     async def __build_steps_for_buy_basket(
-        self, buy_balance: BasketBalance, sell_balance: Balance
+        self, buy_balance: Balance[Basket], sell_balance: Balance[Token]
     ) -> list[FlattenedInvestmentStep]:
         tasks = [
             self.exchange.convert_balance_to_token(
                 balance=self.__compute_token_balance_with_basket_weight(
-                    buy_balance.basket, sell_balance
+                    buy_balance.asset, sell_balance
                 ),
                 token=token,
                 investment_parameters=investment_parameters,
             )
-            for token in buy_balance.basket.tokens
+            for token in buy_balance.asset.tokens
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -172,23 +184,23 @@ class ExecuteInvestmentPlanUseCase:
                     FlattenedInvestmentStep(
                         sell_balance=result.sell_balance,
                         buy_balance=result.buy_balance,
-                        basket_id=buy_balance.basket.id,
+                        basket_id=buy_balance.asset.id,
                     )
                 )
 
         return flattened_basket_steps
 
     async def __build_steps_for_sell_basket(
-        self, sell_balance: BasketBalance, buy_balance: Balance
+        self, sell_balance: Balance[Basket], buy_balance: Balance[Token]
     ) -> list[FlattenedInvestmentStep]:
         tasks = [
             self.exchange.convert_balance_to_token(
                 # TODO: Handle selling basket
-                balance=Balance(token=token, amount=Decimal("0")),
-                token=buy_balance.token,
+                balance=Balance(asset=token, amount=Decimal("0")),
+                token=buy_balance.asset,
                 investment_parameters=investment_parameters,
             )
-            for token in sell_balance.basket.tokens
+            for token in sell_balance.asset.tokens
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -204,23 +216,23 @@ class ExecuteInvestmentPlanUseCase:
                     FlattenedInvestmentStep(
                         sell_balance=result.sell_balance,
                         buy_balance=result.buy_balance,
-                        basket_id=sell_balance.basket.id,
+                        basket_id=sell_balance.asset.id,
                     )
                 )
 
         return flattened_basket_steps
 
     def __compute_token_balance_with_basket_weight(
-        self, basket: Basket, balance: Balance
-    ) -> Balance:
+        self, basket: Basket, balance: Balance[Token]
+    ) -> Balance[Token]:
         print(
             Balance(
-                token=balance.token,
+                asset=balance.asset,
                 amount=balance.amount / len(basket.tokens),
             )
         )
 
         return Balance(
-            token=balance.token,
+            asset=balance.asset,
             amount=balance.amount / len(basket.tokens),
         )

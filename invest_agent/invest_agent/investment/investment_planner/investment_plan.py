@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 
-from invest_agent.chain.asset_balance import AssetBalance
+from invest_agent.chain.balance import Balance
 
 
 @dataclass
 class InvestmentPlanStep:
-    buy_balance: AssetBalance
-    sell_balance: AssetBalance
+    buy_balance: Balance
+    sell_balance: Balance
 
 
 @dataclass

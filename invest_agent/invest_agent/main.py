@@ -7,11 +7,6 @@ from invest_agent.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
     GetAssetSwapPriceUseCase,
 )
-from invest_agent.chain.asset_balance import (
-    AssetBalance,
-    BasketBalance,
-    TokenBalance,
-)
 from invest_agent.investment.exchange.exchange import ConvertedBalance
 from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
@@ -257,7 +252,7 @@ async def get_token_info(query: str):
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
         SimilarityQuery(
-            query=f"{query} type:token", agent_key=configuration.data_agent_key
+            query=f"{query} type: token", agent_key=configuration.data_agent_key
         ),
         SimilarityResponse,
     )
@@ -285,7 +280,7 @@ async def get_basket_info(query: str):
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
         SimilarityQuery(
-            query=f"{query} type:basket", agent_key=configuration.data_agent_key
+            query=f"{query} type: basket", agent_key=configuration.data_agent_key
         ),
         SimilarityResponse,
     )
@@ -300,12 +295,6 @@ async def get_basket_info(query: str):
 def get_agent_address():
     """Retrieve agent's current wallet address."""
     return chain.get_address()
-
-
-@tool()
-async def get_agent_balance(query: str):
-    """Retrieve agent's current wallet balance in BNB."""
-    return await chain.get_balance()
 
 
 @tool()
@@ -344,9 +333,21 @@ async def get_token_balance(token: Token):
     balance = await chain.get_token_balance_amount(token.address)
 
     return Balance(
-        token=token,
+        asset=token,
         amount=balance,
     )
+
+
+@tool()
+def get_agent_name():
+    """Retrieve agent's name."""
+    return configuration.agent_name
+
+
+@tool()
+def get_current_datetime():
+    """Retrieve current datetime."""
+    return date_time.now_str()
 
 
 class TokenRequest(Model):
@@ -389,59 +390,30 @@ class BasketRequest(Model):
         )
 
 
+AssetRequest = TokenRequest | BasketRequest
+
+
 class BalanceRequest(Model):
-    token: TokenRequest
+    asset: AssetRequest
     amount: str
 
     def to_domain(self) -> Balance:
         """Convert the request to a Balance."""
         return Balance(
-            token=self.token.to_domain(),
-            amount=Decimal(self.amount),
-        )
-
-
-class TokenBalanceRequest(Model):
-    buy_balance: BalanceRequest
-    sell_balance: BalanceRequest
-
-    def to_domain(self) -> TokenBalance:
-        """Convert the request to a TokenBalance."""
-        return TokenBalance(
-            buy_balance=self.buy_balance.to_domain(),
-            sell_balance=self.sell_balance.to_domain(),
-        )
-
-
-class BasketBalanceRequest(Model):
-    basket: BasketRequest
-    amount: str
-
-    def to_domain(self) -> BasketBalance:
-        """Convert the request to a BasketBalance."""
-        return BasketBalance(
-            basket=self.basket.to_domain(),
+            asset=self.asset.to_domain(),
             amount=Decimal(self.amount),
         )
 
 
 class InvestmentPlanStepRequest(Model):
-    buy_balance: BalanceRequest | BasketBalanceRequest
-    sell_balance: BalanceRequest | BasketBalanceRequest
+    buy_balance: BalanceRequest
+    sell_balance: BalanceRequest
 
     def to_domain(self) -> InvestmentPlanStep:
         """Convert the request to an InvestmentPlanStep."""
-
-        def convert_balance(
-            balance: BalanceRequest | BasketBalanceRequest,
-        ) -> AssetBalance:
-            if isinstance(balance, BasketBalanceRequest):
-                return balance.to_domain()
-            return balance.to_domain()
-
         return InvestmentPlanStep(
-            buy_balance=convert_balance(self.buy_balance),
-            sell_balance=convert_balance(self.sell_balance),
+            buy_balance=self.buy_balance.to_domain(),
+            sell_balance=self.sell_balance.to_domain(),
         )
 
 
@@ -456,10 +428,10 @@ class InvestmentPlanRequest(Model):
 @tool(
     parse_docstring=True,
 )
-async def buy_assets_from_intent_investment_plan_use_case(
+async def invest_in_intent_investment_plan_use_case(
     intent_investment_plan: IntentInvestmentPlan,
 ) -> dict[str, Any]:
-    """Buy or sell assets in the agent's wallet.
+    """Invest in the intent investment plan.
 
     Args:
         intent_investment_plan (IntentInvestmentPlan): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.
@@ -543,13 +515,13 @@ async def buy_assets_from_intent_investment_plan_use_case(
 tools = [
     get_basket_info,
     get_token_info,
-    # prepare_investment_plan,
-    buy_assets_from_intent_investment_plan_use_case,
+    invest_in_intent_investment_plan_use_case,
     get_agent_address,
-    get_agent_balance,
     get_token_balance,
     # get_invested_basket,
     # get_invested_basket_balance_in_native_and_usd_value,
+    get_agent_name,
+    get_current_datetime,
 ]
 
 
@@ -561,7 +533,7 @@ async def on_startup(_ctx: Context):
 
 class QueryMessageRequest(Model):
     id: str
-    is_resuming: bool = False
+    is_resuming: bool
     role: Literal["user"]
     content: str
     created_at: Optional[str]
@@ -586,7 +558,7 @@ class MessageResponse(Model):
     created_at: Optional[str]
 
     @staticmethod
-    def from_message(message: Message) -> "MessageResponse":
+    def from_domain(message: Message) -> "MessageResponse":
         """Convert a Message to a MessageResponse."""
         return MessageResponse(
             id=message.id,
@@ -647,7 +619,7 @@ async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
             ),
         )
 
-    return MessageResponse.from_message(message)
+    return MessageResponse.from_domain(message)
 
 
 def __create_agent_executor(conn: aiosqlite.Connection):
@@ -662,14 +634,11 @@ def __create_agent_executor(conn: aiosqlite.Connection):
         tools,
         checkpointer=sqlite_memory,
         prompt=SystemMessage(
-            f"Your name is {configuration.agent_name}.  "
-            f"Today is {date_time.now_str()}.  "
             "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket of tokens.  "
             "Users can buy, sell, or swap assets in their portfolio.  "
-            "Before buying, selling or swapping assets, always show the user the investment plan you are creating by showing the list of assets to buy, sell or swap.  "
+            "Before buying, selling or swapping assets, always show the user the intent investment plan you are creating by showing the list of assets to buy, sell or swap.  "
             "When you display a token, always display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't mention excluded assets.  "
             "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  "
-            # "Always ask for the user's confirmation before updating the portfolio and show a message mentioning that he should do his own research (DYOR) before investing.  "
             "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
         ),
     )
@@ -732,7 +701,7 @@ async def get_conversation_messages(
     )
 
     return MessagesResponse(
-        messages=[MessageResponse.from_message(message) for message in messages]
+        messages=[MessageResponse.from_domain(message) for message in messages]
     )
 
 
@@ -752,6 +721,7 @@ class AssetSwapPriceInfoRequest(Model):
 
 
 class TokenResponse(Model):
+    id: str
     name: str
     display_name: str
     ticker: str
@@ -761,6 +731,7 @@ class TokenResponse(Model):
     def from_domain(token: Token) -> "TokenResponse":
         """Convert the domain Token to a TokenResponse."""
         return TokenResponse(
+            id=token.id,
             name=token.name,
             display_name=token.display_name,
             ticker=token.ticker,
@@ -771,6 +742,8 @@ class TokenResponse(Model):
 class BasketResponse(Model):
     id: str
     name: str
+    display_name: str
+    ticker: str
     description: str
     denomination: str
     tokens: list[TokenResponse]
@@ -781,24 +754,29 @@ class BasketResponse(Model):
         return BasketResponse(
             id=basket.id,
             name=basket.name,
+            display_name=basket.display_name,
+            ticker=basket.ticker,
             description=basket.description,
             denomination=str(basket.denomination),
             tokens=[TokenResponse.from_domain(token) for token in basket.tokens],
         )
 
 
+AssetResponse = TokenResponse | BasketResponse
+
+
 class BalanceResponse(Model):
     amount: str
-    asset: TokenResponse | BasketResponse
+    asset: AssetResponse
 
     @staticmethod
-    def from_domain(balance: AssetBalance) -> "BalanceResponse":
+    def from_domain(balance: Balance) -> "BalanceResponse":
         """Convert the domain Balance to a BalanceResponse."""
         return BalanceResponse(
             amount=str(balance.amount),
-            asset=TokenResponse.from_domain(balance.token)
-            if isinstance(balance, Balance)
-            else BasketResponse.from_domain(balance.basket),
+            asset=TokenResponse.from_domain(balance.asset)
+            if isinstance(balance.asset, Token)
+            else BasketResponse.from_domain(balance.asset),
         )
 
 

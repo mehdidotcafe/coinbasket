@@ -1,6 +1,5 @@
 from decimal import Decimal
 from attr import dataclass
-from invest_agent.chain.asset_balance import BasketBalance
 from invest_agent.chain.balance import Balance
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
@@ -46,7 +45,7 @@ class GetAssetSwapPriceUseCase:
         ):
             price = await self.exchange.convert_balance_to_token(
                 balance=Balance(
-                    token=asset_swap_price_info.sell_asset,
+                    asset=asset_swap_price_info.sell_asset,
                     amount=asset_swap_price_info.sell_asset_amount,
                 ),
                 token=DEFAULT_USD_TOKEN,
@@ -54,11 +53,11 @@ class GetAssetSwapPriceUseCase:
             )
             return ConvertedBalance(
                 sell_balance=Balance(
-                    token=asset_swap_price_info.sell_asset,
+                    asset=asset_swap_price_info.sell_asset,
                     amount=asset_swap_price_info.sell_asset_amount,
                 ),
-                buy_balance=BasketBalance(
-                    basket=asset_swap_price_info.buy_asset,
+                buy_balance=Balance(
+                    asset=asset_swap_price_info.buy_asset,
                     amount=price.buy_balance.amount
                     / asset_swap_price_info.buy_asset.denomination,
                 ),
@@ -69,7 +68,7 @@ class GetAssetSwapPriceUseCase:
         ):
             price = await self.exchange.convert_balance_to_token(
                 balance=Balance(
-                    token=DEFAULT_USD_TOKEN,
+                    asset=DEFAULT_USD_TOKEN,
                     amount=asset_swap_price_info.sell_asset_amount
                     * asset_swap_price_info.sell_asset.denomination,
                 ),
@@ -78,8 +77,8 @@ class GetAssetSwapPriceUseCase:
             )
 
             return ConvertedBalance(
-                sell_balance=BasketBalance(
-                    basket=asset_swap_price_info.sell_asset,
+                sell_balance=Balance(
+                    asset=asset_swap_price_info.sell_asset,
                     amount=asset_swap_price_info.sell_asset_amount,
                 ),
                 buy_balance=price.buy_balance,
@@ -90,7 +89,7 @@ class GetAssetSwapPriceUseCase:
         ):
             price = await self.exchange.convert_balance_to_token(
                 balance=Balance(
-                    token=asset_swap_price_info.sell_asset,
+                    asset=asset_swap_price_info.sell_asset,
                     amount=asset_swap_price_info.sell_asset_amount,
                 ),
                 token=asset_swap_price_info.buy_asset,
@@ -98,7 +97,7 @@ class GetAssetSwapPriceUseCase:
             )
             return ConvertedBalance(
                 sell_balance=Balance(
-                    token=asset_swap_price_info.sell_asset,
+                    asset=asset_swap_price_info.sell_asset,
                     amount=asset_swap_price_info.sell_asset_amount,
                 ),
                 buy_balance=price.buy_balance,
