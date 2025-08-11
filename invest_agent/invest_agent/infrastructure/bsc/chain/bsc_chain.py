@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 import json
 from typing import TypedDict, cast
 from eth_typing import HexStr
@@ -12,7 +12,11 @@ from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddl
 from web3.types import TxParams, Wei
 
 from protocol.token import Token
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import (
+    AmountAtomic,
+    AmountReadable,
+    BalanceAtomic,
+)
 from invest_agent.chain.chain import Chain, Gas
 
 from async_lru import alru_cache
@@ -58,6 +62,9 @@ class BscChain(Chain):
     def is_native_token(self, token: Token) -> bool:
         return token.address.lower() == self.base_token.address.lower()
 
+    def __is_native_token_address(self, token_address: str) -> bool:
+        return token_address.lower() == self.base_token.address.lower()
+
     @alru_cache
     async def get_chain_id(self):  # type: ignore
         """Get the chain ID of the BSC network."""
@@ -67,8 +74,8 @@ class BscChain(Chain):
         """Get the address of the agent wallet."""
         return self.account.address
 
-    async def get_min_balance(self) -> Balance[Token]:
-        """Get the minimum balance required for the agent wallet."""
+    async def get_min_balance(self) -> BalanceAtomic[Token]:
+        """Get the native token minimum balance required for the agent wallet."""
         gas_used = 200_000
         transaction_count = 20
 
@@ -76,24 +83,26 @@ class BscChain(Chain):
         gas_price = await self.w3.eth._gas_price()  # type: ignore
         total_gas_cost = gas_price * total_gas
 
-        return Balance(
+        return BalanceAtomic[Token](
             asset=self.base_token,
             amount=Decimal(self.w3.from_wei(total_gas_cost, "ether")),
+            amount_atomic=total_gas_cost,
         )
 
-    async def get_balance(self) -> Balance[Token]:
-        """Get the balance of the agent address."""
-        balance = await self.w3.eth.get_balance(self.account.address)
-        balance_in_ether = self.w3.from_wei(balance, "ether")
+    async def get_native_token_balance(self) -> BalanceAtomic[Token]:
+        """Get the native token balance of the agent address."""
+        amount_atomic = await self.w3.eth.get_balance(self.account.address)
+        amount = Decimal(self.w3.from_wei(amount_atomic, "ether"))
 
-        return Balance(
+        return BalanceAtomic[Token](
             asset=self.base_token,
-            amount=Decimal(balance_in_ether),
+            amount=Decimal(amount),
+            amount_atomic=amount_atomic,
         )
 
-    async def get_available_balance(self) -> Balance[Token]:
-        """Get the available balance of the agent address."""
-        balance = await self.get_balance()
+    async def get_native_token_available_balance(self) -> BalanceAtomic[Token]:
+        """Get the native token available balance of the agent address."""
+        balance = await self.get_native_token_balance()
         min_balance = await self.get_min_balance()
 
         if balance.amount < min_balance.amount:
@@ -101,44 +110,64 @@ class BscChain(Chain):
                 min_balance=min_balance,
             )
 
-        return Balance(
+        return BalanceAtomic[Token](
             asset=self.base_token,
-            amount=Decimal(balance.amount - min_balance.amount),
+            amount=balance.amount - min_balance.amount,
+            amount_atomic=balance.amount_atomic - min_balance.amount_atomic,
         )
 
-    async def get_token_balance_amount(self, token_address: str) -> Decimal:
+    async def get_token_balance(self, token: Token) -> BalanceAtomic[Token]:
         """Get the balance of a specific token."""
         token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(token_address),
+            address=self.w3.to_checksum_address(token.address),
             abi=self.erc20_token_abi,
         )
-        balance = await token_contract.functions.balanceOf(self.account.address).call()
-
-        return Decimal(self.w3.from_wei(balance, "ether"))
-
-    async def get_address_balance(self, address: str) -> Balance[Token]:
-        """Get the balance of the address."""
-        balance = await self.w3.eth.get_balance(self.w3.to_checksum_address(address))
-        balance_in_ether = self.w3.from_wei(balance, "ether")
-
-        return Balance(
-            asset=self.base_token,
-            amount=Decimal(balance_in_ether),
-        )
-
-    async def get_address_token_balance_amount(
-        self, address: str, token_address: str
-    ) -> Decimal:
-        """Get the balance of a specific token."""
-        token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(token_address),
-            abi=self.erc20_token_abi,
-        )
-        balance = await token_contract.functions.balanceOf(
-            self.w3.to_checksum_address(address)
+        amount_atomic = await token_contract.functions.balanceOf(
+            self.account.address
         ).call()
 
-        return Decimal(self.w3.from_wei(balance, "ether"))
+        return BalanceAtomic[Token](
+            asset=token,
+            amount=await self.convert_amount_atomic_to_amount(
+                token=token, amount_atomic=amount_atomic
+            ),
+            amount_atomic=amount_atomic,
+        )
+
+    async def get_address_native_token_balance(
+        self, address: str
+    ) -> BalanceAtomic[Token]:
+        """Get the native token balance of the address."""
+        amount_atomic = await self.w3.eth.get_balance(
+            self.w3.to_checksum_address(address)
+        )
+
+        return BalanceAtomic[Token](
+            asset=self.base_token,
+            amount=Decimal(self.w3.from_wei(amount_atomic, "ether")),
+            amount_atomic=amount_atomic,
+        )
+
+    async def get_address_token_balance(
+        self, address: str, token: Token
+    ) -> BalanceAtomic[Token]:
+        """Get the balance of a specific token."""
+        token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(token.address),
+            abi=self.erc20_token_abi,
+        )
+        amount_atomic = await token_contract.functions.balanceOf(
+            self.w3.to_checksum_address(address)
+        ).call()
+        amount = await self.convert_amount_atomic_to_amount(
+            token=token, amount_atomic=amount_atomic
+        )
+
+        return BalanceAtomic[Token](
+            asset=token,
+            amount=amount,
+            amount_atomic=amount_atomic,
+        )
 
     def get_base_token(self):
         return self.base_token
@@ -272,3 +301,34 @@ class BscChain(Chain):
             return str(e)
 
         return None
+
+    @alru_cache
+    async def __get_token_decimals(self, token_address: str) -> int:
+        token_contract = self.w3.eth.contract(
+            address=self.w3.to_checksum_address(token_address),
+            abi=self.erc20_token_abi,
+        )
+
+        return (
+            await token_contract.functions.decimals().call()
+            if not self.__is_native_token_address(token_address)
+            else 18
+        )
+
+    async def convert_amount_to_amount_atomic(
+        self, token: Token, amount_readable: AmountReadable
+    ) -> AmountAtomic:
+        decimals = await self.__get_token_decimals(token.address)
+
+        return int(
+            (Decimal(amount_readable) * (10**decimals)).to_integral_exact(
+                rounding=ROUND_DOWN
+            )
+        )
+
+    async def convert_amount_atomic_to_amount(
+        self, token: Token, amount_atomic: AmountAtomic
+    ) -> AmountReadable:
+        decimals = await self.__get_token_decimals(token.address)
+
+        return amount_atomic / (10**decimals)

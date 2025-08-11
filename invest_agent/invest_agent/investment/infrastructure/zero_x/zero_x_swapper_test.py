@@ -66,11 +66,7 @@ def chain():
 
 @fixture
 def contract():
-    contract = mock.Mock(spec=Contract)
-
-    contract.get_decimals.return_value = Decimal("18")
-
-    return contract
+    return mock.Mock(spec=Contract)
 
 
 @fixture
@@ -365,6 +361,13 @@ async def test_zero_x_swapper_get_wallet_in_token(
             fees=Fees(),
         ),
     ]
+
+    chain.convert_amount_to_amount_atomic.side_effect = (
+        lambda token, amount_readable: amount_readable * (10**18)
+    )
+    chain.convert_amount_atomic_to_amount.side_effect = (
+        lambda token, amount_atomic: amount_atomic / (10**18)
+    )
 
     zero_x_swapper = ZeroXSwapper(
         api_client=zero_x_api_client,

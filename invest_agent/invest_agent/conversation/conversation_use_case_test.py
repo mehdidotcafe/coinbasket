@@ -6,7 +6,7 @@ from invest_agent.conversation.conversation_use_case import (
     ConversationUseCase,
 )
 from invest_agent.datetime.date_time import DateTime
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt
 from shared.id_generator.id_generator import IdGenerator
 
@@ -18,7 +18,7 @@ def date_time():
 
 @fixture
 def agent_executor():
-    return mock.Mock(spec=CompiledGraph)
+    return mock.Mock(spec=CompiledStateGraph)
 
 
 @fixture
@@ -39,7 +39,7 @@ def use_case(date_time: DateTime, id_generator: IdGenerator):
 async def test_conversation_use_case_execute_agent_last_step(
     date_time: DateTime,
     use_case: ConversationUseCase,
-    agent_executor: CompiledGraph,
+    agent_executor: CompiledStateGraph,
 ):
     date_time.now_str = mock.Mock(return_value="2023-10-01")
     message = QueryMessage(
@@ -72,7 +72,7 @@ async def test_conversation_use_case_execute_agent_last_step(
 async def test_conversation_use_case_execute_interrupt_last_step(
     date_time: DateTime,
     use_case: ConversationUseCase,
-    agent_executor: CompiledGraph,
+    agent_executor: CompiledStateGraph,
     id_generator: IdGenerator,
 ):
     id_generator.generate_random_id = mock.Mock(return_value="99")

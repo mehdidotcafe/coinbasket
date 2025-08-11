@@ -330,12 +330,9 @@ async def get_token_balance(token: Token):
     Returns:
         The balance of the token in the agent's wallet.
     """
-    balance = await chain.get_token_balance_amount(token.address)
+    balance = await chain.get_token_balance(token)
 
-    return Balance(
-        asset=token,
-        amount=balance,
-    )
+    return balance
 
 
 @tool()

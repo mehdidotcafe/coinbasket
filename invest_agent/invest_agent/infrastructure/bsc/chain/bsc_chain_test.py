@@ -1,5 +1,6 @@
 from unittest import mock
 from eth_typing import HexStr
+from invest_agent.chain.balance import AmountReadable, BalanceAtomic
 from invest_agent.chain.chain import Gas
 from invest_agent.chain.exception.insufficient_balance import InsufficientBalance
 from invest_agent.infrastructure.bsc.chain.nonce_manager import NonceManager
@@ -11,7 +12,7 @@ from web3.eth import AsyncEth
 
 
 from protocol.token import Token
-from protocol.fixture.token import eth_token
+from protocol.fixture.token import eth_token, usdt_token
 from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
 
 from eth_account.signers.local import LocalAccount
@@ -115,7 +116,7 @@ async def test_bsc_chain_get_balance(
     w3.eth.get_balance.return_value = Wei(1000000000000000000)
     w3.from_wei.return_value = Decimal("1")
 
-    balance = await bsc_chain.get_balance()
+    balance = await bsc_chain.get_native_token_balance()
 
     assert balance.amount == Decimal("1")
     assert balance.asset == base_token
@@ -137,7 +138,7 @@ async def test_bsc_chain_get_available_balance_insufficient_balance(
     w3.from_wei.side_effect = lambda x, _unit: x
 
     with raises(InsufficientBalance):
-        await bsc_chain.get_available_balance()
+        await bsc_chain.get_native_token_available_balance()
 
 
 @mark.asyncio
@@ -147,7 +148,7 @@ async def test_bsc_chain_get_available_balance(
     w3.eth.get_balance.return_value = Wei(1000000000000000000)
     w3.from_wei.side_effect = lambda x, _unit: x
 
-    balance = await bsc_chain.get_available_balance()
+    balance = await bsc_chain.get_native_token_available_balance()
 
     assert balance.amount == Decimal(
         1000000000000000000 - (1_000_000_000 * 200_000 * 20)
@@ -160,25 +161,33 @@ async def test_bsc_chain_get_available_balance(
 
 
 @mark.asyncio
-async def test_bsc_chain_get_token_balance_amount(bsc_chain: BscChain, w3: AsyncWeb3):
-    token_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
+async def test_bsc_chain_get_token_balance(bsc_chain: BscChain, w3: AsyncWeb3):
+    token = Token(
+        id="bsc:0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+        name="Fake token",
+        display_name="Fake token",
+        ticker="FTK",
+        address="0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+    )
 
     token_contract = mock.Mock()
     token_contract.functions.balanceOf.return_value.call = mock.AsyncMock(
         return_value=1000
     )
+    token_contract.functions.decimals.return_value.call = mock.AsyncMock(return_value=3)
     w3.eth.contract.return_value = token_contract
 
     w3.from_wei.return_value = Decimal("1")
 
-    balance = await bsc_chain.get_token_balance_amount(token_address)
+    balance = await bsc_chain.get_token_balance(token)
 
-    assert balance == Decimal("1")
-
-    token_contract.functions.balanceOf.assert_called_once_with(
-        "0x1234567890abcdef1234567890abcdef12345678",
+    assert balance == BalanceAtomic[Token](
+        asset=token,
+        amount=Decimal("1"),
+        amount_atomic=1000,
     )
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
+    token_contract.functions.decimals.return_value.call.assert_called_once()
 
 
 @mark.asyncio
@@ -190,7 +199,7 @@ async def test_bsc_chain_get_address_balance(
     w3.eth.get_balance.return_value = Wei(1000000000000000000)
     w3.from_wei.return_value = Decimal("1")
 
-    balance = await bsc_chain.get_address_balance(address)
+    balance = await bsc_chain.get_address_native_token_balance(address)
 
     assert balance.amount == Decimal("1")
     assert balance.asset == base_token
@@ -205,28 +214,36 @@ async def test_bsc_chain_get_address_balance(
 
 
 @mark.asyncio
-async def test_bsc_chain_get_address_token_balance_amount(
-    bsc_chain: BscChain, w3: AsyncWeb3
-):
+async def test_bsc_chain_get_address_token_balance(bsc_chain: BscChain, w3: AsyncWeb3):
     address = "0x2B5616d51Cd04862a6BD16cE63B47364A2261125"
-    token_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
+    token = Token(
+        id="bsc:0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+        name="Fake token",
+        display_name="Fake token",
+        ticker="FTK",
+        address="0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+    )
 
     token_contract = mock.Mock()
     token_contract.functions.balanceOf.return_value.call = mock.AsyncMock(
         return_value=1000
     )
+    token_contract.functions.decimals.return_value.call = mock.AsyncMock(return_value=3)
     w3.eth.contract.return_value = token_contract
 
-    w3.from_wei.return_value = Decimal("1")
+    balance = await bsc_chain.get_address_token_balance(address, token)
 
-    balance = await bsc_chain.get_address_token_balance_amount(address, token_address)
-
-    assert balance == Decimal("1")
+    assert balance == BalanceAtomic[Token](
+        asset=token,
+        amount=Decimal("1"),
+        amount_atomic=1000,
+    )
 
     token_contract.functions.balanceOf.assert_called_once_with(
         "0x2B5616d51Cd04862a6BD16cE63B47364A2261125_checksum",
     )
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
+    token_contract.functions.decimals.return_value.call.assert_called_once()
 
 
 def test_bsc_chain_get_base_token(bsc_chain: BscChain, base_token: Token):
@@ -382,3 +399,74 @@ async def test_bsc_chain_wait_transaction_failure(bsc_chain: BscChain, w3: Async
     )
 
     assert not is_success
+
+
+@mark.asyncio
+async def test_bsc_chain_convert_amount_to_amount_atomic_native_token(
+    bsc_chain: BscChain, w3: AsyncWeb3
+):
+    amount_atomic = 1250000000000000000
+    amount_readable = AmountReadable("1.25")
+
+    token_contract = mock.Mock()
+    w3.eth.contract.return_value = token_contract
+
+    result = await bsc_chain.convert_amount_to_amount_atomic(bnb_token, amount_readable)
+
+    assert result == amount_atomic
+
+
+@mark.asyncio
+async def test_bsc_chain_convert_amount_to_amount_atomic_token(
+    bsc_chain: BscChain, w3: AsyncWeb3
+):
+    amount_atomic = 1250000000000000000
+    amount_readable = AmountReadable("125000000.000000000010")
+
+    token_contract = mock.Mock()
+    token_contract.functions.decimals.return_value.call = mock.AsyncMock(
+        return_value=10
+    )
+    w3.eth.contract.return_value = token_contract
+
+    result = await bsc_chain.convert_amount_to_amount_atomic(
+        usdt_token, amount_readable
+    )
+
+    token_contract.functions.decimals.return_value.call.assert_called_once()
+
+    assert result == amount_atomic
+
+
+@mark.asyncio
+async def test_bsc_chain_convert_amount_atomic_to_amount_native_token(
+    bsc_chain: BscChain, w3: AsyncWeb3
+):
+    amount_atomic = 1250000000000000000
+    amount_readable = AmountReadable("1.25")
+
+    result = await bsc_chain.convert_amount_atomic_to_amount(
+        bsc_chain.get_base_token(), amount_atomic
+    )
+
+    assert result == amount_readable
+
+
+@mark.asyncio
+async def test_bsc_chain_convert_amount_atomic_to_amount_token(
+    bsc_chain: BscChain, w3: AsyncWeb3
+):
+    amount_atomic = 1250000000000000000
+    amount_readable = AmountReadable("125000000.0000000000")
+
+    token_contract = mock.Mock()
+    token_contract.functions.decimals.return_value.call = mock.AsyncMock(
+        return_value=10
+    )
+    w3.eth.contract.return_value = token_contract
+
+    result = await bsc_chain.convert_amount_atomic_to_amount(usdt_token, amount_atomic)
+
+    token_contract.functions.decimals.return_value.call.assert_called_once()
+
+    assert result == amount_readable

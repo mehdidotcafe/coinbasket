@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from decimal import Decimal
 from typing import Any
 
 from protocol.token import Token
 
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import (
+    AmountAtomic,
+    AmountReadable,
+    BalanceAtomic,
+)
 
 
 class TransactionFailure(Exception):
@@ -34,31 +37,33 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_min_balance(self) -> Balance[Token]:
+    async def get_min_balance(self) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_balance(self) -> Balance[Token]:
+    async def get_native_token_balance(self) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_available_balance(
+    async def get_native_token_available_balance(
         self,
-    ) -> Balance[Token]:
+    ) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_token_balance_amount(self, token_address: str) -> Decimal:
+    async def get_token_balance(self, token: Token) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_address_balance(self, address: str) -> Balance[Token]:
+    async def get_address_native_token_balance(
+        self, address: str
+    ) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_address_token_balance_amount(
-        self, address: str, token_address: str
-    ) -> Decimal:
+    async def get_address_token_balance(
+        self, address: str, token: Token
+    ) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod
@@ -86,4 +91,16 @@ class Chain(ABC):
     async def compute_gas_estimate(
         self, amount: int, to_address: str, encoded_input: Any | None = None
     ) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def convert_amount_to_amount_atomic(
+        self, token: Token, amount_readable: AmountReadable
+    ) -> AmountAtomic:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def convert_amount_atomic_to_amount(
+        self, token: Token, amount_atomic: AmountAtomic
+    ) -> AmountReadable:
         raise NotImplementedError

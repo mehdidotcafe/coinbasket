@@ -74,18 +74,16 @@ class ZeroXSwapper(Exchange):
         transactions_data: list[TransactionData | None] = []
         chain_id = await self.chain.get_chain_id()
 
-        amount = int(
-            await self.__get_token_amount(
-                token=order.sell_balance.asset,
-                raw_amount=order.sell_balance.amount,
-            )
+        amount_atomic = await self.chain.convert_amount_to_amount_atomic(
+            token=order.sell_balance.asset,
+            amount_readable=order.sell_balance.amount,
         )
 
         price = await self.api_client.get_price(
             chain_id=chain_id,
             taker=self.account.address,
             sell_token=order.sell_balance.asset.address,
-            amount=amount,
+            amount=amount_atomic,
             buy_token=order.buy_balance.asset.address,
             sell_entire_balance=True,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
@@ -103,7 +101,7 @@ class ZeroXSwapper(Exchange):
             taker=self.account.address,
             sell_token=order.sell_balance.asset.address,
             buy_token=order.buy_balance.asset.address,
-            amount=amount,
+            amount=amount_atomic,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
             ),
@@ -183,11 +181,9 @@ class ZeroXSwapper(Exchange):
                 ),
             )
 
-        amount = int(
-            await self.__get_token_amount(
-                token=balance.asset,
-                raw_amount=balance.amount,
-            )
+        amount_atomic = await self.chain.convert_amount_to_amount_atomic(
+            token=balance.asset,
+            amount_readable=balance.amount,
         )
 
         price = await self.api_client.get_price(
@@ -195,23 +191,22 @@ class ZeroXSwapper(Exchange):
             taker=self.account.address,
             sell_token=balance.asset.address,
             buy_token=token.address,
-            amount=amount,
+            amount=amount_atomic,
             investment_parameters=investment_parameters,
         )
 
         return ConvertedBalance(
             sell_balance=Balance(
                 asset=balance.asset,
-                amount=await self.__get_raw_amount(
-                    token=balance.asset,
-                    amount=Decimal(price.sellAmount),
+                amount=await self.chain.convert_amount_atomic_to_amount(
+                    amount_atomic=int(price.sellAmount), token=balance.asset
                 ),
             ),
             buy_balance=Balance(
                 asset=token,
-                amount=await self.__get_raw_amount(
+                amount=await self.chain.convert_amount_atomic_to_amount(
+                    amount_atomic=int(price.buyAmount),
                     token=token,
-                    amount=Decimal(price.buyAmount),
                 ),
             ),
         )
@@ -274,23 +269,6 @@ class ZeroXSwapper(Exchange):
             encoded_input=encoded_input,
             to_address=token.address,
         )
-
-    async def __get_token_amount(self, token: Token, raw_amount: Decimal) -> Decimal:
-        if self.chain.is_native_token(token):
-            return Decimal(self.w3.to_wei(raw_amount, "ether"))
-
-        decimals = await self.contract.get_decimals(token.address)
-
-        return raw_amount * (10**decimals)
-
-    async def __get_raw_amount(self, token: Token, amount: Decimal) -> Decimal:
-        decimals = (
-            18
-            if self.chain.is_native_token(token)
-            else await self.contract.get_decimals(token.address)
-        )
-
-        return amount / (10**decimals)
 
     def __compute_slippage_tolerance_in_bps(
         self, slippage_tolerance_in_percentage: Decimal
