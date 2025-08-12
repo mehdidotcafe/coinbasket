@@ -6,6 +6,7 @@ from invest_agent.asset.get_asset_swap_price_use_case import (
     GetAssetSwapPriceUseCase,
 )
 from invest_agent.chain.balance import BalanceAtomic
+from invest_agent.chain.chain import Chain
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
 )
@@ -26,8 +27,22 @@ def exchange():
 
 
 @fixture
-def use_case(exchange: Exchange):
-    return GetAssetSwapPriceUseCase(exchange)
+def chain():
+    chain = mock.Mock(spec=Chain)
+
+    chain.convert_amount_to_amount_atomic.side_effect = (
+        lambda token, amount_readable: int(amount_readable * (10**18))
+    )
+    chain.convert_amount_atomic_to_amount.side_effect = (
+        lambda token, amount_atomic: int(amount_atomic / (10**18))
+    )
+
+    return chain
+
+
+@fixture
+def use_case(exchange: Exchange, chain: Chain):
+    return GetAssetSwapPriceUseCase(exchange, chain)
 
 
 @mark.asyncio
@@ -145,8 +160,8 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
     exchange.convert_balance_to_token.return_value = ConvertedBalance(
         sell_balance=BalanceAtomic(
             asset=usdt_token,
-            amount=Decimal("500.0"),
-            amount_atomic=to_atomic(Decimal("500.0")),
+            amount=Decimal("50.0"),
+            amount_atomic=to_atomic(Decimal("50.0")),
         ),
         buy_balance=BalanceAtomic(
             asset=wbnb_token,

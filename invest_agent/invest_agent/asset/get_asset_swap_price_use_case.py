@@ -57,7 +57,26 @@ class GetAssetSwapPriceUseCase:
                 token=DEFAULT_USD_TOKEN,
                 investment_parameters=investment_parameters,
             )
-            return converted_balance
+
+            return ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=asset_swap_price_info.sell_asset,
+                    amount=asset_swap_price_info.sell_asset_amount,
+                    amount_atomic=await self.chain.convert_amount_to_amount_atomic(
+                        token=asset_swap_price_info.sell_asset,
+                        amount_readable=asset_swap_price_info.sell_asset_amount,
+                    ),
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=asset_swap_price_info.buy_asset,
+                    amount=converted_balance.buy_balance.amount
+                    / asset_swap_price_info.buy_asset.denomination,
+                    amount_atomic=int(
+                        converted_balance.buy_balance.amount_atomic
+                        / asset_swap_price_info.buy_asset.denomination
+                    ),
+                ),
+            )
 
         if isinstance(asset_swap_price_info.buy_asset, Token) and isinstance(
             asset_swap_price_info.sell_asset, Basket
@@ -78,7 +97,17 @@ class GetAssetSwapPriceUseCase:
                 investment_parameters=investment_parameters,
             )
 
-            return converted_balance
+            return ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=asset_swap_price_info.sell_asset,
+                    amount=asset_swap_price_info.sell_asset_amount,
+                    amount_atomic=await self.chain.convert_amount_to_amount_atomic(
+                        token=DEFAULT_USD_TOKEN,
+                        amount_readable=asset_swap_price_info.sell_asset_amount,
+                    ),
+                ),
+                buy_balance=converted_balance.buy_balance,
+            )
 
         if isinstance(asset_swap_price_info.sell_asset, Token) and isinstance(
             asset_swap_price_info.buy_asset, Token

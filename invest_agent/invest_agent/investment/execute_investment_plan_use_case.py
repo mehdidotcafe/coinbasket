@@ -209,8 +209,8 @@ class ExecuteInvestmentPlanUseCase:
                 flattened_basket_steps.append(
                     # TODO: Store basket info
                     FlattenedInvestmentStep(
-                        sell_balance=result.sell_balance,
-                        buy_balance=result.buy_balance,
+                        sell_balance=cast(BalanceAtomic[Token], result.sell_balance),
+                        buy_balance=cast(BalanceAtomic[Token], result.buy_balance),
                         basket_id=buy_balance.asset.id,
                     )
                 )
@@ -243,8 +243,8 @@ class ExecuteInvestmentPlanUseCase:
                 # TODO: Store basket info
                 flattened_basket_steps.append(
                     FlattenedInvestmentStep(
-                        sell_balance=result.sell_balance,
-                        buy_balance=result.buy_balance,
+                        sell_balance=cast(BalanceAtomic[Token], result.sell_balance),
+                        buy_balance=cast(BalanceAtomic[Token], result.buy_balance),
                         basket_id=sell_balance.asset.id,
                     )
                 )

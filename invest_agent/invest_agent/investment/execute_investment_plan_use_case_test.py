@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 from unittest import mock
 from invest_agent.investment.exchange.exchange import Exchange, ConvertedBalance
 from invest_agent.investment.investment_parameters import InvestmentParameters
@@ -45,6 +45,16 @@ def chain():
     chain = mock.Mock(spec=Chain)
 
     chain.get_base_token.return_value = bnb_token
+    chain.convert_amount_to_amount_atomic.side_effect = (
+        lambda token, amount_readable: int(
+            (Decimal(amount_readable) * (10**18)).to_integral_exact(rounding=ROUND_DOWN)
+        )
+    )
+    chain.convert_amount_atomic_to_amount.side_effect = (
+        lambda token, amount_atomic: int(
+            (Decimal(amount_atomic) / (10**18)).to_integral_exact(rounding=ROUND_DOWN)
+        )
+    )
 
     return chain
 
@@ -97,12 +107,12 @@ async def test_execute_investment_plan_use_case_buy_only_tokens(
         InvestmentPlan(
             steps=[
                 InvestmentPlanStep(
-                    buy_balance=Balance(amount=Decimal(0.5), asset=wbnb_token),
-                    sell_balance=Balance(amount=Decimal(0.5), asset=bnb_token),
+                    buy_balance=Balance(amount=Decimal("0.5"), asset=wbnb_token),
+                    sell_balance=Balance(amount=Decimal("0.5"), asset=bnb_token),
                 ),
                 InvestmentPlanStep(
-                    buy_balance=Balance(amount=Decimal(0.08), asset=eth_token),
-                    sell_balance=Balance(amount=Decimal(0.5), asset=bnb_token),
+                    buy_balance=Balance(amount=Decimal("0.08"), asset=eth_token),
+                    sell_balance=Balance(amount=Decimal("0.5"), asset=bnb_token),
                 ),
             ]
         )
@@ -113,12 +123,12 @@ async def test_execute_investment_plan_use_case_buy_only_tokens(
             Order(
                 id="1",
                 sell_balance=BalanceAtomic(
-                    amount=Decimal(0.5),
+                    amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=bnb_token,
                 ),
                 buy_balance=BalanceAtomic(
-                    amount=Decimal(0.5),
+                    amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=wbnb_token,
                 ),
@@ -132,12 +142,12 @@ async def test_execute_investment_plan_use_case_buy_only_tokens(
             Order(
                 id="2",
                 sell_balance=BalanceAtomic(
-                    amount=Decimal(0.5),
+                    amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=bnb_token,
                 ),
                 buy_balance=BalanceAtomic(
-                    amount=Decimal(0.08),
+                    amount=Decimal("0.08"),
                     amount_atomic=int(0.08 * 10**18),
                     asset=eth_token,
                 ),

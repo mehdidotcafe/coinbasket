@@ -238,7 +238,7 @@ class BscChain(Chain):
         try:
             transaction_hash = await self.w3.eth.send_transaction(transaction_params)
 
-            return transaction_hash.hex()
+            return transaction_hash.to_0x_hex()
         except Exception as e:
             error_message = str(e).lower()
 

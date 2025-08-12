@@ -1,5 +1,6 @@
 from unittest import mock
 from eth_typing import HexStr
+from hexbytes import HexBytes
 from invest_agent.chain.balance import AmountReadable, BalanceAtomic
 from invest_agent.chain.chain import Gas
 from invest_agent.chain.exception.insufficient_balance import InsufficientBalance
@@ -304,7 +305,7 @@ async def test_bsc_chain_sign_send_transaction_without_gas_params(
     amount = 1000
     encoded_input = HexStr("0xbadf00d")
 
-    w3.eth.send_transaction.return_value = "0xtransactionhash"
+    w3.eth.send_transaction = mock.AsyncMock(return_value=HexBytes("0x128938348"))
     block_data = mock.Mock()
     block_data.get.return_value = Wei(1_000_000_000)
 
@@ -340,7 +341,7 @@ async def test_bsc_chain_sign_send_transaction_success(
     gas = Gas(gas=21000, gas_price=1_000_000_000)
     encoded_input = HexStr("0xbadf00d")
 
-    w3.eth.send_transaction.return_value = "0xtransactionhash"
+    w3.eth.send_transaction = mock.AsyncMock(return_value=HexBytes("0x0128938348"))
 
     transaction_hash = await bsc_chain.sign_send_transaction(
         amount=amount,
@@ -362,12 +363,12 @@ async def test_bsc_chain_sign_send_transaction_success(
         }
     )
 
-    assert transaction_hash == "0xtransactionhash"
+    assert transaction_hash == "0x0128938348"
 
 
 @mark.asyncio
 async def test_bsc_chain_wait_transaction_success(bsc_chain: BscChain, w3: AsyncWeb3):
-    transaction_hash = "0xtransactionhash"
+    transaction_hash = "0x123994844"
 
     w3.eth.wait_for_transaction_receipt.return_value = {
         "status": 1,
@@ -376,16 +377,14 @@ async def test_bsc_chain_wait_transaction_success(bsc_chain: BscChain, w3: Async
 
     is_success = await bsc_chain.wait_transaction(transaction_hash)
 
-    w3.eth.wait_for_transaction_receipt.assert_called_once_with(
-        HexStr(transaction_hash)
-    )
+    w3.eth.wait_for_transaction_receipt.assert_called_once_with(HexBytes("0x123994844"))
 
     assert is_success
 
 
 @mark.asyncio
 async def test_bsc_chain_wait_transaction_failure(bsc_chain: BscChain, w3: AsyncWeb3):
-    transaction_hash = "0xtransactionhash"
+    transaction_hash = "0x123994844"
 
     w3.eth.wait_for_transaction_receipt.return_value = {
         "status": 0,
@@ -394,9 +393,7 @@ async def test_bsc_chain_wait_transaction_failure(bsc_chain: BscChain, w3: Async
 
     is_success = await bsc_chain.wait_transaction(transaction_hash)
 
-    w3.eth.wait_for_transaction_receipt.assert_called_once_with(
-        HexStr(transaction_hash)
-    )
+    w3.eth.wait_for_transaction_receipt.assert_called_once_with(HexBytes("0x123994844"))
 
     assert not is_success
 

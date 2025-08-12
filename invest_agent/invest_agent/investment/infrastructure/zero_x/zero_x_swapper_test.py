@@ -61,7 +61,16 @@ def zero_x_api_client():
 
 @fixture
 def chain():
-    return mock.Mock(spec=Chain)
+    chain = mock.Mock(spec=Chain)
+
+    chain.convert_amount_to_amount_atomic.side_effect = (
+        lambda token, amount_readable: amount_readable * (10**18)
+    )
+    chain.convert_amount_atomic_to_amount.side_effect = (
+        lambda token, amount_atomic: amount_atomic / (10**18)
+    )
+
+    return chain
 
 
 @fixture

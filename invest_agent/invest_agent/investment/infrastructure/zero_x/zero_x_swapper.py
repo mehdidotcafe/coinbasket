@@ -219,10 +219,13 @@ class ZeroXSwapper(Exchange):
         )
 
     def __sum_balances(self, balances: list[ConvertedBalance], token: Token):
-        return Balance(
+        return BalanceAtomic(
             asset=token,
             amount=cast(
                 Decimal, sum([balance.buy_balance.amount for balance in balances])
+            ),
+            amount_atomic=sum(
+                [balance.buy_balance.amount_atomic for balance in balances]
             ),
         )
 

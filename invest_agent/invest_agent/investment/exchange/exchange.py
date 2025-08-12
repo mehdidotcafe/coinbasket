@@ -13,8 +13,8 @@ from protocol.token import Token
 
 @dataclass
 class ConvertedBalance:
-    sell_balance: BalanceAtomic[Token]
-    buy_balance: BalanceAtomic[Token]
+    sell_balance: BalanceAtomic
+    buy_balance: BalanceAtomic
 
 
 @dataclass
