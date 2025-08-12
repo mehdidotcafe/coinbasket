@@ -238,7 +238,7 @@ class BscChain(Chain):
         try:
             transaction_hash = await self.w3.eth.send_transaction(transaction_params)
 
-            return cast(str, transaction_hash)
+            return transaction_hash.hex()
         except Exception as e:
             error_message = str(e).lower()
 
@@ -252,7 +252,7 @@ class BscChain(Chain):
         transaction_hash: str,
     ) -> bool:
         receipt = await self.w3.eth.wait_for_transaction_receipt(
-            cast(HexBytes, transaction_hash)
+            HexBytes(transaction_hash)
         )
 
         if receipt["status"] == 0:

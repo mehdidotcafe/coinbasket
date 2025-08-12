@@ -1,27 +1,59 @@
+from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy import Column, String, Integer, Text
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import String, Integer, Text
 from invest_agent.investment.transaction.transaction import Transaction
 from invest_agent.investment.transaction.transaction_repository import (
     TransactionRepository,
 )
-
-Base = declarative_base()
+from invest_agent.database.infrastructure.sql_alchemy_base import Base
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import NUMERIC
+import json
 
 
 class TransactionModel(Base):
     __tablename__ = "transactions"
-    id = Column(String, primary_key=True)
-    sell_balance = Column(Text)
-    buy_balance = Column(Text)
-    type = Column(String)
-    created_at = Column(Integer)
-    transaction_hash = Column(String)
-    order_id = Column(String)
-    trigger = Column(String)
-    fees = Column(String)
-    basket_id = Column(String, nullable=True)
-    # basket_transaction_id = Column(String, nullable=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+
+    sell_balance_asset_id: Mapped[str] = mapped_column(String())
+    sell_balance_asset: Mapped[str] = mapped_column(Text)
+    sell_balance_amount: Mapped[str] = mapped_column(String)
+    sell_balance_amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
+
+    buy_balance_asset_id: Mapped[str] = mapped_column(String())
+    buy_balance_asset: Mapped[str] = mapped_column(Text)
+    buy_balance_amount: Mapped[str] = mapped_column(String)
+    buy_balance_amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
+
+    type: Mapped[str] = mapped_column(String)
+    created_at: Mapped[int] = mapped_column(Integer)
+    transaction_hash: Mapped[str] = mapped_column(String)
+    order_id: Mapped[str] = mapped_column(String(36))
+    trigger: Mapped[str] = mapped_column(String)
+    fees: Mapped[str | None] = mapped_column(Text, nullable=True)
+    basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
+
+    @staticmethod
+    def from_domain(transaction: Transaction) -> "TransactionModel":
+        """Convert a Transaction domain object to a TransactionModel."""
+        return TransactionModel(
+            id=transaction.id,
+            sell_balance_asset_id=transaction.sell_balance.asset.id,
+            sell_balance_asset=json.dumps(transaction.sell_balance.asset.to_dict()),
+            sell_balance_amount=str(transaction.sell_balance.amount),
+            sell_balance_amount_atomic=transaction.sell_balance.amount_atomic,
+            buy_balance_asset_id=transaction.buy_balance.asset.id,
+            buy_balance_asset=json.dumps(transaction.buy_balance.asset.to_dict()),
+            buy_balance_amount=str(transaction.buy_balance.amount),
+            buy_balance_amount_atomic=transaction.buy_balance.amount_atomic,
+            type=transaction.type,
+            created_at=transaction.created_at,
+            transaction_hash=transaction.transaction_hash,
+            order_id=transaction.order_id,
+            trigger=transaction.trigger,
+            fees=transaction.fees.serialize() if transaction.fees else None,
+            basket_id=transaction.basket_id,
+        )
 
 
 class SqlAlchemyTransactionRepository(TransactionRepository):
@@ -32,17 +64,5 @@ class SqlAlchemyTransactionRepository(TransactionRepository):
     async def create_transaction(self, transaction: Transaction) -> Transaction:
         async with self.AsyncSessionLocal(bind=self.engine) as session:
             async with session.begin():
-                transaction_model = TransactionModel(
-                    id=transaction.id,
-                    sell_balance=transaction.sell_balance.serialize(),
-                    buy_balance=transaction.buy_balance.serialize(),
-                    type=transaction.type,
-                    created_at=transaction.created_at,
-                    transaction_hash=transaction.transaction_hash,
-                    order_id=transaction.order_id,
-                    trigger=transaction.trigger,
-                    fees=transaction.fees,
-                    # basket_transaction_id=transaction.basket_transaction_id,
-                )
-                session.add(transaction_model)
+                session.add(TransactionModel.from_domain(transaction))
         return transaction

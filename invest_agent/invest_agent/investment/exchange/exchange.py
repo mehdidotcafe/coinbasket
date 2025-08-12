@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import Balance, BalanceAtomic
 
 from invest_agent.chain.chain import Gas
 from invest_agent.investment.investment_parameters import InvestmentParameters
@@ -13,8 +13,8 @@ from protocol.token import Token
 
 @dataclass
 class ConvertedBalance:
-    sell_balance: Balance
-    buy_balance: Balance
+    sell_balance: BalanceAtomic[Token]
+    buy_balance: BalanceAtomic[Token]
 
 
 @dataclass
@@ -45,7 +45,7 @@ class Exchange(ABC):
     @abstractmethod
     async def get_wallet_in_token(
         self,
-        tokens_balance: list[Balance[Token]],
+        tokens_balance: list[BalanceAtomic[Token]],
         token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Wallet:
@@ -54,7 +54,7 @@ class Exchange(ABC):
     @abstractmethod
     async def convert_balance_to_token(
         self,
-        balance: Balance[Token],
+        balance: BalanceAtomic[Token],
         token: Token,
         investment_parameters: InvestmentParameters,
     ) -> ConvertedBalance:

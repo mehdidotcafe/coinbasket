@@ -1,8 +1,13 @@
 #!/bin/bash
 set -e
 
-# Reset langgraph database
-env-cmd -f .env.test --use-shell 'echo '' > "../invest_agent/database/$AGENT_ENV/$AGENT_NAME.langgraph.db"' 
+(cd .. && ./nx infra:test invest_agent)
+
+# Wait for test integration DB to be started
+echo "Waiting Database..."
+sleep 5
+
+(cd .. && ./nx migration:test:run invest_agent)
 
 env-cmd -f .env.test poetry run python -m invest_agent.main &
 API_PID=$!

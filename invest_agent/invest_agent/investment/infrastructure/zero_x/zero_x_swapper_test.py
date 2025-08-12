@@ -1,6 +1,6 @@
 from decimal import Decimal
 from unittest import mock
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain, Gas
 from invest_agent.chain.contract import Contract
 
@@ -88,8 +88,12 @@ def investment_parameters():
 def order():
     return Order(
         id="1",
-        sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
-        buy_balance=Balance(asset=eth_token, amount=Decimal(0.2)),
+        sell_balance=BalanceAtomic(
+            asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+        ),
+        buy_balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(0.2), amount_atomic=int(0.2 * 10**18)
+        ),
         type="BUY",
         tries=[],
         created_at=1234567890,
@@ -296,8 +300,12 @@ async def test_zero_x_swapper_build_transactions_data_with_approval(
     transactions_data = await zero_x_swapper.build_transactions(
         order=Order(
             id="2",
-            buy_balance=Balance(asset=bnb_token, amount=Decimal(1)),
-            sell_balance=Balance(asset=eth_token, amount=Decimal(0.2)),
+            buy_balance=BalanceAtomic(
+                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+            ),
+            sell_balance=BalanceAtomic(
+                asset=eth_token, amount=Decimal(0.2), amount_atomic=int(0.2 * 10**18)
+            ),
             type="SELL",
             tries=[],
             created_at=1234567890,
@@ -330,9 +338,11 @@ async def test_zero_x_swapper_get_wallet_in_token(
     token = usdt_token
 
     tokens_balance = [
-        Balance(asset=sol_token, amount=Decimal("1.0")),
-        Balance(asset=eth_token, amount=Decimal("4.0")),
-        Balance(asset=bnb_token, amount=Decimal("10.0")),
+        BalanceAtomic(asset=sol_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18),
+        BalanceAtomic(asset=eth_token, amount=Decimal("4.0"), amount_atomic=4 * 10**18),
+        BalanceAtomic(
+            asset=bnb_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
+        ),
     ]
 
     zero_x_api_client.get_price.side_effect = [
@@ -384,19 +394,35 @@ async def test_zero_x_swapper_get_wallet_in_token(
     assert wallet == Wallet(
         balances=[
             ConvertedBalance(
-                sell_balance=Balance(asset=sol_token, amount=Decimal("1.0")),
-                buy_balance=Balance(asset=usdt_token, amount=Decimal("300")),
+                sell_balance=BalanceAtomic(
+                    asset=sol_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token, amount=Decimal("300"), amount_atomic=300 * 10**18
+                ),
             ),
             ConvertedBalance(
-                sell_balance=Balance(asset=eth_token, amount=Decimal("4.0")),
-                buy_balance=Balance(asset=usdt_token, amount=Decimal("1100.0")),
+                sell_balance=BalanceAtomic(
+                    asset=eth_token, amount=Decimal("4.0"), amount_atomic=4 * 10**18
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token,
+                    amount=Decimal("1100.0"),
+                    amount_atomic=1100 * 10**18,
+                ),
             ),
             ConvertedBalance(
-                sell_balance=Balance(asset=bnb_token, amount=Decimal("10.0")),
-                buy_balance=Balance(asset=usdt_token, amount=Decimal("10.0")),
+                sell_balance=BalanceAtomic(
+                    asset=bnb_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
+                ),
             ),
         ],
-        total_balance=Balance(asset=usdt_token, amount=Decimal("1410.0")),
+        total_balance=BalanceAtomic(
+            asset=usdt_token, amount=Decimal("1410.0"), amount_atomic=1410 * 10**18
+        ),
     )
 
 
@@ -412,7 +438,9 @@ async def test_zero_x_swapper_get_wallet_in_token_same_token(
     token = usdt_token
 
     tokens_balance = [
-        Balance(asset=usdt_token, amount=Decimal("10.0")),
+        BalanceAtomic(
+            asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
+        ),
     ]
 
     zero_x_swapper = ZeroXSwapper(
@@ -432,9 +460,15 @@ async def test_zero_x_swapper_get_wallet_in_token_same_token(
     assert wallet == Wallet(
         balances=[
             ConvertedBalance(
-                sell_balance=Balance(asset=usdt_token, amount=Decimal("10.0")),
-                buy_balance=Balance(asset=usdt_token, amount=Decimal("10.0")),
+                sell_balance=BalanceAtomic(
+                    asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
+                ),
             ),
         ],
-        total_balance=Balance(asset=usdt_token, amount=Decimal("10.0")),
+        total_balance=BalanceAtomic(
+            asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
+        ),
     )

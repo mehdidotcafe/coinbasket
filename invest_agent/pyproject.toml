@@ -47,6 +47,9 @@ readme = "README.md"
   async-lru = "^2.0.5"
   yoyo-migrations = "^9.0.0"
   sqlalchemy = "^2.0.41"
+  alembic = "^1.16.4"
+  asyncpg = "^0.30.0"
+  psycopg2-binary = "^2.9.10"
 
     [tool.poetry.dependencies.langchain]
     extras = [ "openapi" ]

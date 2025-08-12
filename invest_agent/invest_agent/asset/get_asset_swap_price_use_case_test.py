@@ -5,7 +5,7 @@ from invest_agent.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
     GetAssetSwapPriceUseCase,
 )
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
 )
@@ -14,6 +14,10 @@ from invest_agent.investment.investment_parameters import InvestmentParameters
 from pytest import fixture, mark, raises
 from protocol.fixture.token import wbnb_token, usdt_token
 from protocol.fixture.basket import big4_basket
+
+
+def to_atomic(amount: Decimal) -> int:
+    return int(amount * Decimal("1e18"))
 
 
 @fixture
@@ -37,14 +41,26 @@ async def test_get_asset_swap_price_use_case_sell_token_buy_token(
     )
 
     exchange.convert_balance_to_token.return_value = ConvertedBalance(
-        sell_balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
-        buy_balance=Balance(asset=usdt_token, amount=Decimal("300.0")),
+        sell_balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("1.0"),
+            amount_atomic=to_atomic(Decimal("1.0")),
+        ),
+        buy_balance=BalanceAtomic(
+            asset=usdt_token,
+            amount=Decimal("300.0"),
+            amount_atomic=to_atomic(Decimal("300.0")),
+        ),
     )
 
     asset_swap_price = await use_case.execute(asset_swap_price_info)
 
     exchange.convert_balance_to_token.assert_called_once_with(
-        balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
+        balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("1.0"),
+            amount_atomic=to_atomic(Decimal("1.0")),
+        ),
         token=usdt_token,
         investment_parameters=InvestmentParameters(
             slippage_tolerance_in_percentage=Decimal("1"),
@@ -52,8 +68,16 @@ async def test_get_asset_swap_price_use_case_sell_token_buy_token(
     )
 
     assert asset_swap_price == ConvertedBalance(
-        sell_balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
-        buy_balance=Balance(asset=usdt_token, amount=Decimal("300.0")),
+        sell_balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("1.0"),
+            amount_atomic=to_atomic(Decimal("1.0")),
+        ),
+        buy_balance=BalanceAtomic(
+            asset=usdt_token,
+            amount=Decimal("300.0"),
+            amount_atomic=to_atomic(Decimal("300.0")),
+        ),
     )
 
 
@@ -68,14 +92,26 @@ async def test_get_asset_swap_price_use_case_buy_basket_sell_token(
     )
 
     exchange.convert_balance_to_token.return_value = ConvertedBalance(
-        sell_balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
-        buy_balance=Balance(asset=usdt_token, amount=Decimal("3000.0")),
+        sell_balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("1.0"),
+            amount_atomic=to_atomic(Decimal("1.0")),
+        ),
+        buy_balance=BalanceAtomic(
+            asset=usdt_token,
+            amount=Decimal("3000.0"),
+            amount_atomic=to_atomic(Decimal("3000.0")),
+        ),
     )
 
     asset_swap_price = await use_case.execute(asset_swap_price_info)
 
     exchange.convert_balance_to_token.assert_called_once_with(
-        balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
+        balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("1.0"),
+            amount_atomic=to_atomic(Decimal("1.0")),
+        ),
         token=usdt_token,
         investment_parameters=InvestmentParameters(
             slippage_tolerance_in_percentage=Decimal("1"),
@@ -83,8 +119,16 @@ async def test_get_asset_swap_price_use_case_buy_basket_sell_token(
     )
 
     assert asset_swap_price == ConvertedBalance(
-        sell_balance=Balance(asset=wbnb_token, amount=Decimal("1.0")),
-        buy_balance=Balance(asset=big4_basket, amount=Decimal("300.0")),
+        sell_balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("1.0"),
+            amount_atomic=to_atomic(Decimal("1.0")),
+        ),
+        buy_balance=BalanceAtomic(
+            asset=big4_basket,
+            amount=Decimal("300.0"),
+            amount_atomic=to_atomic(Decimal("300.0")),
+        ),
     )
 
 
@@ -99,14 +143,26 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
     )
 
     exchange.convert_balance_to_token.return_value = ConvertedBalance(
-        sell_balance=Balance(asset=usdt_token, amount=Decimal("500.0")),
-        buy_balance=Balance(asset=wbnb_token, amount=Decimal("60.0")),
+        sell_balance=BalanceAtomic(
+            asset=usdt_token,
+            amount=Decimal("500.0"),
+            amount_atomic=to_atomic(Decimal("500.0")),
+        ),
+        buy_balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("60.0"),
+            amount_atomic=to_atomic(Decimal("60.0")),
+        ),
     )
 
     asset_swap_price = await use_case.execute(asset_swap_price_info)
 
     exchange.convert_balance_to_token.assert_called_once_with(
-        balance=Balance(asset=usdt_token, amount=Decimal("500.0")),
+        balance=BalanceAtomic(
+            asset=usdt_token,
+            amount=Decimal("500.0"),
+            amount_atomic=to_atomic(Decimal("500.0")),
+        ),
         token=wbnb_token,
         investment_parameters=InvestmentParameters(
             slippage_tolerance_in_percentage=Decimal("1"),
@@ -114,8 +170,16 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
     )
 
     assert asset_swap_price == ConvertedBalance(
-        buy_balance=Balance(asset=wbnb_token, amount=Decimal("60.0")),
-        sell_balance=Balance(asset=big4_basket, amount=Decimal("50.0")),
+        buy_balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("60.0"),
+            amount_atomic=to_atomic(Decimal("60.0")),
+        ),
+        sell_balance=BalanceAtomic(
+            asset=big4_basket,
+            amount=Decimal("50.0"),
+            amount_atomic=to_atomic(Decimal("50.0")),
+        ),
     )
 
 

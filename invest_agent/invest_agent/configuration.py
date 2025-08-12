@@ -20,6 +20,11 @@ class Configuration:
         self.bsc_rpc_url = env.str("BSC_RPC_URL")
         self.bsc_private_key = env.str("BSC_PRIVATE_KEY")
 
+        self.database_user = env.str("DATABASE_USER")
+        self.database_password = env.str("DATABASE_PASSWORD")
+        self.database_host = env.str("DATABASE_HOST")
+        self.database_port = env.int("DATABASE_PORT")
+
         self.data_agent_address = env.str("DATA_AGENT_ADDRESS")
         self.data_agent_key = env.str("DATA_AGENT_KEY")
         self.data_agent_url = env.str("DATA_AGENT_URL")

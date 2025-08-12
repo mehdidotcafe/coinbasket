@@ -1,6 +1,7 @@
 from decimal import Decimal
 from attr import dataclass
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import BalanceAtomic
+from invest_agent.chain.chain import Chain
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
 )
@@ -30,8 +31,9 @@ DEFAULT_USD_TOKEN = Token(
 class GetAssetSwapPriceUseCase:
     """Use case for getting the swap price of a pair of assets. Basket against basket is not supported"""
 
-    def __init__(self, exchange: Exchange):
+    def __init__(self, exchange: Exchange, chain: Chain):
         self.exchange = exchange
+        self.chain = chain
 
     async def execute(
         self, asset_swap_price_info: AssetSwapPriceInfo
@@ -43,64 +45,56 @@ class GetAssetSwapPriceUseCase:
         if isinstance(asset_swap_price_info.buy_asset, Basket) and isinstance(
             asset_swap_price_info.sell_asset, Token
         ):
-            price = await self.exchange.convert_balance_to_token(
-                balance=Balance(
+            converted_balance = await self.exchange.convert_balance_to_token(
+                balance=BalanceAtomic(
                     asset=asset_swap_price_info.sell_asset,
                     amount=asset_swap_price_info.sell_asset_amount,
+                    amount_atomic=await self.chain.convert_amount_to_amount_atomic(
+                        token=asset_swap_price_info.sell_asset,
+                        amount_readable=asset_swap_price_info.sell_asset_amount,
+                    ),
                 ),
                 token=DEFAULT_USD_TOKEN,
                 investment_parameters=investment_parameters,
             )
-            return ConvertedBalance(
-                sell_balance=Balance(
-                    asset=asset_swap_price_info.sell_asset,
-                    amount=asset_swap_price_info.sell_asset_amount,
-                ),
-                buy_balance=Balance(
-                    asset=asset_swap_price_info.buy_asset,
-                    amount=price.buy_balance.amount
-                    / asset_swap_price_info.buy_asset.denomination,
-                ),
-            )
+            return converted_balance
 
         if isinstance(asset_swap_price_info.buy_asset, Token) and isinstance(
             asset_swap_price_info.sell_asset, Basket
         ):
-            price = await self.exchange.convert_balance_to_token(
-                balance=Balance(
+            amount = (
+                asset_swap_price_info.sell_asset_amount
+                * asset_swap_price_info.sell_asset.denomination
+            )
+            converted_balance = await self.exchange.convert_balance_to_token(
+                balance=BalanceAtomic(
                     asset=DEFAULT_USD_TOKEN,
-                    amount=asset_swap_price_info.sell_asset_amount
-                    * asset_swap_price_info.sell_asset.denomination,
+                    amount=amount,
+                    amount_atomic=await self.chain.convert_amount_to_amount_atomic(
+                        token=DEFAULT_USD_TOKEN, amount_readable=amount
+                    ),
                 ),
                 token=asset_swap_price_info.buy_asset,
                 investment_parameters=investment_parameters,
             )
 
-            return ConvertedBalance(
-                sell_balance=Balance(
-                    asset=asset_swap_price_info.sell_asset,
-                    amount=asset_swap_price_info.sell_asset_amount,
-                ),
-                buy_balance=price.buy_balance,
-            )
+            return converted_balance
 
         if isinstance(asset_swap_price_info.sell_asset, Token) and isinstance(
             asset_swap_price_info.buy_asset, Token
         ):
-            price = await self.exchange.convert_balance_to_token(
-                balance=Balance(
+            converted_balance = await self.exchange.convert_balance_to_token(
+                balance=BalanceAtomic(
                     asset=asset_swap_price_info.sell_asset,
                     amount=asset_swap_price_info.sell_asset_amount,
+                    amount_atomic=await self.chain.convert_amount_to_amount_atomic(
+                        token=asset_swap_price_info.sell_asset,
+                        amount_readable=asset_swap_price_info.sell_asset_amount,
+                    ),
                 ),
                 token=asset_swap_price_info.buy_asset,
                 investment_parameters=investment_parameters,
             )
-            return ConvertedBalance(
-                sell_balance=Balance(
-                    asset=asset_swap_price_info.sell_asset,
-                    amount=asset_swap_price_info.sell_asset_amount,
-                ),
-                buy_balance=price.buy_balance,
-            )
+            return converted_balance
 
         raise CannotSwapBasketForAnotherException

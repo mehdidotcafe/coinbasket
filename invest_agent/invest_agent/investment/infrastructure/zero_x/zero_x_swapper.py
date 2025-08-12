@@ -2,7 +2,7 @@ import asyncio
 from decimal import Decimal
 from typing import TypedDict, cast
 from hexbytes import HexBytes
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import Balance, BalanceAtomic
 from invest_agent.chain.chain import Chain, Gas
 from invest_agent.chain.contract import Contract
 
@@ -135,7 +135,7 @@ class ZeroXSwapper(Exchange):
 
     async def get_wallet_in_token(
         self,
-        tokens_balance: list[Balance[Token]],
+        tokens_balance: list[BalanceAtomic[Token]],
         token: Token,
         investment_parameters: InvestmentParameters,
     ) -> Wallet:
@@ -165,19 +165,21 @@ class ZeroXSwapper(Exchange):
 
     async def convert_balance_to_token(
         self,
-        balance: Balance[Token],
+        balance: BalanceAtomic[Token],
         token: Token,
         investment_parameters: InvestmentParameters,
     ):
         if self.__is_same_token(balance.asset, token):
             return ConvertedBalance(
-                sell_balance=Balance(
+                sell_balance=BalanceAtomic(
                     asset=balance.asset,
                     amount=balance.amount,
+                    amount_atomic=balance.amount_atomic,
                 ),
-                buy_balance=Balance(
+                buy_balance=BalanceAtomic(
                     asset=token,
                     amount=balance.amount,
+                    amount_atomic=balance.amount_atomic,
                 ),
             )
 
@@ -195,19 +197,24 @@ class ZeroXSwapper(Exchange):
             investment_parameters=investment_parameters,
         )
 
+        sell_balance_amount_atomic = int(price.sellAmount)
+        buy_balance_amount_atomic = int(price.buyAmount)
+
         return ConvertedBalance(
-            sell_balance=Balance(
+            sell_balance=BalanceAtomic(
                 asset=balance.asset,
                 amount=await self.chain.convert_amount_atomic_to_amount(
-                    amount_atomic=int(price.sellAmount), token=balance.asset
+                    amount_atomic=sell_balance_amount_atomic, token=balance.asset
                 ),
+                amount_atomic=sell_balance_amount_atomic,
             ),
-            buy_balance=Balance(
+            buy_balance=BalanceAtomic(
                 asset=token,
                 amount=await self.chain.convert_amount_atomic_to_amount(
-                    amount_atomic=int(price.buyAmount),
+                    amount_atomic=buy_balance_amount_atomic,
                     token=token,
                 ),
+                amount_atomic=buy_balance_amount_atomic,
             ),
         )
 

@@ -1,7 +1,7 @@
 from asyncio import sleep
 from decimal import Decimal
 from typing import Any
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.order.order import ChainTransaction, Order, Try
 from pytest import fixture
 from sqlalchemy import select
@@ -29,8 +29,12 @@ def current_orders_no_try():
     return [
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c1",
-            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(asset=eth_token, amount=Decimal(0.1)),
+            sell_balance=BalanceAtomic(
+                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+            ),
+            buy_balance=BalanceAtomic(
+                asset=eth_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+            ),
             type="BUY",
             created_at=1939494,
             status="PENDING",
@@ -40,8 +44,12 @@ def current_orders_no_try():
         ),
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c2",
-            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(asset=usdt_token, amount=Decimal(0.1)),
+            sell_balance=BalanceAtomic(
+                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+            ),
+            buy_balance=BalanceAtomic(
+                asset=usdt_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+            ),
             type="BUY",
             created_at=1939494,
             status="SUCCESS",
@@ -51,8 +59,12 @@ def current_orders_no_try():
         ),
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c3",
-            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(asset=sol_token, amount=Decimal(0.1)),
+            sell_balance=BalanceAtomic(
+                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+            ),
+            buy_balance=BalanceAtomic(
+                asset=sol_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+            ),
             type="BUY",
             created_at=1939494,
             status="FAIL",
@@ -68,17 +80,7 @@ async def seed_orders_no_try(current_orders_no_try: list[Order]):
     async with make_session() as session:
         async with session.begin():
             for order in current_orders_no_try:
-                order_model = OrderModel(
-                    id=order.id,
-                    sell_balance=order.sell_balance.serialize(),
-                    buy_balance=order.buy_balance.serialize(),
-                    type=order.type,
-                    created_at=order.created_at,
-                    status=order.status,
-                    trigger=order.trigger,
-                    basket_id=order.basket_id,
-                )
-                session.add(order_model)
+                session.add(OrderModel.from_domain(order))
 
     yield current_orders_no_try
 
@@ -88,8 +90,12 @@ def current_orders_tries():
     return [
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c1",
-            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(asset=eth_token, amount=Decimal(0.1)),
+            sell_balance=BalanceAtomic(
+                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+            ),
+            buy_balance=BalanceAtomic(
+                asset=eth_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+            ),
             type="BUY",
             created_at=1939494,
             status="PENDING",
@@ -101,7 +107,11 @@ def current_orders_tries():
                     order_id="641763c2-41e2-4af0-936f-32c1a84499c1",
                     created_at=1939494,
                     provider="provider1",
-                    buy_balance=Balance(asset=eth_token, amount=Decimal(0.1)),
+                    buy_balance=BalanceAtomic(
+                        asset=eth_token,
+                        amount=Decimal(0.1),
+                        amount_atomic=int(0.1 * 10**18),
+                    ),
                     fees=None,
                     chain_transactions=[
                         ChainTransaction(
@@ -119,8 +129,12 @@ def current_orders_tries():
         ),
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c2",
-            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(asset=usdt_token, amount=Decimal(0.1)),
+            sell_balance=BalanceAtomic(
+                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+            ),
+            buy_balance=BalanceAtomic(
+                asset=usdt_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+            ),
             type="BUY",
             created_at=1939494,
             status="PENDING",
@@ -132,7 +146,11 @@ def current_orders_tries():
                     order_id="641763c2-41e2-4af0-936f-32c1a84499c2",
                     created_at=1939494,
                     provider="provider2",
-                    buy_balance=Balance(asset=usdt_token, amount=Decimal(0.1)),
+                    buy_balance=BalanceAtomic(
+                        asset=usdt_token,
+                        amount=Decimal(0.1),
+                        amount_atomic=int(0.1 * 10**18),
+                    ),
                     fees=None,
                     chain_transactions=[
                         ChainTransaction(
@@ -150,8 +168,12 @@ def current_orders_tries():
         ),
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c3",
-            sell_balance=Balance(asset=bnb_token, amount=Decimal(1)),
-            buy_balance=Balance(asset=sol_token, amount=Decimal(0.1)),
+            sell_balance=BalanceAtomic(
+                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+            ),
+            buy_balance=BalanceAtomic(
+                asset=sol_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+            ),
             type="BUY",
             created_at=1939494,
             status="PENDING",
@@ -163,7 +185,11 @@ def current_orders_tries():
                     order_id="641763c2-41e2-4af0-936f-32c1a84499c3",
                     created_at=1939494,
                     provider="provider3",
-                    buy_balance=Balance(asset=usdt_token, amount=Decimal(0.1)),
+                    buy_balance=BalanceAtomic(
+                        asset=usdt_token,
+                        amount=Decimal(0.1),
+                        amount_atomic=int(0.1 * 10**18),
+                    ),
                     fees=None,
                     chain_transactions=[],
                 )
@@ -177,96 +203,74 @@ async def seed_orders_tries(current_orders_tries: list[Order]):
     async with make_session() as session:
         async with session.begin():
             for order in current_orders_tries:
-                order_model = OrderModel(
-                    id=order.id,
-                    sell_balance=order.sell_balance.serialize(),
-                    buy_balance=order.buy_balance.serialize(),
-                    type=order.type,
-                    created_at=order.created_at,
-                    status=order.status,
-                    trigger=order.trigger,
-                    basket_id=order.basket_id,
-                )
-                session.add(order_model)
+                session.add(OrderModel.from_domain(order))
 
                 for order_try in order.tries:
-                    try_model = OrderTryModel(
-                        id=order_try.id,
-                        order_id=order.id,
-                        created_at=order_try.created_at,
-                        provider=order_try.provider,
-                        buy_balance=order_try.buy_balance.serialize(),
-                        fees=order_try.fees,
-                    )
-                    session.add(try_model)
-
-                    for chain_transaction in order_try.chain_transactions:
-                        chain_tx_model = OrderTryChainTransactionModel(
-                            id=chain_transaction.id,
-                            try_id=chain_transaction.try_id,
-                            order_id=chain_transaction.order_id,
-                            type=chain_transaction.type,
-                            data=chain_transaction.data,
-                            hash=chain_transaction.hash,
-                            status=chain_transaction.status,
-                        )
-                        session.add(chain_tx_model)
+                    session.add(OrderTryModel.from_domain(order_try))
 
     yield current_orders_tries
 
 
 async def fetch_order_by_id(id: str):
     async with make_session() as session:
-        result = await session.execute(select(OrderModel).where(OrderModel.id == id))
-        row = result.scalar_one_or_none()
-        return row
+        async with session.begin():
+            result = await session.execute(
+                select(OrderModel).where(OrderModel.id == id)
+            )
+            row = result.scalar_one_or_none()
+            return row
 
 
 async def fetch_all_orders():
     async with make_session() as session:
-        result = await session.execute(select(OrderModel))
-        rows = result.scalars().all()
-        return rows
+        async with session.begin():
+            result = await session.execute(select(OrderModel))
+            rows = result.scalars().all()
+            return rows
 
 
 async def fetch_order_tries_by_order_id(order_id: str):
     async with make_session() as session:
-        result = await session.execute(
-            select(OrderTryModel).where(OrderTryModel.order_id == order_id)
-        )
-        rows = result.scalars().all()
-        return rows
+        async with session.begin():
+            result = await session.execute(
+                select(OrderTryModel).where(OrderTryModel.order_id == order_id)
+            )
+            rows = result.scalars().all()
+            return rows
 
 
 async def fetch_chain_transaction_by_id(chain_transaction_id: str):
     async with make_session() as session:
-        result = await session.execute(
-            select(OrderTryChainTransactionModel).where(
-                OrderTryChainTransactionModel.id == chain_transaction_id
+        async with session.begin():
+            result = await session.execute(
+                select(OrderTryChainTransactionModel).where(
+                    OrderTryChainTransactionModel.id == chain_transaction_id
+                )
             )
-        )
-        row = result.scalar_one_or_none()
-        return row
+            row = result.scalar_one_or_none()
+            return row
 
 
 async def fetch_chain_transactions_by_try_id(try_id: str):
     async with make_session() as session:
-        result = await session.execute(
-            select(OrderTryChainTransactionModel).where(
-                OrderTryChainTransactionModel.try_id == try_id
+        async with session.begin():
+            result = await session.execute(
+                select(OrderTryChainTransactionModel).where(
+                    OrderTryChainTransactionModel.try_id == try_id
+                )
             )
-        )
-        row = result.scalars().all()
-        return row
+            row = result.scalars().all()
+            return row
 
 
 async def fetch_transaction_by_order_id(order_id: str):
     async with make_session() as session:
-        result = await session.execute(
-            select(TransactionModel).where(TransactionModel.order_id == order_id)
-        )
-        rows = result.scalars().all()
-        return rows
+        async with session.begin():
+            result = await session.execute(
+                select(TransactionModel).where(TransactionModel.order_id == order_id)
+            )
+            rows = result.scalars().all()
+            return rows
 
 
 async def wait_for_orders():

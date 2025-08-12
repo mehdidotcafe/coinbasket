@@ -1,6 +1,6 @@
 from decimal import Decimal
 from unittest import mock
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.investment.exchange.exchange import Exchange, TransactionData
 from invest_agent.datetime.date_time import DateTime
@@ -92,7 +92,9 @@ def tries():
                 ),
             ],
             provider="MockExchange",
-            buy_balance=Balance(amount=Decimal(0), asset=sol_token),
+            buy_balance=BalanceAtomic(
+                amount=Decimal(0), amount_atomic=0, asset=sol_token
+            ),
         )
     ]
 
@@ -102,8 +104,14 @@ async def test_order_submitter_submit_orders(order_submitter: OrderSubmitter):
     orders = [
         Order(
             id="3",
-            sell_balance=Balance(amount=Decimal("0.40"), asset=bnb_token),
-            buy_balance=Balance(amount=Decimal(0), asset=sol_token),
+            sell_balance=BalanceAtomic(
+                amount=Decimal("0.40"),
+                amount_atomic=int(0.40 * 10**18),
+                asset=bnb_token,
+            ),
+            buy_balance=BalanceAtomic(
+                amount=Decimal(0), amount_atomic=0, asset=sol_token
+            ),
             type="BUY",
             tries=[],
             created_at=1752268296,
@@ -130,8 +138,10 @@ async def test_order_submitter_submit_and_wait_order_without_tries(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
+        sell_balance=BalanceAtomic(
+            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+        ),
+        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
         type="BUY",
         tries=[],
         created_at=1752268296,
@@ -180,8 +190,10 @@ async def test_order_submitter_submit_and_wait_order_with_tries(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
+        sell_balance=BalanceAtomic(
+            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+        ),
+        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -223,8 +235,10 @@ async def test_order_submitter_submit_and_wait_order_success(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
+        sell_balance=BalanceAtomic(
+            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+        ),
+        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -279,8 +293,10 @@ async def test_order_submitter_submit_and_wait_order_failed(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
+        sell_balance=BalanceAtomic(
+            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+        ),
+        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -332,8 +348,10 @@ async def test_order_submitter_submit_and_wait_order_retries(
 ):
     order = Order(
         id="1",
-        sell_balance=Balance(amount=Decimal("0.25"), asset=bnb_token),
-        buy_balance=Balance(amount=Decimal(0), asset=sol_token),
+        sell_balance=BalanceAtomic(
+            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+        ),
+        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
         type="BUY",
         tries=tries,
         created_at=1752268296,

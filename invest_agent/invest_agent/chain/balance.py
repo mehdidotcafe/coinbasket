@@ -116,3 +116,29 @@ class BalanceAtomic(Balance, Generic[T]):
             amount=Decimal(balance_as_json["amount"]),
             amount_atomic=balance_as_json["amount_atomic"],
         )
+
+    @staticmethod
+    def deserialize_asset(asset_as_str: str) -> Asset:
+        """Deserialize an asset from JSON as string."""
+        asset_as_json = json.loads(asset_as_str)
+
+        def deserialize_token(token: dict[str, Any]) -> Token:
+            return Token(
+                id=token["id"],
+                name=token["name"],
+                display_name=token["display_name"],
+                ticker=token["ticker"],
+                address=token["address"],
+            )
+
+        if "tokens" in asset_as_json:
+            return Basket(
+                id=asset_as_json["id"],
+                name=asset_as_json["name"],
+                display_name=asset_as_json["display_name"],
+                ticker=asset_as_json["ticker"],
+                description=asset_as_json["description"],
+                denomination=Decimal(asset_as_json["denomination"]),
+                tokens=[deserialize_token(token) for token in asset_as_json["tokens"]],
+            )
+        return deserialize_token(asset_as_json)

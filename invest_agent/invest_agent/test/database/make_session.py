@@ -1,19 +1,19 @@
 from typing import cast
 from environs import env
-from sqlalchemy import StaticPool
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-agent_env = env.str("AGENT_ENV")
+database_user = env.str("DATABASE_USER")
+database_password = env.str("DATABASE_PASSWORD")
+database_host = env.str("DATABASE_HOST")
+database_port = env.int("DATABASE_PORT")
 agent_name = env.str("AGENT_NAME")
 
-
-db_path = f"./database/{agent_env}/{agent_name}.db"
-
 engine = create_async_engine(
-    f"sqlite+aiosqlite:///{db_path}",
-    connect_args={"check_same_thread": False, "timeout": 60},
-    poolclass=StaticPool,
+    f"postgresql+asyncpg://{database_user}:{database_password}@{database_host}:{database_port}/{agent_name}",
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
 )
 AsyncSessionLocal = cast(
     type[AsyncSession], sessionmaker(expire_on_commit=False, class_=AsyncSession)

@@ -1,9 +1,9 @@
 import asyncio
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 import itertools
 from typing import cast
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import Balance, BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
@@ -24,8 +24,8 @@ from shared.id_generator.id_generator import IdGenerator
 
 @dataclass
 class FlattenedInvestmentStep:
-    sell_balance: Balance[Token]
-    buy_balance: Balance[Token]
+    sell_balance: BalanceAtomic[Token]
+    buy_balance: BalanceAtomic[Token]
     basket_id: str | None = None
 
 
@@ -67,8 +67,6 @@ class ExecuteInvestmentPlanUseCase:
         flattened_investment_plan = await self.__flatten_investment_plan(
             investment_plan
         )
-
-        print(f"Flattened investment plan: {flattened_investment_plan}")
 
         orders = list(
             itertools.chain.from_iterable(
@@ -135,9 +133,19 @@ class ExecuteInvestmentPlanUseCase:
         if isinstance(buy_balance.asset, Basket) and isinstance(
             sell_balance.asset, Token
         ):
+            sell_balance_amount_atomic = (
+                await self.chain.convert_amount_to_amount_atomic(
+                    token=sell_balance.asset, amount_readable=sell_balance.amount
+                )
+            )
+
             return await self.__build_steps_for_buy_basket(
                 buy_balance=cast(Balance[Basket], buy_balance),
-                sell_balance=cast(Balance[Token], sell_balance),
+                sell_balance=BalanceAtomic(
+                    asset=sell_balance.asset,
+                    amount=sell_balance.amount,
+                    amount_atomic=sell_balance_amount_atomic,
+                ),
             )
         if isinstance(sell_balance.asset, Basket) and isinstance(
             buy_balance.asset, Token
@@ -149,16 +157,35 @@ class ExecuteInvestmentPlanUseCase:
         if isinstance(sell_balance.asset, Token) and isinstance(
             buy_balance.asset, Token
         ):
+            buy_balance_amount_atomic = (
+                await self.chain.convert_amount_to_amount_atomic(
+                    token=buy_balance.asset, amount_readable=buy_balance.amount
+                )
+            )
+            sell_balance_amount_atomic = (
+                await self.chain.convert_amount_to_amount_atomic(
+                    token=sell_balance.asset, amount_readable=sell_balance.amount
+                )
+            )
+
             return [
                 FlattenedInvestmentStep(
-                    sell_balance=cast(Balance[Token], sell_balance),
-                    buy_balance=cast(Balance[Token], buy_balance),
+                    sell_balance=BalanceAtomic(
+                        asset=sell_balance.asset,
+                        amount=sell_balance.amount,
+                        amount_atomic=sell_balance_amount_atomic,
+                    ),
+                    buy_balance=BalanceAtomic(
+                        asset=buy_balance.asset,
+                        amount=buy_balance.amount,
+                        amount_atomic=buy_balance_amount_atomic,
+                    ),
                 )
             ]
         return []
 
     async def __build_steps_for_buy_basket(
-        self, buy_balance: Balance[Basket], sell_balance: Balance[Token]
+        self, buy_balance: Balance[Basket], sell_balance: BalanceAtomic[Token]
     ) -> list[FlattenedInvestmentStep]:
         tasks = [
             self.exchange.convert_balance_to_token(
@@ -196,7 +223,9 @@ class ExecuteInvestmentPlanUseCase:
         tasks = [
             self.exchange.convert_balance_to_token(
                 # TODO: Handle selling basket
-                balance=Balance(asset=token, amount=Decimal("0")),
+                balance=BalanceAtomic(
+                    asset=token, amount=Decimal("0"), amount_atomic=0
+                ),
                 token=buy_balance.asset,
                 investment_parameters=investment_parameters,
             )
@@ -223,16 +252,16 @@ class ExecuteInvestmentPlanUseCase:
         return flattened_basket_steps
 
     def __compute_token_balance_with_basket_weight(
-        self, basket: Basket, balance: Balance[Token]
-    ) -> Balance[Token]:
-        print(
-            Balance(
-                asset=balance.asset,
-                amount=balance.amount / len(basket.tokens),
-            )
-        )
+        self, basket: Basket, balance: BalanceAtomic[Token]
+    ) -> BalanceAtomic[Token]:
+        basket_token_length = len(basket.tokens)
 
-        return Balance(
+        return BalanceAtomic(
             asset=balance.asset,
-            amount=balance.amount / len(basket.tokens),
+            amount=balance.amount / basket_token_length,
+            amount_atomic=int(
+                Decimal(balance.amount_atomic / basket_token_length).to_integral_exact(
+                    rounding=ROUND_DOWN
+                )
+            ),
         )

@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from typing import Literal
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.fees import Fees
 from invest_agent.investment.transaction.basket_transaction import BasketTransaction
+from protocol.token import Token
 
 Id = str
 
@@ -10,8 +11,8 @@ Id = str
 @dataclass
 class Transaction:
     id: Id
-    sell_balance: Balance
-    buy_balance: Balance
+    sell_balance: BalanceAtomic[Token]
+    buy_balance: BalanceAtomic[Token]
     type: Literal["SELL", "BUY", "SWAP"]
     created_at: int
     transaction_hash: str

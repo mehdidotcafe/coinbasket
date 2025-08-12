@@ -19,7 +19,6 @@ from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_
     SqlAlchemyTransactionRepository,
 )
 from protocol.basket import Basket
-from sqlalchemy import StaticPool
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from apispec import APISpec
@@ -168,9 +167,10 @@ langgraph_db_path = (
 )
 
 engine = create_async_engine(
-    f"sqlite+aiosqlite:///{db_path}",
-    connect_args={"check_same_thread": False, "timeout": 60},
-    poolclass=StaticPool,
+    f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.agent_name}",
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
 )
 AsyncSessionLocal = cast(
     type[AsyncSession], sessionmaker(expire_on_commit=False, class_=AsyncSession)
@@ -231,9 +231,7 @@ execute_pending_orders_use_case = ExecutePendingOrdersUseCase(
 )
 
 
-get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
-    exchange=exchange,
-)
+get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(exchange=exchange, chain=chain)
 
 
 @tool(response_format="content_and_artifact")
