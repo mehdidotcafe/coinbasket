@@ -1,3 +1,6 @@
+from invest_agent.portfolio.infrastructure.sql_alchemy_posting_repository import (
+    PostingModel,
+)
 from pytest import fixture
 from sqlalchemy import delete
 from invest_agent.test.database.make_session import make_session
@@ -20,4 +23,5 @@ async def cleanup_all():
             await session.execute(delete(OrderTryChainTransactionModel))
             await session.execute(delete(OrderTryModel))
             await session.execute(delete(OrderModel))
+            await session.execute(delete(PostingModel))
             await session.execute(delete(TransactionModel))

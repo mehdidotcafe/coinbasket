@@ -13,6 +13,8 @@ from invest_agent.investment.transaction.transaction_repository import (
 )
 from invest_agent.investment.order.order_submitter import OrderSubmitter
 
+from invest_agent.portfolio.posting import Posting
+from invest_agent.portfolio.posting_repository import PostingRepository
 from pytest import fixture, mark
 from shared.id_generator.id_generator import IdGenerator
 from protocol.fixture.token import bnb_token, sol_token
@@ -49,6 +51,11 @@ def transaction_repository():
 
 
 @fixture
+def posting_repository():
+    return mock.Mock(spec=PostingRepository)
+
+
+@fixture
 def id_generator():
     return mock.Mock(spec=IdGenerator)
 
@@ -61,6 +68,7 @@ def order_submitter(
     date_time: DateTime,
     order_repository: OrderRepository,
     transaction_repository: TransactionRepository,
+    posting_repository: PostingRepository,
 ):
     return OrderSubmitter(
         exchange,
@@ -69,6 +77,7 @@ def order_submitter(
         date_time,
         order_repository,
         transaction_repository,
+        posting_repository,
     )
 
 
@@ -231,6 +240,7 @@ async def test_order_submitter_submit_and_wait_order_success(
     exchange: Exchange,
     order_repository: OrderRepository,
     transaction_repository: TransactionRepository,
+    posting_repository: PostingRepository,
     tries: list[Try],
 ):
     order = Order(
@@ -238,7 +248,9 @@ async def test_order_submitter_submit_and_wait_order_success(
         sell_balance=BalanceAtomic(
             amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
         ),
-        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
+        buy_balance=BalanceAtomic(
+            amount=Decimal(5), amount_atomic=5 * 10**18, asset=sol_token
+        ),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -278,6 +290,38 @@ async def test_order_submitter_submit_and_wait_order_success(
             trigger=order.trigger,
             basket_id=order.basket_id,
         )
+    )
+    posting_repository.assert_has_calls(
+        [
+            mock.call.create_posting(
+                Posting(
+                    id=order.id,
+                    transaction_id=order.id,
+                    asset_balance=BalanceAtomic(
+                        asset=order.sell_balance.asset,
+                        amount=Decimal("-0.25"),
+                        amount_atomic=-int(0.25 * 10**18),
+                    ),
+                    type=order.type,
+                    created_at=1752268296,
+                    basket_id=order.basket_id,
+                ),
+            ),
+            mock.call.create_posting(
+                Posting(
+                    id=order.id,
+                    transaction_id=order.id,
+                    asset_balance=BalanceAtomic(
+                        asset=order.buy_balance.asset,
+                        amount=Decimal("5"),
+                        amount_atomic=int(5 * 10**18),
+                    ),
+                    type=order.type,
+                    created_at=1752268296,
+                    basket_id=order.basket_id,
+                )
+            ),
+        ]
     )
 
 

@@ -8,6 +8,9 @@ from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository i
 from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
     TransactionModel,
 )
+from invest_agent.portfolio.infrastructure.sql_alchemy_posting_repository import (
+    PostingModel,
+)
 from pytest import fixture, mark
 
 from invest_agent.main import (
@@ -71,6 +74,13 @@ async def fetch_all_transactions():
         return rows
 
 
+async def fetch_all_postings():
+    async with make_session() as session:
+        result = await session.execute(select(PostingModel))
+        rows = result.scalars().all()
+        return rows
+
+
 async def wait_for_orders():
     await sleep(75)
 
@@ -100,5 +110,21 @@ async def test_integration_execute_investment_plan_use_case(
     # Check if all transactions are linked to the correct orders regardless of order
     assert all(
         transaction.order_id in [order.id for order in orders]
+        for transaction in transactions
+    )
+
+    postings = list(await fetch_all_postings())
+
+    assert len(postings) == 8
+
+    # Check if all buy balances are reflected in postings
+    assert all(
+        transaction.buy_balance_asset_id in [posting.asset_id for posting in postings]
+        for transaction in transactions
+    )
+
+    # Check if all sell balances are reflected in postings
+    assert all(
+        transaction.sell_balance_asset_id in [posting.asset_id for posting in postings]
         for transaction in transactions
     )

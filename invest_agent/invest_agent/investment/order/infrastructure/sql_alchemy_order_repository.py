@@ -28,12 +28,8 @@ class OrderTryChainTransactionModel(Base):
     __tablename__ = "order_try_chain_transactions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    try_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("order_tries.id", ondelete="CASCADE")
-    )
-    order_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("orders.id", ondelete="CASCADE")
-    )
+    try_id: Mapped[str] = mapped_column(String(36), ForeignKey("order_tries.id"))
+    order_id: Mapped[str] = mapped_column(String(36), ForeignKey("orders.id"))
     type: Mapped[str] = mapped_column()
     data: Mapped[str] = mapped_column()
     hash: Mapped[str] = mapped_column()
@@ -74,7 +70,10 @@ class OrderTryModel(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     order_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("orders.id", ondelete="CASCADE")
+        String(36),
+        ForeignKey(
+            "orders.id",
+        ),
     )
     created_at: Mapped[int] = mapped_column()
     provider: Mapped[str] = mapped_column()

@@ -7,10 +7,14 @@ from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository i
 from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
     TransactionModel,
 )
+from invest_agent.portfolio.infrastructure.sql_alchemy_posting_repository import (
+    PostingModel,
+)
 
 models: list[type[Base]] = [
     OrderTryChainTransactionModel,
     OrderTryModel,
     OrderModel,
     TransactionModel,
+    PostingModel,
 ]

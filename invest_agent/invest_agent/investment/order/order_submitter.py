@@ -1,5 +1,6 @@
 import asyncio
 from decimal import Decimal
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.exchange.exchange import Exchange
@@ -10,6 +11,9 @@ from invest_agent.investment.transaction.transaction import Transaction
 from invest_agent.investment.transaction.transaction_repository import (
     TransactionRepository,
 )
+from invest_agent.portfolio.posting import Posting
+from invest_agent.portfolio.posting_repository import PostingRepository
+from protocol.token import Token
 from shared.id_generator.id_generator import IdGenerator
 
 
@@ -26,6 +30,7 @@ class OrderSubmitter:
         date_time: DateTime,
         order_repository: OrderRepository,
         transaction_repository: TransactionRepository,
+        posting_repository: PostingRepository,
     ):
         self.exchange = exchange
         self.chain = chain
@@ -33,6 +38,7 @@ class OrderSubmitter:
         self.date_time = date_time
         self.order_repository = order_repository
         self.transaction_repository = transaction_repository
+        self.posting_repository = posting_repository
 
     async def submit_orders(self, orders: list[Order]) -> list[Order]:
         """Submit a list of orders and wait for their execution."""
@@ -102,30 +108,71 @@ class OrderSubmitter:
                 is_success = await self.__wait_chain_transactions(chain_transactions)
 
                 if is_success:
-                    await self.order_repository.set_order_to_success(order.id)
-                    await self.transaction_repository.create_transaction(
-                        self.__self_map_order_to_transaction(order, order_try)
+                    created_at = self.date_time.now()
+                    transaction = self.__map_order_to_transaction(
+                        order, order_try, created_at
                     )
+
+                    await self.order_repository.set_order_to_success(order.id)
+
+                    await self.transaction_repository.create_transaction(transaction)
+                    await self.posting_repository.create_posting(
+                        self.__map_transaction_to_posting(
+                            transaction=transaction,
+                            balance=transaction.sell_balance,
+                            created_at=created_at,
+                            multiplier=-1,
+                        )
+                    )
+                    await self.posting_repository.create_posting(
+                        self.__map_transaction_to_posting(
+                            transaction=transaction,
+                            balance=transaction.buy_balance,
+                            created_at=created_at,
+                            multiplier=1,
+                        )
+                    )
+
                     return
             except Exception as e:
                 print(f"Error submitting order {order.id}: {e}")
 
         await self.order_repository.set_order_to_fail(order.id)
 
-    def __self_map_order_to_transaction(
-        self, order: Order, order_try: Try
+    def __map_order_to_transaction(
+        self, order: Order, order_try: Try, created_at: int
     ) -> Transaction:
         return Transaction(
             id=order.id,
             sell_balance=order.sell_balance,
             buy_balance=order.buy_balance,
             type=order.type,
-            created_at=self.date_time.now(),
+            created_at=created_at,
             fees=order_try.fees,
             transaction_hash=order_try.chain_transactions[-1].hash,
             order_id=order.id,
             trigger=order.trigger,
             basket_id=order.basket_id,
+        )
+
+    def __map_transaction_to_posting(
+        self,
+        transaction: Transaction,
+        balance: BalanceAtomic[Token],
+        created_at: int,
+        multiplier: int,
+    ) -> Posting:
+        return Posting(
+            id=self.id_generator.generate_random_id(),
+            transaction_id=transaction.id,
+            asset_balance=BalanceAtomic(
+                asset=balance.asset,
+                amount=balance.amount * multiplier,
+                amount_atomic=balance.amount_atomic * multiplier,
+            ),
+            type=transaction.type,
+            created_at=created_at,
+            basket_id=transaction.basket_id,
         )
 
     async def __handle_pending_chain_transactions(self, order: Order):
@@ -141,9 +188,26 @@ class OrderSubmitter:
         is_success = await self.__wait_chain_transactions(last_try.chain_transactions)
 
         if is_success:
+            created_at = self.date_time.now()
+            transaction = self.__map_order_to_transaction(order, last_try, created_at)
+
             await self.order_repository.set_order_to_success(order.id)
-            await self.transaction_repository.create_transaction(
-                self.__self_map_order_to_transaction(order, last_try)
+            await self.transaction_repository.create_transaction(transaction)
+            await self.posting_repository.create_posting(
+                self.__map_transaction_to_posting(
+                    transaction=transaction,
+                    balance=transaction.sell_balance,
+                    created_at=created_at,
+                    multiplier=-1,
+                )
+            )
+            await self.posting_repository.create_posting(
+                self.__map_transaction_to_posting(
+                    transaction=transaction,
+                    balance=transaction.buy_balance,
+                    created_at=created_at,
+                    multiplier=1,
+                )
             )
 
         return is_success

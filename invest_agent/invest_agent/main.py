@@ -18,6 +18,9 @@ from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository i
 from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
     SqlAlchemyTransactionRepository,
 )
+from invest_agent.portfolio.infrastructure.sql_alchemy_posting_repository import (
+    SqlAlchemyPostingRepository,
+)
 from protocol.basket import Basket
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -182,6 +185,10 @@ order_repository = SqlAlchemyOrderRepository(
 transaction_repository = SqlAlchemyTransactionRepository(
     AsyncSessionLocal=AsyncSessionLocal, engine=engine
 )
+posting_repository = SqlAlchemyPostingRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+
 
 get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
     storage=storage,
@@ -216,6 +223,7 @@ order_submitter = OrderSubmitter(
     date_time=date_time,
     order_repository=order_repository,
     transaction_repository=transaction_repository,
+    posting_repository=posting_repository,
 )
 
 execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(

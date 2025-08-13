@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy import String, Integer, Text
@@ -6,9 +7,15 @@ from invest_agent.investment.transaction.transaction_repository import (
     TransactionRepository,
 )
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import NUMERIC
 import json
+
+
+if TYPE_CHECKING:
+    from invest_agent.portfolio.infrastructure.sql_alchemy_posting_repository import (
+        PostingModel,
+    )
 
 
 class TransactionModel(Base):
@@ -33,6 +40,13 @@ class TransactionModel(Base):
     fees: Mapped[str | None] = mapped_column(Text, nullable=True)
     basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
 
+    postings: Mapped[list["PostingModel"]] = relationship(
+        "PostingModel",
+        back_populates="transaction",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+
     @staticmethod
     def from_domain(transaction: Transaction) -> "TransactionModel":
         """Convert a Transaction domain object to a TransactionModel."""
@@ -53,6 +67,7 @@ class TransactionModel(Base):
             trigger=transaction.trigger,
             fees=transaction.fees.serialize() if transaction.fees else None,
             basket_id=transaction.basket_id,
+            postings=[],
         )
 
 
