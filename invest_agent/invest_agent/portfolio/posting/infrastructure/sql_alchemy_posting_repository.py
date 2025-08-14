@@ -4,11 +4,11 @@ import json
 from typing import cast
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
 
-from invest_agent.portfolio.posting import Posting, PostingType
-from invest_agent.portfolio.posting_repository import PostingRepository
+from invest_agent.portfolio.posting.posting import Posting, PostingType
+from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.token import Token
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, select, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import NUMERIC
 from invest_agent.chain.balance import BalanceAtomic
@@ -80,3 +80,24 @@ class SqlAlchemyPostingRepository(PostingRepository):
             async with session.begin():
                 session.add(PostingModel.from_domain(posting))
         return posting
+
+    async def get_holding_balances(self) -> list[BalanceAtomic[Token]]:
+        async with self.AsyncSessionLocal(bind=self.engine) as session:
+            async with session.begin():
+                stmt = select(
+                    PostingModel.asset_id,
+                    # Select any asset value of the same asset_id
+                    func.min(PostingModel.asset),
+                    func.sum(PostingModel.amount_atomic).label("total_amount_atomic"),
+                ).group_by(PostingModel.asset_id)
+                result = await session.execute(stmt)
+                rows = result.all()
+
+                return [
+                    BalanceAtomic(
+                        asset=cast(Token, BalanceAtomic.deserialize_asset(asset_json)),
+                        amount=Decimal(int(total_amount_atomic)) / Decimal(10**18),
+                        amount_atomic=int(total_amount_atomic),
+                    )
+                    for asset_id, asset_json, total_amount_atomic in rows
+                ]

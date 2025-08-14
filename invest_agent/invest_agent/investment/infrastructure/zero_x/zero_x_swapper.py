@@ -1,8 +1,7 @@
-import asyncio
 from decimal import Decimal
-from typing import TypedDict, cast
+from typing import TypedDict
 from hexbytes import HexBytes
-from invest_agent.chain.balance import Balance, BalanceAtomic
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain, Gas
 from invest_agent.chain.contract import Contract
 
@@ -10,7 +9,6 @@ from invest_agent.investment.exchange.exchange import (
     ConvertedBalance,
     Exchange,
     TransactionData,
-    Wallet,
 )
 from invest_agent.investment.infrastructure.zero_x.exception.swap_insufficient_liquidity import (
     SwapInsufficientLiquidity,
@@ -133,36 +131,6 @@ class ZeroXSwapper(Exchange):
             if transaction_data is not None
         ]
 
-    async def get_wallet_in_token(
-        self,
-        tokens_balance: list[BalanceAtomic[Token]],
-        token: Token,
-        investment_parameters: InvestmentParameters,
-    ) -> Wallet:
-        balances: list[ConvertedBalance] = []
-
-        tasks = [
-            self.convert_balance_to_token(
-                balance=balance,
-                token=token,
-                investment_parameters=investment_parameters,
-            )
-            for balance in tokens_balance
-        ]
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        for i, result in enumerate(results):
-            if isinstance(result, BaseException):
-                print(f"Get Wallet step {i} failed: {result!r}")
-            else:
-                balances.append(result)
-
-        return Wallet(
-            balances=balances,
-            total_balance=self.__sum_balances(balances, token),
-        )
-
     async def convert_balance_to_token(
         self,
         balance: BalanceAtomic[Token],
@@ -215,17 +183,6 @@ class ZeroXSwapper(Exchange):
                     token=token,
                 ),
                 amount_atomic=buy_balance_amount_atomic,
-            ),
-        )
-
-    def __sum_balances(self, balances: list[ConvertedBalance], token: Token):
-        return BalanceAtomic(
-            asset=token,
-            amount=cast(
-                Decimal, sum([balance.buy_balance.amount for balance in balances])
-            ),
-            amount_atomic=sum(
-                [balance.buy_balance.amount_atomic for balance in balances]
             ),
         )
 

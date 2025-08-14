@@ -8,13 +8,14 @@ from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.order.order import ChainTransaction, Order, Try
 from invest_agent.investment.order.order_repository import OrderRepository
 from invest_agent.investment.transaction.transaction import Transaction
+
+from invest_agent.investment.order.order_submitter import OrderSubmitter
+
 from invest_agent.investment.transaction.transaction_repository import (
     TransactionRepository,
 )
-from invest_agent.investment.order.order_submitter import OrderSubmitter
-
-from invest_agent.portfolio.posting import Posting
-from invest_agent.portfolio.posting_repository import PostingRepository
+from invest_agent.portfolio.posting.posting import Posting
+from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, mark
 from shared.id_generator.id_generator import IdGenerator
 from protocol.fixture.token import bnb_token, sol_token
@@ -293,20 +294,7 @@ async def test_order_submitter_submit_and_wait_order_success(
     )
     posting_repository.assert_has_calls(
         [
-            mock.call.create_posting(
-                Posting(
-                    id=order.id,
-                    transaction_id=order.id,
-                    asset_balance=BalanceAtomic(
-                        asset=order.sell_balance.asset,
-                        amount=Decimal("-0.25"),
-                        amount_atomic=-int(0.25 * 10**18),
-                    ),
-                    type=order.type,
-                    created_at=1752268296,
-                    basket_id=order.basket_id,
-                ),
-            ),
+            # create_posting should only called once for buy_balance because sell_balance is a native token
             mock.call.create_posting(
                 Posting(
                     id=order.id,

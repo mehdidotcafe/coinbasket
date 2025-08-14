@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from invest_agent.chain.balance import Balance, BalanceAtomic
+from invest_agent.chain.balance import BalanceAtomic
 
 from invest_agent.chain.chain import Gas
 from invest_agent.investment.investment_parameters import InvestmentParameters
@@ -13,14 +13,8 @@ from protocol.token import Token
 
 @dataclass
 class ConvertedBalance:
-    sell_balance: BalanceAtomic
-    buy_balance: BalanceAtomic
-
-
-@dataclass
-class Wallet:
-    balances: list[ConvertedBalance]
-    total_balance: Balance
+    sell_balance: BalanceAtomic[Token]
+    buy_balance: BalanceAtomic[Token]
 
 
 @dataclass
@@ -40,15 +34,6 @@ class Exchange(ABC):
         investment_parameters: InvestmentParameters,
     ) -> list[TransactionData]:
         """Creates transaction data to be sent on-chain for the given order."""
-        raise NotImplementedError
-
-    @abstractmethod
-    async def get_wallet_in_token(
-        self,
-        tokens_balance: list[BalanceAtomic[Token]],
-        token: Token,
-        investment_parameters: InvestmentParameters,
-    ) -> Wallet:
         raise NotImplementedError
 
     @abstractmethod

@@ -16,9 +16,7 @@ from invest_agent.investment.infrastructure.zero_x.quote import (
     Transaction,
 )
 from invest_agent.investment.exchange.exchange import (
-    ConvertedBalance,
     TransactionData,
-    Wallet,
 )
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
@@ -31,7 +29,7 @@ from invest_agent.investment.investment_parameters import InvestmentParameters
 
 from invest_agent.investment.order.order import Order
 from pytest import fixture, mark, raises
-from protocol.fixture.token import bnb_token, eth_token, usdt_token, sol_token
+from protocol.fixture.token import bnb_token, eth_token
 
 from web3 import AsyncWeb3
 from web3.eth import Eth
@@ -333,151 +331,3 @@ async def test_zero_x_swapper_build_transactions_data_with_approval(
     assert transactions_data[0].encoded_input is not None
 
     assert transactions_data[1].type == "SEND"
-
-
-@mark.asyncio
-async def test_zero_x_swapper_get_wallet_in_token(
-    zero_x_api_client: ZeroXApiClient,
-    chain: Chain,
-    contract: Contract,
-    configuration: Configuration,
-    w3: AsyncWeb3,
-    investment_parameters: InvestmentParameters,
-):
-    token = usdt_token
-
-    tokens_balance = [
-        BalanceAtomic(asset=sol_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18),
-        BalanceAtomic(asset=eth_token, amount=Decimal("4.0"), amount_atomic=4 * 10**18),
-        BalanceAtomic(
-            asset=bnb_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
-        ),
-    ]
-
-    zero_x_api_client.get_price.side_effect = [
-        Price(
-            issues=Issues(),
-            buyAmount="300000000000000000000",
-            sellAmount="1000000000000000000",
-            buyToken=usdt_token.address,
-            sellToken=sol_token.address,
-            fees=Fees(),
-        ),
-        Price(
-            issues=Issues(),
-            buyAmount="1100000000000000000000",
-            sellAmount="4000000000000000000",
-            buyToken=usdt_token.address,
-            sellToken=eth_token.address,
-            fees=Fees(),
-        ),
-        Price(
-            issues=Issues(),
-            buyAmount="10000000000000000000",
-            sellAmount="10000000000000000000",
-            buyToken=usdt_token.address,
-            sellToken=bnb_token.address,
-            fees=Fees(),
-        ),
-    ]
-
-    chain.convert_amount_to_amount_atomic.side_effect = (
-        lambda token, amount_readable: amount_readable * (10**18)
-    )
-    chain.convert_amount_atomic_to_amount.side_effect = (
-        lambda token, amount_atomic: amount_atomic / (10**18)
-    )
-
-    zero_x_swapper = ZeroXSwapper(
-        api_client=zero_x_api_client,
-        chain=chain,
-        contract=contract,
-        configuration=configuration,
-        w3=w3,
-    )
-
-    wallet = await zero_x_swapper.get_wallet_in_token(
-        tokens_balance, token, investment_parameters
-    )
-
-    assert wallet == Wallet(
-        balances=[
-            ConvertedBalance(
-                sell_balance=BalanceAtomic(
-                    asset=sol_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18
-                ),
-                buy_balance=BalanceAtomic(
-                    asset=usdt_token, amount=Decimal("300"), amount_atomic=300 * 10**18
-                ),
-            ),
-            ConvertedBalance(
-                sell_balance=BalanceAtomic(
-                    asset=eth_token, amount=Decimal("4.0"), amount_atomic=4 * 10**18
-                ),
-                buy_balance=BalanceAtomic(
-                    asset=usdt_token,
-                    amount=Decimal("1100.0"),
-                    amount_atomic=1100 * 10**18,
-                ),
-            ),
-            ConvertedBalance(
-                sell_balance=BalanceAtomic(
-                    asset=bnb_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
-                ),
-                buy_balance=BalanceAtomic(
-                    asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
-                ),
-            ),
-        ],
-        total_balance=BalanceAtomic(
-            asset=usdt_token, amount=Decimal("1410.0"), amount_atomic=1410 * 10**18
-        ),
-    )
-
-
-@mark.asyncio
-async def test_zero_x_swapper_get_wallet_in_token_same_token(
-    zero_x_api_client: ZeroXApiClient,
-    chain: Chain,
-    contract: Contract,
-    configuration: Configuration,
-    w3: AsyncWeb3,
-    investment_parameters: InvestmentParameters,
-):
-    token = usdt_token
-
-    tokens_balance = [
-        BalanceAtomic(
-            asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
-        ),
-    ]
-
-    zero_x_swapper = ZeroXSwapper(
-        api_client=zero_x_api_client,
-        chain=chain,
-        contract=contract,
-        configuration=configuration,
-        w3=w3,
-    )
-
-    wallet = await zero_x_swapper.get_wallet_in_token(
-        tokens_balance, token, investment_parameters
-    )
-
-    zero_x_swapper.api_client.get_price.assert_not_called()
-
-    assert wallet == Wallet(
-        balances=[
-            ConvertedBalance(
-                sell_balance=BalanceAtomic(
-                    asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
-                ),
-                buy_balance=BalanceAtomic(
-                    asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
-                ),
-            ),
-        ],
-        total_balance=BalanceAtomic(
-            asset=usdt_token, amount=Decimal("10.0"), amount_atomic=10 * 10**18
-        ),
-    )

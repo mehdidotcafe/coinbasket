@@ -96,7 +96,7 @@ class BscChain(Chain):
 
         return BalanceAtomic[Token](
             asset=self.base_token,
-            amount=Decimal(amount),
+            amount=amount,
             amount_atomic=amount_atomic,
         )
 
@@ -321,7 +321,7 @@ class BscChain(Chain):
         decimals = await self.__get_token_decimals(token.address)
 
         return int(
-            (Decimal(amount_readable) * (10**decimals)).to_integral_exact(
+            (Decimal(amount_readable) * Decimal(10**decimals)).to_integral_exact(
                 rounding=ROUND_DOWN
             )
         )
@@ -331,4 +331,4 @@ class BscChain(Chain):
     ) -> AmountReadable:
         decimals = await self.__get_token_decimals(token.address)
 
-        return amount_atomic / (10**decimals)
+        return amount_atomic / Decimal(10**decimals)

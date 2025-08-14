@@ -11,8 +11,8 @@ from invest_agent.investment.transaction.transaction import Transaction
 from invest_agent.investment.transaction.transaction_repository import (
     TransactionRepository,
 )
-from invest_agent.portfolio.posting import Posting
-from invest_agent.portfolio.posting_repository import PostingRepository
+from invest_agent.portfolio.posting.posting import Posting
+from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.token import Token
 from shared.id_generator.id_generator import IdGenerator
 
@@ -116,22 +116,24 @@ class OrderSubmitter:
                     await self.order_repository.set_order_to_success(order.id)
 
                     await self.transaction_repository.create_transaction(transaction)
-                    await self.posting_repository.create_posting(
-                        self.__map_transaction_to_posting(
-                            transaction=transaction,
-                            balance=transaction.sell_balance,
-                            created_at=created_at,
-                            multiplier=-1,
+                    if not self.chain.is_native_token(transaction.sell_balance.asset):
+                        await self.posting_repository.create_posting(
+                            self.__map_transaction_to_posting(
+                                transaction=transaction,
+                                balance=transaction.sell_balance,
+                                created_at=created_at,
+                                multiplier=-1,
+                            )
                         )
-                    )
-                    await self.posting_repository.create_posting(
-                        self.__map_transaction_to_posting(
-                            transaction=transaction,
-                            balance=transaction.buy_balance,
-                            created_at=created_at,
-                            multiplier=1,
+                    if not self.chain.is_native_token(transaction.buy_balance.asset):
+                        await self.posting_repository.create_posting(
+                            self.__map_transaction_to_posting(
+                                transaction=transaction,
+                                balance=transaction.buy_balance,
+                                created_at=created_at,
+                                multiplier=1,
+                            )
                         )
-                    )
 
                     return
             except Exception as e:

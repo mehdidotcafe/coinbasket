@@ -8,6 +8,7 @@ from invest_agent.asset.get_asset_swap_price_use_case import (
     GetAssetSwapPriceUseCase,
 )
 from invest_agent.investment.exchange.exchange import ConvertedBalance
+from invest_agent.investment.fees import Fees
 from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
@@ -15,10 +16,25 @@ from invest_agent.investment.investment_planner.investment_plan import (
 from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
     SqlAlchemyOrderRepository,
 )
+from invest_agent.investment.order.order import (
+    ChainTransaction,
+    ChainTransactionStatus,
+    ChainTransactionType,
+    Order,
+    OrderStatus,
+    OrderTrigger,
+    OrderType,
+    Try,
+)
 from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
     SqlAlchemyTransactionRepository,
 )
-from invest_agent.portfolio.infrastructure.sql_alchemy_posting_repository import (
+from invest_agent.portfolio.get_portfolio_use_case import (
+    GetPortfolioUseCase,
+    Portfolio,
+    PortfolioBalance,
+)
+from invest_agent.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
     SqlAlchemyPostingRepository,
 )
 from protocol.basket import Basket
@@ -26,7 +42,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from apispec import APISpec
 from invest_agent.authentication.authentication import authentication
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import Balance, BalanceAtomic
 from invest_agent.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
@@ -60,9 +76,7 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
 from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import ZeroXSwapper
-from invest_agent.metrics.get_wallet_in_token_use_case import (
-    GetWalletInTokenUseCase,
-)
+
 from invest_agent.documentation.openapi import openapi
 from protocol.token import Token
 from pydantic import RootModel
@@ -190,14 +204,11 @@ posting_repository = SqlAlchemyPostingRepository(
 )
 
 
-get_basket_balance_in_token_use_case = GetWalletInTokenUseCase(
-    storage=storage,
+get_portfolio_use_case = GetPortfolioUseCase(
+    order_repository=order_repository,
+    posting_repository=posting_repository,
     exchange=exchange,
     chain=chain,
-    configuration={
-        "fee_integrator_address": configuration.fee_integrator_address,
-        "fee_value_in_percentage": configuration.fee_value_in_percentage,
-    },
 )
 
 conversation_use_case = ConversationUseCase(
@@ -316,14 +327,9 @@ def get_invested_basket():
 
 
 @tool()
-async def get_invested_basket_balance_in_native_and_usd_value():
-    """Retrieve the invested basket in native and USD Value.
-
-    Returns:
-        The basket balance is made of the balances of each token in the basket, both in native and USD value.
-        The token has a name, display_name, ticker and address (contract address) property.
-    """
-    return await get_basket_balance_in_token_use_case.execute(usdt_token)
+async def get_portfolio_tool(token: Token = usdt_token):
+    """Retrieve the portfolio."""
+    return await get_portfolio_use_case.execute(token)
 
 
 @tool()
@@ -337,6 +343,18 @@ async def get_token_balance(token: Token):
         The balance of the token in the agent's wallet.
     """
     balance = await chain.get_token_balance(token)
+
+    return balance
+
+
+@tool()
+async def get_available_balance():
+    """Retrieve the available balance.
+
+    Returns:
+        The balance of the token in the agent's wallet.
+    """
+    balance = await chain.get_native_token_balance()
 
     return balance
 
@@ -520,9 +538,9 @@ tools = [
     get_token_info,
     invest_in_intent_investment_plan_use_case,
     get_agent_address,
+    get_available_balance,
     get_token_balance,
-    # get_invested_basket,
-    # get_invested_basket_balance_in_native_and_usd_value,
+    get_portfolio_tool,
     get_agent_name,
     get_current_datetime,
 ]
@@ -656,6 +674,13 @@ class MessagesRequest(Model):
 class MessagesResponse(Model):
     messages: list[MessageResponse]
 
+    @staticmethod
+    def from_domain(messages: list[Message]) -> "MessagesResponse":
+        """Convert a list of Message domain objects to a MessagesResponse."""
+        return MessagesResponse(
+            messages=[MessageResponse.from_domain(message) for message in messages]
+        )
+
 
 @openapi(
     spec=spec,
@@ -703,9 +728,7 @@ async def get_conversation_messages(
         thread_id=configuration.langchain_thread_id
     )
 
-    return MessagesResponse(
-        messages=[MessageResponse.from_domain(message) for message in messages]
-    )
+    return MessagesResponse.from_domain(messages)
 
 
 class AssetSwapPriceInfoRequest(Model):
@@ -926,45 +949,194 @@ async def health_check(_ctx: Context) -> HealthResponse:
     return HealthResponse(status="OK")
 
 
-class MetricsWalletRequest(Model):
+class PortfolioRequest(Model):
     agent_key: str
     token: TokenRequest
 
+    def to_domain(self):
+        return Token(
+            id=self.token.id,
+            name=self.token.name,
+            display_name=self.token.display_name,
+            ticker=self.token.ticker,
+            address=self.token.address,
+        )
 
-class MetricsWalletResponse(Model):
-    balances: list[ConvertedBalanceResponse]
-    total_balance: BalanceResponse
+
+class BalanceAtomicResponse(Model):
+    amount: str
+    amount_atomic: str
+    asset: AssetResponse
+
+    @staticmethod
+    def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
+        """Convert the domain Balance to a BalanceResponse."""
+        return BalanceAtomicResponse(
+            amount=str(balance.amount),
+            amount_atomic=str(balance.amount_atomic),
+            asset=TokenResponse.from_domain(balance.asset)
+            if isinstance(balance.asset, Token)
+            else BasketResponse.from_domain(balance.asset),
+        )
+
+
+class FeesResponse(Model):
+    chain_fee: int
+    provider_fee: int | None = None
+    service_fee: int | None = None
+
+    @staticmethod
+    def from_domain(domain: Fees) -> "FeesResponse":
+        return FeesResponse(
+            chain_fee=domain.chain_fee,
+            provider_fee=domain.provider_fee,
+            service_fee=domain.service_fee,
+        )
+
+
+class ChainTransactionResponse(Model):
+    id: str
+    try_id: str
+    order_id: str
+    type: ChainTransactionType
+    data: str
+    hash: str
+    status: ChainTransactionStatus
+
+    @staticmethod
+    def from_domain(domain: ChainTransaction) -> "ChainTransactionResponse":
+        return ChainTransactionResponse(
+            id=domain.id,
+            try_id=domain.try_id,
+            order_id=domain.order_id,
+            type=domain.type,
+            data=domain.data,
+            hash=domain.hash,
+            status=domain.status,
+        )
+
+
+class TryResponse(Model):
+    id: str
+    order_id: str
+    created_at: int
+    chain_transactions: list[ChainTransactionResponse]
+    provider: str
+    buy_balance: BalanceAtomicResponse
+    fees: FeesResponse | None = None
+
+    @staticmethod
+    def from_domain(domain: Try) -> "TryResponse":
+        return TryResponse(
+            id=domain.id,
+            order_id=domain.order_id,
+            created_at=domain.created_at,
+            chain_transactions=[
+                ChainTransactionResponse.from_domain(tx)
+                for tx in domain.chain_transactions
+            ],
+            provider=domain.provider,
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            fees=FeesResponse.from_domain(domain.fees) if domain.fees else None,
+        )
+
+
+class OrderResponse(Model):
+    id: str
+    sell_balance: BalanceAtomicResponse
+    buy_balance: BalanceAtomicResponse
+    type: OrderType
+    tries: list[TryResponse]
+    created_at: int
+    status: OrderStatus
+    trigger: OrderTrigger
+
+    @staticmethod
+    def from_domain(domain: Order) -> "OrderResponse":
+        return OrderResponse(
+            id=domain.id,
+            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            type=domain.type,
+            tries=[TryResponse.from_domain(try_) for try_ in domain.tries],
+            created_at=domain.created_at,
+            status=domain.status,
+            trigger=domain.trigger,
+        )
+
+
+class PortfolioBalanceResponse(Model):
+    native_balance: BalanceAtomicResponse
+    converted_balance: BalanceAtomicResponse
+
+    @staticmethod
+    def from_domain(domain: PortfolioBalance) -> "PortfolioBalanceResponse":
+        return PortfolioBalanceResponse(
+            native_balance=BalanceAtomicResponse.from_domain(domain.native_balance),
+            converted_balance=BalanceAtomicResponse.from_domain(
+                domain.converted_balance
+            ),
+        )
+
+
+class PortfolioResponse(Model):
+    available_balance: PortfolioBalanceResponse
+    holding_balances: list[PortfolioBalanceResponse]
+    total_balance: BalanceAtomicResponse
+    pending_orders: list[OrderResponse]
+
+    @staticmethod
+    def from_domain(domain: Portfolio) -> "PortfolioResponse":
+        return PortfolioResponse(
+            available_balance=PortfolioBalanceResponse.from_domain(
+                domain.available_balance
+            ),
+            holding_balances=[
+                PortfolioBalanceResponse.from_domain(balance)
+                for balance in domain.holding_balances
+            ],
+            total_balance=BalanceAtomicResponse.from_domain(domain.total_balance),
+            pending_orders=[
+                OrderResponse.from_domain(order) for order in domain.pending_orders
+            ],
+        )
 
 
 @openapi(
     spec=spec,
     schemas=[
         TokenRequest,
-        MetricsWalletRequest,
-        MetricsWalletResponse,
+        OrderResponse,
+        FeesResponse,
+        ChainTransactionResponse,
+        TryResponse,
+        BalanceAtomicResponse,
+        PortfolioBalanceResponse,
+        PortfolioRequest,
+        PortfolioResponse,
     ],
-    path="/wallet/token",
+    path="/portfolio",
     operations={
         "post": {
-            "summary": "Get Agent wallet token and total balances in a specific token",
-            "tags": ["Wallet"],
+            "summary": "Get Agent Portfolio in a specific token",
+            "tags": ["Portfolio"],
             "requestBody": {
                 "required": True,
                 "content": {
                     "application/json": {
-                        "schema": {"$ref": "#/components/schemas/MetricsWalletRequest"}
+                        "schema": {"$ref": "#/components/schemas/PortfolioRequest"}
                     }
                 },
             },
             "responses": {
                 "200": {
-                    "description": "Agent wallet token balances and total balance in the specified token",
+                    "description": "Agent Portfolio in the specified token",
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/components/schemas/MetricsWalletResponse"
+                                    "$ref": "#/components/schemas/PortfolioResponse"
                                 },
                             },
                         }
@@ -976,56 +1148,15 @@ class MetricsWalletResponse(Model):
     },
 )
 @invest_agent.on_rest_post(
-    "/wallet/token",
-    MetricsWalletRequest,
-    MetricsWalletResponse,
+    "/portfolio",
+    PortfolioRequest,
+    PortfolioResponse,
 )
 @authentication(configuration.agent_key)
-async def get_wallet_in_token(_ctx: Context, req: MetricsWalletRequest):
-    converted_token_balances = await get_basket_balance_in_token_use_case.execute(
-        Token(
-            id=req.token.id,
-            name=req.token.name,
-            display_name=req.token.display_name,
-            ticker=req.token.ticker,
-            address=req.token.address,
-        )
-    )
+async def get_portfolio(_ctx: Context, req: PortfolioRequest):
+    converted_token_balances = await get_portfolio_use_case.execute(req.to_domain())
 
-    return MetricsWalletResponse(
-        balances=[
-            ConvertedBalanceResponse(
-                sell_balance=BalanceResponse(
-                    amount=str(balance.sell_balance.amount),
-                    token=TokenResponse(
-                        name=balance.sell_balance.token.name,
-                        display_name=balance.sell_balance.token.display_name,
-                        ticker=balance.sell_balance.token.ticker,
-                        address=balance.sell_balance.token.address,
-                    ),
-                ),
-                buy_balance=BalanceResponse(
-                    amount=str(balance.buy_balance.amount),
-                    token=TokenResponse(
-                        name=balance.buy_balance.token.name,
-                        display_name=balance.buy_balance.token.display_name,
-                        ticker=balance.buy_balance.token.ticker,
-                        address=balance.buy_balance.token.address,
-                    ),
-                ),
-            )
-            for balance in converted_token_balances.balances
-        ],
-        total_balance=BalanceResponse(
-            amount=str(converted_token_balances.total_balance.amount),
-            token=TokenResponse(
-                name=converted_token_balances.total_balance.token.name,
-                display_name=converted_token_balances.total_balance.token.display_name,
-                ticker=converted_token_balances.total_balance.token.ticker,
-                address=converted_token_balances.total_balance.token.address,
-            ),
-        ),
-    )
+    return PortfolioResponse.from_domain(converted_token_balances)
 
 
 class OpenApiResponse(RootModel[dict[str, Any]]):

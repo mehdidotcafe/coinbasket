@@ -13,7 +13,7 @@ import json
 
 
 if TYPE_CHECKING:
-    from invest_agent.portfolio.infrastructure.sql_alchemy_posting_repository import (
+    from invest_agent.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
         PostingModel,
     )
 
