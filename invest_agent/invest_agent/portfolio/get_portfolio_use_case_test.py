@@ -69,18 +69,25 @@ async def test_get_portfolio_use_case_only_available_balance(
     investment_parameters: InvestmentParameters,
 ):
     chain.get_native_token_balance.return_value = BalanceAtomic(
-        asset=bnb_token, amount=Decimal("1000"), amount_atomic=1000 * 10**18
+        asset=bnb_token,
+        amount=Decimal("1000"),
+        amount_atomic=1000 * 10**18,
+        decimals=18,
     )
 
     exchange.convert_balance_to_token.side_effect = [
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal("1000"), amount_atomic=1000 * 10**18
+                asset=bnb_token,
+                amount=Decimal("1000"),
+                amount_atomic=1000 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 asset=usdt_token,
                 amount=Decimal("800000"),
                 amount_atomic=800000 * 10**18,
+                decimals=18,
             ),
         ),
     ]
@@ -90,7 +97,10 @@ async def test_get_portfolio_use_case_only_available_balance(
     chain.get_native_token_balance.assert_called_once()
     exchange.convert_balance_to_token.assert_called_once_with(
         balance=BalanceAtomic(
-            asset=bnb_token, amount=Decimal("1000"), amount_atomic=1000 * 10**18
+            asset=bnb_token,
+            amount=Decimal("1000"),
+            amount_atomic=1000 * 10**18,
+            decimals=18,
         ),
         token=usdt_token,
         investment_parameters=investment_parameters,
@@ -98,10 +108,16 @@ async def test_get_portfolio_use_case_only_available_balance(
 
     assert portfolio.available_balance == PortfolioBalance(
         native_balance=BalanceAtomic(
-            asset=bnb_token, amount=Decimal("1000"), amount_atomic=1000 * 10**18
+            asset=bnb_token,
+            amount=Decimal("1000"),
+            amount_atomic=1000 * 10**18,
+            decimals=18,
         ),
         converted_balance=BalanceAtomic(
-            asset=usdt_token, amount=Decimal("800000"), amount_atomic=800000 * 10**18
+            asset=usdt_token,
+            amount=Decimal("800000"),
+            amount_atomic=800000 * 10**18,
+            decimals=18,
         ),
     )
 
@@ -114,10 +130,16 @@ async def test_get_portfolio_use_case_only_pending_orders(
         Order(
             id="1",
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal("1.0"),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=eth_token, amount=Decimal("0.85"), amount_atomic=85 * 10**16
+                asset=eth_token,
+                amount=Decimal("0.85"),
+                amount_atomic=85 * 10**16,
+                decimals=18,
             ),
             type="BUY",
             tries=[],
@@ -128,10 +150,16 @@ async def test_get_portfolio_use_case_only_pending_orders(
         Order(
             id="2",
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal("1.0"),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=sol_token, amount=Decimal("4"), amount_atomic=4 * 10**18
+                asset=sol_token,
+                amount=Decimal("4"),
+                amount_atomic=4 * 10**18,
+                decimals=18,
             ),
             type="BUY",
             tries=[],
@@ -159,11 +187,19 @@ async def test_get_portfolio_use_case_holding_balances(
 ):
     holding_balances = [
         BalanceAtomic(
-            asset=wbnb_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18
+            asset=wbnb_token,
+            amount=Decimal("1.0"),
+            amount_atomic=1 * 10**18,
+            decimals=18,
         ),
-        BalanceAtomic(asset=sol_token, amount=Decimal("4"), amount_atomic=4 * 10**18),
         BalanceAtomic(
-            asset=eth_token, amount=Decimal("0.85"), amount_atomic=85 * 10**16
+            asset=sol_token, amount=Decimal("4"), amount_atomic=4 * 10**18, decimals=18
+        ),
+        BalanceAtomic(
+            asset=eth_token,
+            amount=Decimal("0.85"),
+            amount_atomic=85 * 10**16,
+            decimals=18,
         ),
     ]
 
@@ -171,39 +207,53 @@ async def test_get_portfolio_use_case_holding_balances(
     exchange.convert_balance_to_token.side_effect = [
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                asset=wbnb_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18
+                asset=wbnb_token,
+                amount=Decimal("1.0"),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=usdt_token, amount=Decimal("800.0"), amount_atomic=800 * 10**18
+                asset=usdt_token,
+                amount=Decimal("800.0"),
+                amount_atomic=800 * 10**18,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                asset=sol_token, amount=Decimal("4"), amount_atomic=4 * 10**18
+                asset=sol_token,
+                amount=Decimal("4"),
+                amount_atomic=4 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=usdt_token, amount=Decimal("600.0"), amount_atomic=600 * 10**18
+                asset=usdt_token,
+                amount=Decimal("600.0"),
+                amount_atomic=600 * 10**18,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                asset=eth_token, amount=Decimal("0.85"), amount_atomic=85 * 10**16
+                asset=eth_token,
+                amount=Decimal("0.85"),
+                amount_atomic=85 * 10**16,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 asset=usdt_token,
                 amount=Decimal("3956"),
                 amount_atomic=3956 * 10**18,
+                decimals=18,
             ),
         ),
         # Get available_balance mock
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal("0"), amount_atomic=0
+                asset=bnb_token, amount=Decimal("0"), amount_atomic=0, decimals=18
             ),
             buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("0"),
-                amount_atomic=0,
+                asset=usdt_token, amount=Decimal("0"), amount_atomic=0, decimals=18
             ),
         ),
     ]
@@ -215,21 +265,30 @@ async def test_get_portfolio_use_case_holding_balances(
         [
             mock.call.convert_balance_to_token(
                 balance=BalanceAtomic(
-                    asset=wbnb_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18
+                    asset=wbnb_token,
+                    amount=Decimal("1.0"),
+                    amount_atomic=1 * 10**18,
+                    decimals=18,
                 ),
                 token=usdt_token,
                 investment_parameters=investment_parameters,
             ),
             mock.call.convert_balance_to_token(
                 balance=BalanceAtomic(
-                    asset=sol_token, amount=Decimal("4"), amount_atomic=4 * 10**18
+                    asset=sol_token,
+                    amount=Decimal("4"),
+                    amount_atomic=4 * 10**18,
+                    decimals=18,
                 ),
                 token=usdt_token,
                 investment_parameters=investment_parameters,
             ),
             mock.call.convert_balance_to_token(
                 balance=BalanceAtomic(
-                    asset=eth_token, amount=Decimal("0.85"), amount_atomic=85 * 10**16
+                    asset=eth_token,
+                    amount=Decimal("0.85"),
+                    amount_atomic=85 * 10**16,
+                    decimals=18,
                 ),
                 token=usdt_token,
                 investment_parameters=investment_parameters,
@@ -240,28 +299,44 @@ async def test_get_portfolio_use_case_holding_balances(
     assert portfolio.holding_balances == [
         PortfolioBalance(
             native_balance=BalanceAtomic(
-                asset=wbnb_token, amount=Decimal("1.0"), amount_atomic=1 * 10**18
+                asset=wbnb_token,
+                amount=Decimal("1.0"),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             converted_balance=BalanceAtomic(
-                asset=usdt_token, amount=Decimal("800.0"), amount_atomic=800 * 10**18
+                asset=usdt_token,
+                amount=Decimal("800.0"),
+                amount_atomic=800 * 10**18,
+                decimals=18,
             ),
         ),
         PortfolioBalance(
             native_balance=BalanceAtomic(
-                asset=sol_token, amount=Decimal("4"), amount_atomic=4 * 10**18
+                asset=sol_token,
+                amount=Decimal("4"),
+                amount_atomic=4 * 10**18,
+                decimals=18,
             ),
             converted_balance=BalanceAtomic(
-                asset=usdt_token, amount=Decimal("600.0"), amount_atomic=600 * 10**18
+                asset=usdt_token,
+                amount=Decimal("600.0"),
+                amount_atomic=600 * 10**18,
+                decimals=18,
             ),
         ),
         PortfolioBalance(
             native_balance=BalanceAtomic(
-                asset=eth_token, amount=Decimal("0.85"), amount_atomic=85 * 10**16
+                asset=eth_token,
+                amount=Decimal("0.85"),
+                amount_atomic=85 * 10**16,
+                decimals=18,
             ),
             converted_balance=BalanceAtomic(
                 asset=usdt_token,
                 amount=Decimal("3956"),
                 amount_atomic=3956 * 10**18,
+                decimals=18,
             ),
         ),
     ]
@@ -276,33 +351,48 @@ async def test_get_portfolio_use_case_total_balance(
 ):
     holding_balances = [
         BalanceAtomic(
-            asset=eth_token, amount=Decimal("0.85"), amount_atomic=85 * 10**16
+            asset=eth_token,
+            amount=Decimal("0.85"),
+            amount_atomic=85 * 10**16,
+            decimals=18,
         ),
     ]
 
     chain.get_native_token_balance.return_value = BalanceAtomic(
-        asset=bnb_token, amount=Decimal("1000"), amount_atomic=1000 * 10**18
+        asset=bnb_token,
+        amount=Decimal("1000"),
+        amount_atomic=1000 * 10**18,
+        decimals=18,
     )
+    chain.get_token_decimals.return_value = 18
     posting_repository.get_holding_balances.return_value = holding_balances
     exchange.convert_balance_to_token.side_effect = [
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                asset=eth_token, amount=Decimal("0.85"), amount_atomic=85 * 10**16
+                asset=eth_token,
+                amount=Decimal("0.85"),
+                amount_atomic=85 * 10**16,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 asset=usdt_token,
                 amount=Decimal("3956"),
                 amount_atomic=3956 * 10**18,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal("1000"), amount_atomic=1000 * 10**18
+                asset=bnb_token,
+                amount=Decimal("1000"),
+                amount_atomic=1000 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 asset=usdt_token,
                 amount=Decimal("800000"),
                 amount_atomic=800000 * 10**18,
+                decimals=18,
             ),
         ),
     ]
@@ -313,4 +403,5 @@ async def test_get_portfolio_use_case_total_balance(
         asset=usdt_token,
         amount=Decimal("803956"),
         amount_atomic=803956 * 10**18,
+        decimals=18,
     )

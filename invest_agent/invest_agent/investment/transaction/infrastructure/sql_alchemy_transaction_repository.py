@@ -26,11 +26,13 @@ class TransactionModel(Base):
     sell_balance_asset: Mapped[str] = mapped_column(Text)
     sell_balance_amount: Mapped[str] = mapped_column(String)
     sell_balance_amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
+    sell_balance_decimals: Mapped[int] = mapped_column()
 
     buy_balance_asset_id: Mapped[str] = mapped_column(String())
     buy_balance_asset: Mapped[str] = mapped_column(Text)
     buy_balance_amount: Mapped[str] = mapped_column(String)
     buy_balance_amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
+    buy_balance_decimals: Mapped[int] = mapped_column()
 
     type: Mapped[str] = mapped_column(String)
     created_at: Mapped[int] = mapped_column(Integer)
@@ -56,10 +58,12 @@ class TransactionModel(Base):
             sell_balance_asset=json.dumps(transaction.sell_balance.asset.to_dict()),
             sell_balance_amount=str(transaction.sell_balance.amount),
             sell_balance_amount_atomic=transaction.sell_balance.amount_atomic,
+            sell_balance_decimals=transaction.sell_balance.decimals,
             buy_balance_asset_id=transaction.buy_balance.asset.id,
             buy_balance_asset=json.dumps(transaction.buy_balance.asset.to_dict()),
             buy_balance_amount=str(transaction.buy_balance.amount),
             buy_balance_amount_atomic=transaction.buy_balance.amount_atomic,
+            buy_balance_decimals=transaction.buy_balance.decimals,
             type=transaction.type,
             created_at=transaction.created_at,
             transaction_hash=transaction.transaction_hash,

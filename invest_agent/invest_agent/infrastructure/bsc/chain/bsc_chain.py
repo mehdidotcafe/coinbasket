@@ -87,6 +87,7 @@ class BscChain(Chain):
             asset=self.base_token,
             amount=Decimal(self.w3.from_wei(total_gas_cost, "ether")),
             amount_atomic=total_gas_cost,
+            decimals=18,
         )
 
     async def get_native_token_balance(self) -> BalanceAtomic[Token]:
@@ -98,6 +99,7 @@ class BscChain(Chain):
             asset=self.base_token,
             amount=amount,
             amount_atomic=amount_atomic,
+            decimals=18,
         )
 
     async def get_native_token_available_balance(self) -> BalanceAtomic[Token]:
@@ -114,6 +116,7 @@ class BscChain(Chain):
             asset=self.base_token,
             amount=balance.amount - min_balance.amount,
             amount_atomic=balance.amount_atomic - min_balance.amount_atomic,
+            decimals=18,
         )
 
     async def get_token_balance(self, token: Token) -> BalanceAtomic[Token]:
@@ -126,12 +129,12 @@ class BscChain(Chain):
             self.account.address
         ).call()
 
+        amount, decimals = await self.convert_amount_atomic_to_amount(
+            token=token, amount_atomic=amount_atomic
+        )
+
         return BalanceAtomic[Token](
-            asset=token,
-            amount=await self.convert_amount_atomic_to_amount(
-                token=token, amount_atomic=amount_atomic
-            ),
-            amount_atomic=amount_atomic,
+            asset=token, amount=amount, amount_atomic=amount_atomic, decimals=decimals
         )
 
     async def get_address_native_token_balance(
@@ -146,6 +149,7 @@ class BscChain(Chain):
             asset=self.base_token,
             amount=Decimal(self.w3.from_wei(amount_atomic, "ether")),
             amount_atomic=amount_atomic,
+            decimals=18,
         )
 
     async def get_address_token_balance(
@@ -159,14 +163,12 @@ class BscChain(Chain):
         amount_atomic = await token_contract.functions.balanceOf(
             self.w3.to_checksum_address(address)
         ).call()
-        amount = await self.convert_amount_atomic_to_amount(
+        amount, decimals = await self.convert_amount_atomic_to_amount(
             token=token, amount_atomic=amount_atomic
         )
 
         return BalanceAtomic[Token](
-            asset=token,
-            amount=amount,
-            amount_atomic=amount_atomic,
+            asset=token, amount=amount, amount_atomic=amount_atomic, decimals=decimals
         )
 
     def get_base_token(self):
@@ -303,7 +305,7 @@ class BscChain(Chain):
         return None
 
     @alru_cache
-    async def __get_token_decimals(self, token_address: str) -> int:
+    async def get_token_decimals(self, token_address: str) -> int:  # type: ignore
         token_contract = self.w3.eth.contract(
             address=self.w3.to_checksum_address(token_address),
             abi=self.erc20_token_abi,
@@ -317,18 +319,18 @@ class BscChain(Chain):
 
     async def convert_amount_to_amount_atomic(
         self, token: Token, amount_readable: AmountReadable
-    ) -> AmountAtomic:
-        decimals = await self.__get_token_decimals(token.address)
+    ) -> tuple[AmountAtomic, int]:
+        decimals = await self.get_token_decimals(token.address)
 
         return int(
             (Decimal(amount_readable) * Decimal(10**decimals)).to_integral_exact(
                 rounding=ROUND_DOWN
             )
-        )
+        ), decimals
 
     async def convert_amount_atomic_to_amount(
         self, token: Token, amount_atomic: AmountAtomic
-    ) -> AmountReadable:
-        decimals = await self.__get_token_decimals(token.address)
+    ) -> tuple[AmountReadable, int]:
+        decimals = await self.get_token_decimals(token.address)
 
-        return amount_atomic / Decimal(10**decimals)
+        return amount_atomic / Decimal(10**decimals), decimals

@@ -30,10 +30,16 @@ def current_orders_no_try():
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c1",
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal(1),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=eth_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+                asset=eth_token,
+                amount=Decimal(0.1),
+                amount_atomic=int(0.1 * 10**18),
+                decimals=18,
             ),
             type="BUY",
             created_at=1939494,
@@ -45,10 +51,16 @@ def current_orders_no_try():
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c2",
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal(1),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=usdt_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+                asset=usdt_token,
+                amount=Decimal(0.1),
+                amount_atomic=int(0.1 * 10**18),
+                decimals=18,
             ),
             type="BUY",
             created_at=1939494,
@@ -60,10 +72,16 @@ def current_orders_no_try():
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c3",
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal(1),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=sol_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+                asset=sol_token,
+                amount=Decimal(0.1),
+                amount_atomic=int(0.1 * 10**18),
+                decimals=18,
             ),
             type="BUY",
             created_at=1939494,
@@ -91,10 +109,16 @@ def current_orders_tries():
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c1",
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal(1),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=eth_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+                asset=eth_token,
+                amount=Decimal(0.1),
+                amount_atomic=int(0.1 * 10**18),
+                decimals=18,
             ),
             type="BUY",
             created_at=1939494,
@@ -111,6 +135,7 @@ def current_orders_tries():
                         asset=eth_token,
                         amount=Decimal(0.1),
                         amount_atomic=int(0.1 * 10**18),
+                        decimals=18,
                     ),
                     fees=None,
                     chain_transactions=[
@@ -130,10 +155,16 @@ def current_orders_tries():
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c2",
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal(1),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=usdt_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+                asset=usdt_token,
+                amount=Decimal(0.1),
+                amount_atomic=int(0.1 * 10**18),
+                decimals=18,
             ),
             type="BUY",
             created_at=1939494,
@@ -150,6 +181,7 @@ def current_orders_tries():
                         asset=usdt_token,
                         amount=Decimal(0.1),
                         amount_atomic=int(0.1 * 10**18),
+                        decimals=18,
                     ),
                     fees=None,
                     chain_transactions=[
@@ -169,10 +201,16 @@ def current_orders_tries():
         Order(
             id="641763c2-41e2-4af0-936f-32c1a84499c3",
             sell_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal(1),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                asset=sol_token, amount=Decimal(0.1), amount_atomic=int(0.1 * 10**18)
+                asset=sol_token,
+                amount=Decimal(0.1),
+                amount_atomic=int(0.1 * 10**18),
+                decimals=18,
             ),
             type="BUY",
             created_at=1939494,
@@ -189,6 +227,7 @@ def current_orders_tries():
                         asset=usdt_token,
                         amount=Decimal(0.1),
                         amount_atomic=int(0.1 * 10**18),
+                        decimals=18,
                     ),
                     fees=None,
                     chain_transactions=[],

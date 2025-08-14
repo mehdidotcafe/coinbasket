@@ -72,7 +72,7 @@ class ZeroXSwapper(Exchange):
         transactions_data: list[TransactionData | None] = []
         chain_id = await self.chain.get_chain_id()
 
-        amount_atomic = await self.chain.convert_amount_to_amount_atomic(
+        amount_atomic, _decimals = await self.chain.convert_amount_to_amount_atomic(
             token=order.sell_balance.asset,
             amount_readable=order.sell_balance.amount,
         )
@@ -143,15 +143,17 @@ class ZeroXSwapper(Exchange):
                     asset=balance.asset,
                     amount=balance.amount,
                     amount_atomic=balance.amount_atomic,
+                    decimals=balance.decimals,
                 ),
                 buy_balance=BalanceAtomic(
                     asset=token,
                     amount=balance.amount,
                     amount_atomic=balance.amount_atomic,
+                    decimals=balance.decimals,
                 ),
             )
 
-        amount_atomic = await self.chain.convert_amount_to_amount_atomic(
+        amount_atomic, _decimals = await self.chain.convert_amount_to_amount_atomic(
             token=balance.asset,
             amount_readable=balance.amount,
         )
@@ -168,21 +170,26 @@ class ZeroXSwapper(Exchange):
         sell_balance_amount_atomic = int(price.sellAmount)
         buy_balance_amount_atomic = int(price.buyAmount)
 
+        sell_amount, sell_decimals = await self.chain.convert_amount_atomic_to_amount(
+            amount_atomic=sell_balance_amount_atomic, token=balance.asset
+        )
+        buy_amount, buy_decimals = await self.chain.convert_amount_atomic_to_amount(
+            amount_atomic=buy_balance_amount_atomic,
+            token=token,
+        )
+
         return ConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=balance.asset,
-                amount=await self.chain.convert_amount_atomic_to_amount(
-                    amount_atomic=sell_balance_amount_atomic, token=balance.asset
-                ),
+                amount=sell_amount,
                 amount_atomic=sell_balance_amount_atomic,
+                decimals=sell_decimals,
             ),
             buy_balance=BalanceAtomic(
                 asset=token,
-                amount=await self.chain.convert_amount_atomic_to_amount(
-                    amount_atomic=buy_balance_amount_atomic,
-                    token=token,
-                ),
+                amount=buy_amount,
                 amount_atomic=buy_balance_amount_atomic,
+                decimals=buy_decimals,
             ),
         )
 

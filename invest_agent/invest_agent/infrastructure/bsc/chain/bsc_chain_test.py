@@ -183,9 +183,7 @@ async def test_bsc_chain_get_token_balance(bsc_chain: BscChain, w3: AsyncWeb3):
     balance = await bsc_chain.get_token_balance(token)
 
     assert balance == BalanceAtomic[Token](
-        asset=token,
-        amount=Decimal("1"),
-        amount_atomic=1000,
+        asset=token, amount=Decimal("1"), amount_atomic=1000, decimals=3
     )
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
     token_contract.functions.decimals.return_value.call.assert_called_once()
@@ -235,9 +233,7 @@ async def test_bsc_chain_get_address_token_balance(bsc_chain: BscChain, w3: Asyn
     balance = await bsc_chain.get_address_token_balance(address, token)
 
     assert balance == BalanceAtomic[Token](
-        asset=token,
-        amount=Decimal("1"),
-        amount_atomic=1000,
+        asset=token, amount=Decimal("1"), amount_atomic=1000, decimals=3
     )
 
     token_contract.functions.balanceOf.assert_called_once_with(
@@ -408,9 +404,12 @@ async def test_bsc_chain_convert_amount_to_amount_atomic_native_token(
     token_contract = mock.Mock()
     w3.eth.contract.return_value = token_contract
 
-    result = await bsc_chain.convert_amount_to_amount_atomic(bnb_token, amount_readable)
+    result_amount, result_decimals = await bsc_chain.convert_amount_to_amount_atomic(
+        bnb_token, amount_readable
+    )
 
-    assert result == amount_atomic
+    assert result_amount == amount_atomic
+    assert result_decimals == 18
 
 
 @mark.asyncio
@@ -426,13 +425,15 @@ async def test_bsc_chain_convert_amount_to_amount_atomic_token(
     )
     w3.eth.contract.return_value = token_contract
 
-    result = await bsc_chain.convert_amount_to_amount_atomic(
-        usdt_token, amount_readable
-    )
+    (
+        result_amount_atomic,
+        result_decimals,
+    ) = await bsc_chain.convert_amount_to_amount_atomic(usdt_token, amount_readable)
 
     token_contract.functions.decimals.return_value.call.assert_called_once()
 
-    assert result == amount_atomic
+    assert result_amount_atomic == amount_atomic
+    assert result_decimals == 10
 
 
 @mark.asyncio
@@ -442,11 +443,12 @@ async def test_bsc_chain_convert_amount_atomic_to_amount_native_token(
     amount_atomic = 1250000000000000000
     amount_readable = AmountReadable("1.25")
 
-    result = await bsc_chain.convert_amount_atomic_to_amount(
-        bsc_chain.get_base_token(), amount_atomic
+    result_amount, result_decimals = await bsc_chain.convert_amount_atomic_to_amount(
+        bnb_token, amount_atomic
     )
 
-    assert result == amount_readable
+    assert result_amount == amount_readable
+    assert result_decimals == 18
 
 
 @mark.asyncio
@@ -462,8 +464,11 @@ async def test_bsc_chain_convert_amount_atomic_to_amount_token(
     )
     w3.eth.contract.return_value = token_contract
 
-    result = await bsc_chain.convert_amount_atomic_to_amount(usdt_token, amount_atomic)
+    result_amount, result_decimals = await bsc_chain.convert_amount_atomic_to_amount(
+        usdt_token, amount_atomic
+    )
 
     token_contract.functions.decimals.return_value.call.assert_called_once()
 
-    assert result == amount_readable
+    assert result_amount == amount_readable
+    assert result_decimals == 10

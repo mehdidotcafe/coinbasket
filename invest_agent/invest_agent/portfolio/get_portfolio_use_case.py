@@ -1,7 +1,6 @@
 import asyncio
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import cast
 
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
@@ -51,12 +50,17 @@ class GetPortfolioUseCase:
     async def execute(self, conversion_token: Token):
         holding_balances = await self.__fetch_holding_balances(conversion_token)
         available_balance = await self.__fetch_available_balance(conversion_token)
+        conversion_token_decimals = await self.chain.get_token_decimals(
+            conversion_token.address
+        )
 
         return Portfolio(
             available_balance=available_balance,
             holding_balances=holding_balances,
             total_balance=self.__sum_balances(
-                [available_balance, *holding_balances], conversion_token
+                [available_balance, *holding_balances],
+                conversion_token,
+                conversion_token_decimals,
             ),
             pending_orders=await self.order_repository.get_pending_orders(),
         )
@@ -97,7 +101,12 @@ class GetPortfolioUseCase:
             for converted_balance in converted_balances
         ]
 
-    def __sum_balances(self, balances: list[PortfolioBalance], conversion_token: Token):
+    def __sum_balances(
+        self,
+        balances: list[PortfolioBalance],
+        conversion_token: Token,
+        conversion_token_decimals: int,
+    ):
         return BalanceAtomic(
             asset=conversion_token,
             amount=sum(
@@ -107,4 +116,5 @@ class GetPortfolioUseCase:
             amount_atomic=sum(
                 [balance.converted_balance.amount_atomic for balance in balances]
             ),
+            decimals=conversion_token_decimals,
         )

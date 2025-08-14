@@ -28,6 +28,7 @@ class PostingModel(Base):
     asset: Mapped[str] = mapped_column()
     amount: Mapped[str] = mapped_column()
     amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
+    decimals: Mapped[int] = mapped_column()
 
     transaction_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("transactions.id")
@@ -49,6 +50,7 @@ class PostingModel(Base):
                 asset=cast(Token, BalanceAtomic.deserialize_asset(self.asset)),
                 amount=Decimal(self.amount),
                 amount_atomic=int(self.amount_atomic),
+                decimals=self.decimals,
             ),
             type=self.type,
             created_at=self.created_at,
@@ -64,6 +66,7 @@ class PostingModel(Base):
             asset=json.dumps(posting.asset_balance.asset.to_dict()),
             amount=str(posting.asset_balance.amount),
             amount_atomic=posting.asset_balance.amount_atomic,
+            decimals=posting.asset_balance.decimals,
             created_at=posting.created_at,
             type=posting.type,
             basket_id=posting.basket_id,
@@ -88,6 +91,7 @@ class SqlAlchemyPostingRepository(PostingRepository):
                     PostingModel.asset_id,
                     # Select any asset value of the same asset_id
                     func.min(PostingModel.asset),
+                    func.min(PostingModel.decimals).label("decimals"),
                     func.sum(PostingModel.amount_atomic).label("total_amount_atomic"),
                 ).group_by(PostingModel.asset_id)
                 result = await session.execute(stmt)
@@ -96,8 +100,9 @@ class SqlAlchemyPostingRepository(PostingRepository):
                 return [
                     BalanceAtomic(
                         asset=cast(Token, BalanceAtomic.deserialize_asset(asset_json)),
-                        amount=Decimal(int(total_amount_atomic)) / Decimal(10**18),
+                        amount=total_amount_atomic / Decimal(10**decimals),
                         amount_atomic=int(total_amount_atomic),
+                        decimals=decimals,
                     )
-                    for asset_id, asset_json, total_amount_atomic in rows
+                    for _asset_id, asset_json, decimals, total_amount_atomic in rows
                 ]

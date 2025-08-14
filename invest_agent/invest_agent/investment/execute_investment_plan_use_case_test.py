@@ -45,15 +45,15 @@ def chain():
     chain = mock.Mock(spec=Chain)
 
     chain.get_base_token.return_value = bnb_token
-    chain.convert_amount_to_amount_atomic.side_effect = (
-        lambda token, amount_readable: int(
+    chain.convert_amount_to_amount_atomic.side_effect = lambda token, amount_readable: (
+        int(
             (Decimal(amount_readable) * (10**18)).to_integral_exact(rounding=ROUND_DOWN)
-        )
+        ),
+        18,
     )
-    chain.convert_amount_atomic_to_amount.side_effect = (
-        lambda token, amount_atomic: int(
-            (Decimal(amount_atomic) / (10**18)).to_integral_exact(rounding=ROUND_DOWN)
-        )
+    chain.convert_amount_atomic_to_amount.side_effect = lambda token, amount_atomic: (
+        int((Decimal(amount_atomic) / (10**18)).to_integral_exact(rounding=ROUND_DOWN)),
+        18,
     )
 
     return chain
@@ -126,11 +126,13 @@ async def test_execute_investment_plan_use_case_buy_only_tokens(
                     amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=wbnb_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -145,11 +147,13 @@ async def test_execute_investment_plan_use_case_buy_only_tokens(
                     amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.08"),
                     amount_atomic=int(0.08 * 10**18),
                     asset=eth_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -180,11 +184,13 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=wbnb_token,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
@@ -192,11 +198,13 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.10"),
                 amount_atomic=int(0.10 * 10**18),
                 asset=eth_token,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
@@ -204,11 +212,13 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 amount=Decimal("0.40"),
                 amount_atomic=int(0.40 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.30"),
                 amount_atomic=int(0.30 * 10**18),
                 asset=sol_token,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
@@ -216,9 +226,13 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 amount=Decimal("0.40"),
                 amount_atomic=int(0.40 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                amount=Decimal("60"), amount_atomic=int(60 * 10**18), asset=usdt_token
+                amount=Decimal("60"),
+                amount_atomic=int(60 * 10**18),
+                asset=usdt_token,
+                decimals=18,
             ),
         ),
     ]
@@ -270,6 +284,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 token=wbnb_token,
                 investment_parameters=investment_parameters,
@@ -279,6 +294,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 token=eth_token,
                 investment_parameters=investment_parameters,
@@ -288,6 +304,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     amount=Decimal("0.40"),
                     amount_atomic=int(0.40 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 token=sol_token,
                 investment_parameters=investment_parameters,
@@ -297,6 +314,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     amount=Decimal("0.40"),
                     amount_atomic=int(0.40 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 token=usdt_token,
                 investment_parameters=investment_parameters,
@@ -312,11 +330,13 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=wbnb_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -331,11 +351,13 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.10"),
                     amount_atomic=int(0.10 * 10**18),
                     asset=eth_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -350,11 +372,13 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     amount=Decimal("0.40"),
                     amount_atomic=int(0.40 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.30"),
                     amount_atomic=int(0.30 * 10**18),
                     asset=sol_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -369,11 +393,13 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     amount=Decimal("0.40"),
                     amount_atomic=int(0.40 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("60"),
                     amount_atomic=int(60 * 10**18),
                     asset=usdt_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -403,11 +429,13 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=wbnb_token,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
@@ -415,11 +443,13 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.08"),
                 amount_atomic=int(0.08 * 10**18),
                 asset=eth_token,
+                decimals=18,
             ),
         ),
     ]
@@ -461,11 +491,13 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=wbnb_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -480,11 +512,13 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.08"),
                     amount_atomic=int(0.08 * 10**18),
                     asset=eth_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -499,11 +533,13 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                     amount=Decimal("0.50"),
                     amount_atomic=int(0.50 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.50"),
                     amount_atomic=int(0.50 * 10**18),
                     asset=wbnb_token,
+                    decimals=18,
                 ),
                 type="BUY",
                 tries=[],
@@ -609,11 +645,13 @@ async def test_execute_investment_plan_use_case_sell_only_tokens(
                     amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=wbnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],
@@ -628,11 +666,13 @@ async def test_execute_investment_plan_use_case_sell_only_tokens(
                     amount=Decimal("0.08"),
                     amount_atomic=int(0.08 * 10**18),
                     asset=eth_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],
@@ -662,11 +702,13 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=wbnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
@@ -674,27 +716,41 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                 amount=Decimal("0.08"),
                 amount_atomic=int(0.08 * 10**18),
                 asset=eth_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                amount=Decimal("0.6"), amount_atomic=int(0.6 * 10**18), asset=sol_token
+                amount=Decimal("0.6"),
+                amount_atomic=int(0.6 * 10**18),
+                asset=sol_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                amount=Decimal("0.4"), amount_atomic=int(0.4 * 10**18), asset=bnb_token
+                amount=Decimal("0.4"),
+                amount_atomic=int(0.4 * 10**18),
+                asset=bnb_token,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
             sell_balance=BalanceAtomic(
-                amount=Decimal("0.2"), amount_atomic=int(0.2 * 10**18), asset=usdt_token
+                amount=Decimal("0.2"),
+                amount_atomic=int(0.2 * 10**18),
+                asset=usdt_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                amount=Decimal("0.4"), amount_atomic=int(0.4 * 10**18), asset=bnb_token
+                amount=Decimal("0.4"),
+                amount_atomic=int(0.4 * 10**18),
+                asset=bnb_token,
+                decimals=18,
             ),
         ),
     ]
@@ -746,28 +802,28 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
         [
             mock.call.convert_balance_to_token(
                 balance=BalanceAtomic(
-                    amount=Decimal("0"), amount_atomic=0, asset=wbnb_token
+                    amount=Decimal("0"), amount_atomic=0, asset=wbnb_token, decimals=18
                 ),
                 token=bnb_token,
                 investment_parameters=investment_parameters,
             ),
             mock.call.convert_balance_to_token(
                 balance=BalanceAtomic(
-                    amount=Decimal("0"), amount_atomic=0, asset=eth_token
+                    amount=Decimal("0"), amount_atomic=0, asset=eth_token, decimals=18
                 ),
                 token=bnb_token,
                 investment_parameters=investment_parameters,
             ),
             mock.call.convert_balance_to_token(
                 balance=BalanceAtomic(
-                    amount=Decimal("0"), amount_atomic=0, asset=sol_token
+                    amount=Decimal("0"), amount_atomic=0, asset=sol_token, decimals=18
                 ),
                 token=bnb_token,
                 investment_parameters=investment_parameters,
             ),
             mock.call.convert_balance_to_token(
                 balance=BalanceAtomic(
-                    amount=Decimal("0"), amount_atomic=0, asset=usdt_token
+                    amount=Decimal("0"), amount_atomic=0, asset=usdt_token, decimals=18
                 ),
                 token=bnb_token,
                 investment_parameters=investment_parameters,
@@ -783,11 +839,13 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=wbnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],
@@ -802,11 +860,13 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     amount=Decimal("0.08"),
                     amount_atomic=int(0.08 * 10**18),
                     asset=eth_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],
@@ -821,11 +881,13 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     amount=Decimal("0.6"),
                     amount_atomic=int(0.6 * 10**18),
                     asset=sol_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.4"),
                     amount_atomic=int(0.4 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],
@@ -840,11 +902,13 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     amount=Decimal("0.2"),
                     amount_atomic=int(0.2 * 10**18),
                     asset=usdt_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.4"),
                     amount_atomic=int(0.4 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],
@@ -873,11 +937,13 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=wbnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
         ),
         ConvertedBalance(
@@ -885,11 +951,13 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                 amount=Decimal("0.10"),
                 amount_atomic=int(0.10 * 10**18),
                 asset=eth_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
         ),
     ]
@@ -931,11 +999,13 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=wbnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],
@@ -950,11 +1020,13 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     amount=Decimal("0.10"),
                     amount_atomic=int(0.10 * 10**18),
                     asset=eth_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.25"),
                     amount_atomic=int(0.25 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],
@@ -969,11 +1041,13 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=wbnb_token,
+                    decimals=18,
                 ),
                 buy_balance=BalanceAtomic(
                     amount=Decimal("0.5"),
                     amount_atomic=int(0.5 * 10**18),
                     asset=bnb_token,
+                    decimals=18,
                 ),
                 type="SELL",
                 tries=[],

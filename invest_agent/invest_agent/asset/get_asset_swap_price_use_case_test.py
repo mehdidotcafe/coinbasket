@@ -30,11 +30,13 @@ def exchange():
 def chain():
     chain = mock.Mock(spec=Chain)
 
-    chain.convert_amount_to_amount_atomic.side_effect = (
-        lambda token, amount_readable: int(amount_readable * (10**18))
+    chain.convert_amount_to_amount_atomic.side_effect = lambda token, amount_readable: (
+        int(amount_readable * (10**18)),
+        18,
     )
-    chain.convert_amount_atomic_to_amount.side_effect = (
-        lambda token, amount_atomic: int(amount_atomic / (10**18))
+    chain.convert_amount_atomic_to_amount.side_effect = lambda token, amount_atomic: (
+        int(amount_atomic / (10**18)),
+        18,
     )
 
     return chain
@@ -60,11 +62,13 @@ async def test_get_asset_swap_price_use_case_sell_token_buy_token(
             asset=wbnb_token,
             amount=Decimal("1.0"),
             amount_atomic=to_atomic(Decimal("1.0")),
+            decimals=18,
         ),
         buy_balance=BalanceAtomic(
             asset=usdt_token,
             amount=Decimal("300.0"),
             amount_atomic=to_atomic(Decimal("300.0")),
+            decimals=18,
         ),
     )
 
@@ -75,6 +79,7 @@ async def test_get_asset_swap_price_use_case_sell_token_buy_token(
             asset=wbnb_token,
             amount=Decimal("1.0"),
             amount_atomic=to_atomic(Decimal("1.0")),
+            decimals=18,
         ),
         token=usdt_token,
         investment_parameters=InvestmentParameters(
@@ -87,11 +92,13 @@ async def test_get_asset_swap_price_use_case_sell_token_buy_token(
             asset=wbnb_token,
             amount=Decimal("1.0"),
             amount_atomic=to_atomic(Decimal("1.0")),
+            decimals=18,
         ),
         buy_balance=BalanceAtomic(
             asset=usdt_token,
             amount=Decimal("300.0"),
             amount_atomic=to_atomic(Decimal("300.0")),
+            decimals=18,
         ),
     )
 
@@ -111,11 +118,13 @@ async def test_get_asset_swap_price_use_case_buy_basket_sell_token(
             asset=wbnb_token,
             amount=Decimal("1.0"),
             amount_atomic=to_atomic(Decimal("1.0")),
+            decimals=18,
         ),
         buy_balance=BalanceAtomic(
             asset=usdt_token,
             amount=Decimal("3000.0"),
             amount_atomic=to_atomic(Decimal("3000.0")),
+            decimals=18,
         ),
     )
 
@@ -126,6 +135,7 @@ async def test_get_asset_swap_price_use_case_buy_basket_sell_token(
             asset=wbnb_token,
             amount=Decimal("1.0"),
             amount_atomic=to_atomic(Decimal("1.0")),
+            decimals=18,
         ),
         token=usdt_token,
         investment_parameters=InvestmentParameters(
@@ -138,11 +148,13 @@ async def test_get_asset_swap_price_use_case_buy_basket_sell_token(
             asset=wbnb_token,
             amount=Decimal("1.0"),
             amount_atomic=to_atomic(Decimal("1.0")),
+            decimals=18,
         ),
         buy_balance=BalanceAtomic(
             asset=big4_basket,
             amount=Decimal("300.0"),
             amount_atomic=to_atomic(Decimal("300.0")),
+            decimals=18,
         ),
     )
 
@@ -162,11 +174,13 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
             asset=usdt_token,
             amount=Decimal("50.0"),
             amount_atomic=to_atomic(Decimal("50.0")),
+            decimals=18,
         ),
         buy_balance=BalanceAtomic(
             asset=wbnb_token,
             amount=Decimal("60.0"),
             amount_atomic=to_atomic(Decimal("60.0")),
+            decimals=18,
         ),
     )
 
@@ -177,6 +191,7 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
             asset=usdt_token,
             amount=Decimal("500.0"),
             amount_atomic=to_atomic(Decimal("500.0")),
+            decimals=18,
         ),
         token=wbnb_token,
         investment_parameters=InvestmentParameters(
@@ -189,11 +204,13 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
             asset=wbnb_token,
             amount=Decimal("60.0"),
             amount_atomic=to_atomic(Decimal("60.0")),
+            decimals=18,
         ),
         sell_balance=BalanceAtomic(
             asset=big4_basket,
             amount=Decimal("50.0"),
             amount_atomic=to_atomic(Decimal("50.0")),
+            decimals=18,
         ),
     )
 

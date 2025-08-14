@@ -171,6 +171,7 @@ class OrderSubmitter:
                 asset=balance.asset,
                 amount=balance.amount * multiplier,
                 amount_atomic=balance.amount_atomic * multiplier,
+                decimals=balance.decimals,
             ),
             type=transaction.type,
             created_at=created_at,

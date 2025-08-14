@@ -94,13 +94,17 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def get_token_decimals(self, token_address: str) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
     async def convert_amount_to_amount_atomic(
         self, token: Token, amount_readable: AmountReadable
-    ) -> AmountAtomic:
+    ) -> tuple[AmountAtomic, int]:
         raise NotImplementedError
 
     @abstractmethod
     async def convert_amount_atomic_to_amount(
         self, token: Token, amount_atomic: AmountAtomic
-    ) -> AmountReadable:
+    ) -> tuple[AmountReadable, int]:
         raise NotImplementedError

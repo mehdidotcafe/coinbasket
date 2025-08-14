@@ -103,7 +103,7 @@ def tries():
             ],
             provider="MockExchange",
             buy_balance=BalanceAtomic(
-                amount=Decimal(0), amount_atomic=0, asset=sol_token
+                amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
             ),
         )
     ]
@@ -118,9 +118,10 @@ async def test_order_submitter_submit_orders(order_submitter: OrderSubmitter):
                 amount=Decimal("0.40"),
                 amount_atomic=int(0.40 * 10**18),
                 asset=bnb_token,
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
-                amount=Decimal(0), amount_atomic=0, asset=sol_token
+                amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
             ),
             type="BUY",
             tries=[],
@@ -149,9 +150,14 @@ async def test_order_submitter_submit_and_wait_order_without_tries(
     order = Order(
         id="1",
         sell_balance=BalanceAtomic(
-            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+            amount=Decimal("0.25"),
+            amount_atomic=int(0.25 * 10**18),
+            asset=bnb_token,
+            decimals=18,
         ),
-        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
+        buy_balance=BalanceAtomic(
+            amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
+        ),
         type="BUY",
         tries=[],
         created_at=1752268296,
@@ -201,9 +207,14 @@ async def test_order_submitter_submit_and_wait_order_with_tries(
     order = Order(
         id="1",
         sell_balance=BalanceAtomic(
-            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+            amount=Decimal("0.25"),
+            amount_atomic=int(0.25 * 10**18),
+            asset=bnb_token,
+            decimals=18,
         ),
-        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
+        buy_balance=BalanceAtomic(
+            amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
+        ),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -247,10 +258,13 @@ async def test_order_submitter_submit_and_wait_order_success(
     order = Order(
         id="1",
         sell_balance=BalanceAtomic(
-            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+            amount=Decimal("0.25"),
+            amount_atomic=int(0.25 * 10**18),
+            asset=bnb_token,
+            decimals=18,
         ),
         buy_balance=BalanceAtomic(
-            amount=Decimal(5), amount_atomic=5 * 10**18, asset=sol_token
+            amount=Decimal(5), amount_atomic=5 * 10**18, asset=sol_token, decimals=18
         ),
         type="BUY",
         tries=tries,
@@ -303,6 +317,7 @@ async def test_order_submitter_submit_and_wait_order_success(
                         asset=order.buy_balance.asset,
                         amount=Decimal("5"),
                         amount_atomic=int(5 * 10**18),
+                        decimals=18,
                     ),
                     type=order.type,
                     created_at=1752268296,
@@ -326,9 +341,14 @@ async def test_order_submitter_submit_and_wait_order_failed(
     order = Order(
         id="1",
         sell_balance=BalanceAtomic(
-            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+            amount=Decimal("0.25"),
+            amount_atomic=int(0.25 * 10**18),
+            asset=bnb_token,
+            decimals=18,
         ),
-        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
+        buy_balance=BalanceAtomic(
+            amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
+        ),
         type="BUY",
         tries=tries,
         created_at=1752268296,
@@ -381,9 +401,14 @@ async def test_order_submitter_submit_and_wait_order_retries(
     order = Order(
         id="1",
         sell_balance=BalanceAtomic(
-            amount=Decimal("0.25"), amount_atomic=int(0.25 * 10**18), asset=bnb_token
+            amount=Decimal("0.25"),
+            amount_atomic=int(0.25 * 10**18),
+            asset=bnb_token,
+            decimals=18,
         ),
-        buy_balance=BalanceAtomic(amount=Decimal(0), amount_atomic=0, asset=sol_token),
+        buy_balance=BalanceAtomic(
+            amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
+        ),
         type="BUY",
         tries=tries,
         created_at=1752268296,

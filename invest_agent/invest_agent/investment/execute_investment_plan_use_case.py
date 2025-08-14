@@ -133,10 +133,11 @@ class ExecuteInvestmentPlanUseCase:
         if isinstance(buy_balance.asset, Basket) and isinstance(
             sell_balance.asset, Token
         ):
-            sell_balance_amount_atomic = (
-                await self.chain.convert_amount_to_amount_atomic(
-                    token=sell_balance.asset, amount_readable=sell_balance.amount
-                )
+            (
+                sell_balance_amount_atomic,
+                sell_balance_decimals,
+            ) = await self.chain.convert_amount_to_amount_atomic(
+                token=sell_balance.asset, amount_readable=sell_balance.amount
             )
 
             return await self.__build_steps_for_buy_basket(
@@ -145,6 +146,7 @@ class ExecuteInvestmentPlanUseCase:
                     asset=sell_balance.asset,
                     amount=sell_balance.amount,
                     amount_atomic=sell_balance_amount_atomic,
+                    decimals=sell_balance_decimals,
                 ),
             )
         if isinstance(sell_balance.asset, Basket) and isinstance(
@@ -157,15 +159,17 @@ class ExecuteInvestmentPlanUseCase:
         if isinstance(sell_balance.asset, Token) and isinstance(
             buy_balance.asset, Token
         ):
-            buy_balance_amount_atomic = (
-                await self.chain.convert_amount_to_amount_atomic(
-                    token=buy_balance.asset, amount_readable=buy_balance.amount
-                )
+            (
+                buy_balance_amount_atomic,
+                buy_decimals,
+            ) = await self.chain.convert_amount_to_amount_atomic(
+                token=buy_balance.asset, amount_readable=buy_balance.amount
             )
-            sell_balance_amount_atomic = (
-                await self.chain.convert_amount_to_amount_atomic(
-                    token=sell_balance.asset, amount_readable=sell_balance.amount
-                )
+            (
+                sell_balance_amount_atomic,
+                sell_decimals,
+            ) = await self.chain.convert_amount_to_amount_atomic(
+                token=sell_balance.asset, amount_readable=sell_balance.amount
             )
 
             return [
@@ -174,11 +178,13 @@ class ExecuteInvestmentPlanUseCase:
                         asset=sell_balance.asset,
                         amount=sell_balance.amount,
                         amount_atomic=sell_balance_amount_atomic,
+                        decimals=sell_decimals,
                     ),
                     buy_balance=BalanceAtomic(
                         asset=buy_balance.asset,
                         amount=buy_balance.amount,
                         amount_atomic=buy_balance_amount_atomic,
+                        decimals=buy_decimals,
                     ),
                 )
             ]
@@ -209,8 +215,8 @@ class ExecuteInvestmentPlanUseCase:
                 flattened_basket_steps.append(
                     # TODO: Store basket info
                     FlattenedInvestmentStep(
-                        sell_balance=cast(BalanceAtomic[Token], result.sell_balance),
-                        buy_balance=cast(BalanceAtomic[Token], result.buy_balance),
+                        sell_balance=result.sell_balance,
+                        buy_balance=result.buy_balance,
                         basket_id=buy_balance.asset.id,
                     )
                 )
@@ -224,7 +230,7 @@ class ExecuteInvestmentPlanUseCase:
             self.exchange.convert_balance_to_token(
                 # TODO: Handle selling basket
                 balance=BalanceAtomic(
-                    asset=token, amount=Decimal("0"), amount_atomic=0
+                    asset=token, amount=Decimal("0"), amount_atomic=0, decimals=18
                 ),
                 token=buy_balance.asset,
                 investment_parameters=investment_parameters,
@@ -243,8 +249,8 @@ class ExecuteInvestmentPlanUseCase:
                 # TODO: Store basket info
                 flattened_basket_steps.append(
                     FlattenedInvestmentStep(
-                        sell_balance=cast(BalanceAtomic[Token], result.sell_balance),
-                        buy_balance=cast(BalanceAtomic[Token], result.buy_balance),
+                        sell_balance=result.sell_balance,
+                        buy_balance=result.buy_balance,
                         basket_id=sell_balance.asset.id,
                     )
                 )
@@ -264,4 +270,5 @@ class ExecuteInvestmentPlanUseCase:
                     rounding=ROUND_DOWN
                 )
             ),
+            decimals=balance.decimals,
         )

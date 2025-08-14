@@ -61,11 +61,13 @@ def zero_x_api_client():
 def chain():
     chain = mock.Mock(spec=Chain)
 
-    chain.convert_amount_to_amount_atomic.side_effect = (
-        lambda token, amount_readable: amount_readable * (10**18)
+    chain.convert_amount_to_amount_atomic.side_effect = lambda token, amount_readable: (
+        amount_readable * (10**18),
+        18,
     )
-    chain.convert_amount_atomic_to_amount.side_effect = (
-        lambda token, amount_atomic: amount_atomic / (10**18)
+    chain.convert_amount_atomic_to_amount.side_effect = lambda token, amount_atomic: (
+        amount_atomic / (10**18),
+        18,
     )
 
     return chain
@@ -96,10 +98,13 @@ def order():
     return Order(
         id="1",
         sell_balance=BalanceAtomic(
-            asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+            asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
         ),
         buy_balance=BalanceAtomic(
-            asset=eth_token, amount=Decimal(0.2), amount_atomic=int(0.2 * 10**18)
+            asset=eth_token,
+            amount=Decimal(0.2),
+            amount_atomic=int(0.2 * 10**18),
+            decimals=18,
         ),
         type="BUY",
         tries=[],
@@ -308,10 +313,16 @@ async def test_zero_x_swapper_build_transactions_data_with_approval(
         order=Order(
             id="2",
             buy_balance=BalanceAtomic(
-                asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18
+                asset=bnb_token,
+                amount=Decimal(1),
+                amount_atomic=1 * 10**18,
+                decimals=18,
             ),
             sell_balance=BalanceAtomic(
-                asset=eth_token, amount=Decimal(0.2), amount_atomic=int(0.2 * 10**18)
+                asset=eth_token,
+                amount=Decimal(0.2),
+                amount_atomic=int(0.2 * 10**18),
+                decimals=18,
             ),
             type="SELL",
             tries=[],

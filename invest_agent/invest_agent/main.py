@@ -964,9 +964,10 @@ class PortfolioRequest(Model):
 
 
 class BalanceAtomicResponse(Model):
+    asset: AssetResponse
     amount: str
     amount_atomic: str
-    asset: AssetResponse
+    decimals: int
 
     @staticmethod
     def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
@@ -977,6 +978,7 @@ class BalanceAtomicResponse(Model):
             asset=TokenResponse.from_domain(balance.asset)
             if isinstance(balance.asset, Token)
             else BasketResponse.from_domain(balance.asset),
+            decimals=balance.decimals,
         )
 
 

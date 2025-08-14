@@ -33,11 +33,13 @@ def orders():
                 asset=usdt_token,
                 amount=Decimal("100.00"),
                 amount_atomic=int(10000 * 10**16),
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 asset=usdt_token,
                 amount=Decimal("100.00"),
                 amount_atomic=int(10000 * 10**16),
+                decimals=18,
             ),
             type="BUY",
             tries=[],
@@ -51,11 +53,13 @@ def orders():
                 asset=usdt_token,
                 amount=Decimal("100.00"),
                 amount_atomic=int(10000 * 10**16),
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 asset=usdt_token,
                 amount=Decimal("100.00"),
                 amount_atomic=int(10000 * 10**16),
+                decimals=18,
             ),
             type="BUY",
             tries=[],
@@ -75,11 +79,13 @@ def transactions():
                 asset=usdt_token,
                 amount=Decimal("100.00"),
                 amount_atomic=int(10000 * 10**16),
+                decimals=18,
             ),
             buy_balance=BalanceAtomic(
                 asset=usdt_token,
                 amount=Decimal("100.00"),
                 amount_atomic=int(10000 * 10**16),
+                decimals=18,
             ),
             type="BUY",
             created_at=0,
@@ -100,6 +106,7 @@ def postings():
                 asset=sol_token,
                 amount=Decimal("3.54"),
                 amount_atomic=int(354 * 10**16),
+                decimals=18,
             ),
             created_at=0,
             type="BUY",
@@ -111,6 +118,7 @@ def postings():
                 asset=sol_token,
                 amount=Decimal("-1.22"),
                 amount_atomic=int(-122 * 10**16),
+                decimals=18,
             ),
             created_at=0,
             type="SELL",
@@ -122,6 +130,7 @@ def postings():
                 asset=eth_token,
                 amount=Decimal("4.00"),
                 amount_atomic=int(400 * 10**16),
+                decimals=18,
             ),
             created_at=0,
             type="BUY",
@@ -133,6 +142,7 @@ def postings():
                 asset=eth_token,
                 amount=Decimal("6.83"),
                 amount_atomic=int(683 * 10**16),
+                decimals=18,
             ),
             created_at=0,
             type="SELL",
@@ -144,6 +154,7 @@ def postings():
                 asset=usdt_token,
                 amount=Decimal("9.99"),
                 amount_atomic=int(999 * 10**16),
+                decimals=18,
             ),
             created_at=0,
             type="BUY",
@@ -168,7 +179,7 @@ async def seed_fixtures(
 
 
 # TODO: Enhance this test once zero_x API is mocked in integration tests
-def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, cleanup_all):
+def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, cleanup_all):  # noqa: F811
     response = requests.post(
         f"http://localhost:{agent_port}/portfolio",
         json={"agent_key": agent_key, "token": usdt_token.to_dict()},

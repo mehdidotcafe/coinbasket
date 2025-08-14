@@ -69,6 +69,7 @@ class BalanceAtomic(Balance, Generic[T]):
     asset: T
     amount: AmountReadable
     amount_atomic: AmountAtomic
+    decimals: int
 
     def serialize(self):
         """Serialize a balance to JSON."""
@@ -77,6 +78,7 @@ class BalanceAtomic(Balance, Generic[T]):
                 "asset": self.asset.to_dict(),
                 "amount": str(self.amount),
                 "amount_atomic": self.amount_atomic,
+                "decimals": self.decimals,
             }
         )
 
@@ -115,6 +117,7 @@ class BalanceAtomic(Balance, Generic[T]):
             asset=asset,
             amount=Decimal(balance_as_json["amount"]),
             amount_atomic=balance_as_json["amount_atomic"],
+            decimals=balance_as_json["decimals"],
         )
 
     @staticmethod

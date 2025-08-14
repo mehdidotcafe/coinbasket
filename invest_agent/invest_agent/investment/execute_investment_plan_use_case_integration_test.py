@@ -115,16 +115,11 @@ async def test_integration_execute_investment_plan_use_case(
 
     postings = list(await fetch_all_postings())
 
-    assert len(postings) == 8
+    # Sell balances MUST NOT create a posting as they are using native token (BNB)
+    assert len(postings) == 4
 
     # Check if all buy balances are reflected in postings
     assert all(
         transaction.buy_balance_asset_id in [posting.asset_id for posting in postings]
-        for transaction in transactions
-    )
-
-    # Check if all sell balances are reflected in postings
-    assert all(
-        transaction.sell_balance_asset_id in [posting.asset_id for posting in postings]
         for transaction in transactions
     )
