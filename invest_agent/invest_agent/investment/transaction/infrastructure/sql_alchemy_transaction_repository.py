@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy import String, Integer, Text
+from sqlalchemy import ForeignKey, String, Integer, Text
 from invest_agent.investment.transaction.transaction import Transaction
 from invest_agent.investment.transaction.transaction_repository import (
     TransactionRepository,
@@ -15,6 +15,9 @@ import json
 if TYPE_CHECKING:
     from invest_agent.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
         PostingModel,
+    )
+    from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
+        OrderModel,
     )
 
 
@@ -37,7 +40,7 @@ class TransactionModel(Base):
     type: Mapped[str] = mapped_column(String)
     created_at: Mapped[int] = mapped_column(Integer)
     transaction_hash: Mapped[str] = mapped_column(String)
-    order_id: Mapped[str] = mapped_column(String(36))
+    order_id: Mapped[str] = mapped_column(String(36), ForeignKey("orders.id"))
     trigger: Mapped[str] = mapped_column(String)
     fees: Mapped[str | None] = mapped_column(Text, nullable=True)
     basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
@@ -47,6 +50,11 @@ class TransactionModel(Base):
         back_populates="transaction",
         lazy="selectin",
         cascade="all, delete-orphan",
+    )
+
+    order: Mapped["OrderModel"] = relationship(
+        "OrderModel",
+        back_populates="transactions",
     )
 
     @staticmethod

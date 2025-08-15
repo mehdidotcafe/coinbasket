@@ -1,6 +1,6 @@
 from decimal import Decimal
 import json
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
 from invest_agent.investment.fees import Fees
 from protocol.token import Token
@@ -22,6 +22,11 @@ from invest_agent.investment.order.order import (
     Id,
 )
 from invest_agent.investment.order.order_repository import OrderRepository
+
+if TYPE_CHECKING:
+    from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
+        TransactionModel,
+    )
 
 
 class OrderTryChainTransactionModel(Base):
@@ -155,9 +160,15 @@ class OrderModel(Base):
     trigger: Mapped[str] = mapped_column()
     basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
 
-    # Relationship to OrderTryModel
     tries: Mapped[list[OrderTryModel]] = relationship(
         "OrderTryModel",
+        back_populates="order",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+
+    transactions: Mapped[list["TransactionModel"]] = relationship(
+        "TransactionModel",
         back_populates="order",
         lazy="selectin",
         cascade="all, delete-orphan",

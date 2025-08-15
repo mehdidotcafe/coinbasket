@@ -20,8 +20,8 @@ async def cleanup_all():
     yield
     async with make_session() as session:
         async with session.begin():
+            await session.execute(delete(PostingModel))
+            await session.execute(delete(TransactionModel))
             await session.execute(delete(OrderTryChainTransactionModel))
             await session.execute(delete(OrderTryModel))
             await session.execute(delete(OrderModel))
-            await session.execute(delete(PostingModel))
-            await session.execute(delete(TransactionModel))
