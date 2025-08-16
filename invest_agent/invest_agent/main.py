@@ -7,6 +7,9 @@ from invest_agent.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
     GetAssetSwapPriceUseCase,
 )
+from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
+    BscTransactionReceiptParser,
+)
 from invest_agent.investment.exchange.exchange import ConvertedBalance
 from invest_agent.investment.fees import Fees
 from invest_agent.investment.investment_planner.investment_plan import (
@@ -58,7 +61,7 @@ from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_clie
     AiohttpAgentToAgentClient,
 )
 from invest_agent.conversation.conversation_use_case import ConversationUseCase
-from invest_agent.infrastructure.bsc.chain.nonce_manager import NonceManager
+from invest_agent.chain.infrastructure.bsc.nonce_manager import NonceManager
 from invest_agent.investment.execute_pending_orders_use_case import (
     ExecutePendingOrdersUseCase,
 )
@@ -88,8 +91,8 @@ from langchain_core.messages import SystemMessage
 
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
-from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
-from invest_agent.infrastructure.bsc.chain.bsc_contract import BscContract
+from invest_agent.chain.infrastructure.bsc.bsc_chain import BscChain
+from invest_agent.chain.infrastructure.bsc.bsc_contract import BscContract
 from invest_agent.configuration import Configuration
 from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
     FetchAiStorage,
@@ -138,9 +141,13 @@ nonce_manager = NonceManager(
         "private_key": configuration.bsc_private_key,
     },
 )
+transaction_receipt_parser = BscTransactionReceiptParser(w3=w3)
 
 chain = BscChain(
-    w3=w3, nonce_manager=nonce_manager, private_key=configuration.bsc_private_key
+    w3=w3,
+    nonce_manager=nonce_manager,
+    private_key=configuration.bsc_private_key,
+    transaction_receipt_parser=transaction_receipt_parser,
 )
 
 contract = BscContract(w3=w3)

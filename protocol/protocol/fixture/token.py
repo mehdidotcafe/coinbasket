@@ -56,3 +56,11 @@ shib_token = Token(
     ticker="SHIB",
     address="0x2859e4544c4bb03966803b044a93563bd2d0dd4d",
 )
+
+cake_token = Token(
+    id="bsc:0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+    name="PancakeSwap",
+    display_name="PancakeSwap",
+    ticker="CAKE",
+    address="0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+)

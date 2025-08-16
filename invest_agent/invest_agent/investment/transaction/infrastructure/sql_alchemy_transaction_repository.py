@@ -37,6 +37,18 @@ class TransactionModel(Base):
     buy_balance_amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
     buy_balance_decimals: Mapped[int] = mapped_column()
 
+    executed_buy_balance_asset_id: Mapped[str] = mapped_column(String())
+    executed_buy_balance_asset: Mapped[str] = mapped_column()
+    executed_buy_balance_amount: Mapped[str] = mapped_column()
+    executed_buy_balance_amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
+    executed_buy_balance_decimals: Mapped[int] = mapped_column()
+
+    executed_sell_balance_asset_id: Mapped[str] = mapped_column(String())
+    executed_sell_balance_asset: Mapped[str] = mapped_column()
+    executed_sell_balance_amount: Mapped[str] = mapped_column()
+    executed_sell_balance_amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
+    executed_sell_balance_decimals: Mapped[int] = mapped_column()
+
     type: Mapped[str] = mapped_column(String)
     created_at: Mapped[int] = mapped_column(Integer)
     transaction_hash: Mapped[str] = mapped_column(String)
@@ -72,6 +84,20 @@ class TransactionModel(Base):
             buy_balance_amount=str(transaction.buy_balance.amount),
             buy_balance_amount_atomic=transaction.buy_balance.amount_atomic,
             buy_balance_decimals=transaction.buy_balance.decimals,
+            executed_sell_balance_asset_id=transaction.executed_sell_balance.asset.id,
+            executed_sell_balance_asset=json.dumps(
+                transaction.executed_sell_balance.asset.to_dict()
+            ),
+            executed_sell_balance_amount=str(transaction.executed_sell_balance.amount),
+            executed_sell_balance_amount_atomic=transaction.executed_sell_balance.amount_atomic,
+            executed_sell_balance_decimals=transaction.executed_sell_balance.decimals,
+            executed_buy_balance_asset_id=transaction.executed_buy_balance.asset.id,
+            executed_buy_balance_asset=json.dumps(
+                transaction.executed_buy_balance.asset.to_dict()
+            ),
+            executed_buy_balance_amount=str(transaction.executed_buy_balance.amount),
+            executed_buy_balance_amount_atomic=transaction.executed_buy_balance.amount_atomic,
+            executed_buy_balance_decimals=transaction.executed_buy_balance.decimals,
             type=transaction.type,
             created_at=transaction.created_at,
             transaction_hash=transaction.transaction_hash,

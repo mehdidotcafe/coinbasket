@@ -1,10 +1,13 @@
 import asyncio
 from decimal import Decimal
 from invest_agent.chain.balance import BalanceAtomic
-from invest_agent.chain.chain import Chain
+from invest_agent.chain.chain import Chain, ParsedReceipt
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_parameters import InvestmentParameters
+from invest_agent.investment.order.exception.order_without_send_transaction import (
+    OrderWithoutSendTransaction,
+)
 from invest_agent.investment.order.order import ChainTransaction, Order, Try
 from invest_agent.investment.order.order_repository import OrderRepository
 from invest_agent.investment.transaction.transaction import Transaction
@@ -55,11 +58,9 @@ class OrderSubmitter:
         """
         await self.order_repository.create_order(order)
 
-        is_success_pending_chain_transactions = (
-            await self.__handle_pending_chain_transactions(order)
-        )
+        parsed_receipt = await self.__handle_pending_chain_transactions(order)
 
-        if is_success_pending_chain_transactions:
+        if parsed_receipt:
             return
 
         for _ in range(self.MAX_RETRIES):
@@ -105,12 +106,14 @@ class OrderSubmitter:
 
                 await self.order_repository.add_order_try(order.id, order_try)
 
-                is_success = await self.__wait_chain_transactions(chain_transactions)
+                parsed_receipt = await self.__wait_chain_transactions(
+                    order, chain_transactions
+                )
 
-                if is_success:
+                if parsed_receipt:
                     created_at = self.date_time.now()
                     transaction = self.__map_order_to_transaction(
-                        order, order_try, created_at
+                        order, order_try, created_at, parsed_receipt
                     )
 
                     await self.order_repository.set_order_to_success(order.id)
@@ -120,7 +123,7 @@ class OrderSubmitter:
                         await self.posting_repository.create_posting(
                             self.__map_transaction_to_posting(
                                 transaction=transaction,
-                                balance=transaction.sell_balance,
+                                balance=parsed_receipt.executed_sell_balance,
                                 created_at=created_at,
                                 multiplier=-1,
                             )
@@ -129,7 +132,7 @@ class OrderSubmitter:
                         await self.posting_repository.create_posting(
                             self.__map_transaction_to_posting(
                                 transaction=transaction,
-                                balance=transaction.buy_balance,
+                                balance=parsed_receipt.executed_buy_balance,
                                 created_at=created_at,
                                 multiplier=1,
                             )
@@ -142,12 +145,18 @@ class OrderSubmitter:
         await self.order_repository.set_order_to_fail(order.id)
 
     def __map_order_to_transaction(
-        self, order: Order, order_try: Try, created_at: int
+        self,
+        order: Order,
+        order_try: Try,
+        created_at: int,
+        parsed_receipt: ParsedReceipt,
     ) -> Transaction:
         return Transaction(
             id=order.id,
             sell_balance=order.sell_balance,
             buy_balance=order.buy_balance,
+            executed_sell_balance=parsed_receipt.executed_sell_balance,
+            executed_buy_balance=parsed_receipt.executed_buy_balance,
             type=order.type,
             created_at=created_at,
             fees=order_try.fees,
@@ -188,18 +197,22 @@ class OrderSubmitter:
         if last_try is None:
             return False
 
-        is_success = await self.__wait_chain_transactions(last_try.chain_transactions)
+        parsed_receipt = await self.__wait_chain_transactions(
+            order, last_try.chain_transactions
+        )
 
-        if is_success:
+        if parsed_receipt:
             created_at = self.date_time.now()
-            transaction = self.__map_order_to_transaction(order, last_try, created_at)
+            transaction = self.__map_order_to_transaction(
+                order, last_try, created_at, parsed_receipt
+            )
 
             await self.order_repository.set_order_to_success(order.id)
             await self.transaction_repository.create_transaction(transaction)
             await self.posting_repository.create_posting(
                 self.__map_transaction_to_posting(
                     transaction=transaction,
-                    balance=transaction.sell_balance,
+                    balance=parsed_receipt.executed_sell_balance,
                     created_at=created_at,
                     multiplier=-1,
                 )
@@ -207,21 +220,26 @@ class OrderSubmitter:
             await self.posting_repository.create_posting(
                 self.__map_transaction_to_posting(
                     transaction=transaction,
-                    balance=transaction.buy_balance,
+                    balance=parsed_receipt.executed_buy_balance,
                     created_at=created_at,
                     multiplier=1,
                 )
             )
 
-        return is_success
+        return parsed_receipt
 
     async def __wait_chain_transactions(
-        self, chain_transactions: list[ChainTransaction]
+        self, order: Order, chain_transactions: list[ChainTransaction]
     ):
+        send_chain_transaction = None
+
         if len(chain_transactions) == 0:
             return False
 
         for chain_transaction in chain_transactions:
+            if chain_transaction.type == "SEND":
+                send_chain_transaction = chain_transaction
+
             if chain_transaction.status == "FAIL":
                 return False
             if chain_transaction.status == "SUCCESS":
@@ -240,4 +258,13 @@ class OrderSubmitter:
                 chain_transaction.id
             )
 
-        return True
+        if not send_chain_transaction:
+            raise OrderWithoutSendTransaction()
+
+        parsed_transaction_receipt = await self.chain.parse_transaction_receipt(
+            sell_token=order.sell_balance.asset,
+            buy_token=order.buy_balance.asset,
+            transaction_hash=send_chain_transaction.hash,
+        )
+
+        return parsed_transaction_receipt

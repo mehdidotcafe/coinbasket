@@ -5,7 +5,10 @@ from eth_typing import HexStr
 from eth_account.signers.local import LocalAccount
 from hexbytes import HexBytes
 from invest_agent.chain.exception.insufficient_balance import InsufficientBalance
-from invest_agent.infrastructure.bsc.chain.nonce_manager import NonceManager
+from invest_agent.chain.infrastructure.bsc.nonce_manager import NonceManager
+from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
+    BscTransactionReceiptParser,
+)
 from tenacity import retry, stop_after_attempt, wait_fixed
 from web3 import AsyncWeb3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
@@ -17,7 +20,7 @@ from invest_agent.chain.balance import (
     AmountReadable,
     BalanceAtomic,
 )
-from invest_agent.chain.chain import Chain, Gas
+from invest_agent.chain.chain import Chain, Gas, ParsedReceipt
 
 from async_lru import alru_cache
 
@@ -33,10 +36,12 @@ class BscChain(Chain):
         self,
         w3: AsyncWeb3,
         nonce_manager: NonceManager,
+        transaction_receipt_parser: BscTransactionReceiptParser,
         private_key: str,
     ):
         self.w3 = w3
         self.nonce_manager = nonce_manager
+        self.transaction_receipt_parser = transaction_receipt_parser
         self.private_key = private_key
         self.base_token = Token(
             id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
@@ -47,7 +52,9 @@ class BscChain(Chain):
         )
 
         with open(
-            "./invest_agent/infrastructure/bsc/chain/erc20_token_abi.json", "r"
+            "./invest_agent/chain/infrastructure/bsc/erc20_token_abi.json",
+            "r",
+            encoding="utf-8",
         ) as f:
             self.erc20_token_abi = json.load(f)
 
@@ -262,7 +269,39 @@ class BscChain(Chain):
                 f"Transaction failed: {transaction_hash} {await self.__simulate_transaction(transaction_hash, receipt['blockNumber'])}"
             )
 
+        print(f"Receipt: {receipt}")
+
         return receipt["status"] == 1
+
+    async def parse_transaction_receipt(
+        self, sell_token: Token, buy_token: Token, transaction_hash: str
+    ) -> ParsedReceipt:
+        receipt = await self.w3.eth.get_transaction_receipt(HexBytes(transaction_hash))
+
+        return await self.transaction_receipt_parser.parse_receipt(
+            address=self.account.address,
+            sell_token=sell_token,
+            buy_token=buy_token,
+            receipt=receipt,
+        )
+
+    async def convert_amount_to_amount_atomic(
+        self, token: Token, amount_readable: AmountReadable
+    ) -> tuple[AmountAtomic, int]:
+        decimals = await self.get_token_decimals(token.address)
+
+        return int(
+            (Decimal(amount_readable) * Decimal(10**decimals)).to_integral_exact(
+                rounding=ROUND_DOWN
+            )
+        ), decimals
+
+    async def convert_amount_atomic_to_amount(
+        self, token: Token, amount_atomic: AmountAtomic
+    ) -> tuple[AmountReadable, int]:
+        decimals = await self.get_token_decimals(token.address)
+
+        return amount_atomic / Decimal(10**decimals), decimals
 
     async def __compute_eip1559_gas_estimate(self):
         """Compute gas estimate for EIP-1559 transactions."""
@@ -311,26 +350,12 @@ class BscChain(Chain):
             abi=self.erc20_token_abi,
         )
 
-        return (
-            await token_contract.functions.decimals().call()
-            if not self.__is_native_token_address(token_address)
-            else 18
-        )
-
-    async def convert_amount_to_amount_atomic(
-        self, token: Token, amount_readable: AmountReadable
-    ) -> tuple[AmountAtomic, int]:
-        decimals = await self.get_token_decimals(token.address)
-
-        return int(
-            (Decimal(amount_readable) * Decimal(10**decimals)).to_integral_exact(
-                rounding=ROUND_DOWN
+        try:
+            return (
+                await token_contract.functions.decimals().call()
+                if not self.__is_native_token_address(token_address)
+                else 18
             )
-        ), decimals
-
-    async def convert_amount_atomic_to_amount(
-        self, token: Token, amount_atomic: AmountAtomic
-    ) -> tuple[AmountReadable, int]:
-        decimals = await self.get_token_decimals(token.address)
-
-        return amount_atomic / Decimal(10**decimals), decimals
+        except Exception as e:
+            print(f"Error getting decimals for {token_address}: {e}")
+            return 18

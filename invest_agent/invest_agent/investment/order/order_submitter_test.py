@@ -1,7 +1,7 @@
 from decimal import Decimal
 from unittest import mock
 from invest_agent.chain.balance import BalanceAtomic
-from invest_agent.chain.chain import Chain
+from invest_agent.chain.chain import Chain, ParsedReceipt
 from invest_agent.investment.exchange.exchange import Exchange, TransactionData
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.investment_parameters import InvestmentParameters
@@ -288,6 +288,20 @@ async def test_order_submitter_submit_and_wait_order_success(
     date_time.now.return_value = 1752268296
     chain.sign_send_transaction.return_value = "12345"
     chain.wait_transaction.return_value = True
+    chain.parse_transaction_receipt.return_value = ParsedReceipt(
+        executed_sell_balance=BalanceAtomic(
+            amount=Decimal("0.33"),
+            amount_atomic=int(0.33 * 10**18),
+            asset=bnb_token,
+            decimals=18,
+        ),
+        executed_buy_balance=BalanceAtomic(
+            amount=Decimal("5.12"),
+            amount_atomic=512 * 10**16,
+            asset=sol_token,
+            decimals=18,
+        ),
+    )
 
     await order_submitter.submit_and_wait_order(order)
 
@@ -297,6 +311,18 @@ async def test_order_submitter_submit_and_wait_order_success(
             id=order.id,
             sell_balance=order.sell_balance,
             buy_balance=order.buy_balance,
+            executed_buy_balance=BalanceAtomic(
+                amount=Decimal("5.12"),
+                amount_atomic=512 * 10**16,
+                asset=sol_token,
+                decimals=18,
+            ),
+            executed_sell_balance=BalanceAtomic(
+                amount=Decimal("0.33"),
+                amount_atomic=int(0.33 * 10**18),
+                asset=bnb_token,
+                decimals=18,
+            ),
             type=order.type,
             created_at=1752268296,
             fees=None,
@@ -314,9 +340,9 @@ async def test_order_submitter_submit_and_wait_order_success(
                     id=order.id,
                     transaction_id=order.id,
                     asset_balance=BalanceAtomic(
-                        asset=order.buy_balance.asset,
-                        amount=Decimal("5"),
-                        amount_atomic=int(5 * 10**18),
+                        amount=Decimal("5.12"),
+                        amount_atomic=512 * 10**16,
+                        asset=sol_token,
                         decimals=18,
                     ),
                     type=order.type,

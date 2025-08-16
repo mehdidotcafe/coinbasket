@@ -14,6 +14,7 @@ PostingType = Literal["SELL", "BUY", "SWAP"]
 class Posting:
     id: Id
     transaction_id: Id
+    # Executed asset balance
     asset_balance: BalanceAtomic[Token]
     created_at: int
     type: PostingType

@@ -1,10 +1,14 @@
+from typing import Any
 from unittest import mock
 from eth_typing import HexStr
 from hexbytes import HexBytes
 from invest_agent.chain.balance import AmountReadable, BalanceAtomic
-from invest_agent.chain.chain import Gas
+from invest_agent.chain.chain import Gas, ParsedReceipt
 from invest_agent.chain.exception.insufficient_balance import InsufficientBalance
-from invest_agent.infrastructure.bsc.chain.nonce_manager import NonceManager
+from invest_agent.chain.infrastructure.bsc.nonce_manager import NonceManager
+from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
+    BscTransactionReceiptParser,
+)
 from pytest import fixture, mark, raises
 from decimal import Decimal
 from web3 import AsyncWeb3
@@ -14,7 +18,7 @@ from web3.eth import AsyncEth
 
 from protocol.token import Token
 from protocol.fixture.token import eth_token, usdt_token
-from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
+from invest_agent.chain.infrastructure.bsc.bsc_chain import BscChain
 
 from eth_account.signers.local import LocalAccount
 
@@ -51,11 +55,21 @@ def nonce_manager():
 
 
 @fixture
-def bsc_chain(w3: AsyncWeb3, nonce_manager: NonceManager):
+def transaction_receipt_parser():
+    return mock.Mock(spec=BscTransactionReceiptParser)
+
+
+@fixture
+def bsc_chain(
+    w3: AsyncWeb3,
+    nonce_manager: NonceManager,
+    transaction_receipt_parser: BscTransactionReceiptParser,
+):
     return BscChain(
         w3=w3,
         private_key="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
         nonce_manager=nonce_manager,
+        transaction_receipt_parser=transaction_receipt_parser,
     )
 
 
@@ -392,6 +406,54 @@ async def test_bsc_chain_wait_transaction_failure(bsc_chain: BscChain, w3: Async
     w3.eth.wait_for_transaction_receipt.assert_called_once_with(HexBytes("0x123994844"))
 
     assert not is_success
+
+
+@mark.asyncio
+async def test_bsc_chain_parse_transaction_receipt(
+    bsc_chain: BscChain,
+    w3: AsyncWeb3,
+    transaction_receipt_parser: BscTransactionReceiptParser,
+):
+    transaction_hash = "0x123994844"
+    sell_token = usdt_token
+    buy_token = bnb_token
+    parsed_receipt = ParsedReceipt(
+        executed_sell_balance=BalanceAtomic(
+            amount=Decimal("0.33"),
+            amount_atomic=int(0.33 * 10**18),
+            asset=bnb_token,
+            decimals=18,
+        ),
+        executed_buy_balance=BalanceAtomic(
+            amount=Decimal("5.12"),
+            amount_atomic=512 * 10**16,
+            asset=usdt_token,
+            decimals=18,
+        ),
+    )
+    receipt: dict[str, Any] = {
+        "type": 0,
+        "status": 1,
+        "cumulativeGasUsed": 144955,
+        "logs": [],
+    }
+
+    w3.eth.get_transaction_receipt.return_value = receipt
+
+    transaction_receipt_parser.parse_receipt.return_value = parsed_receipt
+
+    result = await bsc_chain.parse_transaction_receipt(
+        sell_token=sell_token, buy_token=buy_token, transaction_hash=transaction_hash
+    )
+
+    transaction_receipt_parser.parse_receipt.assert_called_once_with(
+        address="0x1234567890abcdef1234567890abcdef12345678",
+        sell_token=sell_token,
+        buy_token=buy_token,
+        receipt=receipt,
+    )
+
+    assert result == parsed_receipt
 
 
 @mark.asyncio

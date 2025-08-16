@@ -11,7 +11,7 @@ class BscContract(Contract):
         self.w3 = w3
 
         with open(
-            "./invest_agent/infrastructure/bsc/chain/erc20_token_abi.json",
+            "./invest_agent/chain/infrastructure/bsc/erc20_token_abi.json",
             "r",
             encoding="utf-8",
         ) as f:
@@ -40,4 +40,4 @@ class BscContract(Contract):
 
         return token_contract.functions.approve(
             self.w3.to_checksum_address(spender_address), int(amount)
-        )._encode_transaction_data()
+        )._encode_transaction_data()  # type: ignore

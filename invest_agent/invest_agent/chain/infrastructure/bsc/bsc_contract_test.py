@@ -4,7 +4,7 @@ from pytest import fixture, mark
 from web3 import AsyncWeb3
 from web3.eth import AsyncEth
 
-from invest_agent.infrastructure.bsc.chain.bsc_contract import BscContract
+from invest_agent.chain.infrastructure.bsc.bsc_contract import BscContract
 
 
 @fixture

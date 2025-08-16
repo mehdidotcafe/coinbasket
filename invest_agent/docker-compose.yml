@@ -10,6 +10,8 @@ services:
       - "8545:8545"
     entrypoint: ["anvil"]
     command: [ "--balance", "10", "--chain-id", "${ANVIL_CHAIN_ID}", "--fork-url", "${ANVIL_FORK_URL}", "--mnemonic", "${ANVIL_MNEMONIC}" ]
+    volumes:
+      - anvil-data:/anvil/state
   postgres:
     image: postgres:17.5
     container_name: postgres
@@ -30,3 +32,4 @@ services:
       SPEC_URL: "http://127.0.0.1:${AGENT_PORT}/openapi"
 volumes:
   postgres-data:
+  anvil-data:

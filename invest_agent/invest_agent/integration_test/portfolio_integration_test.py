@@ -14,7 +14,7 @@ from invest_agent.portfolio.posting.infrastructure.sql_alchemy_posting_repositor
 from invest_agent.portfolio.posting.posting import Posting
 from invest_agent.test.database.make_session import make_session
 from pytest import fixture
-from protocol.fixture.token import sol_token, eth_token, usdt_token
+from protocol.fixture.token import sol_token, eth_token, usdt_token, cake_token
 import requests
 from environs import env
 from invest_agent.test.database.cleanup_all import cleanup_all  # noqa: F401
@@ -85,6 +85,18 @@ def transactions():
                 asset=usdt_token,
                 amount=Decimal("100.00"),
                 amount_atomic=int(10000 * 10**16),
+                decimals=18,
+            ),
+            executed_sell_balance=BalanceAtomic(
+                asset=usdt_token,
+                amount=Decimal("102.22"),
+                amount_atomic=int(10222 * 10**16),
+                decimals=18,
+            ),
+            executed_buy_balance=BalanceAtomic(
+                asset=usdt_token,
+                amount=Decimal("103.33"),
+                amount_atomic=int(10333 * 10**16),
                 decimals=18,
             ),
             type="BUY",
@@ -159,6 +171,30 @@ def postings():
             created_at=0,
             type="BUY",
         ),
+        Posting(
+            id="6dcba8f1-a95e-4d3f-b9c8-006c12082d1a",
+            transaction_id="f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef",
+            asset_balance=BalanceAtomic(
+                asset=cake_token,
+                amount=Decimal("22.77"),
+                amount_atomic=int(2277 * 10**16),
+                decimals=18,
+            ),
+            created_at=0,
+            type="BUY",
+        ),
+        Posting(
+            id="6dcba8f1-a95e-4d3f-b9c8-006c12082d1b",
+            transaction_id="f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef",
+            asset_balance=BalanceAtomic(
+                asset=cake_token,
+                amount=Decimal("-22.77"),
+                amount_atomic=int(-2277 * 10**16),
+                decimals=18,
+            ),
+            created_at=0,
+            type="SELL",
+        ),
     ]
 
 
@@ -201,6 +237,7 @@ def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, clean
             "ticker": "BNB",
             "address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         },
+        "decimals": 18,
     }
 
     assert Decimal(portfolio["available_balance"]["converted_balance"]["amount"]) > 0
@@ -227,6 +264,7 @@ def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, clean
             "ticker": "USDT",
             "address": "0x55d398326f99059ff775485246999027b3197955",
         },
+        "decimals": 18,
     }
 
     for i in range(0, 2):
@@ -272,6 +310,7 @@ def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, clean
                     "ticker": "USDT",
                     "address": "0x55d398326f99059ff775485246999027b3197955",
                 },
+                "decimals": 18,
             },
             "buy_balance": {
                 "amount": "100.00",
@@ -283,6 +322,7 @@ def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, clean
                     "ticker": "USDT",
                     "address": "0x55d398326f99059ff775485246999027b3197955",
                 },
+                "decimals": 18,
             },
             "type": "BUY",
             "tries": [],

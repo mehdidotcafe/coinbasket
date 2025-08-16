@@ -13,6 +13,8 @@ class Transaction:
     id: Id
     sell_balance: BalanceAtomic[Token]
     buy_balance: BalanceAtomic[Token]
+    executed_sell_balance: BalanceAtomic[Token]
+    executed_buy_balance: BalanceAtomic[Token]
     type: Literal["SELL", "BUY", "SWAP"]
     created_at: int
     transaction_hash: str

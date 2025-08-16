@@ -87,13 +87,19 @@ class SqlAlchemyPostingRepository(PostingRepository):
     async def get_holding_balances(self) -> list[BalanceAtomic[Token]]:
         async with self.AsyncSessionLocal(bind=self.engine) as session:
             async with session.begin():
-                stmt = select(
-                    PostingModel.asset_id,
-                    # Select any asset value of the same asset_id
-                    func.min(PostingModel.asset),
-                    func.min(PostingModel.decimals).label("decimals"),
-                    func.sum(PostingModel.amount_atomic).label("total_amount_atomic"),
-                ).group_by(PostingModel.asset_id)
+                stmt = (
+                    select(
+                        PostingModel.asset_id,
+                        # Select any asset value of the same asset_id
+                        func.min(PostingModel.asset),
+                        func.min(PostingModel.decimals).label("decimals"),
+                        func.sum(PostingModel.amount_atomic).label(
+                            "total_amount_atomic"
+                        ),
+                    )
+                    .group_by(PostingModel.asset_id)
+                    .having(func.sum(PostingModel.amount_atomic) > 0)
+                )
                 result = await session.execute(stmt)
                 rows = result.all()
 

@@ -1,15 +1,18 @@
 import asyncio
 import sys
 
-from invest_agent.infrastructure.bsc.chain.nonce_manager import (
+from invest_agent.chain.infrastructure.bsc.nonce_manager import (
     NonceManager,
     Configuration as ConfigurationNM,
+)
+from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
+    BscTransactionReceiptParser,
 )
 from protocol.token import Token
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
 from invest_agent.configuration import Configuration
-from invest_agent.infrastructure.bsc.chain.bsc_chain import BscChain
+from invest_agent.chain.infrastructure.bsc.bsc_chain import BscChain
 
 
 configuration = Configuration()
@@ -20,10 +23,13 @@ nonce_manager = NonceManager(
         private_key=configuration.bsc_private_key,
     ),
 )
+transaction_receipt_parser = BscTransactionReceiptParser(w3=w3)
+
 chain = BscChain(
     w3=w3,
     nonce_manager=nonce_manager,
     private_key=configuration.bsc_private_key,
+    transaction_receipt_parser=transaction_receipt_parser,
 )
 
 

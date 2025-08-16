@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any
 
 from protocol.token import Token
@@ -21,6 +22,13 @@ class TransactionFailure(Exception):
 class Gas:
     gas: int | None
     gas_price: int | None
+
+
+@dataclass
+class ParsedReceipt:
+    executed_sell_balance: BalanceAtomic[Token]
+    executed_buy_balance: BalanceAtomic[Token]
+    rate: Decimal | None = None
 
 
 class Chain(ABC):
@@ -107,4 +115,10 @@ class Chain(ABC):
     async def convert_amount_atomic_to_amount(
         self, token: Token, amount_atomic: AmountAtomic
     ) -> tuple[AmountReadable, int]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def parse_transaction_receipt(
+        self, sell_token: Token, buy_token: Token, transaction_hash: str
+    ) -> ParsedReceipt:
         raise NotImplementedError

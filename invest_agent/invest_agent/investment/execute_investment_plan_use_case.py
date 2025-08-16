@@ -68,6 +68,8 @@ class ExecuteInvestmentPlanUseCase:
             investment_plan
         )
 
+        print(f"flattened_investment_plan: {flattened_investment_plan}")
+
         orders = list(
             itertools.chain.from_iterable(
                 [
