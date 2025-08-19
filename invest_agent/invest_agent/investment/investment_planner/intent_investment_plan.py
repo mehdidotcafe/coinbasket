@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
@@ -6,7 +5,6 @@ from protocol.asset import Asset
 from pydantic import BaseModel, model_validator
 
 
-@dataclass
 class IntentInvestmentPlanBalance(BaseModel):
     asset: Asset
     amount: Decimal | None = None
@@ -19,7 +17,6 @@ class IntentInvestmentPlanBalance(BaseModel):
         }
 
 
-@dataclass
 class IntentInvestmentPlanStep(BaseModel):
     buy_asset_with_amount: IntentInvestmentPlanBalance | None = None
     sell_asset_with_amount: IntentInvestmentPlanBalance | None = None
@@ -49,7 +46,6 @@ class IntentInvestmentPlanStep(BaseModel):
         }
 
 
-@dataclass
 class IntentInvestmentPlan(BaseModel):
     steps: list[IntentInvestmentPlanStep]
 

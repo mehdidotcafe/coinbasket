@@ -12,7 +12,7 @@ from protocol.token import Token
 
 
 @dataclass
-class ConvertedBalance:
+class ExchangeConvertedBalance:
     sell_balance: BalanceAtomic[Token]
     buy_balance: BalanceAtomic[Token]
 
@@ -42,7 +42,7 @@ class Exchange(ABC):
         balance: BalanceAtomic[Token],
         token: Token,
         investment_parameters: InvestmentParameters,
-    ) -> ConvertedBalance:
+    ) -> ExchangeConvertedBalance:
         """Converts an asset balance to an asset."""
         raise NotImplementedError
 

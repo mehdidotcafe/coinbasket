@@ -7,10 +7,11 @@ from invest_agent.datetime.date_time import DateTime
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.types import Interrupt
+from langgraph.types import Interrupt as LanggraphInterrupt
 
-from invest_agent.conversation.message import Message, QueryMessage, MessageUi
+from invest_agent.conversation.message import Message, QueryMessage
 from shared.id_generator.id_generator import IdGenerator
+from invest_agent.conversation.interrupt import Interrupt
 
 
 class Configuration(TypedDict):
@@ -56,23 +57,11 @@ class ConversationUseCase:
         if not step:
             raise ValueError("No steps returned from the agent executor.")
 
-        if self.__is_interrupt(step):
-            interrupt = cast(Interrupt, step["__interrupt__"][0])
-            ui = interrupt.value.get("ui", None)
-            content = interrupt.value.get("content", None)
-
-            return Message(
-                id=self.id_generator.generate_random_id(),
-                role="assistant",
-                is_interrupting=True,
-                ui=MessageUi(
-                    id=ui["id"],
-                    args=ui["args"],
-                )
-                if ui
-                else None,
-                content=content,
-                created_at=self.date_time.now_str(),
+        if Interrupt.is_step_interrupt(step):
+            return Interrupt.to_message(
+                cast(LanggraphInterrupt, step["__interrupt__"][0]),
+                self.id_generator.generate_random_id(),
+                self.date_time.now_str(),
             )
 
         last_message = cast(AIMessage | HumanMessage, step["agent"]["messages"][-1])
@@ -85,6 +74,3 @@ class ConversationUseCase:
             content=cast(str, last_message.content),
             created_at=self.date_time.now_str(),
         )
-
-    def __is_interrupt(self, step: dict[str, Any]) -> bool:
-        return "__interrupt__" in step

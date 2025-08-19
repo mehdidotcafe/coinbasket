@@ -128,6 +128,9 @@ class BscChain(Chain):
 
     async def get_token_balance(self, token: Token) -> BalanceAtomic[Token]:
         """Get the balance of a specific token."""
+        if self.is_native_token(token):
+            return await self.get_native_token_balance()
+
         token_contract = self.w3.eth.contract(
             address=self.w3.to_checksum_address(token.address),
             abi=self.erc20_token_abi,

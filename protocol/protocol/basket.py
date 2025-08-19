@@ -43,3 +43,16 @@ type: basket
             "denomination": str(self.denomination),
             "tokens": [token.to_dict() for token in self.tokens],
         }
+
+    # Baskets use USDT as their pricing token
+    def get_pricing_token(self):
+        return Token(
+            id="bsc:0x55d398326f99059ff775485246999027b3197955",
+            name="Tether USD",
+            display_name="Tether USD",
+            ticker="USDT",
+            address="0x55d398326f99059ff775485246999027b3197955",
+        )
+
+    def get_denomination(self):
+        return self.denomination

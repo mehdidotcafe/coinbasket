@@ -6,12 +6,13 @@ import aiosqlite
 from invest_agent.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
     GetAssetSwapPriceUseCase,
+    ConvertedBalance,
 )
 from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
-from invest_agent.investment.exchange.exchange import ConvertedBalance
 from invest_agent.investment.fees import Fees
+from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
@@ -67,6 +68,8 @@ from invest_agent.investment.execute_pending_orders_use_case import (
 )
 from invest_agent.investment.investment_planner.intent_investment_plan import (
     IntentInvestmentPlan,
+    IntentInvestmentPlanBalance,
+    IntentInvestmentPlanStep,
 )
 from invest_agent.investment.execute_investment_plan_use_case import (
     ExecuteInvestmentPlanUseCase,
@@ -227,7 +230,7 @@ conversation_use_case = ConversationUseCase(
 )
 
 conversation_repository = LangchainSqliteConversationRepository(
-    db_path=langgraph_db_path, date_time=date_time
+    db_path=langgraph_db_path, date_time=date_time, id_generator=id_generator
 )
 
 get_conversation_messages_use_case = GetConversationMessagesUseCase(
@@ -446,11 +449,157 @@ class InvestmentPlanStepRequest(Model):
 
 
 class InvestmentPlanRequest(Model):
+    status: Literal["CONFIRM", "CANCEL"]
     steps: list[InvestmentPlanStepRequest]
 
     def to_domain(self) -> InvestmentPlan:
         steps = [step.to_domain() for step in self.steps]
         return InvestmentPlan(steps=steps)
+
+
+# TODO: Handle basket
+async def _fill_intent_investment_plan_with_default(
+    intent_investment_plan: IntentInvestmentPlan,
+):
+    steps: list[IntentInvestmentPlanStep] = []
+
+    for step in intent_investment_plan.steps:
+        sell_asset = (
+            step.sell_asset_with_amount.asset
+            if step.sell_asset_with_amount
+            else chain.get_base_token()
+        )
+        sell_token = sell_asset.get_pricing_token()
+
+        buy_asset = (
+            step.buy_asset_with_amount.asset
+            if step.buy_asset_with_amount
+            else chain.get_base_token()
+        )
+        buy_token = buy_asset.get_pricing_token()
+
+        if step.sell_asset_with_amount and step.sell_asset_with_amount.amount:
+            sell_amount = (
+                step.sell_asset_with_amount.amount * sell_asset.get_denomination()
+            )
+
+            (
+                sell_balance_amount_atomic,
+                sell_balance_decimals,
+            ) = await chain.convert_amount_to_amount_atomic(
+                token=sell_token,
+                amount_readable=sell_amount,
+            )
+            sell_balance = BalanceAtomic[Token](
+                asset=sell_token,
+                amount=sell_amount,
+                amount_atomic=sell_balance_amount_atomic,
+                decimals=sell_balance_decimals,
+            )
+
+            converted_balance = await exchange.convert_balance_to_token(
+                balance=sell_balance,
+                token=buy_token,
+                investment_parameters=InvestmentParameters(
+                    slippage_tolerance_in_percentage=Decimal(1)
+                ),
+            )
+
+            steps.append(
+                IntentInvestmentPlanStep(
+                    sell_asset_with_amount=IntentInvestmentPlanBalance(
+                        asset=sell_asset,
+                        amount=converted_balance.sell_balance.amount
+                        / sell_asset.get_denomination(),
+                    ),
+                    buy_asset_with_amount=IntentInvestmentPlanBalance(
+                        asset=buy_asset,
+                        amount=converted_balance.buy_balance.amount
+                        / buy_asset.get_denomination(),
+                    ),
+                )
+            )
+            continue
+
+        if step.buy_asset_with_amount and step.buy_asset_with_amount.amount:
+            buy_token_amount = (
+                step.buy_asset_with_amount.amount * buy_asset.get_denomination()
+            )
+            (
+                buy_balance_amount_atomic,
+                buy_balance_decimals,
+            ) = await chain.convert_amount_to_amount_atomic(
+                token=buy_token,
+                amount_readable=buy_token_amount,
+            )
+            buy_balance = BalanceAtomic[Token](
+                asset=buy_token,
+                amount=buy_token_amount,
+                amount_atomic=buy_balance_amount_atomic,
+                decimals=buy_balance_decimals,
+            )
+
+            converted_balance = await exchange.convert_balance_to_token(
+                balance=buy_balance,
+                token=sell_token,
+                investment_parameters=InvestmentParameters(
+                    slippage_tolerance_in_percentage=Decimal(1)
+                ),
+            )
+
+            steps.append(
+                IntentInvestmentPlanStep(
+                    sell_asset_with_amount=IntentInvestmentPlanBalance(
+                        asset=sell_asset,
+                        amount=converted_balance.buy_balance.amount
+                        / sell_asset.get_denomination(),
+                    ),
+                    buy_asset_with_amount=IntentInvestmentPlanBalance(
+                        asset=buy_asset,
+                        amount=converted_balance.sell_balance.amount
+                        / buy_asset.get_denomination(),
+                    ),
+                )
+            )
+            continue
+
+        if step.sell_asset_with_amount:
+            steps.append(
+                IntentInvestmentPlanStep(
+                    sell_asset_with_amount=IntentInvestmentPlanBalance(
+                        asset=sell_asset, amount=step.sell_asset_with_amount.amount
+                    ),
+                    buy_asset_with_amount=IntentInvestmentPlanBalance(
+                        asset=buy_asset,
+                        amount=step.buy_asset_with_amount.amount
+                        if step.buy_asset_with_amount
+                        else None,
+                    ),
+                )
+            )
+            continue
+
+        if step.buy_asset_with_amount:
+            steps.append(
+                IntentInvestmentPlanStep(
+                    sell_asset_with_amount=IntentInvestmentPlanBalance(
+                        asset=sell_asset,
+                        amount=step.sell_asset_with_amount.amount
+                        if step.sell_asset_with_amount
+                        else None,
+                    ),
+                    buy_asset_with_amount=IntentInvestmentPlanBalance(
+                        asset=buy_asset,
+                        amount=step.buy_asset_with_amount.amount,
+                    ),
+                )
+            )
+            continue
+
+    # If no sell_asset and buy_asset is provided we don't include the step for now
+    return IntentInvestmentPlan(
+        steps=steps,
+    )
 
 
 @tool(
@@ -516,12 +665,18 @@ async def invest_in_intent_investment_plan_use_case(
         )
     """
 
+    filled_intent_investment_plan = await _fill_intent_investment_plan_with_default(
+        intent_investment_plan
+    )
+
+    print(f"filled_intent_investment_plan: {filled_intent_investment_plan}")
+
     investment_plan_as_dict = interrupt(
         {
             "ui": {
                 "id": "prepare_investment_plan",
                 "args": {
-                    "intent_investment_plan": intent_investment_plan.to_dict(),
+                    "intent_investment_plan": filled_intent_investment_plan.to_dict(),
                 },
             },
             "content": None,
@@ -531,6 +686,11 @@ async def invest_in_intent_investment_plan_use_case(
     investment_plan = InvestmentPlanRequest.model_validate(
         investment_plan_as_dict["investment_plan"]
     )
+
+    if investment_plan.status == "CANCEL":
+        return {
+            "message": "Investment plan successfully cancelled by the user.",
+        }
 
     orders = await execute_investment_plan_use_case.execute(investment_plan.to_domain())
 
@@ -731,11 +891,14 @@ async def get_conversation_messages(
     _req: MessagesRequest,
 ) -> MessagesResponse:
     """Retrieve the conversation messages."""
-    messages = await get_conversation_messages_use_case.execute(
-        thread_id=configuration.langchain_thread_id
-    )
+    async with aiosqlite.connect(langgraph_db_path) as conn:
+        agent_executor = __create_agent_executor(conn)
 
-    return MessagesResponse.from_domain(messages)
+        messages = await get_conversation_messages_use_case.execute(
+            thread_id=configuration.langchain_thread_id, agent_executor=agent_executor
+        )
+
+        return MessagesResponse.from_domain(messages)
 
 
 class AssetSwapPriceInfoRequest(Model):

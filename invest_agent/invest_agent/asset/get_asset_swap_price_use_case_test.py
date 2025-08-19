@@ -4,13 +4,14 @@ from unittest import mock
 from invest_agent.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
     GetAssetSwapPriceUseCase,
+    ConvertedBalance,
 )
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
 )
-from invest_agent.investment.exchange.exchange import ConvertedBalance, Exchange
+from invest_agent.investment.exchange.exchange import ExchangeConvertedBalance, Exchange
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from pytest import fixture, mark, raises
 from protocol.fixture.token import wbnb_token, usdt_token
@@ -57,7 +58,7 @@ async def test_get_asset_swap_price_use_case_sell_token_buy_token(
         buy_asset=usdt_token,
     )
 
-    exchange.convert_balance_to_token.return_value = ConvertedBalance(
+    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
             asset=wbnb_token,
             amount=Decimal("1.0"),
@@ -113,7 +114,7 @@ async def test_get_asset_swap_price_use_case_buy_basket_sell_token(
         buy_asset=big4_basket,
     )
 
-    exchange.convert_balance_to_token.return_value = ConvertedBalance(
+    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
             asset=wbnb_token,
             amount=Decimal("1.0"),
@@ -169,7 +170,7 @@ async def test_get_asset_swap_price_use_case_sell_basket_buy_token(
         buy_asset=wbnb_token,
     )
 
-    exchange.convert_balance_to_token.return_value = ConvertedBalance(
+    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
             asset=usdt_token,
             amount=Decimal("50.0"),

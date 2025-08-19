@@ -2,7 +2,7 @@ from decimal import Decimal
 from unittest import mock
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
-from invest_agent.investment.exchange.exchange import ConvertedBalance, Exchange
+from invest_agent.investment.exchange.exchange import ExchangeConvertedBalance, Exchange
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.order.order import Order
 from invest_agent.investment.order.order_repository import OrderRepository
@@ -76,7 +76,7 @@ async def test_get_portfolio_use_case_only_available_balance(
     )
 
     exchange.convert_balance_to_token.side_effect = [
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=bnb_token,
                 amount=Decimal("1000"),
@@ -205,7 +205,7 @@ async def test_get_portfolio_use_case_holding_balances(
 
     posting_repository.get_holding_balances.return_value = holding_balances
     exchange.convert_balance_to_token.side_effect = [
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=wbnb_token,
                 amount=Decimal("1.0"),
@@ -219,7 +219,7 @@ async def test_get_portfolio_use_case_holding_balances(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=sol_token,
                 amount=Decimal("4"),
@@ -233,7 +233,7 @@ async def test_get_portfolio_use_case_holding_balances(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=eth_token,
                 amount=Decimal("0.85"),
@@ -248,7 +248,7 @@ async def test_get_portfolio_use_case_holding_balances(
             ),
         ),
         # Get available_balance mock
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=bnb_token, amount=Decimal("0"), amount_atomic=0, decimals=18
             ),
@@ -367,7 +367,7 @@ async def test_get_portfolio_use_case_total_balance(
     chain.get_token_decimals.return_value = 18
     posting_repository.get_holding_balances.return_value = holding_balances
     exchange.convert_balance_to_token.side_effect = [
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=eth_token,
                 amount=Decimal("0.85"),
@@ -381,7 +381,7 @@ async def test_get_portfolio_use_case_total_balance(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=bnb_token,
                 amount=Decimal("1000"),

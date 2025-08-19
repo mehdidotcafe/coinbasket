@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 
 
 @dataclass
@@ -26,3 +27,9 @@ type: token
             "ticker": self.ticker,
             "address": self.address,
         }
+
+    def get_pricing_token(self) -> "Token":
+        return self
+
+    def get_denomination(self) -> Decimal:
+        return Decimal("1")

@@ -1,6 +1,6 @@
 from decimal import ROUND_DOWN, Decimal
 from unittest import mock
-from invest_agent.investment.exchange.exchange import Exchange, ConvertedBalance
+from invest_agent.investment.exchange.exchange import Exchange, ExchangeConvertedBalance
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from pytest import fixture, raises, mark
 from invest_agent.chain.balance import Balance, BalanceAtomic
@@ -179,7 +179,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
 
     exchange.convert_balance_to_token.side_effect = [
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
@@ -193,7 +193,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
@@ -207,7 +207,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.40"),
                 amount_atomic=int(0.40 * 10**18),
@@ -221,7 +221,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.40"),
                 amount_atomic=int(0.40 * 10**18),
@@ -424,7 +424,7 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
 
     exchange.convert_balance_to_token.side_effect = [
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
@@ -438,7 +438,7 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
@@ -697,7 +697,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
     exchange.convert_balance_to_token.side_effect = [
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
@@ -711,7 +711,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.08"),
                 amount_atomic=int(0.08 * 10**18),
@@ -725,7 +725,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.6"),
                 amount_atomic=int(0.6 * 10**18),
@@ -739,7 +739,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.2"),
                 amount_atomic=int(0.2 * 10**18),
@@ -932,7 +932,7 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
     exchange.convert_balance_to_token.side_effect = [
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.25"),
                 amount_atomic=int(0.25 * 10**18),
@@ -946,7 +946,7 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                 decimals=18,
             ),
         ),
-        ConvertedBalance(
+        ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 amount=Decimal("0.10"),
                 amount_atomic=int(0.10 * 10**18),

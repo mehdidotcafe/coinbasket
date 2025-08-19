@@ -6,7 +6,7 @@ from invest_agent.chain.chain import Chain, Gas
 from invest_agent.chain.contract import Contract
 
 from invest_agent.investment.exchange.exchange import (
-    ConvertedBalance,
+    ExchangeConvertedBalance,
     Exchange,
     TransactionData,
 )
@@ -138,7 +138,7 @@ class ZeroXSwapper(Exchange):
         investment_parameters: InvestmentParameters,
     ):
         if self.__is_same_token(balance.asset, token):
-            return ConvertedBalance(
+            return ExchangeConvertedBalance(
                 sell_balance=BalanceAtomic(
                     asset=balance.asset,
                     amount=balance.amount,
@@ -178,7 +178,7 @@ class ZeroXSwapper(Exchange):
             token=token,
         )
 
-        return ConvertedBalance(
+        return ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=balance.asset,
                 amount=sell_amount,
