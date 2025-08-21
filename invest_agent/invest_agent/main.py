@@ -13,6 +13,11 @@ from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
 )
 from invest_agent.investment.fees import Fees
 from invest_agent.investment.investment_parameters import InvestmentParameters
+from invest_agent.investment.investment_planner.intent_investment_plan import (
+    IntentInvestmentPlan,
+    IntentInvestmentPlanStep,
+    IntentInvestmentPlanBalance,
+)
 from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
@@ -66,11 +71,6 @@ from invest_agent.chain.infrastructure.bsc.nonce_manager import NonceManager
 from invest_agent.investment.execute_pending_orders_use_case import (
     ExecutePendingOrdersUseCase,
 )
-from invest_agent.investment.investment_planner.intent_investment_plan import (
-    IntentInvestmentPlan,
-    IntentInvestmentPlanBalance,
-    IntentInvestmentPlanStep,
-)
 from invest_agent.investment.execute_investment_plan_use_case import (
     ExecuteInvestmentPlanUseCase,
 )
@@ -86,6 +86,7 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import ZeroXSw
 from invest_agent.documentation.openapi import openapi
 from protocol.token import Token
 from pydantic import RootModel
+from pydantic.v1 import root_validator, validator
 from uagents import Agent, Context, Model
 from uagents.storage import KeyValueStore
 
@@ -101,7 +102,13 @@ from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
     FetchAiStorage,
 )
 
-from protocol import SimilarityQuery, SimilarityResponse
+from protocol import (
+    AssetResponse,
+    BasketResponse,
+    SimilarAssetsQuery,
+    SimilarAssetsResponse,
+    TokenResponse,
+)
 from protocol.fixture.token import usdt_token
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -278,16 +285,18 @@ async def get_token_info(query: str):
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
-        SimilarityQuery(
+        SimilarAssetsQuery(
             query=f"{query} type: token", agent_key=configuration.data_agent_key
         ),
-        SimilarityResponse,
+        SimilarAssetsResponse,
     )
 
     if isinstance(res.data, str):
         raise ValueError(f"Response is not a valid response: {res.data}")
 
-    return res.data.serialized, res.data.retrieved_docs
+    return "\n\n".join(
+        [str(asset.to_domain()) for asset in res.data.assets]
+    ), res.data.assets
 
 
 @tool(response_format="content_and_artifact")
@@ -306,16 +315,18 @@ async def get_basket_info(query: str):
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
-        SimilarityQuery(
+        SimilarAssetsQuery(
             query=f"{query} type: basket", agent_key=configuration.data_agent_key
         ),
-        SimilarityResponse,
+        SimilarAssetsResponse,
     )
 
     if isinstance(res.data, str):
         raise ValueError(f"Response is not a valid response: {res.data}")
 
-    return res.data.serialized, res.data.retrieved_docs
+    return "\n\n".join(
+        [str(asset.to_domain()) for asset in res.data.assets]
+    ), res.data.assets
 
 
 @tool()
@@ -408,6 +419,14 @@ class BasketRequest(Model):
     denomination: str
     tokens: list[TokenRequest]
 
+    @validator("tokens")
+    @classmethod
+    def at_least_one_token(cls, v):
+        """Ensure at least one token in basket."""
+        if not v or len(v) == 0:
+            raise ValueError("At least one token must be provided.")
+        return v
+
     def to_domain(self) -> Basket:
         """Convert the request to a Basket."""
         return Basket(
@@ -421,7 +440,7 @@ class BasketRequest(Model):
         )
 
 
-AssetRequest = TokenRequest | BasketRequest
+AssetRequest = BasketRequest | TokenRequest
 
 
 class BalanceRequest(Model):
@@ -457,6 +476,61 @@ class InvestmentPlanRequest(Model):
         return InvestmentPlan(steps=steps)
 
 
+class IntentInvestmentPlanBalanceRequest(Model):
+    asset: AssetRequest
+    amount: str | None = None
+
+    def to_domain(self):
+        return IntentInvestmentPlanBalance(
+            asset=self.asset.to_domain(),
+            amount=Decimal(self.amount)
+            if self.amount is not None and self.amount != ""
+            else None,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the IntentInvestmentPlanBalance to a dictionary."""
+        return {
+            "asset": self.asset.to_domain().to_dict(),
+            "amount": str(self.amount) if self.amount is not None else None,
+        }
+
+
+class IntentInvestmentPlanStepRequest(Model):
+    buy_asset_with_amount: IntentInvestmentPlanBalanceRequest | None = None
+    sell_asset_with_amount: IntentInvestmentPlanBalanceRequest | None = None
+
+    @root_validator(pre=True)
+    def at_least_one_asset(cls, values: dict[str, Any]):
+        """Ensure at least one of buy_asset_with_amount or sell_asset_with_amount is provided."""
+        if not (
+            values.get("buy_asset_with_amount") or values.get("sell_asset_with_amount")
+        ):
+            raise ValueError(
+                "At least one of buy_asset_with_amount or sell_asset_with_amount must be provided."
+            )
+
+        return values
+
+    def to_domain(self):
+        return IntentInvestmentPlanStep(
+            buy_asset_with_amount=self.buy_asset_with_amount.to_domain()
+            if self.buy_asset_with_amount
+            else None,
+            sell_asset_with_amount=self.sell_asset_with_amount.to_domain()
+            if self.sell_asset_with_amount
+            else None,
+        )
+
+
+class IntentInvestmentPlanRequest(Model):
+    steps: list[IntentInvestmentPlanStepRequest]
+
+    def to_domain(self) -> IntentInvestmentPlan:
+        """Convert the IntentInvestmentPlan to a dictionary."""
+        return IntentInvestmentPlan(steps=[step.to_domain() for step in self.steps])
+
+
 # TODO: Handle basket
 async def _fill_intent_investment_plan_with_default(
     intent_investment_plan: IntentInvestmentPlan,
@@ -477,6 +551,9 @@ async def _fill_intent_investment_plan_with_default(
             else chain.get_base_token()
         )
         buy_token = buy_asset.get_pricing_token()
+
+        if sell_asset == buy_asset:
+            continue
 
         if step.sell_asset_with_amount and step.sell_asset_with_amount.amount:
             sell_amount = (
@@ -606,41 +683,41 @@ async def _fill_intent_investment_plan_with_default(
     parse_docstring=True,
 )
 async def invest_in_intent_investment_plan_use_case(
-    intent_investment_plan: IntentInvestmentPlan,
+    intent_investment_plan: IntentInvestmentPlanRequest,
 ) -> dict[str, Any]:
     """Invest in the intent investment plan.
 
     Args:
-        intent_investment_plan (IntentInvestmentPlan): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.
+        intent_investment_plan (IntentInvestmentPlanRequest): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.
 
     Returns:
         list[Order]: A list of submitted orders for the assets in the investment plan.
 
     Example:
-        IntentInvestmentPlan(
+        IntentInvestmentPlanRequest(
             steps=[
-                IntentInvestmentPlanStep(
-                    buy_asset=Asset(
+                IntentInvestmentPlanStepRequest(
+                    buy_asset=AssetRequest(
                         id="bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
                         name="Binance Pegged Ethereum",
                         display_name="Ethereum",
                         ticker="ETH",
                         address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
                     ),
-                    buy_asset_amount=Decimal("5.33"),
-                    sell_asset=Asset(
+                    buy_asset_amount="5.33",
+                    sell_asset=AssetRequest(
                         id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
                         name="Binance Coin",
                         display_name="Binance Coin",
                         ticker="BNB",
                         address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeEEeE",
                     ),
-                    sell_asset_amount=Decimal("10.95"),
+                    sell_asset_amount="10.95",
                 ),
-                IntentInvestmentPlanStep(
+                IntentInvestmentPlanStepRequest(
                     buy_asset=None,
                     buy_asset_amount=None,
-                    sell_asset=Asset(
+                    sell_asset=AssetRequest(
                         id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
                         name="Binance Coin",
                         display_name="Binance Coin",
@@ -649,15 +726,15 @@ async def invest_in_intent_investment_plan_use_case(
                     ),
                     sell_asset_amount=None,
                 ),
-                IntentInvestmentPlanStep(
-                    buy_asset=Asset(
+                IntentInvestmentPlanStepRequest(
+                    buy_asset=AssetRequest(
                         id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
                         name="Dogecoin",
                         display_name="Dogecoin",
                         ticker="DOGE",
                         address="0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
                     ),
-                    buy_asset_amount=Decimal("1028983"),
+                    buy_asset_amount="1028983",
                     sell_asset=None,
                     sell_asset_amount=None,
                 ),
@@ -666,7 +743,7 @@ async def invest_in_intent_investment_plan_use_case(
     """
 
     filled_intent_investment_plan = await _fill_intent_investment_plan_with_default(
-        intent_investment_plan
+        intent_investment_plan.to_domain()
     )
 
     print(f"filled_intent_investment_plan: {filled_intent_investment_plan}")
@@ -914,51 +991,6 @@ class AssetSwapPriceInfoRequest(Model):
             sell_asset_amount=Decimal(self.sell_asset_amount),
             buy_asset=self.buy_asset.to_domain(),
         )
-
-
-class TokenResponse(Model):
-    id: str
-    name: str
-    display_name: str
-    ticker: str
-    address: str
-
-    @staticmethod
-    def from_domain(token: Token) -> "TokenResponse":
-        """Convert the domain Token to a TokenResponse."""
-        return TokenResponse(
-            id=token.id,
-            name=token.name,
-            display_name=token.display_name,
-            ticker=token.ticker,
-            address=token.address,
-        )
-
-
-class BasketResponse(Model):
-    id: str
-    name: str
-    display_name: str
-    ticker: str
-    description: str
-    denomination: str
-    tokens: list[TokenResponse]
-
-    @staticmethod
-    def from_domain(basket: Basket) -> "BasketResponse":
-        """Convert the domain Basket to a BasketResponse."""
-        return BasketResponse(
-            id=basket.id,
-            name=basket.name,
-            display_name=basket.display_name,
-            ticker=basket.ticker,
-            description=basket.description,
-            denomination=str(basket.denomination),
-            tokens=[TokenResponse.from_domain(token) for token in basket.tokens],
-        )
-
-
-AssetResponse = TokenResponse | BasketResponse
 
 
 class BalanceResponse(Model):

@@ -23,6 +23,7 @@ display_name: {self.display_name}
 ticker: {self.ticker}
 description: {self.description}
 type: basket
+denomination: {str(self.denomination)}
 {"\n".join([self.__flatten_token(token, index) for index, token in enumerate(self.tokens)])}
 """
 

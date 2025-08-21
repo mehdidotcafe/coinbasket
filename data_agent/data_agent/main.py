@@ -1,6 +1,4 @@
-from dataclasses import asdict
-import json
-
+from protocol.token import Token
 from pydantic import SecretStr
 from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.authentication.exception.invalid_agent_key import InvalidAgentKey
@@ -34,11 +32,19 @@ from data_agent.ingestion.data_source.infrastructure.bsc.pancakeswap_tokens_data
     PancakeswapTokenListDataSource,
 )
 from data_agent.ingestion.ingest_data_use_case import IngestDataUseCase
-from data_agent.similarity.get_similarities_use_case import GetSimilaritiesUseCase
+from data_agent.similarity.get_similar_assets_use_case import (
+    GetSimilarAssetsUseCase,
+)
 from data_agent.similarity.infrastructure.qdrant_langchain.similarity_storage.qdrant_langchain_similarity_storage import (
     QdrantLangChainSimilarityStorage,
 )
-from protocol import SimilarityQuery, SimilarityResponse, SimilarityValidResponse
+from protocol import (
+    BasketResponse,
+    SimilarAssetsQuery,
+    SimilarAssetsResponse,
+    SimilarAssetsValidResponse,
+    TokenResponse,
+)
 
 configuration = Configuration()
 
@@ -67,7 +73,7 @@ similarity_storage = QdrantLangChainSimilarityStorage(
     ),
 )
 
-get_similarities_use_case = GetSimilaritiesUseCase(similarity_storage)
+get_similar_assets_use_case = GetSimilarAssetsUseCase(similarity_storage)
 
 ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
@@ -89,47 +95,55 @@ async def on_startup(ctx: Context):
     await ingest_data_use_case.execute()
 
 
-@data_agent.on_rest_post("/", SimilarityQuery, SimilarityResponse)
-async def handle_similarity_query(
-    _ctx: Context, req: SimilarityQuery
-) -> SimilarityResponse:
+@data_agent.on_rest_post("/", SimilarAssetsQuery, SimilarAssetsResponse)
+async def get_similar_assets(
+    _ctx: Context, req: SimilarAssetsQuery
+) -> SimilarAssetsResponse:
     if req.agent_key != configuration.agent_key:
         raise InvalidAgentKey()
 
     print(f"Query: {req.query}")
 
-    serialized, retrieved_docs = await get_similarities_use_case.execute(req.query)
+    assets = await get_similar_assets_use_case.execute(req.query)
 
-    print(f"Serialized: {serialized}")
-
-    return SimilarityResponse(
-        data=SimilarityValidResponse(
-            serialized=serialized,
-            retrieved_docs=json.dumps([asdict(doc) for doc in retrieved_docs]),
+    return SimilarAssetsResponse(
+        data=SimilarAssetsValidResponse(
+            assets=[
+                TokenResponse.from_domain(asset)
+                if isinstance(asset, Token)
+                else BasketResponse.from_domain(asset)
+                for asset in assets
+            ],
             query=req.query,
         )
     )
 
 
-@data_agent.on_message(model=SimilarityQuery)
-async def on_similarity_query(ctx: Context, sender: str, msg: SimilarityQuery):
+@data_agent.on_message(model=SimilarAssetsQuery)
+async def on_get_similar_assets_message(
+    ctx: Context, sender: str, msg: SimilarAssetsQuery
+):
     if msg.agent_key != configuration.agent_key:
         await ctx.send(
             sender,
-            SimilarityResponse(data=InvalidAgentKey().message),
+            SimilarAssetsResponse(data=InvalidAgentKey().message),
         )
         return
 
     query = msg.query
 
-    serialized, retrieved_docs = await get_similarities_use_case.execute(msg.query)
+    assets = await get_similar_assets_use_case.execute(query)
 
     await ctx.send(
         sender,
-        SimilarityResponse(
-            data=SimilarityValidResponse(
-                serialized=serialized,
-                retrieved_docs=json.dumps([asdict(doc) for doc in retrieved_docs]),
+        SimilarAssetsResponse(
+            data=SimilarAssetsValidResponse(
+                assets=[
+                    TokenResponse.from_domain(asset)
+                    if isinstance(asset, Token)
+                    else BasketResponse.from_domain(asset)
+                    for asset in assets
+                ],
                 query=query,
             )
         ),

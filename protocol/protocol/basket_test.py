@@ -37,6 +37,7 @@ display_name: Big2 Display
 ticker: B2
 description: Big2 Description
 type: basket
+denomination: 1.0
 1. name: Binance Pegged Bitcoin
  display_name: Bitcoin
  ticker: BTC

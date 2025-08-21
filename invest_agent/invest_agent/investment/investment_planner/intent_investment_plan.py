@@ -1,11 +1,12 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
 from protocol.asset import Asset
-from pydantic import BaseModel, model_validator
 
 
-class IntentInvestmentPlanBalance(BaseModel):
+@dataclass
+class IntentInvestmentPlanBalance:
     asset: Asset
     amount: Decimal | None = None
 
@@ -17,22 +18,10 @@ class IntentInvestmentPlanBalance(BaseModel):
         }
 
 
-class IntentInvestmentPlanStep(BaseModel):
+@dataclass
+class IntentInvestmentPlanStep:
     buy_asset_with_amount: IntentInvestmentPlanBalance | None = None
     sell_asset_with_amount: IntentInvestmentPlanBalance | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def at_least_one_asset(cls, values: dict[str, Any]):
-        """Ensure at least one of buy_asset_with_amount or sell_asset_with_amount is provided."""
-        if not (
-            values.get("buy_asset_with_amount") or values.get("sell_asset_with_amount")
-        ):
-            raise ValueError(
-                "At least one of buy_asset_with_amount or sell_asset_with_amount must be provided."
-            )
-
-        return values
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the IntentInvestmentPlanStep to a dictionary."""
@@ -46,7 +35,8 @@ class IntentInvestmentPlanStep(BaseModel):
         }
 
 
-class IntentInvestmentPlan(BaseModel):
+@dataclass
+class IntentInvestmentPlan:
     steps: list[IntentInvestmentPlanStep]
 
     def to_dict(self) -> dict[str, Any]:
