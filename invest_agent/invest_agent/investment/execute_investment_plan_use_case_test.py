@@ -1,7 +1,11 @@
 from decimal import ROUND_DOWN, Decimal
 from unittest import mock
+from invest_agent.investment.exception.insufficient_asset_balance import (
+    InsufficientAssetBalance,
+)
 from invest_agent.investment.exchange.exchange import Exchange, ExchangeConvertedBalance
 from invest_agent.investment.investment_parameters import InvestmentParameters
+from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, raises, mark
 from invest_agent.chain.balance import Balance, BalanceAtomic
 from invest_agent.chain.chain import Chain
@@ -70,6 +74,11 @@ def exchange():
 
 
 @fixture
+def posting_repository():
+    return mock.Mock(spec=PostingRepository)
+
+
+@fixture
 def investment_parameters():
     return InvestmentParameters(
         slippage_tolerance_in_percentage=Decimal("1"),
@@ -83,14 +92,80 @@ def use_case(
     chain: Chain,
     order_submitter: OrderSubmitter,
     exchange: Exchange,
+    posting_repository: PostingRepository,
 ):
     return ExecuteInvestmentPlanUseCase(
-        id_generator,
-        date_time,
-        chain,
-        order_submitter,
-        exchange,
+        id_generator, date_time, chain, order_submitter, exchange, posting_repository
     )
+
+
+@mark.asyncio
+async def test_execute_investment_plan_use_case_not_enough_holdings(
+    posting_repository: PostingRepository,
+    chain: Chain,
+    use_case: ExecuteInvestmentPlanUseCase,
+):
+    posting_repository.get_holding_balances.return_value = [
+        BalanceAtomic(
+            amount=Decimal("0.75"),
+            amount_atomic=75 * 10**16,
+            decimals=18,
+            asset=eth_token,
+        ),
+    ]
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("0"),
+        amount_atomic=0,
+        decimals=18,
+        asset=bnb_token,
+    )
+
+    with raises(InsufficientAssetBalance):
+        await use_case.execute(
+            InvestmentPlan(
+                steps=[
+                    InvestmentPlanStep(
+                        buy_balance=Balance(amount=Decimal("0.5"), asset=wbnb_token),
+                        sell_balance=Balance(amount=Decimal("0.5"), asset=eth_token),
+                    ),
+                    InvestmentPlanStep(
+                        buy_balance=Balance(amount=Decimal("0.08"), asset=eth_token),
+                        sell_balance=Balance(amount=Decimal("0.5"), asset=eth_token),
+                    ),
+                ]
+            )
+        )
+
+
+@mark.asyncio
+async def test_execute_investment_plan_use_case_not_enough_available_balance(
+    posting_repository: PostingRepository,
+    chain: Chain,
+    use_case: ExecuteInvestmentPlanUseCase,
+):
+    posting_repository.get_holding_balances.return_value = []
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("0.75"),
+        amount_atomic=75 * 10**16,
+        decimals=18,
+        asset=bnb_token,
+    )
+
+    with raises(InsufficientAssetBalance):
+        await use_case.execute(
+            InvestmentPlan(
+                steps=[
+                    InvestmentPlanStep(
+                        buy_balance=Balance(amount=Decimal("0.5"), asset=wbnb_token),
+                        sell_balance=Balance(amount=Decimal("0.5"), asset=bnb_token),
+                    ),
+                    InvestmentPlanStep(
+                        buy_balance=Balance(amount=Decimal("0.08"), asset=eth_token),
+                        sell_balance=Balance(amount=Decimal("0.5"), asset=bnb_token),
+                    ),
+                ]
+            )
+        )
 
 
 @mark.asyncio
@@ -98,10 +173,19 @@ async def test_execute_investment_plan_use_case_buy_only_tokens(
     id_generator: IdGenerator,
     date_time: DateTime,
     order_submitter: OrderSubmitter,
+    chain: Chain,
+    posting_repository: PostingRepository,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2"]
+    posting_repository.get_holding_balances.return_value = []
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("75"),
+        amount_atomic=75 * 10**18,
+        decimals=18,
+        asset=bnb_token,
+    )
 
     await use_case.execute(
         InvestmentPlan(
@@ -172,11 +256,20 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
     date_time: DateTime,
     order_submitter: OrderSubmitter,
     exchange: Exchange,
+    chain: Chain,
+    posting_repository: PostingRepository,
     investment_parameters: InvestmentParameters,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+    posting_repository.get_holding_balances.return_value = []
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("75"),
+        amount_atomic=75 * 10**18,
+        decimals=18,
+        asset=bnb_token,
+    )
 
     exchange.convert_balance_to_token.side_effect = [
         ExchangeConvertedBalance(
@@ -418,10 +511,19 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
     date_time: DateTime,
     order_submitter: OrderSubmitter,
     exchange: Exchange,
+    chain: Chain,
+    posting_repository: PostingRepository,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+    posting_repository.get_holding_balances.return_value = []
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("75"),
+        amount_atomic=75 * 10**18,
+        decimals=18,
+        asset=bnb_token,
+    )
 
     exchange.convert_balance_to_token.side_effect = [
         ExchangeConvertedBalance(
@@ -556,10 +658,19 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
 async def test_execute_investment_plan_use_case_buy_basket_sell_basket(
     id_generator: IdGenerator,
     date_time: DateTime,
+    chain: Chain,
+    posting_repository: PostingRepository,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+    posting_repository.get_holding_balances.return_value = []
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("75"),
+        amount_atomic=75 * 10**18,
+        decimals=18,
+        asset=bnb_token,
+    )
 
     with raises(CannotSwapBasketForAnotherException):
         await use_case.execute(
@@ -605,10 +716,32 @@ async def test_execute_investment_plan_use_case_sell_only_tokens(
     id_generator: IdGenerator,
     date_time: DateTime,
     order_submitter: OrderSubmitter,
+    posting_repository: PostingRepository,
+    chain: Chain,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2"]
+    posting_repository.get_holding_balances.return_value = [
+        BalanceAtomic(
+            amount=Decimal("75"),
+            amount_atomic=75 * 10**18,
+            decimals=18,
+            asset=wbnb_token,
+        ),
+        BalanceAtomic(
+            amount=Decimal("75"),
+            amount_atomic=75 * 10**18,
+            decimals=18,
+            asset=eth_token,
+        ),
+    ]
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("75"),
+        amount_atomic=75 * 10**18,
+        decimals=18,
+        asset=bnb_token,
+    )
 
     await use_case.execute(
         InvestmentPlan(
@@ -691,11 +824,45 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
     date_time: DateTime,
     order_submitter: OrderSubmitter,
     exchange: Exchange,
+    posting_repository: PostingRepository,
+    chain: Chain,
     investment_parameters: InvestmentParameters,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+    posting_repository.get_holding_balances.return_value = [
+        BalanceAtomic(
+            amount=Decimal("75"),
+            amount_atomic=75 * 10**18,
+            decimals=18,
+            asset=wbnb_token,
+        ),
+        BalanceAtomic(
+            amount=Decimal("75"),
+            amount_atomic=75 * 10**18,
+            decimals=18,
+            asset=sol_token,
+        ),
+        BalanceAtomic(
+            amount=Decimal("75"),
+            amount_atomic=75 * 10**18,
+            decimals=18,
+            asset=eth_token,
+        ),
+        BalanceAtomic(
+            amount=Decimal("75"),
+            amount_atomic=75 * 10**18,
+            decimals=18,
+            asset=usdt_token,
+        ),
+    ]
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("75"),
+        amount_atomic=75 * 10**18,
+        decimals=18,
+        asset=bnb_token,
+    )
     exchange.convert_balance_to_token.side_effect = [
         ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
@@ -927,10 +1094,32 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
     date_time: DateTime,
     order_submitter: OrderSubmitter,
     exchange: Exchange,
+    posting_repository: PostingRepository,
+    chain: Chain,
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2", "3", "4"]
+    posting_repository.get_holding_balances.return_value = [
+        BalanceAtomic(
+            amount=Decimal("75"),
+            amount_atomic=75 * 10**18,
+            decimals=18,
+            asset=wbnb_token,
+        ),
+        BalanceAtomic(
+            amount=Decimal("75"),
+            amount_atomic=75 * 10**18,
+            decimals=18,
+            asset=eth_token,
+        ),
+    ]
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("75"),
+        amount_atomic=75 * 10**18,
+        decimals=18,
+        asset=bnb_token,
+    )
     exchange.convert_balance_to_token.side_effect = [
         ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(

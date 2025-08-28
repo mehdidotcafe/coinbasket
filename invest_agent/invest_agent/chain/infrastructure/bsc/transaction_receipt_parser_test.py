@@ -9,7 +9,7 @@ from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
 from pytest import fixture, mark
 from web3 import AsyncHTTPProvider, AsyncWeb3
 from web3.types import TxReceipt
-from protocol.fixture.token import bnb_token, cake_token
+from protocol.fixture.token import bnb_token, cake_token, wbnb_token
 
 
 # 0.032540290120408155 BNB -> 10 CAKE
@@ -1424,6 +1424,110 @@ def receipt_cake_bnb() -> dict[str, Any]:
     }
 
 
+# WRAP 0.0023 BNB -> 0.0023 WBNB
+@fixture
+def receipt_bnb_wbnb() -> dict[str, Any]:
+    return {
+        "blockHash": HexBytes(
+            "0x3f012055c0dd712c71bbe02e4623c6902e084284260384942493743f132141b4"
+        ),
+        "blockNumber": 59086052,
+        "contractAddress": None,
+        "cumulativeGasUsed": 13415633,
+        "effectiveGasPrice": 100000000,
+        "from": "0xaF9e735b227ADFb08a3D45Ffc97D0bC60cd7Ed8e",
+        "gasUsed": 28274,
+        "logs": [
+            {
+                "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                "topics": [
+                    HexBytes(
+                        "0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c"
+                    ),
+                    HexBytes(
+                        "0x000000000000000000000000af9e735b227adfb08a3d45ffc97d0bc60cd7ed8e"
+                    ),
+                ],
+                "data": HexBytes(
+                    "0x00000000000000000000000000000000000000000000000000082bd67afbc000"
+                ),
+                "blockNumber": 59086052,
+                "transactionHash": HexBytes(
+                    "0x07acc91d8a7f02b028a81df4a7ba3b0777a36febcc8fd89aa4753217887a7bf3"
+                ),
+                "transactionIndex": 110,
+                "blockHash": HexBytes(
+                    "0x3f012055c0dd712c71bbe02e4623c6902e084284260384942493743f132141b4"
+                ),
+                "logIndex": 390,
+                "removed": False,
+            }
+        ],
+        "logsBloom": HexBytes(
+            "0x00000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040001000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200080000000000000000000000000000000000000000000000000400000000000000000"
+        ),
+        "status": 1,
+        "to": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "transactionHash": HexBytes(
+            "0x07acc91d8a7f02b028a81df4a7ba3b0777a36febcc8fd89aa4753217887a7bf3"
+        ),
+        "transactionIndex": 110,
+        "type": 0,
+    }
+
+
+# UNWRAP 0.0009 WBNB -> 0.0009 BNB
+@fixture
+def receipt_wbnb_bnb() -> dict[str, Any]:
+    return {
+        "blockHash": HexBytes(
+            "0x765bce1d5629172e15a5b08ae616d1ebc471c61d5991299da313ce542ec5f312"
+        ),
+        "blockNumber": 59091434,
+        "contractAddress": None,
+        "cumulativeGasUsed": 7271530,
+        "effectiveGasPrice": 100000000,
+        "from": "0xaF9e735b227ADFb08a3D45Ffc97D0bC60cd7Ed8e",
+        "gasUsed": 38195,
+        "logs": [
+            {
+                "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                "topics": [
+                    HexBytes(
+                        "0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65"
+                    ),
+                    HexBytes(
+                        "0x000000000000000000000000af9e735b227adfb08a3d45ffc97d0bc60cd7ed8e"
+                    ),
+                ],
+                "data": HexBytes(
+                    "0x0000000000000000000000000000000000000000000000000003328b944c4000"
+                ),
+                "blockNumber": 59091434,
+                "transactionHash": HexBytes(
+                    "0x4746213bd1ff272f98810157ea6ff597a5f934a17c4059e55d8d0c54b1268cea"
+                ),
+                "transactionIndex": 55,
+                "blockHash": HexBytes(
+                    "0x765bce1d5629172e15a5b08ae616d1ebc471c61d5991299da313ce542ec5f312"
+                ),
+                "logIndex": 240,
+                "removed": False,
+            }
+        ],
+        "logsBloom": HexBytes(
+            "0x00000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000400000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002200080000000000000000000000000000000000000000000000000000000000000000000"
+        ),
+        "status": 1,
+        "to": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "transactionHash": HexBytes(
+            "0x4746213bd1ff272f98810157ea6ff597a5f934a17c4059e55d8d0c54b1268cea"
+        ),
+        "transactionIndex": 55,
+        "type": 0,
+    }
+
+
 @fixture
 def w3():
     return AsyncWeb3(AsyncHTTPProvider("http://127.0.0.1:8545"))
@@ -1488,4 +1592,64 @@ async def test_bsc_transaction_receipt_parser_sell_token_buy_native(
             decimals=18,
         ),
         rate=Decimal("0.003255798222383928866666666667"),
+    )
+
+
+@mark.asyncio
+async def test_bsc_transaction_receipt_parser_wrap(
+    w3: AsyncWeb3, receipt_bnb_wbnb: TxReceipt
+):
+    parser = BscTransactionReceiptParser(w3=w3)
+
+    result = await parser.parse_receipt(
+        receipt=receipt_bnb_wbnb,
+        address="0xaF9e735b227ADFb08a3D45Ffc97D0bC60cd7Ed8e",
+        sell_token=bnb_token,
+        buy_token=wbnb_token,
+    )
+
+    assert result == ParsedReceipt(
+        executed_sell_balance=BalanceAtomic(
+            asset=bnb_token,
+            amount=Decimal("0.0023"),
+            amount_atomic=23 * 10**14,
+            decimals=18,
+        ),
+        executed_buy_balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("0.0023"),
+            amount_atomic=23 * 10**14,
+            decimals=18,
+        ),
+        rate=Decimal("1"),
+    )
+
+
+@mark.asyncio
+async def test_bsc_transaction_receipt_parser_unwrap(
+    w3: AsyncWeb3, receipt_wbnb_bnb: TxReceipt
+):
+    parser = BscTransactionReceiptParser(w3=w3)
+
+    result = await parser.parse_receipt(
+        receipt=receipt_wbnb_bnb,
+        address="0xaF9e735b227ADFb08a3D45Ffc97D0bC60cd7Ed8e",
+        sell_token=wbnb_token,
+        buy_token=bnb_token,
+    )
+
+    assert result == ParsedReceipt(
+        executed_sell_balance=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("0.0009"),
+            amount_atomic=9 * 10**14,
+            decimals=18,
+        ),
+        executed_buy_balance=BalanceAtomic(
+            asset=bnb_token,
+            amount=Decimal("0.0009"),
+            amount_atomic=9 * 10**14,
+            decimals=18,
+        ),
+        rate=Decimal("1"),
     )

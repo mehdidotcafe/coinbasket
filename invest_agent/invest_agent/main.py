@@ -11,8 +11,10 @@ from invest_agent.asset.get_asset_swap_price_use_case import (
 from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
+from invest_agent.investment.build_priced_investment_plan_use_case import (
+    BuildPricedInvestmentPlanUseCase,
+)
 from invest_agent.investment.fees import Fees
-from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.investment_planner.intent_investment_plan import (
     IntentInvestmentPlan,
     IntentInvestmentPlanStep,
@@ -123,6 +125,7 @@ date_time = PythonDateTime()
 configuration = Configuration()
 
 print(f"Thread ID: {configuration.langchain_thread_id}")
+print(f"Agent Env: {configuration.agent_env}")
 
 
 if configuration.langsmith_tracing:
@@ -254,12 +257,17 @@ order_submitter = OrderSubmitter(
     posting_repository=posting_repository,
 )
 
+build_priced_investment_plan_use_case = BuildPricedInvestmentPlanUseCase(
+    exchange=exchange, chain=chain, posting_repository=posting_repository
+)
+
 execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
     id_generator=id_generator,
     date_time=date_time,
     chain=chain,
     order_submitter=order_submitter,
     exchange=exchange,
+    posting_repository=posting_repository,
 )
 execute_pending_orders_use_case = ExecutePendingOrdersUseCase(
     order_submitter=order_submitter,
@@ -531,154 +539,6 @@ class IntentInvestmentPlanRequest(Model):
         return IntentInvestmentPlan(steps=[step.to_domain() for step in self.steps])
 
 
-# TODO: Handle basket
-async def _fill_intent_investment_plan_with_default(
-    intent_investment_plan: IntentInvestmentPlan,
-):
-    steps: list[IntentInvestmentPlanStep] = []
-
-    for step in intent_investment_plan.steps:
-        sell_asset = (
-            step.sell_asset_with_amount.asset
-            if step.sell_asset_with_amount
-            else chain.get_base_token()
-        )
-        sell_token = sell_asset.get_pricing_token()
-
-        buy_asset = (
-            step.buy_asset_with_amount.asset
-            if step.buy_asset_with_amount
-            else chain.get_base_token()
-        )
-        buy_token = buy_asset.get_pricing_token()
-
-        if sell_asset == buy_asset:
-            continue
-
-        if step.sell_asset_with_amount and step.sell_asset_with_amount.amount:
-            sell_amount = (
-                step.sell_asset_with_amount.amount * sell_asset.get_denomination()
-            )
-
-            (
-                sell_balance_amount_atomic,
-                sell_balance_decimals,
-            ) = await chain.convert_amount_to_amount_atomic(
-                token=sell_token,
-                amount_readable=sell_amount,
-            )
-            sell_balance = BalanceAtomic[Token](
-                asset=sell_token,
-                amount=sell_amount,
-                amount_atomic=sell_balance_amount_atomic,
-                decimals=sell_balance_decimals,
-            )
-
-            converted_balance = await exchange.convert_balance_to_token(
-                balance=sell_balance,
-                token=buy_token,
-                investment_parameters=InvestmentParameters(
-                    slippage_tolerance_in_percentage=Decimal(1)
-                ),
-            )
-
-            steps.append(
-                IntentInvestmentPlanStep(
-                    sell_asset_with_amount=IntentInvestmentPlanBalance(
-                        asset=sell_asset,
-                        amount=converted_balance.sell_balance.amount
-                        / sell_asset.get_denomination(),
-                    ),
-                    buy_asset_with_amount=IntentInvestmentPlanBalance(
-                        asset=buy_asset,
-                        amount=converted_balance.buy_balance.amount
-                        / buy_asset.get_denomination(),
-                    ),
-                )
-            )
-            continue
-
-        if step.buy_asset_with_amount and step.buy_asset_with_amount.amount:
-            buy_token_amount = (
-                step.buy_asset_with_amount.amount * buy_asset.get_denomination()
-            )
-            (
-                buy_balance_amount_atomic,
-                buy_balance_decimals,
-            ) = await chain.convert_amount_to_amount_atomic(
-                token=buy_token,
-                amount_readable=buy_token_amount,
-            )
-            buy_balance = BalanceAtomic[Token](
-                asset=buy_token,
-                amount=buy_token_amount,
-                amount_atomic=buy_balance_amount_atomic,
-                decimals=buy_balance_decimals,
-            )
-
-            converted_balance = await exchange.convert_balance_to_token(
-                balance=buy_balance,
-                token=sell_token,
-                investment_parameters=InvestmentParameters(
-                    slippage_tolerance_in_percentage=Decimal(1)
-                ),
-            )
-
-            steps.append(
-                IntentInvestmentPlanStep(
-                    sell_asset_with_amount=IntentInvestmentPlanBalance(
-                        asset=sell_asset,
-                        amount=converted_balance.buy_balance.amount
-                        / sell_asset.get_denomination(),
-                    ),
-                    buy_asset_with_amount=IntentInvestmentPlanBalance(
-                        asset=buy_asset,
-                        amount=converted_balance.sell_balance.amount
-                        / buy_asset.get_denomination(),
-                    ),
-                )
-            )
-            continue
-
-        if step.sell_asset_with_amount:
-            steps.append(
-                IntentInvestmentPlanStep(
-                    sell_asset_with_amount=IntentInvestmentPlanBalance(
-                        asset=sell_asset, amount=step.sell_asset_with_amount.amount
-                    ),
-                    buy_asset_with_amount=IntentInvestmentPlanBalance(
-                        asset=buy_asset,
-                        amount=step.buy_asset_with_amount.amount
-                        if step.buy_asset_with_amount
-                        else None,
-                    ),
-                )
-            )
-            continue
-
-        if step.buy_asset_with_amount:
-            steps.append(
-                IntentInvestmentPlanStep(
-                    sell_asset_with_amount=IntentInvestmentPlanBalance(
-                        asset=sell_asset,
-                        amount=step.sell_asset_with_amount.amount
-                        if step.sell_asset_with_amount
-                        else None,
-                    ),
-                    buy_asset_with_amount=IntentInvestmentPlanBalance(
-                        asset=buy_asset,
-                        amount=step.buy_asset_with_amount.amount,
-                    ),
-                )
-            )
-            continue
-
-    # If no sell_asset and buy_asset is provided we don't include the step for now
-    return IntentInvestmentPlan(
-        steps=steps,
-    )
-
-
 @tool(
     parse_docstring=True,
 )
@@ -704,7 +564,7 @@ async def invest_in_intent_investment_plan_use_case(
                         ticker="ETH",
                         address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
                     ),
-                    buy_asset_amount="5.33",
+                    buy_asset_amount="5.33"),
                     sell_asset=AssetRequest(
                         id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
                         name="Binance Coin",
@@ -712,7 +572,7 @@ async def invest_in_intent_investment_plan_use_case(
                         ticker="BNB",
                         address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeEEeE",
                     ),
-                    sell_asset_amount="10.95",
+                    sell_asset_amount="10.95"),
                 ),
                 IntentInvestmentPlanStepRequest(
                     buy_asset=None,
@@ -742,18 +602,18 @@ async def invest_in_intent_investment_plan_use_case(
         )
     """
 
-    filled_intent_investment_plan = await _fill_intent_investment_plan_with_default(
+    priced_investment_plan = await build_priced_investment_plan_use_case.execute(
         intent_investment_plan.to_domain()
     )
 
-    print(f"filled_intent_investment_plan: {filled_intent_investment_plan}")
+    print(f"priced_investment_plan: {priced_investment_plan}")
 
     investment_plan_as_dict = interrupt(
         {
             "ui": {
                 "id": "prepare_investment_plan",
                 "args": {
-                    "intent_investment_plan": filled_intent_investment_plan.to_dict(),
+                    "priced_investment_plan": priced_investment_plan.to_dict(),
                 },
             },
             "content": None,

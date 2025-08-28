@@ -9,6 +9,9 @@ from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
 )
+from invest_agent.investment.exception.insufficient_asset_balance import (
+    InsufficientAssetBalance,
+)
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.investment_planner.investment_plan import (
@@ -17,6 +20,7 @@ from invest_agent.investment.investment_planner.investment_plan import (
 )
 from invest_agent.investment.order.order import Order
 from invest_agent.investment.order.order_submitter import OrderSubmitter
+from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.basket import Basket
 from protocol.token import Token
 from shared.id_generator.id_generator import IdGenerator
@@ -49,12 +53,14 @@ class ExecuteInvestmentPlanUseCase:
         chain: Chain,
         order_submitter: OrderSubmitter,
         exchange: Exchange,
+        posting_repository: PostingRepository,
     ):
         self.id_generator = id_generator
         self.date_time = date_time
         self.chain = chain
         self.order_submitter = order_submitter
         self.exchange = exchange
+        self.posting_repository = posting_repository
 
     async def execute(self, investment_plan: InvestmentPlan) -> list[Order]:
         """Swap assets.
@@ -64,11 +70,12 @@ class ExecuteInvestmentPlanUseCase:
         Returns:
             A list of Orders created for the assets in the investment plan.
         """
+
         flattened_investment_plan = await self.__flatten_investment_plan(
             investment_plan
         )
 
-        print(f"flattened_investment_plan: {flattened_investment_plan}")
+        await self._assert_has_sufficient_balances(flattened_investment_plan)
 
         orders = list(
             itertools.chain.from_iterable(
@@ -274,3 +281,29 @@ class ExecuteInvestmentPlanUseCase:
             ),
             decimals=balance.decimals,
         )
+
+    async def _assert_has_sufficient_balances(
+        self, flattened_investment_plan: FlattenedInvestmentPlan
+    ):
+        holding_balances_per_token = await self._get_all_holding_balances()
+
+        for step in flattened_investment_plan.steps:
+            if step.sell_balance.asset.id not in holding_balances_per_token:
+                raise InsufficientAssetBalance(step.sell_balance.asset)
+
+            holding_balances_per_token[
+                step.sell_balance.asset.id
+            ].amount -= step.sell_balance.amount
+
+            if holding_balances_per_token[step.sell_balance.asset.id].amount < 0:
+                raise InsufficientAssetBalance(step.sell_balance.asset)
+
+    async def _get_all_holding_balances(self) -> dict[str, BalanceAtomic[Token]]:
+        holdings = await self.posting_repository.get_holding_balances()
+        available_balance = await self.chain.get_native_token_balance()
+
+        holding_balances_per_token = {
+            balance.asset.id: balance for balance in [*holdings, available_balance]
+        }
+
+        return holding_balances_per_token

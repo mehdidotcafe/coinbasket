@@ -57,8 +57,9 @@
     },
     "start": {
       "executor": "@nxlv/python:run-commands",
+      "dependsOn": ["infra:production"],
       "options": {
-        "command": "poetry run python -m invest_agent.main",
+        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m invest_agent.main'",
         "cwd": "{projectRoot}"
       },
       "configurations": {
@@ -124,6 +125,13 @@
         "cwd": "{projectRoot}"
       }
     },
+    "infra:production": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell 'docker compose -f docker-compose-production.yml up -d'",
+        "cwd": "{projectRoot}"
+      }
+    },
     "infra:down": {
       "executor": "nx:run-commands",
       "options": {
@@ -135,6 +143,13 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "env-cmd -f .env.test docker compose -f docker-compose-test.yml down",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:production:down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production docker compose -f docker-compose-production.yml down",
         "cwd": "{projectRoot}"
       }
     },
@@ -163,6 +178,13 @@
       "executor": "@nxlv/python:run-commands",
       "options": {
         "command": "env-cmd -f .env.test --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" upgrade head'",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:production:run": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" upgrade head'",
         "cwd": "{projectRoot}"
       }
     },
