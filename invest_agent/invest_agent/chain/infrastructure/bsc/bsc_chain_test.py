@@ -387,7 +387,9 @@ async def test_bsc_chain_wait_transaction_success(bsc_chain: BscChain, w3: Async
 
     is_success = await bsc_chain.wait_transaction(transaction_hash)
 
-    w3.eth.wait_for_transaction_receipt.assert_called_once_with(HexBytes("0x123994844"))
+    w3.eth.wait_for_transaction_receipt.assert_called_once_with(
+        HexBytes("0x123994844"), timeout=1200
+    )
 
     assert is_success
 
@@ -403,7 +405,9 @@ async def test_bsc_chain_wait_transaction_failure(bsc_chain: BscChain, w3: Async
 
     is_success = await bsc_chain.wait_transaction(transaction_hash)
 
-    w3.eth.wait_for_transaction_receipt.assert_called_once_with(HexBytes("0x123994844"))
+    w3.eth.wait_for_transaction_receipt.assert_called_once_with(
+        HexBytes("0x123994844"), timeout=1200
+    )
 
     assert not is_success
 
