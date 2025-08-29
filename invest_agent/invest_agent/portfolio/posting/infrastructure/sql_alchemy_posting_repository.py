@@ -64,7 +64,7 @@ class PostingModel(Base):
             transaction_id=posting.transaction_id,
             asset_id=posting.asset_balance.asset.id,
             asset=json.dumps(posting.asset_balance.asset.to_dict()),
-            amount=str(posting.asset_balance.amount),
+            amount=format(posting.asset_balance.amount, "f"),
             amount_atomic=posting.asset_balance.amount_atomic,
             decimals=posting.asset_balance.decimals,
             created_at=posting.created_at,

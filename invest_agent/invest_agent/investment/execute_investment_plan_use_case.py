@@ -123,6 +123,8 @@ class ExecuteInvestmentPlanUseCase:
 
         # TODO: Make async
         for step in investment_plan.steps:
+            if step.sell_balance.amount <= 0:
+                continue
             flattened_step = await self.__flatten_investment_plan_step(step)
             steps.extend(flattened_step)
 

@@ -14,7 +14,7 @@ class IntentInvestmentPlanBalance:
         """Convert the IntentInvestmentPlanBalance to a dictionary."""
         return {
             "asset": self.asset.to_dict(),
-            "amount": str(self.amount) if self.amount is not None else None,
+            "amount": format(self.amount, "f") if self.amount is not None else None,
         }
 
 

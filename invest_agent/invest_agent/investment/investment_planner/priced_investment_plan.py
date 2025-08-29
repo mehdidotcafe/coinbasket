@@ -15,8 +15,8 @@ class PricedInvestmentPlanBalance:
         """Convert the PricedInvestmentPlanBalance to a dictionary."""
         return {
             "asset": self.asset.to_dict(),
-            "amount": str(self.amount) if self.amount is not None else None,
-            "available_amount": str(self.available_amount),
+            "amount": format(self.amount, "f") if self.amount is not None else None,
+            "available_amount": format(self.available_amount, "f"),
         }
 
 

@@ -23,7 +23,7 @@ class Balance(Generic[T]):
         return json.dumps(
             {
                 "asset": self.asset.to_dict(),
-                "amount": str(self.amount),
+                "amount": format(self.amount, "f"),
             }
         )
 
@@ -76,7 +76,7 @@ class BalanceAtomic(Balance, Generic[T]):
         return json.dumps(
             {
                 "asset": self.asset.to_dict(),
-                "amount": str(self.amount),
+                "amount": format(self.amount, "f"),
                 "amount_atomic": self.amount_atomic,
                 "decimals": self.decimals,
             }

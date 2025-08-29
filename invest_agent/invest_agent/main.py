@@ -343,25 +343,26 @@ def get_agent_address():
     return chain.get_address()
 
 
-@tool()
-def get_invested_basket():
-    """Retrieve the invested basket in native value only.
+@tool(
+    parse_docstring=True,
+)
+async def get_portfolio(token: Token = usdt_token):
+    """Retrieve the portfolio.
+    The portfolio contains the list of assets held by the agent (holdings) and their balances both in asset token and in converted token (defaults to USDT).
+    It also contains the available cash balance in BNB and the list of pending (processing) orders.
 
+    Args:
+        token: The token to convert the asset balances to (defaults to USDT).
     Returns:
-        The invested basket made of the bids that were made by the agent when investing in the basket.
-        Each bid has a token and a balance_in and balance_out property.
-        The token has a name, display_name, ticker and address (contract address) property.
+        The portfolio of the agent.
     """
-    return None
+
+    return PortfolioResponse.from_domain(await get_portfolio_use_case.execute(token))
 
 
-@tool()
-async def get_portfolio_tool(token: Token = usdt_token):
-    """Retrieve the portfolio."""
-    return await get_portfolio_use_case.execute(token)
-
-
-@tool()
+@tool(
+    parse_docstring=True,
+)
 async def get_token_balance(token: Token):
     """Retrieve the balance of a specific token in the agent's wallet.
 
@@ -373,10 +374,12 @@ async def get_token_balance(token: Token):
     """
     balance = await chain.get_token_balance(token)
 
-    return balance
+    return BalanceAtomicResponse.from_domain(balance)
 
 
-@tool()
+@tool(
+    parse_docstring=True,
+)
 async def get_available_balance():
     """Retrieve the available balance.
 
@@ -385,7 +388,7 @@ async def get_available_balance():
     """
     balance = await chain.get_native_token_balance()
 
-    return balance
+    return BalanceAtomicResponse.from_domain(balance)
 
 
 @tool()
@@ -500,7 +503,7 @@ class IntentInvestmentPlanBalanceRequest(Model):
         """Convert the IntentInvestmentPlanBalance to a dictionary."""
         return {
             "asset": self.asset.to_domain().to_dict(),
-            "amount": str(self.amount) if self.amount is not None else None,
+            "amount": format(self.amount, "f") if self.amount is not None else None,
         }
 
 
@@ -644,7 +647,7 @@ tools = [
     get_agent_address,
     get_available_balance,
     get_token_balance,
-    get_portfolio_tool,
+    get_portfolio,
     get_agent_name,
     get_current_datetime,
 ]
@@ -763,6 +766,9 @@ def __create_agent_executor(conn: aiosqlite.Connection):
             "Users can buy, sell, or swap assets in their portfolio.  "
             "Before buying, selling or swapping assets, always show the user the intent investment plan you are creating by showing the list of assets to buy, sell or swap.  "
             "When you display a token, always display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't mention excluded assets.  "
+            "Always display amount as you get them, don't use scientific notation.  "
+            "Always use get_portfolio to fetch the portfolio information, you will return stale data if you don't.  "
+            "When an order has a status 'PENDING', it means the order is being processed.  "
             "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  "
             "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
         ),
@@ -861,7 +867,7 @@ class BalanceResponse(Model):
     def from_domain(balance: Balance) -> "BalanceResponse":
         """Convert the domain Balance to a BalanceResponse."""
         return BalanceResponse(
-            amount=str(balance.amount),
+            amount=format(balance.amount, "f"),
             asset=TokenResponse.from_domain(balance.asset)
             if isinstance(balance.asset, Token)
             else BasketResponse.from_domain(balance.asset),
@@ -1035,7 +1041,7 @@ class BalanceAtomicResponse(Model):
     def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
         """Convert the domain Balance to a BalanceResponse."""
         return BalanceAtomicResponse(
-            amount=str(balance.amount),
+            amount=format(balance.amount, "f"),
             amount_atomic=str(balance.amount_atomic),
             asset=TokenResponse.from_domain(balance.asset)
             if isinstance(balance.asset, Token)
@@ -1217,7 +1223,7 @@ class PortfolioResponse(Model):
     PortfolioResponse,
 )
 @authentication(configuration.agent_key)
-async def get_portfolio(_ctx: Context, req: PortfolioRequest):
+async def get_converted_portfolio(_ctx: Context, req: PortfolioRequest):
     converted_token_balances = await get_portfolio_use_case.execute(req.to_domain())
 
     return PortfolioResponse.from_domain(converted_token_balances)

@@ -169,6 +169,37 @@ async def test_execute_investment_plan_use_case_not_enough_available_balance(
 
 
 @mark.asyncio
+async def test_execute_investment_plan_use_case_empty_sell_balance(
+    order_submitter: OrderSubmitter,
+    chain: Chain,
+    posting_repository: PostingRepository,
+    use_case: ExecuteInvestmentPlanUseCase,
+):
+    posting_repository.get_holding_balances.return_value = []
+    chain.get_native_token_balance.return_value = BalanceAtomic(
+        amount=Decimal("75"),
+        amount_atomic=75 * 10**18,
+        decimals=18,
+        asset=bnb_token,
+    )
+
+    orders = await use_case.execute(
+        InvestmentPlan(
+            steps=[
+                InvestmentPlanStep(
+                    buy_balance=Balance(amount=Decimal("0.5"), asset=wbnb_token),
+                    sell_balance=Balance(amount=Decimal("0"), asset=bnb_token),
+                ),
+            ]
+        )
+    )
+
+    order_submitter.submit_orders.assert_called_once_with([])
+
+    assert len(orders) == 0
+
+
+@mark.asyncio
 async def test_execute_investment_plan_use_case_buy_only_tokens(
     id_generator: IdGenerator,
     date_time: DateTime,

@@ -54,7 +54,7 @@ class BuildPricedInvestmentPlanUseCase:
                 holding_balances_per_token, buy_asset
             )
 
-            if sell_asset == buy_asset:
+            if sell_token.address == buy_token.address:
                 continue
 
             if step.sell_asset_with_amount and step.sell_asset_with_amount.amount:
