@@ -358,7 +358,9 @@ async def get_portfolio(token: Token = usdt_token):
         The portfolio of the agent.
     """
 
-    return PortfolioResponse.from_domain(await get_portfolio_use_case.execute(token))
+    return PortfolioResponse.from_domain(
+        await get_portfolio_use_case.execute(token)
+    ).json()
 
 
 @tool(
@@ -375,7 +377,7 @@ async def get_token_balance(token: Token):
     """
     balance = await chain.get_token_balance(token)
 
-    return BalanceAtomicResponse.from_domain(balance)
+    return BalanceAtomicResponse.from_domain(balance).json()
 
 
 @tool(
@@ -391,7 +393,7 @@ async def get_available_balance():
     """
     balance = await chain.get_native_token_balance()
 
-    return BalanceAtomicResponse.from_domain(balance)
+    return BalanceAtomicResponse.from_domain(balance).json()
 
 
 @tool()
@@ -545,13 +547,131 @@ class IntentInvestmentPlanRequest(Model):
         return IntentInvestmentPlan(steps=[step.to_domain() for step in self.steps])
 
 
+class BalanceAtomicResponse(Model):
+    asset: AssetResponse
+    amount: str
+    amount_atomic: str
+    decimals: int
+
+    @staticmethod
+    def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
+        """Convert the domain Balance to a BalanceResponse."""
+        return BalanceAtomicResponse(
+            amount=format(balance.amount, "f"),
+            amount_atomic=str(balance.amount_atomic),
+            asset=TokenResponse.from_domain(balance.asset)
+            if isinstance(balance.asset, Token)
+            else BasketResponse.from_domain(balance.asset),
+            decimals=balance.decimals,
+        )
+
+
+class ChainTransactionResponse(Model):
+    id: str
+    try_id: str
+    order_id: str
+    type: ChainTransactionType
+    data: str
+    hash: str
+    status: ChainTransactionStatus
+
+    @staticmethod
+    def from_domain(domain: ChainTransaction) -> "ChainTransactionResponse":
+        return ChainTransactionResponse(
+            id=domain.id,
+            try_id=domain.try_id,
+            order_id=domain.order_id,
+            type=domain.type,
+            data=domain.data,
+            hash=domain.hash,
+            status=domain.status,
+        )
+
+
+class FeesResponse(Model):
+    chain_fee: int
+    provider_fee: int | None = None
+    service_fee: int | None = None
+
+    @staticmethod
+    def from_domain(domain: Fees) -> "FeesResponse":
+        return FeesResponse(
+            chain_fee=domain.chain_fee,
+            provider_fee=domain.provider_fee,
+            service_fee=domain.service_fee,
+        )
+
+
+class TryResponse(Model):
+    id: str
+    order_id: str
+    created_at: int
+    chain_transactions: list[ChainTransactionResponse]
+    provider: str
+    buy_balance: BalanceAtomicResponse
+    fees: FeesResponse | None = None
+
+    @staticmethod
+    def from_domain(domain: Try) -> "TryResponse":
+        return TryResponse(
+            id=domain.id,
+            order_id=domain.order_id,
+            created_at=domain.created_at,
+            chain_transactions=[
+                ChainTransactionResponse.from_domain(tx)
+                for tx in domain.chain_transactions
+            ],
+            provider=domain.provider,
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            fees=FeesResponse.from_domain(domain.fees) if domain.fees else None,
+        )
+
+
+class OrderResponse(Model):
+    id: str
+    sell_balance: BalanceAtomicResponse
+    buy_balance: BalanceAtomicResponse
+    type: OrderType
+    tries: list[TryResponse]
+    created_at: int
+    status: OrderStatus
+    trigger: OrderTrigger
+
+    @staticmethod
+    def from_domain(domain: Order) -> "OrderResponse":
+        return OrderResponse(
+            id=domain.id,
+            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            type=domain.type,
+            tries=[TryResponse.from_domain(try_) for try_ in domain.tries],
+            created_at=domain.created_at,
+            status=domain.status,
+            trigger=domain.trigger,
+        )
+
+
+class InvestmentPlanResponse(Model):
+    message: str
+    orders: list[OrderResponse]
+
+    @staticmethod
+    def from_domain(message: str, orders: list[Order]) -> "InvestmentPlanResponse":
+        return InvestmentPlanResponse(
+            message=message,
+            orders=[OrderResponse.from_domain(order) for order in orders],
+        )
+
+
 @tool(
     parse_docstring=True,
 )
-async def invest_in_intent_investment_plan_use_case(
+async def execute_intent_investment_plan_use_case(
     intent_investment_plan: IntentInvestmentPlanRequest,
-) -> dict[str, Any]:
-    """Invest in the intent investment plan.
+):
+    """Executes the intent investment plan.
+    If the user confirms the investment plan, the orders are submitted to the chain.
+    If the user cancels the investment plan, no order is submitted, and don't try to invest in the investment plan again.
 
     Args:
         intent_investment_plan (IntentInvestmentPlanRequest): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.
@@ -631,22 +751,22 @@ async def invest_in_intent_investment_plan_use_case(
     )
 
     if investment_plan.status == "CANCEL":
-        return {
-            "message": "Investment plan successfully cancelled by the user.",
-        }
+        return InvestmentPlanResponse.from_domain(
+            "Investment plan successfully cancelled by the user. Don't try to invest in the investment plan again.",
+            [],
+        ).json()
 
     orders = await execute_investment_plan_use_case.execute(investment_plan.to_domain())
 
-    return {
-        "message": "Orders have been submitted successfully.",
-        "orders": orders,
-    }
+    return InvestmentPlanResponse.from_domain(
+        "Investment plan and orders have been submitted successfully.", orders
+    ).json()
 
 
 tools = [
     get_basket_info,
     get_token_info,
-    invest_in_intent_investment_plan_use_case,
+    execute_intent_investment_plan_use_case,
     get_agent_address,
     get_available_balance,
     get_token_balance,
@@ -1031,110 +1151,6 @@ class PortfolioRequest(Model):
             display_name=self.token.display_name,
             ticker=self.token.ticker,
             address=self.token.address,
-        )
-
-
-class BalanceAtomicResponse(Model):
-    asset: AssetResponse
-    amount: str
-    amount_atomic: str
-    decimals: int
-
-    @staticmethod
-    def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
-        """Convert the domain Balance to a BalanceResponse."""
-        return BalanceAtomicResponse(
-            amount=format(balance.amount, "f"),
-            amount_atomic=str(balance.amount_atomic),
-            asset=TokenResponse.from_domain(balance.asset)
-            if isinstance(balance.asset, Token)
-            else BasketResponse.from_domain(balance.asset),
-            decimals=balance.decimals,
-        )
-
-
-class FeesResponse(Model):
-    chain_fee: int
-    provider_fee: int | None = None
-    service_fee: int | None = None
-
-    @staticmethod
-    def from_domain(domain: Fees) -> "FeesResponse":
-        return FeesResponse(
-            chain_fee=domain.chain_fee,
-            provider_fee=domain.provider_fee,
-            service_fee=domain.service_fee,
-        )
-
-
-class ChainTransactionResponse(Model):
-    id: str
-    try_id: str
-    order_id: str
-    type: ChainTransactionType
-    data: str
-    hash: str
-    status: ChainTransactionStatus
-
-    @staticmethod
-    def from_domain(domain: ChainTransaction) -> "ChainTransactionResponse":
-        return ChainTransactionResponse(
-            id=domain.id,
-            try_id=domain.try_id,
-            order_id=domain.order_id,
-            type=domain.type,
-            data=domain.data,
-            hash=domain.hash,
-            status=domain.status,
-        )
-
-
-class TryResponse(Model):
-    id: str
-    order_id: str
-    created_at: int
-    chain_transactions: list[ChainTransactionResponse]
-    provider: str
-    buy_balance: BalanceAtomicResponse
-    fees: FeesResponse | None = None
-
-    @staticmethod
-    def from_domain(domain: Try) -> "TryResponse":
-        return TryResponse(
-            id=domain.id,
-            order_id=domain.order_id,
-            created_at=domain.created_at,
-            chain_transactions=[
-                ChainTransactionResponse.from_domain(tx)
-                for tx in domain.chain_transactions
-            ],
-            provider=domain.provider,
-            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
-            fees=FeesResponse.from_domain(domain.fees) if domain.fees else None,
-        )
-
-
-class OrderResponse(Model):
-    id: str
-    sell_balance: BalanceAtomicResponse
-    buy_balance: BalanceAtomicResponse
-    type: OrderType
-    tries: list[TryResponse]
-    created_at: int
-    status: OrderStatus
-    trigger: OrderTrigger
-
-    @staticmethod
-    def from_domain(domain: Order) -> "OrderResponse":
-        return OrderResponse(
-            id=domain.id,
-            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
-            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
-            type=domain.type,
-            tries=[TryResponse.from_domain(try_) for try_ in domain.tries],
-            created_at=domain.created_at,
-            status=domain.status,
-            trigger=domain.trigger,
         )
 
 

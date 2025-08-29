@@ -263,8 +263,10 @@ class BscChain(Chain):
         self,
         transaction_hash: str,
     ) -> bool:
+        # TODO: See what to do if the transaction is not on chain after timeout
         receipt = await self.w3.eth.wait_for_transaction_receipt(
-            HexBytes(transaction_hash)
+            HexBytes(transaction_hash),
+            timeout=1200,
         )
 
         if receipt["status"] == 0:
