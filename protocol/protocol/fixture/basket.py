@@ -1,0 +1,51 @@
+from decimal import Decimal
+from protocol.basket import Basket
+from protocol.fixture.token import btc_token, wbnb_token, eth_token, sol_token
+from protocol.token import Token
+
+big4_basket = Basket(
+    id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
+    name="Big4",
+    display_name="Big4",
+    ticker="B4",
+    description="This curated basket offers broad exposure to the crypto market through a selection of established, high-liquidity digital assets spanning different blockchain ecosystems. It is designed to balance long-term value preservation with growth potential, reflecting both foundational and emerging trends in decentralized technology. The combination supports diversification across transaction layers, use cases, and network adoption, making it a resilient core holding for crypto-oriented portfolios.",
+    denomination=Decimal("10.0"),
+    tokens=[
+        btc_token,
+        eth_token,
+        sol_token,
+        wbnb_token,
+    ],
+)
+
+memecoinmania_basket = Basket(
+    id="c0e724d3-c4d0-4bd0-973d-edd3907ecf51",
+    name="Memecoin Mania",
+    display_name="Memecoin Mania",
+    ticker="MEME",
+    description="A basket of popular memecoins",
+    denomination=Decimal("1"),
+    tokens=[
+        Token(
+            id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+            name="Dogecoin",
+            display_name="Dogecoin",
+            ticker="DOGE",
+            address="0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+        ),
+        Token(
+            id="bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
+            name="SHIBA INU",
+            display_name="Shiba Inu",
+            ticker="SHIB",
+            address="0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
+        ),
+        Token(
+            id="bsc:0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
+            name="Pepe",
+            display_name="Pepe",
+            ticker="PEPE",
+            address="0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
+        ),
+    ],
+)

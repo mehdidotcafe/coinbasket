@@ -12,6 +12,13 @@ Ensure the following dependencies are installed:
 - Python (>= 3.10)
 - Node.js (>= 22.0.0)
 
+Before the first run and from the root of the repository, run:
+```bash
+npm install
+./nx install data_agent
+```
+This installs Python and Javascript dependencies (if needed).
+
 ### Environment variables
 In the `data_agent` directory, copy `.env.example` to `.env` and fill in the required variables. Once configured, the agent will be ready to run in either development or production mode.
 
@@ -30,7 +37,7 @@ From the root of the repository, run:
 ```bash	
 ./nx dev data_agent
 ```
-This installs Python dependencies (if needed), starts the Qdrant container, and launches the data agent.
+This starts the Qdrant container, and launches the data agent.
 
 ## Production mode
 Production mode is intended for deployments where you already have a Qdrant instance running. In this mode, the agent connects to your existing database and doesn’t start any containers.

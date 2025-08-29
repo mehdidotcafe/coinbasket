@@ -71,7 +71,7 @@ jobs:
           npx nx install ${{ matrix.project }}
 
       - name: Run lint check
-        run: npx nx lint:check ${{ matrix.project }}
+        run: npx nx lint ${{ matrix.project }}
 
   test:
     needs: get-affected
@@ -101,42 +101,48 @@ jobs:
           npm install
           npx nx install ${{ matrix.project }}
 
-      - name: Run unit tests
-        run: npx nx test ${{ matrix.project }}
-
-  test-integration:
-    needs: get-affected
-    runs-on: ubuntu-latest
-    strategy:
-      matrix: ${{ fromJson(needs.get-affected.outputs.affected_application) }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
-
-      - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-
-      - name: Add Poetry to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npx nx install ${{ matrix.project }}
-
       # TODO: See how to handle this better. Maybe mocking every external API with MockServer.
       - name: Create .env file from GitHub Secret
         run: |
           echo "${{ secrets.ENV_FILE_CONTENTS }}" > ${{ matrix.project }}/.env
 
-      - name: Run integration tests
-        run: npx nx test:integration ${{ matrix.project }}
+      - name: Run unit tests
+        run: npx nx test ${{ matrix.project }}
+
+  # TODO: Uncomment when 0x API is mocked
+  # test-integration:
+  #   needs: get-affected
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix: ${{ fromJson(needs.get-affected.outputs.affected_application) }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '20'
+
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.13'
+
+  #     - name: Install Poetry
+  #       run: curl -sSL https://install.python-poetry.org | python3 -
+
+  #     - name: Add Poetry to PATH
+  #       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+  #     - name: Install dependencies
+  #       run: |
+  #         npm install
+  #         npx nx install ${{ matrix.project }}
+
+  #     # TODO: See how to handle this better. Maybe mocking every external API with MockServer.
+  #     - name: Create .env file from GitHub Secret
+  #       run: |
+  #         echo "${{ secrets.ENV_FILE_CONTENTS }}" > ${{ matrix.project }}/.env
+
+  #     - name: Run integration tests
+  #       run: npx nx test:integration ${{ matrix.project }}

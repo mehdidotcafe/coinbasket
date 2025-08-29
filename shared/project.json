@@ -26,7 +26,7 @@
       "executor": "@nxlv/python:remove",
       "options": {}
     },
-    "lint": {
+    "lint:fix": {
       "executor": "@nxlv/python:run-commands",
       "options": {
         "command": "poetry run ruff check --fix",
@@ -34,7 +34,7 @@
       },
       "cache": true
     },
-    "lint:check": {
+    "lint": {
       "executor": "@nxlv/python:run-commands",
       "options": {
         "command": "poetry run ruff check",

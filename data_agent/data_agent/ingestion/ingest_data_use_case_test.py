@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest import mock
 
 from protocol.basket import Basket
@@ -38,6 +39,7 @@ async def test_ingest_data_use_case(
             metadata={
                 "type": "token",
                 "source": Token(
+                    id="bsc:0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
                     name="Wrapped BNB",
                     display_name="Wrapped BNB",
                     ticker="WBNB",
@@ -62,10 +64,15 @@ async def test_ingest_data_use_case(
             metadata={
                 "type": "basket",
                 "source": Basket(
+                    id="9760131e-8ca8-4d36-a636-2720e1d21bc7",
                     name="Wrapped BNB",
+                    display_name="Wrapped BNB",
+                    ticker="WBNB",
                     description="Just BNB",
+                    denomination=Decimal("1.0"),
                     tokens=[
                         Token(
+                            id="bsc:0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
                             name="Wrapped BNB",
                             display_name="Wrapped BNB",
                             ticker="WBNB",
@@ -76,6 +83,8 @@ async def test_ingest_data_use_case(
             },
             page_content="""
               name: Wrapped BNB
+              display_name: Wrapped BNB
+              ticker: WBNB
               tokens:
               1.  name: Wrapped BNB
                   display_name: Wrapped BNB

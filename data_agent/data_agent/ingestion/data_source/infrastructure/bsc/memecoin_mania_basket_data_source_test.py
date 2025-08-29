@@ -16,4 +16,4 @@ def test_memecoin_mania_basket_data_source_version():
     data_source = MemecoinManiaBasketDataSource()
     version = data_source.version()
 
-    assert version == 1
+    assert version == 2

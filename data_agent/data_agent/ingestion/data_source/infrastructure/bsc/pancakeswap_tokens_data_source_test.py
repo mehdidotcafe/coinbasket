@@ -66,7 +66,7 @@ def test_pancakeswap_tokens_data_source_version(
     data_source = PancakeswapTokenListDataSource(http_request, id_generator)
     version = data_source.version()
 
-    assert version == 1
+    assert version == 2
 
 
 @mark.asyncio

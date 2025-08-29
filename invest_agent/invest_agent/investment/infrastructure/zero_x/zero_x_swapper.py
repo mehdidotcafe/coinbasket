@@ -1,12 +1,15 @@
-import asyncio
 from decimal import Decimal
-from typing import TypedDict, cast
+from typing import TypedDict
 from hexbytes import HexBytes
-from invest_agent.chain.balance import Balance
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain, Gas
 from invest_agent.chain.contract import Contract
-from invest_agent.investment.basket_investment import Bid
-from invest_agent.investment.exchange.exchange import ConvertedBalance, Exchange, Wallet
+
+from invest_agent.investment.exchange.exchange import (
+    ExchangeConvertedBalance,
+    Exchange,
+    TransactionData,
+)
 from invest_agent.investment.infrastructure.zero_x.exception.swap_insufficient_liquidity import (
     SwapInsufficientLiquidity,
 )
@@ -19,9 +22,9 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
 from invest_agent.investment.investment_parameters import InvestmentParameters
-from invest_agent.investment.investment_plan import InvestmentPlan, InvestmentPlanStep
+
+from invest_agent.investment.order.order import Order
 from protocol.token import Token
-from tenacity import retry, stop_after_attempt
 from web3 import AsyncWeb3
 
 from eth_account.signers.local import LocalAccount
@@ -58,137 +61,28 @@ class ZeroXSwapper(Exchange):
             private_key=configuration["private_key"]
         )
 
-    async def execute_investment_plan(
+    def get_name(self):
+        return "0X_PROTOCOL"
+
+    async def build_transactions(
         self,
-        investment_plan: InvestmentPlan,
+        order: Order,
         investment_parameters: InvestmentParameters,
-    ) -> list[Bid]:
-        tasks = [
-            self.__execute_investment_step(
-                step=step,
-                sell_token=investment_plan.sell_total_balance.token,
-                investment_parameters=investment_parameters,
-            )
-            for step in investment_plan.steps
-        ]
+    ) -> list[TransactionData]:
+        transactions_data: list[TransactionData | None] = []
+        chain_id = await self.chain.get_chain_id()
 
-        bids: list[Bid] = []
-
-        for task in tasks:
-            try:
-                bids.append(await task)
-            except BaseException as e:
-                print(f"Investment step failed: {e!r}")
-
-        return bids
-
-    @retry(stop=stop_after_attempt(RETRY_ATTEMPTS), reraise=True)
-    async def __execute_investment_step(
-        self,
-        step: InvestmentPlanStep,
-        sell_token: Token,
-        investment_parameters: InvestmentParameters,
-    ) -> Bid:
-        print(
-            f"=== {step.token.display_name} - {step.token.address} ({step.sell_balance.amount}) ==="
-        )
-
-        amount = int(
-            await self.__get_token_amount(
-                token=sell_token,
-                raw_amount=step.sell_balance.amount,
-            )
-        )
-
-        quote_result = await self.api_client.get_quote(
-            chain_id=await self.chain.get_chain_id(),
-            taker=self.account.address,
-            sell_token=sell_token.address,
-            buy_token=step.token.address,
-            amount=amount,
-            slippage_bps=self.__compute_slippage_tolerance_in_bps(
-                investment_parameters.slippage_tolerance_in_percentage
-            ),
-            investment_parameters=investment_parameters,
-        )
-        quote = quote_result.root
-
-        if isinstance(quote, InsufficientLiquidityQuote):
-            raise SwapInsufficientLiquidity()
-
-        transaction_data = self.__make_transaction_data(quote)
-
-        receipt = await self.chain.sign_send_wait_transaction(
-            gas=Gas(
-                gas=int(quote.transaction.gas) if quote.transaction.gas else None,
-                gas_price=int(quote.transaction.gasPrice)
-                if quote.transaction.gasPrice
-                else None,
-            ),
-            to_address=quote.transaction.to,
-            encoded_input=transaction_data,
-            amount=int(quote.transaction.value) if quote.transaction.value else 0,
-        )
-
-        print(
-            f"Receipt for {sell_token.display_name} -> {step.token.display_name}: {receipt}"
-        )
-
-        return await self.__make_bid(
-            quote=quote,
-            sell_token=sell_token,
-            buy_token=step.token,
-        )
-
-    async def execute_divestment_plan(
-        self,
-        divestment_plan: InvestmentPlan,
-        investment_parameters: InvestmentParameters,
-    ) -> list[Bid]:
-        tasks = [
-            self.__execute_divestment_plan_step(
-                step=step,
-                buy_token=divestment_plan.sell_total_balance.token,
-                investment_parameters=investment_parameters,
-            )
-            for step in divestment_plan.steps
-        ]
-
-        bids: list[Bid] = []
-        for task in tasks:
-            try:
-                bids.append(await task)
-            except BaseException as e:
-                print(f"Divestment step failed: {e!r}")
-
-        return bids
-
-    @retry(stop=stop_after_attempt(RETRY_ATTEMPTS), reraise=True)
-    async def __execute_divestment_plan_step(
-        self,
-        step: InvestmentPlanStep,
-        buy_token: Token,
-        investment_parameters: InvestmentParameters,
-    ) -> Bid:
-        sell_token = step.sell_balance.token
-
-        print(
-            f"=== {sell_token.display_name} - {sell_token.address} ({step.sell_balance.amount}) ==="
-        )
-
-        amount = int(
-            await self.__get_token_amount(
-                token=step.sell_balance.token,
-                raw_amount=step.sell_balance.amount,
-            )
+        amount_atomic, _decimals = await self.chain.convert_amount_to_amount_atomic(
+            token=order.sell_balance.asset,
+            amount_readable=order.sell_balance.amount,
         )
 
         price = await self.api_client.get_price(
-            chain_id=await self.chain.get_chain_id(),
+            chain_id=chain_id,
             taker=self.account.address,
-            sell_token=step.sell_balance.token.address,
-            amount=amount,
-            buy_token=buy_token.address,
+            sell_token=order.sell_balance.asset.address,
+            amount=amount_atomic,
+            buy_token=order.buy_balance.asset.address,
             sell_entire_balance=True,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
@@ -196,15 +90,16 @@ class ZeroXSwapper(Exchange):
             investment_parameters=investment_parameters,
         )
 
-        await self.__approve_allowance(price=price, token=sell_token)
+        transactions_data.append(
+            self.__build_approve_allowance(price=price, token=order.sell_balance.asset)
+        )
 
         quote_result = await self.api_client.get_quote(
-            chain_id=await self.chain.get_chain_id(),
+            chain_id=chain_id,
             taker=self.account.address,
-            sell_token=sell_token.address,
-            buy_token=buy_token.address,
-            amount=amount,
-            sell_entire_balance=True,
+            sell_token=order.sell_balance.asset.address,
+            buy_token=order.buy_balance.asset.address,
+            amount=amount_atomic,
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
             ),
@@ -215,139 +110,90 @@ class ZeroXSwapper(Exchange):
         if isinstance(quote, InsufficientLiquidityQuote):
             raise SwapInsufficientLiquidity()
 
-        transaction_data = self.__make_transaction_data(quote)
-
-        receipt = await self.chain.sign_send_wait_transaction(
-            gas=Gas(
-                gas=int(quote.transaction.gas) if quote.transaction.gas else None,
-                gas_price=int(quote.transaction.gasPrice)
-                if quote.transaction.gasPrice
-                else None,
-            ),
-            to_address=quote.transaction.to,
-            encoded_input=transaction_data,
-            amount=int(quote.transaction.value) if quote.transaction.value else 0,
-        )
-        print(
-            f"Receipt for {sell_token.display_name} -> {buy_token.display_name}: {receipt}"
-        )
-
-        return await self.__make_bid(
-            quote=quote,
-            buy_token=buy_token,
-            sell_token=sell_token,
-        )
-
-    async def get_wallet_in_token(
-        self,
-        tokens_balance: list[Balance],
-        token: Token,
-        investment_parameters: InvestmentParameters,
-    ) -> Wallet:
-        balances: list[ConvertedBalance] = []
-
-        tasks = [
-            self.__convert_balance_to_token(
-                balance=balance,
-                token=token,
-                investment_parameters=investment_parameters,
+        transactions_data.append(
+            TransactionData(
+                type="SEND",
+                amount=int(quote.transaction.value) if quote.transaction.value else 0,
+                gas=Gas(
+                    gas=int(quote.transaction.gas) if quote.transaction.gas else None,
+                    gas_price=int(quote.transaction.gasPrice)
+                    if quote.transaction.gasPrice
+                    else None,
+                ),
+                to_address=quote.transaction.to,
+                encoded_input=self.__make_encoded_input(quote),
             )
-            for balance in tokens_balance
+        )
+
+        return [
+            transaction_data
+            for transaction_data in transactions_data
+            if transaction_data is not None
         ]
 
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        for i, result in enumerate(results):
-            if isinstance(result, BaseException):
-                print(f"Divestment step {i} failed: {result!r}")
-            else:
-                balances.append(result)
-
-        return Wallet(
-            balances=balances,
-            total_balance=self.__sum_balances(balances, token),
-        )
-
-    async def __convert_balance_to_token(
+    async def convert_balance_to_token(
         self,
-        balance: Balance,
+        balance: BalanceAtomic[Token],
         token: Token,
         investment_parameters: InvestmentParameters,
     ):
-        if self.__is_same_token(balance.token, token):
-            return ConvertedBalance(
-                sell_balance=Balance(
-                    token=balance.token,
+        if self.__is_same_token(balance.asset, token):
+            return ExchangeConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=balance.asset,
                     amount=balance.amount,
+                    amount_atomic=balance.amount_atomic,
+                    decimals=balance.decimals,
                 ),
-                buy_balance=Balance(
-                    token=token,
+                buy_balance=BalanceAtomic(
+                    asset=token,
                     amount=balance.amount,
+                    amount_atomic=balance.amount_atomic,
+                    decimals=balance.decimals,
                 ),
             )
 
-        amount = int(
-            await self.__get_token_amount(
-                token=balance.token,
-                raw_amount=balance.amount,
-            )
+        amount_atomic, _decimals = await self.chain.convert_amount_to_amount_atomic(
+            token=balance.asset,
+            amount_readable=balance.amount,
         )
 
         price = await self.api_client.get_price(
             chain_id=await self.chain.get_chain_id(),
             taker=self.account.address,
-            sell_token=balance.token.address,
+            sell_token=balance.asset.address,
             buy_token=token.address,
-            amount=amount,
+            amount=amount_atomic,
             investment_parameters=investment_parameters,
         )
 
-        return ConvertedBalance(
-            sell_balance=Balance(
-                token=balance.token,
-                amount=await self.__get_raw_amount(
-                    token=balance.token,
-                    amount=Decimal(price.sellAmount),
-                ),
-            ),
-            buy_balance=Balance(
-                token=token,
-                amount=await self.__get_raw_amount(
-                    token=token,
-                    amount=Decimal(price.buyAmount),
-                ),
-            ),
-        )
+        sell_balance_amount_atomic = int(price.sellAmount)
+        buy_balance_amount_atomic = int(price.buyAmount)
 
-    def __sum_balances(self, balances: list[ConvertedBalance], token: Token):
-        return Balance(
+        sell_amount, sell_decimals = await self.chain.convert_amount_atomic_to_amount(
+            amount_atomic=sell_balance_amount_atomic, token=balance.asset
+        )
+        buy_amount, buy_decimals = await self.chain.convert_amount_atomic_to_amount(
+            amount_atomic=buy_balance_amount_atomic,
             token=token,
-            amount=cast(
-                Decimal, sum([balance.buy_balance.amount for balance in balances])
+        )
+
+        return ExchangeConvertedBalance(
+            sell_balance=BalanceAtomic(
+                asset=balance.asset,
+                amount=sell_amount,
+                amount_atomic=sell_balance_amount_atomic,
+                decimals=sell_decimals,
+            ),
+            buy_balance=BalanceAtomic(
+                asset=token,
+                amount=buy_amount,
+                amount_atomic=buy_balance_amount_atomic,
+                decimals=buy_decimals,
             ),
         )
 
-    async def __make_bid(
-        self,
-        quote: Quote,
-        sell_token: Token,
-        buy_token: Token,
-    ) -> Bid:
-        return Bid(
-            token=buy_token,
-            sell_balance=Balance(
-                token=sell_token,
-                amount=await self.__get_raw_amount(
-                    sell_token, Decimal(quote.sellAmount)
-                ),
-            ),
-            buy_balance=Balance(
-                token=buy_token,
-                amount=await self.__get_raw_amount(buy_token, Decimal(quote.buyAmount)),
-            ),
-        )
-
-    def __make_transaction_data(self, quote: Quote):
+    def __make_encoded_input(self, quote: Quote):
         if quote.permit2 is None:
             return quote.transaction.data
 
@@ -381,9 +227,9 @@ class ZeroXSwapper(Exchange):
         sig_len_hex = "0x" + sig_len.to_bytes(32, "big").hex()
         return sig_len_hex
 
-    async def __approve_allowance(self, price: Price, token: Token):
+    def __build_approve_allowance(self, price: Price, token: Token):
         if self.chain.is_native_token(token) or price.issues.allowance is None:
-            return
+            return None
 
         encoded_input = self.contract.make_approve_transaction_input(
             token_address=token.address,
@@ -391,30 +237,12 @@ class ZeroXSwapper(Exchange):
             amount=Decimal(2**256 - 1),
         )
 
-        receipt = await self.chain.sign_send_wait_transaction(
+        return TransactionData(
+            type="SIGN",
             amount=0,
             encoded_input=encoded_input,
             to_address=token.address,
         )
-
-        return receipt
-
-    async def __get_token_amount(self, token: Token, raw_amount: Decimal) -> Decimal:
-        if self.chain.is_native_token(token):
-            return Decimal(self.w3.to_wei(raw_amount, "ether"))
-
-        decimals = await self.contract.get_decimals(token.address)
-
-        return raw_amount * (10**decimals)
-
-    async def __get_raw_amount(self, token: Token, amount: Decimal) -> Decimal:
-        decimals = (
-            18
-            if self.chain.is_native_token(token)
-            else await self.contract.get_decimals(token.address)
-        )
-
-        return amount / (10**decimals)
 
     def __compute_slippage_tolerance_in_bps(
         self, slippage_tolerance_in_percentage: Decimal

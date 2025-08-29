@@ -1,47 +1,52 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any, Literal
 
-from invest_agent.chain.balance import Balance
-from invest_agent.investment.basket_investment import Bid
+from invest_agent.chain.balance import BalanceAtomic
+
+from invest_agent.chain.chain import Gas
 from invest_agent.investment.investment_parameters import InvestmentParameters
-from invest_agent.investment.investment_plan import InvestmentPlan
+
+from invest_agent.investment.order.order import Order
 from protocol.token import Token
 
 
 @dataclass
-class ConvertedBalance:
-    sell_balance: Balance
-    buy_balance: Balance
+class ExchangeConvertedBalance:
+    sell_balance: BalanceAtomic[Token]
+    buy_balance: BalanceAtomic[Token]
 
 
 @dataclass
-class Wallet:
-    balances: list[ConvertedBalance]
-    total_balance: Balance
+class TransactionData:
+    type: Literal["SIGN", "SEND"]
+    amount: int
+    encoded_input: Any
+    gas: Gas | None = None
+    to_address: str | None = None
 
 
 class Exchange(ABC):
     @abstractmethod
-    async def execute_investment_plan(
+    async def build_transactions(
         self,
-        investment_plan: InvestmentPlan,
+        order: Order,
         investment_parameters: InvestmentParameters,
-    ) -> list[Bid]:
+    ) -> list[TransactionData]:
+        """Creates transaction data to be sent on-chain for the given order."""
         raise NotImplementedError
 
     @abstractmethod
-    async def execute_divestment_plan(
+    async def convert_balance_to_token(
         self,
-        divestment_plan: InvestmentPlan,
-        investment_parameters: InvestmentParameters,
-    ) -> list[Bid]:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def get_wallet_in_token(
-        self,
-        tokens_balance: list[Balance],
+        balance: BalanceAtomic[Token],
         token: Token,
         investment_parameters: InvestmentParameters,
-    ) -> Wallet:
+    ) -> ExchangeConvertedBalance:
+        """Converts an asset balance to an asset."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_name(self) -> str:
+        """Returns the name of the exchange."""
         raise NotImplementedError

@@ -1,0 +1,13 @@
+name: coinbasket_invest_agent_production
+services:
+  postgres_production:
+    image: postgres:17.5
+    container_name: postgres_production
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${AGENT_NAME}
+    ports:
+      - "${DATABASE_PORT}:5432"
+    volumes:
+      - /var/lib/postgresql/data

@@ -16,4 +16,4 @@ def test_cmc_top_10_2025_basket_data_source_version():
     data_source = CmcTop102025BasketDataSource()
     version = data_source.version()
 
-    assert version == 1
+    assert version == 2
