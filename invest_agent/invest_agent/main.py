@@ -353,6 +353,7 @@ async def get_portfolio(token: Token = usdt_token):
 
     Args:
         token: The token to convert the asset balances to (defaults to USDT).
+
     Returns:
         The portfolio of the agent.
     """
@@ -382,6 +383,8 @@ async def get_token_balance(token: Token):
 )
 async def get_available_balance():
     """Retrieve the available balance.
+
+    Args: None
 
     Returns:
         The balance of the token in the agent's wallet.

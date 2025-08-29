@@ -12,9 +12,16 @@ Ensure you have the following dependencies installed:
 - Python (>= 3.10)
 - Node.js (>= 22.0.0)
 
+Before the first run and from the root of the repository, run:
+```bash
+npm install
+./nx install invest_agent
+```
+This installs Python and Javascript dependencies (if needed).
+
 ### Environment variables
 #### Development mode
-In the invest_agent directory, copy `.env.example` to `.env` and fill in the required environment variables. Once configured, the agent is ready to run in development mode.
+In the invest_agent directory, copy `.env.example` to `.env.local` and fill in the required environment variables. Once configured, the agent is ready to run in development mode.
 
 #### Production mode
 In the invest_agent directory, copy `.env.example` to `.env.production` and fill in the required environment variables. Once configured, the agent is ready to run in production mode.
