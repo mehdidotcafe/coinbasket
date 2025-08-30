@@ -50,6 +50,13 @@ class BscChain(Chain):
             ticker="BNB",
             address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         )
+        self.wrapped_base_token = Token(
+            id="bsc:0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            name="WBNB Token",
+            display_name="Binance Coin",
+            ticker="WBNB",
+            address="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        )
 
         with open(
             "./invest_agent/chain/infrastructure/bsc/erc20_token_abi.json",
@@ -68,6 +75,9 @@ class BscChain(Chain):
 
     def is_native_token(self, token: Token) -> bool:
         return token.address.lower() == self.base_token.address.lower()
+
+    def is_wrapped_native_token(self, token: Token) -> bool:
+        return token.address.lower() == self.wrapped_base_token.address.lower()
 
     def __is_native_token_address(self, token_address: str) -> bool:
         return token_address.lower() == self.base_token.address.lower()
@@ -183,6 +193,9 @@ class BscChain(Chain):
 
     def get_base_token(self):
         return self.base_token
+
+    def get_wrapped_base_token(self):
+        return self.wrapped_base_token
 
     async def compute_gas_estimate(
         self,

@@ -37,6 +37,10 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def is_wrapped_native_token(self, token: Token) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_chain_id(self) -> int:
         raise NotImplementedError
 
@@ -76,6 +80,10 @@ class Chain(ABC):
 
     @abstractmethod
     def get_base_token(self) -> Token:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_wrapped_base_token(self) -> Token:
         raise NotImplementedError
 
     @abstractmethod

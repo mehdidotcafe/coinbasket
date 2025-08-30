@@ -40,6 +40,10 @@ from invest_agent.investment.order.order import (
 from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
     SqlAlchemyTransactionRepository,
 )
+from invest_agent.portfolio.get_portfolio_asset_balance_use_case import (
+    GetPortfolioAssetBalanceUseCase,
+    PortfolioAssetBalance,
+)
 from invest_agent.portfolio.get_portfolio_use_case import (
     GetPortfolioUseCase,
     Portfolio,
@@ -231,6 +235,10 @@ get_portfolio_use_case = GetPortfolioUseCase(
     chain=chain,
 )
 
+get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
+    chain=chain, posting_repository=posting_repository
+)
+
 conversation_use_case = ConversationUseCase(
     date_time=date_time,
     id_generator=id_generator,
@@ -279,15 +287,15 @@ get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(exchange=exchange, chai
 
 
 @tool(response_format="content_and_artifact")
-async def get_token_info(query: str):
+async def get_tokens_from_query(query: str):
     """
-    Retrieve a list of available tokens / coins to invest or.
+    Retrieve a list of available tokens to invest or from a given query.
 
     Args:
         query: The query to search for.
 
     Returns:
-        A list of documents containing tokens / coins.
+        A list of documents containing tokens.
         Each token has a name, display_name, ticker and address (contract address) property.
     """
 
@@ -308,9 +316,9 @@ async def get_token_info(query: str):
 
 
 @tool(response_format="content_and_artifact")
-async def get_basket_info(query: str):
+async def get_baskets_from_query(query: str):
     """
-    Retrieve a list of available baskets.
+    Retrieve a list of available baskets from a given query.
 
     Args:
         query: The query to search for.
@@ -346,8 +354,8 @@ def get_agent_address():
 @tool(
     parse_docstring=True,
 )
-async def get_portfolio(token: Token = usdt_token):
-    """Retrieve the portfolio.
+async def get_portfolio_summary(token: Token = usdt_token):
+    """EXPENSIVE/SLOW. Retrieve the portfolio. Only use this tool when the user asks for his portfolio.
     The portfolio contains the list of assets held by the agent (holdings) and their balances both in asset token and in converted token (defaults to USDT).
     It also contains the available cash balance in BNB and the list of pending (processing) orders.
 
@@ -366,16 +374,36 @@ async def get_portfolio(token: Token = usdt_token):
 @tool(
     parse_docstring=True,
 )
-async def get_token_balance(token: Token):
-    """Retrieve the balance of a specific token in the agent's wallet.
+async def get_token_holding_and_available_cash(token: Token):
+    """FAST. Retrieve ONLY the available cash and holding of a specific token in the agent's wallet, including both held balance and available balance.
 
     Args:
-        token: The token to retrieve the balance for.
+        token: The token to retrieve the available cash and holding for.
 
     Returns:
-        The balance of the token in the agent's wallet.
+        The the available cash and holding balances of the token in the agent's wallet.
     """
-    balance = await chain.get_token_balance(token)
+    asset_balance = await get_portfolio_asset_balance_use_case.execute(token)
+
+    return PortfolioAssetBalanceResponse.from_domain(asset_balance).json()
+
+
+@tool(
+    parse_docstring=True,
+)
+async def get_token_holding(token: Token):
+    """FAST. Retrieve ONLY the holding balance of a specific held token.
+    Use this tool when the user asks for his token holding.
+
+    Args:
+        token: The held token to retrieve the balance for.
+
+    Returns:
+        The holding balance of the held token in the agent's wallet.
+    """
+    balance = await posting_repository.get_holding_balance(
+        token if not chain.is_native_token(token) else chain.get_wrapped_base_token()
+    )
 
     return BalanceAtomicResponse.from_domain(balance).json()
 
@@ -383,13 +411,13 @@ async def get_token_balance(token: Token):
 @tool(
     parse_docstring=True,
 )
-async def get_available_balance():
-    """Retrieve the available balance.
+async def get_available_cash():
+    """FAST. Retrieve ONLY the available cash of the agent's wallet.
 
     Args: None
 
     Returns:
-        The balance of the token in the agent's wallet.
+        The balance of the available cash (in BNB) in the agent's wallet.
     """
     balance = await chain.get_native_token_balance()
 
@@ -764,13 +792,14 @@ async def execute_intent_investment_plan_use_case(
 
 
 tools = [
-    get_basket_info,
-    get_token_info,
+    get_baskets_from_query,
+    get_tokens_from_query,
     execute_intent_investment_plan_use_case,
     get_agent_address,
-    get_available_balance,
-    get_token_balance,
-    get_portfolio,
+    get_available_cash,
+    get_token_holding,
+    get_token_holding_and_available_cash,
+    get_portfolio_summary,
     get_agent_name,
     get_current_datetime,
 ]
@@ -887,10 +916,10 @@ def __create_agent_executor(conn: aiosqlite.Connection):
         prompt=SystemMessage(
             "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket of tokens.  "
             "Users can buy, sell, or swap assets in their portfolio.  "
-            "Before buying, selling or swapping assets, always show the user the intent investment plan you are creating by showing the list of assets to buy, sell or swap.  "
-            "When you display a token, always display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't mention excluded assets.  "
-            "Always display amount as you get them, don't use scientific notation.  "
-            "Always use get_portfolio to fetch the portfolio information, you will return stale data if you don't.  "
+            "Before buying, selling or swapping assets, ALWAYS show the user the intent investment plan you are creating by showing the list of assets to buy, sell or swap.  "
+            "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't mention excluded assets.  "
+            "ALWAYS display amount as you get them, don't use scientific notation.  "
+            "When asked for portfolio, order, asset, or balance information, ALWAYS use a tool to fetch the data.  "
             "When an order has a status 'PENDING', it means the order is being processed.  "
             "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  "
             "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
@@ -1188,6 +1217,22 @@ class PortfolioResponse(Model):
             pending_orders=[
                 OrderResponse.from_domain(order) for order in domain.pending_orders
             ],
+        )
+
+
+class PortfolioAssetBalanceResponse(Model):
+    holding_balance: BalanceAtomicResponse
+    available_balance: BalanceAtomicResponse | None = None
+
+    @staticmethod
+    def from_domain(domain: PortfolioAssetBalance) -> "PortfolioAssetBalanceResponse":
+        return PortfolioAssetBalanceResponse(
+            holding_balance=BalanceAtomicResponse.from_domain(domain.holding_balance),
+            available_balance=BalanceAtomicResponse.from_domain(
+                domain.available_balance
+            )
+            if domain.available_balance
+            else None,
         )
 
 

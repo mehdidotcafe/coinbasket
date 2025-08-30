@@ -15,3 +15,7 @@ class PostingRepository(ABC):
     async def get_holding_balances(self) -> list[BalanceAtomic[Token]]:
         """Get the holding balances from the repository for each held token."""
         raise NotImplementedError
+
+    async def get_holding_balance(self, token: Token) -> BalanceAtomic[Token]:
+        """Get the holding balance for a specific token."""
+        raise NotImplementedError

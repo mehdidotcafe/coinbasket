@@ -87,20 +87,7 @@ class SqlAlchemyPostingRepository(PostingRepository):
     async def get_holding_balances(self) -> list[BalanceAtomic[Token]]:
         async with self.AsyncSessionLocal(bind=self.engine) as session:
             async with session.begin():
-                stmt = (
-                    select(
-                        PostingModel.asset_id,
-                        # Select any asset value of the same asset_id
-                        func.min(PostingModel.asset),
-                        func.min(PostingModel.decimals).label("decimals"),
-                        func.sum(PostingModel.amount_atomic).label(
-                            "total_amount_atomic"
-                        ),
-                    )
-                    .group_by(PostingModel.asset_id)
-                    .having(func.sum(PostingModel.amount_atomic) > 0)
-                )
-                result = await session.execute(stmt)
+                result = await session.execute(self._get_default_holding_statement())
                 rows = result.all()
 
                 return [
@@ -112,3 +99,44 @@ class SqlAlchemyPostingRepository(PostingRepository):
                     )
                     for _asset_id, asset_json, decimals, total_amount_atomic in rows
                 ]
+
+    async def get_holding_balance(self, token: Token) -> BalanceAtomic[Token]:
+        async with self.AsyncSessionLocal(bind=self.engine) as session:
+            async with session.begin():
+                stmt = self._get_default_holding_statement().where(
+                    PostingModel.asset_id == token.id
+                )
+                result = await session.execute(stmt)
+                rows = result.all()
+
+                if not rows:
+                    return BalanceAtomic(
+                        asset=token,
+                        amount=Decimal(0),
+                        amount_atomic=0,
+                        decimals=0,
+                    )
+
+                asset_json = rows[0][1]
+                decimals = rows[0][2]
+                total_amount_atomic = rows[0][3]
+
+                return BalanceAtomic(
+                    asset=cast(Token, BalanceAtomic.deserialize_asset(asset_json)),
+                    amount=total_amount_atomic / Decimal(10**decimals),
+                    amount_atomic=int(total_amount_atomic),
+                    decimals=decimals,
+                )
+
+    def _get_default_holding_statement(self):
+        return (
+            select(
+                PostingModel.asset_id,
+                # Select any asset value of the same asset_id
+                func.min(PostingModel.asset),
+                func.min(PostingModel.decimals).label("decimals"),
+                func.sum(PostingModel.amount_atomic).label("total_amount_atomic"),
+            )
+            .group_by(PostingModel.asset_id)
+            .having(func.sum(PostingModel.amount_atomic) > 0)
+        )

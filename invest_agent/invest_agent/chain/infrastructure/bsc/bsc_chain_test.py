@@ -22,7 +22,7 @@ from invest_agent.chain.infrastructure.bsc.bsc_chain import BscChain
 
 from eth_account.signers.local import LocalAccount
 
-from protocol.fixture.token import bnb_token
+from protocol.fixture.token import bnb_token, wbnb_token
 
 
 @fixture
@@ -79,6 +79,14 @@ def test_bsc_chain_is_native_token_success(bsc_chain: BscChain, base_token: Toke
 
 def test_bsc_chain_is_native_token_failure(bsc_chain: BscChain):
     assert bsc_chain.is_native_token(eth_token) is False
+
+
+def test_bsc_chain_is_wrapped_native_token_success(bsc_chain: BscChain):
+    assert bsc_chain.is_wrapped_native_token(wbnb_token) is True
+
+
+def test_bsc_chain_is_wrapped_native_token_failure(bsc_chain: BscChain):
+    assert bsc_chain.is_wrapped_native_token(eth_token) is False
 
 
 @mark.asyncio
@@ -261,6 +269,12 @@ def test_bsc_chain_get_base_token(bsc_chain: BscChain, base_token: Token):
     base_token_result = bsc_chain.get_base_token()
 
     assert base_token_result == base_token
+
+
+def test_bsc_chain_get_wrapped_base_token(bsc_chain: BscChain):
+    base_token_result = bsc_chain.get_wrapped_base_token()
+
+    assert base_token_result == wbnb_token
 
 
 @mark.asyncio
