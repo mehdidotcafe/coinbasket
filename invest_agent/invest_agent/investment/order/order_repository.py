@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from invest_agent.investment.order.order import Id, Order, Try
+from invest_agent.investment.order.order import Id, Order, OrderStatus, Try
 
 
 class OrderRepository(ABC):
@@ -27,6 +27,18 @@ class OrderRepository(ABC):
     @abstractmethod
     async def get_pending_orders(self) -> list[Order]:
         """Fetch all pending orders."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_orders(
+        self, status: OrderStatus | None, limit: int, offset: int
+    ) -> list[Order]:
+        """Fetch all orders with the given status if passed. Returns all orders otherwise."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_order(self, order_id: Id) -> Order | None:
+        """Fetch an order by its ID."""
         raise NotImplementedError
 
     @abstractmethod

@@ -424,6 +424,159 @@ async def get_available_cash():
     return BalanceAtomicResponse.from_domain(balance).json()
 
 
+class BalanceAtomicResponse(Model):
+    asset: AssetResponse
+    amount: str
+    amount_atomic: str
+    decimals: int
+
+    @staticmethod
+    def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
+        """Convert the domain Balance to a BalanceResponse."""
+        return BalanceAtomicResponse(
+            amount=format(balance.amount, "f"),
+            amount_atomic=str(balance.amount_atomic),
+            asset=TokenResponse.from_domain(balance.asset)
+            if isinstance(balance.asset, Token)
+            else BasketResponse.from_domain(balance.asset),
+            decimals=balance.decimals,
+        )
+
+
+class ChainTransactionResponse(Model):
+    id: str
+    try_id: str
+    order_id: str
+    type: ChainTransactionType
+    data: str
+    hash: str
+    status: ChainTransactionStatus
+
+    @staticmethod
+    def from_domain(domain: ChainTransaction) -> "ChainTransactionResponse":
+        return ChainTransactionResponse(
+            id=domain.id,
+            try_id=domain.try_id,
+            order_id=domain.order_id,
+            type=domain.type,
+            data=domain.data,
+            hash=domain.hash,
+            status=domain.status,
+        )
+
+
+class FeesResponse(Model):
+    chain_fee: int
+    provider_fee: int | None = None
+    service_fee: int | None = None
+
+    @staticmethod
+    def from_domain(domain: Fees) -> "FeesResponse":
+        return FeesResponse(
+            chain_fee=domain.chain_fee,
+            provider_fee=domain.provider_fee,
+            service_fee=domain.service_fee,
+        )
+
+
+class TryResponse(Model):
+    id: str
+    order_id: str
+    created_at: int
+    chain_transactions: list[ChainTransactionResponse]
+    provider: str
+    buy_balance: BalanceAtomicResponse
+    fees: FeesResponse | None = None
+
+    @staticmethod
+    def from_domain(domain: Try) -> "TryResponse":
+        return TryResponse(
+            id=domain.id,
+            order_id=domain.order_id,
+            created_at=domain.created_at,
+            chain_transactions=[
+                ChainTransactionResponse.from_domain(tx)
+                for tx in domain.chain_transactions
+            ],
+            provider=domain.provider,
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            fees=FeesResponse.from_domain(domain.fees) if domain.fees else None,
+        )
+
+
+class OrderResponse(Model):
+    id: str
+    sell_balance: BalanceAtomicResponse
+    buy_balance: BalanceAtomicResponse
+    type: OrderType
+    # Don't return tries to lighten the response payload
+    # tries: list[TryResponse]
+    created_at: int
+    status: OrderStatus
+    trigger: OrderTrigger
+
+    @staticmethod
+    def from_domain(domain: Order) -> "OrderResponse":
+        return OrderResponse(
+            id=domain.id,
+            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            type=domain.type,
+            # tries=[TryResponse.from_domain(try_) for try_ in domain.tries],
+            created_at=domain.created_at,
+            status=domain.status,
+            trigger=domain.trigger,
+        )
+
+
+class OrdersResponse(Model):
+    orders: list[OrderResponse]
+
+    @classmethod
+    def from_domain(cls, orders: list[Order]) -> "OrdersResponse":
+        return cls(orders=[OrderResponse.from_domain(order) for order in orders])
+
+
+@tool(
+    parse_docstring=True,
+)
+async def get_orders(
+    status: OrderStatus | None = None, limit: int = 50, offset: int = 0
+):
+    """SLOW / EXPENSIVE. Retrieve the orders from an eventual status and an eventual pagination
+
+    Args:
+        status: The status of the orders to retrieve, either "PENDING", "SUCCESS" or "FAIL". If not provided, all orders are retrieved.
+        limit: The maximum number of orders to retrieve.
+        offset: The offset for pagination.
+
+    Returns:
+        The list of orders matching the criteria.
+    """
+    orders = await order_repository.get_orders(status, limit, offset)
+
+    return OrdersResponse.from_domain(orders).json()
+
+
+@tool(
+    parse_docstring=True,
+)
+async def get_order(
+    order_id: str,
+):
+    """FAST. Retrieve an order from its id
+
+    Args:
+        order_id: The id of the order to retrieve.
+
+    Returns:
+        The order matching the id or None if the order has not been found.
+    """
+    order = await order_repository.get_order(order_id)
+
+    return OrderResponse.from_domain(order).json() if order else None
+
+
 @tool()
 def get_agent_name():
     """Retrieve agent's name."""
@@ -575,110 +728,6 @@ class IntentInvestmentPlanRequest(Model):
         return IntentInvestmentPlan(steps=[step.to_domain() for step in self.steps])
 
 
-class BalanceAtomicResponse(Model):
-    asset: AssetResponse
-    amount: str
-    amount_atomic: str
-    decimals: int
-
-    @staticmethod
-    def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
-        """Convert the domain Balance to a BalanceResponse."""
-        return BalanceAtomicResponse(
-            amount=format(balance.amount, "f"),
-            amount_atomic=str(balance.amount_atomic),
-            asset=TokenResponse.from_domain(balance.asset)
-            if isinstance(balance.asset, Token)
-            else BasketResponse.from_domain(balance.asset),
-            decimals=balance.decimals,
-        )
-
-
-class ChainTransactionResponse(Model):
-    id: str
-    try_id: str
-    order_id: str
-    type: ChainTransactionType
-    data: str
-    hash: str
-    status: ChainTransactionStatus
-
-    @staticmethod
-    def from_domain(domain: ChainTransaction) -> "ChainTransactionResponse":
-        return ChainTransactionResponse(
-            id=domain.id,
-            try_id=domain.try_id,
-            order_id=domain.order_id,
-            type=domain.type,
-            data=domain.data,
-            hash=domain.hash,
-            status=domain.status,
-        )
-
-
-class FeesResponse(Model):
-    chain_fee: int
-    provider_fee: int | None = None
-    service_fee: int | None = None
-
-    @staticmethod
-    def from_domain(domain: Fees) -> "FeesResponse":
-        return FeesResponse(
-            chain_fee=domain.chain_fee,
-            provider_fee=domain.provider_fee,
-            service_fee=domain.service_fee,
-        )
-
-
-class TryResponse(Model):
-    id: str
-    order_id: str
-    created_at: int
-    chain_transactions: list[ChainTransactionResponse]
-    provider: str
-    buy_balance: BalanceAtomicResponse
-    fees: FeesResponse | None = None
-
-    @staticmethod
-    def from_domain(domain: Try) -> "TryResponse":
-        return TryResponse(
-            id=domain.id,
-            order_id=domain.order_id,
-            created_at=domain.created_at,
-            chain_transactions=[
-                ChainTransactionResponse.from_domain(tx)
-                for tx in domain.chain_transactions
-            ],
-            provider=domain.provider,
-            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
-            fees=FeesResponse.from_domain(domain.fees) if domain.fees else None,
-        )
-
-
-class OrderResponse(Model):
-    id: str
-    sell_balance: BalanceAtomicResponse
-    buy_balance: BalanceAtomicResponse
-    type: OrderType
-    tries: list[TryResponse]
-    created_at: int
-    status: OrderStatus
-    trigger: OrderTrigger
-
-    @staticmethod
-    def from_domain(domain: Order) -> "OrderResponse":
-        return OrderResponse(
-            id=domain.id,
-            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
-            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
-            type=domain.type,
-            tries=[TryResponse.from_domain(try_) for try_ in domain.tries],
-            created_at=domain.created_at,
-            status=domain.status,
-            trigger=domain.trigger,
-        )
-
-
 class InvestmentPlanResponse(Model):
     message: str
     orders: list[OrderResponse]
@@ -800,6 +849,8 @@ tools = [
     get_token_holding,
     get_token_holding_and_available_cash,
     get_portfolio_summary,
+    get_orders,
+    get_order,
     get_agent_name,
     get_current_datetime,
 ]
