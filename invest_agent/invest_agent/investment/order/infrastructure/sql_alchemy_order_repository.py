@@ -302,6 +302,31 @@ class SqlAlchemyOrderRepository(OrderRepository):
 
                 return [row.to_domain() for row in order_models]
 
+    async def get_orders(
+        self, status: OrderStatus | None, limit: int, offset: int
+    ) -> list[Order]:
+        async with self.AsyncSessionLocal(bind=self.engine) as session:
+            async with session.begin():
+                stmt = select(OrderModel).limit(limit).offset(offset)
+
+                if status:
+                    stmt = stmt.where(OrderModel.status == status)
+
+                result = await session.execute(stmt)
+                order_models = result.scalars().all()
+
+                return [row.to_domain() for row in order_models]
+
+    async def get_order(self, order_id: Id):
+        async with self.AsyncSessionLocal(bind=self.engine) as session:
+            async with session.begin():
+                stmt = select(OrderModel).where(OrderModel.id == order_id)
+
+                result = await session.execute(stmt)
+                order_model = result.scalar()
+
+                return order_model.to_domain() if order_model else None
+
     async def set_order_try_chain_transaction_to_success(
         self, chain_transaction_id: Id
     ) -> None:
