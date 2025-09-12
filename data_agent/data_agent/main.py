@@ -1,4 +1,3 @@
-from protocol.token import Token
 from pydantic import SecretStr
 from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.authentication.exception.invalid_agent_key import InvalidAgentKey
@@ -40,6 +39,7 @@ from data_agent.similarity.infrastructure.qdrant_langchain.similarity_storage.qd
 )
 from protocol import (
     BasketResponse,
+    Token,
     SimilarAssetsQuery,
     SimilarAssetsResponse,
     SimilarAssetsValidResponse,
