@@ -13,6 +13,8 @@ class Configuration:
         self.qdrant_api_key = env.str("QDRANT_API_KEY")
         self.qdrant_collection = env.str("QDRANT_COLLECTION")
         self.qdrant_url = env.str("QDRANT_URL")
+        self.qdrant_port = env.int("QDRANT_PORT")
+        self.qdrant_grpc_port = env.int("QDRANT_GRPC_PORT")
 
         self.embedding_provider_api_key = env.str("EMBEDDING_PROVIDER_API_KEY")
         self.embedding_provider_model = env.str("EMBEDDING_PROVIDER_MODEL")

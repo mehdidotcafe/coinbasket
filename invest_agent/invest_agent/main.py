@@ -113,6 +113,8 @@ from protocol import (
     BasketResponse,
     SimilarAssetsQuery,
     SimilarAssetsResponse,
+    GetAllBasketsQuery,
+    GetAllBasketsResponse,
     TokenResponse,
 )
 from protocol.fixture.token import usdt_token
@@ -286,7 +288,7 @@ execute_pending_orders_use_case = ExecutePendingOrdersUseCase(
 get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(exchange=exchange, chain=chain)
 
 
-@tool(response_format="content_and_artifact")
+@tool(response_format="content_and_artifact", parse_docstring=True)
 async def get_tokens_from_query(query: str):
     """
     Retrieve a list of available tokens to invest or from a given query.
@@ -315,7 +317,7 @@ async def get_tokens_from_query(query: str):
     ), res.data.assets
 
 
-@tool(response_format="content_and_artifact")
+@tool(response_format="content_and_artifact", parse_docstring=True)
 async def get_baskets_from_query(query: str):
     """
     Retrieve a list of available baskets from a given query.
@@ -343,6 +345,30 @@ async def get_baskets_from_query(query: str):
     return "\n\n".join(
         [str(asset.to_domain()) for asset in res.data.assets]
     ), res.data.assets
+
+
+@tool(parse_docstring=True)
+async def get_all_available_baskets():
+    """
+    Retrieve a list of all available baskets.
+
+    Returns:
+        A list of baskets.
+        Each basket is made of a name, a description and a list of tokens.
+        Each token has a name, display_name, ticker and address (contract address) property.
+    """
+
+    # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
+    res = await agent_to_agent_client.send_and_receive_message(
+        GetAllBasketsQuery(agent_key=configuration.data_agent_key),
+        GetAllBasketsResponse,
+        key="basket",
+    )
+
+    if isinstance(res.baskets, str):
+        raise ValueError(f"Response is not a valid response: {res.baskets}")
+
+    return res.baskets
 
 
 @tool()
@@ -843,6 +869,7 @@ async def execute_intent_investment_plan_use_case(
 tools = [
     get_baskets_from_query,
     get_tokens_from_query,
+    get_all_available_baskets,
     execute_intent_investment_plan_use_case,
     get_agent_address,
     get_available_cash,

@@ -83,3 +83,11 @@ class SimilarAssetsValidResponse(Model):
 
 class SimilarAssetsResponse(Model):
     data: SimilarAssetsValidResponse | str
+
+
+class GetAllBasketsQuery(Model):
+    agent_key: str
+
+
+class GetAllBasketsResponse(Model):
+    baskets: list[BasketResponse]

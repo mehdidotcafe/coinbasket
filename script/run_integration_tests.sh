@@ -1,15 +1,19 @@
 #!/bin/bash
 set -e
 
-(cd .. && ./nx infra:test invest_agent)
+PROJECT=$NX_TASK_TARGET_PROJECT
 
+(cd .. && ./nx infra:test $PROJECT)
 # Wait for test integration DB to be started
 echo "Waiting Database..."
 sleep 5
 
-(cd .. && ./nx migration:test:run invest_agent)
 
-env-cmd -f .env.test poetry run python -m invest_agent.main &
+if [ "$PROJECT" = "invest_agent" ]; then
+	(cd .. && ./nx migration:test:run $PROJECT)
+fi
+
+env-cmd -f .env.test poetry run python -m $PROJECT.main &
 API_PID=$!
 
 ../script/wait_agent_start.sh

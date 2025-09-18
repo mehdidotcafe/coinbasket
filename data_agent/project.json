@@ -57,8 +57,9 @@
     },
     "start": {
       "executor": "@nxlv/python:run-commands",
+      "dependsOn": ["infra:production"],
       "options": {
-        "command": "poetry run python -m data_agent.main",
+        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m data_agent.main'",
         "cwd": "{projectRoot}"
       },
       "configurations": {
@@ -78,7 +79,15 @@
     "test": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "poetry run pytest",
+        "command": "poetry run pytest  -k \"not test_integration\"",
+        "cwd": "{projectRoot}"
+      },
+      "cache": true
+    },
+    "test:integration": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "../script/run_integration_tests.sh",
         "cwd": "{projectRoot}"
       },
       "cache": true
@@ -96,7 +105,21 @@
     "infra": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose up -d",
+        "command": "docker compose up -d --force-recreate",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test --use-shell 'docker compose -f docker-compose-test.yml down -v && docker compose -f docker-compose-test.yml up -d --force-recreate'",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:production": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell 'docker compose -f docker-compose-production.yml up -d'",
         "cwd": "{projectRoot}"
       }
     },
@@ -104,6 +127,20 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "docker compose down",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:test:down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test docker compose -f docker-compose-test.yml down",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:production:down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production docker compose -f docker-compose-production.yml down",
         "cwd": "{projectRoot}"
       }
     }
