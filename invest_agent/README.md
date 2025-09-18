@@ -21,10 +21,10 @@ This installs Python and Javascript dependencies (if needed).
 
 ### Environment variables
 #### Development mode
-In the invest_agent directory, copy `.env.example` to `.env.local` and fill in the required environment variables. Once configured, the agent is ready to run in development mode.
+In the `invest_agent` directory, copy `.env.example` to `.env.local` and fill in the required environment variables. Once configured, the agent is ready to run in development mode.
 
 #### Production mode
-In the invest_agent directory, copy `.env.example` to `.env.production` and fill in the required environment variables. Once configured, the agent is ready to run in production mode.
+In the `invest_agent` directory, copy `.env.example` to `.env.production` and fill in the required environment variables. Once configured, the agent is ready to run in production mode.
 
 
 ## Development Mode

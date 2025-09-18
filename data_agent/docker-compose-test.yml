@@ -1,16 +1,15 @@
-name: coinbasket_data_agent_dev
+name: coinbasket_data_agent_test
 services:
   qdrant:
     image: qdrant/qdrant:latest
     restart: always
-    container_name: qdrant_dev
+    container_name: qdrant_test
     ports:
       - ${QDRANT_PORT}:6333
       - ${QDRANT_GRPC_PORT}:6334
     expose:
       - 6333
       - 6334
-      - 6335
     environment:
       QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
     configs:

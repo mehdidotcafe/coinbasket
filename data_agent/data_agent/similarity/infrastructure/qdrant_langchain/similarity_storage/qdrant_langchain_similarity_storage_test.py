@@ -44,7 +44,9 @@ def test_qdrant_langchain_similarity_storage_init_without_collection(
 
     QdrantLangChainSimilarityStorage(
         {
-            "qdrant_url": "http://localhost:6333",
+            "qdrant_url": "http://localhost",
+            "qdrant_port": 6333,
+            "qdrant_grpc_port": 6334,
             "qdrant_collection": "datasets",
             "qdrant_api_key": "d011246a-b8dd-4a8c-baf2-7ec12f2507db",
         },
@@ -71,7 +73,9 @@ def test_qdrant_langchain_similarity_storage_init_with_collection(
 
     QdrantLangChainSimilarityStorage(
         {
-            "qdrant_url": "http://localhost:6333",
+            "qdrant_url": "http://localhost",
+            "qdrant_port": 6333,
+            "qdrant_grpc_port": 6334,
             "qdrant_collection": "datasets",
             "qdrant_api_key": "d011246a-b8dd-4a8c-baf2-7ec12f2507db",
         },
@@ -96,7 +100,9 @@ async def test_qdrant_langchain_similarity_storage_search(
 
     similarity_storage = QdrantLangChainSimilarityStorage(
         {
-            "qdrant_url": "http://localhost:6333",
+            "qdrant_url": "http://localhost",
+            "qdrant_port": 6333,
+            "qdrant_grpc_port": 6334,
             "qdrant_collection": "datasets",
             "qdrant_api_key": "d011246a-b8dd-4a8c-baf2-7ec12f2507db",
         },
@@ -122,7 +128,9 @@ async def test_qdrant_langchain_similarity_storage_search(
     ]
 
     qdrant_client.assert_called_once_with(
-        url="http://localhost:6333",
+        url="http://localhost",
+        port=6333,
+        grpc_port=6334,
         api_key="d011246a-b8dd-4a8c-baf2-7ec12f2507db",
         prefer_grpc=True,
     )
@@ -143,7 +151,9 @@ def test_qdrant_langchain_similarity_storage_get(
 
     similarity_storage = QdrantLangChainSimilarityStorage(
         {
-            "qdrant_url": "http://localhost:6333",
+            "qdrant_url": "http://localhost",
+            "qdrant_port": 6333,
+            "qdrant_grpc_port": 6334,
             "qdrant_collection": "datasets",
             "qdrant_api_key": "d011246a-b8dd-4a8c-baf2-7ec12f2507db",
         },
@@ -183,7 +193,9 @@ def test_qdrant_langchain_similarity_storage_set(
 
     similarity_storage = QdrantLangChainSimilarityStorage(
         {
-            "qdrant_url": "http://localhost:6333",
+            "qdrant_url": "http://localhost",
+            "qdrant_port": 6333,
+            "qdrant_grpc_port": 6334,
             "qdrant_collection": "datasets",
             "qdrant_api_key": "d011246a-b8dd-4a8c-baf2-7ec12f2507db",
         },

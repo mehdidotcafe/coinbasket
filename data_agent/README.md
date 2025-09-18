@@ -11,6 +11,8 @@ Currently, this agent acts as a data retriever for invest agents. Soon, it will 
 Ensure the following dependencies are installed:
 - Python (>= 3.10)
 - Node.js (>= 22.0.0)
+- Docker
+- Docker Compose
 
 Before the first run and from the root of the repository, run:
 ```bash
@@ -20,16 +22,16 @@ npm install
 This installs Python and Javascript dependencies (if needed).
 
 ### Environment variables
-In the `data_agent` directory, copy `.env.example` to `.env` and fill in the required variables. Once configured, the agent will be ready to run in either development or production mode.
+#### Development mode
+In the `data_agent` directory, copy `.env.example` to `.env.local` and fill in the required environment variables. Once configured, the agent is ready to run in development mode.
+
+#### Production mode
+In the `data_agent` directory, copy `.env.example` to `.env.production` and fill in the required environment variables. Once configured, the agent is ready to run in production mode.
 
 
-## Dev mode
+## Development Mode
 In development mode, the agent spins up both a containerized Qdrant vector database and itself, streamlining development and testing—no need for an external database.
 
-Make sure you also have:
-
-- Docker
-- Docker Compose
 
 ### Running in Dev Mode
 From the root of the repository, run:
@@ -40,7 +42,9 @@ From the root of the repository, run:
 This starts the Qdrant container, and launches the data agent.
 
 ## Production mode
-Production mode is intended for deployments where you already have a Qdrant instance running. In this mode, the agent connects to your existing database and doesn’t start any containers.
+In production mode, the agent spins up both a containerized Qdrant vector database and itself.
+Note that by updating the database variables of the `.env.production` file, you are able to connect the agent to any qdrant database.
+
 
 ### Running in Production
 From the root of the repository, run:
@@ -48,9 +52,3 @@ From the root of the repository, run:
 ```bash
 ./nx start data_agent
 ```
-
-This installs Python dependencies (if needed) and starts the data agent.
-
-
-
-

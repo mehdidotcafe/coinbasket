@@ -1,3 +1,4 @@
+from data_agent.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from pydantic import SecretStr
 from data_agent.ingestion.id.id_generator import IdGenerator
 from data_agent.authentication.exception.invalid_agent_key import InvalidAgentKey
@@ -19,7 +20,7 @@ from data_agent.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_d
 )
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
-from uagents import Agent, Context
+from uagents import Agent, Context, Model
 
 from langchain_openai import OpenAIEmbeddings
 
@@ -62,6 +63,8 @@ http_request = RequestsHttpRequest()
 similarity_storage = QdrantLangChainSimilarityStorage(
     {
         "qdrant_url": configuration.qdrant_url,
+        "qdrant_port": configuration.qdrant_port,
+        "qdrant_grpc_port": configuration.qdrant_grpc_port,
         "qdrant_collection": configuration.qdrant_collection,
         "qdrant_api_key": configuration.qdrant_api_key,
     },
@@ -74,6 +77,8 @@ similarity_storage = QdrantLangChainSimilarityStorage(
 )
 
 get_similar_assets_use_case = GetSimilarAssetsUseCase(similarity_storage)
+
+get_all_baskets_use_case = GetAllBasketsUseCase(similarity_storage)
 
 ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
@@ -147,6 +152,28 @@ async def on_get_similar_assets_message(
                 query=query,
             )
         ),
+    )
+
+
+class GetAllBasketsQuery(Model):
+    agent_key: str
+
+
+class GetAllBasketsResponse(Model):
+    baskets: list[BasketResponse]
+
+
+@data_agent.on_rest_post("/basket", GetAllBasketsQuery, GetAllBasketsResponse)
+async def get_all_baskets(
+    _ctx: Context, req: GetAllBasketsQuery
+) -> GetAllBasketsResponse:
+    if req.agent_key != configuration.agent_key:
+        raise InvalidAgentKey()
+
+    baskets = await get_all_baskets_use_case.execute()
+
+    return GetAllBasketsResponse(
+        baskets=[BasketResponse.from_domain(basket) for basket in baskets]
     )
 
 

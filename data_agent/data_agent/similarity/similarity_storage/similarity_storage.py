@@ -13,5 +13,9 @@ class SimilarityStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def get_by_field(self, name: str, value: str) -> list[SimilarityDocument]:
+        raise NotImplementedError
+
+    @abstractmethod
     def set(self, documents: list[SimilarityDocument]) -> None:
         raise NotImplementedError
