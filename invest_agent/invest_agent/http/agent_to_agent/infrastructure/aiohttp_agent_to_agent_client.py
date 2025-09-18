@@ -24,7 +24,7 @@ class AiohttpAgentToAgentClient(AgentToAgentClient):
         self.aiohttp_http_request = aiohttp_http_request
 
     async def send_and_receive_message(
-        self, message: Model, response_model: Type[U]
+        self, message: Model, response_model: Type[U], key: str = ""
     ) -> U:
         """
         Send a message to another agent using aiohttp.
@@ -33,7 +33,7 @@ class AiohttpAgentToAgentClient(AgentToAgentClient):
             U,
             await self.aiohttp_http_request.post(
                 {
-                    "url": self.configuration["agent_url"],
+                    "url": f"{self.configuration['agent_url']}{key}",
                     "headers": {"Content-Type": "application/json"},
                     "body": message.model_dump(),
                 },

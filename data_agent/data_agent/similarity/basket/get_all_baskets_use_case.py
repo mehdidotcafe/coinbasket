@@ -21,9 +21,11 @@ class GetAllBasketsUseCase:
             value="basket",
         )
 
-        return [
+        baskets = [
             self._map_similarity_document_to_basket(doc) for doc in similarity_documents
         ]
+
+        return sorted(baskets, key=lambda b: b.display_name)
 
     def _map_similarity_document_to_basket(
         self, document: SimilarityDocument

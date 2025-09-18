@@ -20,7 +20,7 @@ from data_agent.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_d
 )
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
-from uagents import Agent, Context, Model
+from uagents import Agent, Context
 
 from langchain_openai import OpenAIEmbeddings
 
@@ -44,6 +44,8 @@ from protocol import (
     SimilarAssetsQuery,
     SimilarAssetsResponse,
     SimilarAssetsValidResponse,
+    GetAllBasketsQuery,
+    GetAllBasketsResponse,
     TokenResponse,
 )
 
@@ -153,14 +155,6 @@ async def on_get_similar_assets_message(
             )
         ),
     )
-
-
-class GetAllBasketsQuery(Model):
-    agent_key: str
-
-
-class GetAllBasketsResponse(Model):
-    baskets: list[BasketResponse]
 
 
 @data_agent.on_rest_post("/basket", GetAllBasketsQuery, GetAllBasketsResponse)

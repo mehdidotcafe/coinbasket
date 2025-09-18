@@ -61,6 +61,25 @@ async def test_get_all_baskets_use_case_success(
 ):
     basket_repository.get_by_field.return_value = [
         SimilarityDocument(
+            page_content="page content 2",
+            metadata={
+                "version": 2,
+                "type": "basket",
+                "source": {
+                    "denomination": "10.0",
+                    "tokens": [],
+                    "description": "Dummy basket.",
+                    "id": "11111111-a9ee-4292-89c8-c1f0c7a5cb70",
+                    "display_name": "DUMMY",
+                    "ticker": "DUMMY",
+                    "name": "DUMMY",
+                },
+                "_id": "11111111-a9ee-4292-89c8-c1f0c7a5cb70",
+                "_collection_name": "datasets",
+            },
+            id="1",
+        ),
+        SimilarityDocument(
             page_content="page content 1",
             metadata={
                 "version": 2,
@@ -122,6 +141,15 @@ async def test_get_all_baskets_use_case_success(
                     ticker="ETH",
                 ),
             ],
-        )
+        ),
+        Basket(
+            id="11111111-a9ee-4292-89c8-c1f0c7a5cb70",
+            display_name="DUMMY",
+            name="DUMMY",
+            ticker="DUMMY",
+            description="Dummy basket.",
+            denomination=Decimal("10.0"),
+            tokens=[],
+        ),
     ]
     basket_repository.get_by_field.assert_awaited_once_with(name="type", value="basket")
