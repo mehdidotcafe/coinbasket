@@ -2,8 +2,7 @@ import asyncio
 from dataclasses import dataclass
 from decimal import ROUND_DOWN, Decimal
 import itertools
-from typing import cast
-from invest_agent.chain.balance import Balance, BalanceAtomic
+from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.datetime.date_time import DateTime
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
@@ -18,9 +17,10 @@ from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
 )
-from invest_agent.investment.order.order import Order
+from invest_agent.investment.order.order import Order, OrderAssetType
 from invest_agent.investment.order.order_submitter import OrderSubmitter
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
+from protocol.asset import Asset
 from protocol.basket import Basket
 from protocol.token import Token
 from shared.id_generator.id_generator import IdGenerator
@@ -28,9 +28,12 @@ from shared.id_generator.id_generator import IdGenerator
 
 @dataclass
 class FlattenedInvestmentStep:
-    sell_balance: BalanceAtomic[Token]
-    buy_balance: BalanceAtomic[Token]
+    id: str
+    sell_balance: BalanceAtomic
+    buy_balance: BalanceAtomic
+    asset_type: OrderAssetType
     basket_id: str | None = None
+    parent_id: str | None = None
 
 
 @dataclass
@@ -93,7 +96,8 @@ class ExecuteInvestmentPlanUseCase:
     ) -> list[Order]:
         return [
             Order(
-                id=self.id_generator.generate_random_id(),
+                id=step.id,
+                parent_order_id=step.parent_id,
                 sell_balance=step.sell_balance,
                 buy_balance=step.buy_balance,
                 type=self.__get_order_type(
@@ -103,16 +107,17 @@ class ExecuteInvestmentPlanUseCase:
                 created_at=self.date_time.now(),
                 status="PENDING",
                 trigger="MANUAL",
+                asset_type=step.asset_type,
                 basket_id=step.basket_id,
             )
         ]
 
-    def __get_order_type(self, sell_token: Token, buy_token: Token):
+    def __get_order_type(self, sell_asset: Asset, buy_asset: Asset):
         native_token = self.chain.get_base_token()
 
-        if sell_token == native_token:
+        if sell_asset == native_token:
             return "BUY"
-        if buy_token == native_token:
+        if buy_asset == native_token:
             return "SELL"
         return "SWAP"
 
@@ -141,18 +146,32 @@ class ExecuteInvestmentPlanUseCase:
         ):
             raise CannotSwapBasketForAnotherException()
 
+        (
+            sell_balance_amount_atomic,
+            sell_balance_decimals,
+        ) = await self.chain.convert_amount_to_amount_atomic(
+            token=sell_balance.asset.get_pricing_token(),
+            amount_readable=sell_balance.amount,
+        )
+
+        (
+            buy_balance_amount_atomic,
+            buy_decimals,
+        ) = await self.chain.convert_amount_to_amount_atomic(
+            token=buy_balance.asset.get_pricing_token(),
+            amount_readable=buy_balance.amount,
+        )
+
         if isinstance(buy_balance.asset, Basket) and isinstance(
             sell_balance.asset, Token
         ):
-            (
-                sell_balance_amount_atomic,
-                sell_balance_decimals,
-            ) = await self.chain.convert_amount_to_amount_atomic(
-                token=sell_balance.asset, amount_readable=sell_balance.amount
-            )
-
             return await self.__build_steps_for_buy_basket(
-                buy_balance=cast(Balance[Basket], buy_balance),
+                buy_balance=BalanceAtomic(
+                    asset=buy_balance.asset,
+                    amount=buy_balance.amount,
+                    amount_atomic=buy_balance_amount_atomic,
+                    decimals=buy_decimals,
+                ),
                 sell_balance=BalanceAtomic(
                     asset=sell_balance.asset,
                     amount=sell_balance.amount,
@@ -164,8 +183,18 @@ class ExecuteInvestmentPlanUseCase:
             buy_balance.asset, Token
         ):
             return await self.__build_steps_for_sell_basket(
-                sell_balance=cast(Balance[Basket], sell_balance),
-                buy_balance=cast(Balance[Token], buy_balance),
+                buy_balance=BalanceAtomic(
+                    asset=buy_balance.asset,
+                    amount=buy_balance.amount,
+                    amount_atomic=buy_balance_amount_atomic,
+                    decimals=buy_decimals,
+                ),
+                sell_balance=BalanceAtomic(
+                    asset=sell_balance.asset,
+                    amount=sell_balance.amount,
+                    amount_atomic=sell_balance_amount_atomic,
+                    decimals=sell_balance_decimals,
+                ),
             )
         if isinstance(sell_balance.asset, Token) and isinstance(
             buy_balance.asset, Token
@@ -185,6 +214,8 @@ class ExecuteInvestmentPlanUseCase:
 
             return [
                 FlattenedInvestmentStep(
+                    id=self.id_generator.generate_random_id(),
+                    asset_type="TOKEN",
                     sell_balance=BalanceAtomic(
                         asset=sell_balance.asset,
                         amount=sell_balance.amount,
@@ -202,8 +233,10 @@ class ExecuteInvestmentPlanUseCase:
         return []
 
     async def __build_steps_for_buy_basket(
-        self, buy_balance: Balance[Basket], sell_balance: BalanceAtomic[Token]
+        self, buy_balance: BalanceAtomic[Basket], sell_balance: BalanceAtomic[Token]
     ) -> list[FlattenedInvestmentStep]:
+        parent_id = self.id_generator.generate_random_id()
+
         tasks = [
             self.exchange.convert_balance_to_token(
                 balance=self.__compute_token_balance_with_basket_weight(
@@ -217,26 +250,38 @@ class ExecuteInvestmentPlanUseCase:
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        flattened_basket_steps: list[FlattenedInvestmentStep] = []
+        flattened_basket_steps: list[FlattenedInvestmentStep] = [
+            FlattenedInvestmentStep(
+                id=parent_id,
+                asset_type="BASKET",
+                sell_balance=sell_balance,
+                buy_balance=buy_balance,
+                basket_id=buy_balance.asset.id,
+            )
+        ]
 
         for i, result in enumerate(results):
             if isinstance(result, BaseException):
                 print(f"Flatten Investment Plan step {i} failed: {result!r}")
             else:
                 flattened_basket_steps.append(
-                    # TODO: Store basket info
                     FlattenedInvestmentStep(
+                        id=self.id_generator.generate_random_id(),
+                        asset_type="TOKEN",
                         sell_balance=result.sell_balance,
                         buy_balance=result.buy_balance,
                         basket_id=buy_balance.asset.id,
+                        parent_id=parent_id,
                     )
                 )
 
         return flattened_basket_steps
 
     async def __build_steps_for_sell_basket(
-        self, sell_balance: Balance[Basket], buy_balance: Balance[Token]
+        self, sell_balance: BalanceAtomic[Basket], buy_balance: BalanceAtomic[Token]
     ) -> list[FlattenedInvestmentStep]:
+        parent_id = self.id_generator.generate_random_id()
+
         tasks = [
             self.exchange.convert_balance_to_token(
                 # TODO: Handle selling basket
@@ -251,18 +296,28 @@ class ExecuteInvestmentPlanUseCase:
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        flattened_basket_steps: list[FlattenedInvestmentStep] = []
+        flattened_basket_steps: list[FlattenedInvestmentStep] = [
+            FlattenedInvestmentStep(
+                id=parent_id,
+                asset_type="BASKET",
+                sell_balance=sell_balance,
+                buy_balance=buy_balance,
+                basket_id=sell_balance.asset.id,
+            )
+        ]
 
         for i, result in enumerate(results):
             if isinstance(result, BaseException):
                 print(f"Flatten Investment Plan step {i} failed: {result!r}")
             else:
-                # TODO: Store basket info
                 flattened_basket_steps.append(
                     FlattenedInvestmentStep(
+                        id=self.id_generator.generate_random_id(),
+                        asset_type="TOKEN",
                         sell_balance=result.sell_balance,
                         buy_balance=result.buy_balance,
                         basket_id=sell_balance.asset.id,
+                        parent_id=parent_id,
                     )
                 )
 

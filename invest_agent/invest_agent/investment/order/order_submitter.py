@@ -1,5 +1,6 @@
 import asyncio
 from decimal import Decimal
+from typing import cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain, ParsedReceipt
 from invest_agent.datetime.date_time import DateTime
@@ -58,6 +59,9 @@ class OrderSubmitter:
         """
         await self.order_repository.create_order(order)
 
+        if order.asset_type == "BASKET":
+            return
+
         parsed_receipt = await self.__handle_pending_chain_transactions(order)
 
         if parsed_receipt:
@@ -101,7 +105,7 @@ class OrderSubmitter:
                     fees=None,
                     chain_transactions=chain_transactions,
                     provider=self.exchange.get_name(),
-                    buy_balance=order.buy_balance,
+                    buy_balance=cast(BalanceAtomic[Token], order.buy_balance),
                 )
 
                 await self.order_repository.add_order_try(order.id, order_try)
@@ -153,8 +157,8 @@ class OrderSubmitter:
     ) -> Transaction:
         return Transaction(
             id=order.id,
-            sell_balance=order.sell_balance,
-            buy_balance=order.buy_balance,
+            sell_balance=cast(BalanceAtomic[Token], order.sell_balance),
+            buy_balance=cast(BalanceAtomic[Token], order.buy_balance),
             executed_sell_balance=parsed_receipt.executed_sell_balance,
             executed_buy_balance=parsed_receipt.executed_buy_balance,
             type=order.type,
@@ -262,8 +266,8 @@ class OrderSubmitter:
             raise OrderWithoutSendTransaction()
 
         parsed_transaction_receipt = await self.chain.parse_transaction_receipt(
-            sell_token=order.sell_balance.asset,
-            buy_token=order.buy_balance.asset,
+            sell_token=cast(Token, order.sell_balance.asset),
+            buy_token=cast(Token, order.buy_balance.asset),
             transaction_hash=send_chain_transaction.hash,
         )
 

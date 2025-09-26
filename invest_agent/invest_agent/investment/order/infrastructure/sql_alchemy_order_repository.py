@@ -18,6 +18,7 @@ from invest_agent.investment.order.order import (
     OrderStatus,
     OrderTrigger,
     OrderType,
+    OrderAssetType,
     Try,
     Id,
 )
@@ -141,6 +142,11 @@ class OrderModel(Base):
     __tablename__ = "orders"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    parent_order_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("orders.id", name="fk_orders_parent_order_id_orders_id"),
+        nullable=True,
+    )
 
     sell_balance_asset_id: Mapped[str] = mapped_column(String())
     sell_balance_asset: Mapped[str] = mapped_column()
@@ -155,10 +161,16 @@ class OrderModel(Base):
     buy_balance_decimals: Mapped[int] = mapped_column()
 
     type: Mapped[str] = mapped_column()
+    asset_type: Mapped[OrderAssetType] = mapped_column()
     created_at: Mapped[int] = mapped_column()
     status: Mapped[str] = mapped_column()
     trigger: Mapped[str] = mapped_column()
     basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
+
+    parent_order: Mapped["OrderModel | None"] = relationship(
+        "OrderModel",
+        remote_side=[id],
+    )
 
     tries: Mapped[list[OrderTryModel]] = relationship(
         "OrderTryModel",
@@ -177,6 +189,7 @@ class OrderModel(Base):
     def to_domain(self) -> Order:
         return Order(
             id=self.id,
+            parent_order_id=self.parent_order_id,
             sell_balance=BalanceAtomic(
                 asset=cast(
                     Token, BalanceAtomic.deserialize_asset(self.sell_balance_asset)
@@ -194,6 +207,7 @@ class OrderModel(Base):
                 decimals=self.buy_balance_decimals,
             ),
             type=cast(OrderType, self.type),
+            asset_type=self.asset_type,
             created_at=self.created_at,
             status=cast(OrderStatus, self.status),
             trigger=cast(OrderTrigger, self.trigger),
@@ -205,6 +219,7 @@ class OrderModel(Base):
     def from_domain(order: Order) -> "OrderModel":
         return OrderModel(
             id=order.id,
+            parent_order_id=order.parent_order_id,
             sell_balance_asset_id=order.sell_balance.asset.id,
             sell_balance_asset=json.dumps(order.sell_balance.asset.to_dict()),
             sell_balance_amount=format(order.sell_balance.amount, "f"),
@@ -216,6 +231,7 @@ class OrderModel(Base):
             buy_balance_amount_atomic=order.buy_balance.amount_atomic,
             buy_balance_decimals=order.buy_balance.decimals,
             type=order.type,
+            asset_type=order.asset_type,
             created_at=order.created_at,
             status=order.status,
             trigger=order.trigger,
@@ -237,6 +253,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
                     insert(OrderModel)
                     .values(
                         id=order_model.id,
+                        parent_order_id=order_model.parent_order_id,
                         sell_balance_asset_id=order_model.sell_balance_asset_id,
                         sell_balance_asset=order_model.sell_balance_asset,
                         sell_balance_amount=order_model.sell_balance_amount,
@@ -248,6 +265,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
                         buy_balance_amount_atomic=order_model.buy_balance_amount_atomic,
                         buy_balance_decimals=order_model.buy_balance_decimals,
                         type=order_model.type,
+                        asset_type=order_model.asset_type,
                         created_at=order_model.created_at,
                         status=order_model.status,
                         trigger=order_model.trigger,

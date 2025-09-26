@@ -19,6 +19,7 @@ from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, mark
 from shared.id_generator.id_generator import IdGenerator
 from protocol.fixture.token import bnb_token, sol_token
+from protocol.fixture.basket import big4_basket
 
 
 @fixture
@@ -124,6 +125,7 @@ async def test_order_submitter_submit_orders(order_submitter: OrderSubmitter):
                 amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
             ),
             type="BUY",
+            asset_type="TOKEN",
             tries=[],
             created_at=1752268296,
             status="PENDING",
@@ -159,6 +161,7 @@ async def test_order_submitter_submit_and_wait_order_without_tries(
             amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
         ),
         type="BUY",
+        asset_type="TOKEN",
         tries=[],
         created_at=1752268296,
         status="PENDING",
@@ -216,6 +219,7 @@ async def test_order_submitter_submit_and_wait_order_with_tries(
             amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
         ),
         type="BUY",
+        asset_type="TOKEN",
         tries=tries,
         created_at=1752268296,
         status="PENDING",
@@ -267,6 +271,7 @@ async def test_order_submitter_submit_and_wait_order_success(
             amount=Decimal(5), amount_atomic=5 * 10**18, asset=sol_token, decimals=18
         ),
         type="BUY",
+        asset_type="TOKEN",
         tries=tries,
         created_at=1752268296,
         status="PENDING",
@@ -304,6 +309,8 @@ async def test_order_submitter_submit_and_wait_order_success(
     )
 
     await order_submitter.submit_and_wait_order(order)
+
+    order_repository.create_order.assert_called_once_with(order)
 
     order_repository.set_order_to_success.assert_called_once_with(order.id)
     transaction_repository.create_transaction.assert_called_once_with(
@@ -355,6 +362,44 @@ async def test_order_submitter_submit_and_wait_order_success(
 
 
 @mark.asyncio
+async def test_order_submitter_submit_and_wait_order_asset_type_basket_success(
+    order_submitter: OrderSubmitter,
+    order_repository: OrderRepository,
+    transaction_repository: TransactionRepository,
+    posting_repository: PostingRepository,
+    exchange: Exchange,
+):
+    order = Order(
+        id="1",
+        sell_balance=BalanceAtomic(
+            amount=Decimal("0.25"),
+            amount_atomic=int(0.25 * 10**18),
+            asset=bnb_token,
+            decimals=18,
+        ),
+        buy_balance=BalanceAtomic(
+            amount=Decimal(5), amount_atomic=5 * 10**18, asset=big4_basket, decimals=18
+        ),
+        type="BUY",
+        asset_type="BASKET",
+        tries=[],
+        created_at=1752268296,
+        status="PENDING",
+        trigger="MANUAL",
+        basket_id="basket1",
+    )
+
+    await order_submitter.submit_and_wait_order(order)
+
+    order_repository.create_order.assert_called_once_with(order)
+
+    exchange.build_transactions.assert_not_called()
+    order_repository.set_order_to_success.assert_not_called()
+    transaction_repository.create_transaction.assert_not_called()
+    posting_repository.create_posting.assert_not_called()
+
+
+@mark.asyncio
 async def test_order_submitter_submit_and_wait_order_failed(
     order_submitter: OrderSubmitter,
     id_generator: IdGenerator,
@@ -376,6 +421,7 @@ async def test_order_submitter_submit_and_wait_order_failed(
             amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
         ),
         type="BUY",
+        asset_type="TOKEN",
         tries=tries,
         created_at=1752268296,
         status="PENDING",
@@ -436,6 +482,7 @@ async def test_order_submitter_submit_and_wait_order_retries(
             amount=Decimal(0), amount_atomic=0, asset=sol_token, decimals=18
         ),
         type="BUY",
+        asset_type="TOKEN",
         tries=tries,
         created_at=1752268296,
         status="PENDING",

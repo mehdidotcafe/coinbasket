@@ -96,12 +96,13 @@ async def test_integration_execute_investment_plan_use_case(
 
     orders = list(await fetch_all_orders())
 
-    assert len(orders) == 4
+    assert len(orders) == 5
 
     assert orders[0].status == "SUCCESS"
     assert orders[1].status == "SUCCESS"
     assert orders[2].status == "SUCCESS"
-    assert orders[3].status == "SUCCESS"
+    assert orders[3].status == "PENDING"
+    assert orders[4].status == "SUCCESS"
 
     transactions = list(await fetch_all_transactions())
 
