@@ -3,7 +3,6 @@ from typing import Literal
 
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.fees import Fees
-from invest_agent.investment.order.basket_order import BasketOrder
 from protocol.token import Token
 
 Id = str
@@ -38,17 +37,19 @@ class Try:
 OrderType = Literal["SELL", "BUY", "SWAP"]
 OrderStatus = Literal["PENDING", "SUCCESS", "FAIL"]
 OrderTrigger = Literal["MANUAL", "AUTOMATIC"]
+OrderAssetType = Literal["BASKET", "TOKEN"]
 
 
 @dataclass
 class Order:
     id: Id
-    sell_balance: BalanceAtomic[Token]
-    buy_balance: BalanceAtomic[Token]
+    sell_balance: BalanceAtomic
+    buy_balance: BalanceAtomic
     type: OrderType
+    asset_type: OrderAssetType
     tries: list[Try]
     created_at: int
     status: OrderStatus
     trigger: OrderTrigger
     basket_id: Id | None = None
-    basket_order: BasketOrder | None = None
+    parent_order_id: Id | None = None

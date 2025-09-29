@@ -62,30 +62,36 @@ def investment_plan():
 
 async def fetch_all_orders():
     async with make_session() as session:
-        result = await session.execute(select(OrderModel))
+        result = await session.execute(
+            select(OrderModel).order_by(OrderModel.asset_type.asc())
+        )
         rows = result.scalars().all()
         return rows
 
 
 async def fetch_all_transactions():
     async with make_session() as session:
-        result = await session.execute(select(TransactionModel))
+        result = await session.execute(
+            select(TransactionModel).order_by(TransactionModel.created_at.asc())
+        )
         rows = result.scalars().all()
         return rows
 
 
 async def fetch_all_postings():
     async with make_session() as session:
-        result = await session.execute(select(PostingModel))
+        result = await session.execute(
+            select(PostingModel).order_by(PostingModel.created_at.asc())
+        )
         rows = result.scalars().all()
         return rows
 
 
 async def wait_for_orders():
-    await sleep(75)
+    await sleep(20)
 
 
-@mark.asyncio
+@mark.asyncio(loop_scope="session")
 async def test_integration_execute_investment_plan_use_case(
     investment_plan: InvestmentPlan,
     cleanup_all: Any,  # noqa: F811
@@ -96,12 +102,24 @@ async def test_integration_execute_investment_plan_use_case(
 
     orders = list(await fetch_all_orders())
 
-    assert len(orders) == 4
+    assert len(orders) == 5
 
-    assert orders[0].status == "SUCCESS"
+    # Basket Order
+    assert orders[0].status == "PENDING"
+    assert orders[0].asset_type == "BASKET"
+
+    # Token orders
     assert orders[1].status == "SUCCESS"
+    assert orders[1].asset_type == "TOKEN"
+
     assert orders[2].status == "SUCCESS"
+    assert orders[2].asset_type == "TOKEN"
+
     assert orders[3].status == "SUCCESS"
+    assert orders[3].asset_type == "TOKEN"
+
+    assert orders[4].status == "SUCCESS"
+    assert orders[4].asset_type == "TOKEN"
 
     transactions = list(await fetch_all_transactions())
 

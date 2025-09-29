@@ -53,6 +53,18 @@ from invest_agent.portfolio.posting.infrastructure.sql_alchemy_posting_repositor
     SqlAlchemyPostingRepository,
 )
 from protocol.basket import Basket
+from protocol.fixture.basket import (
+    big4_basket,
+    memecoinmania_basket
+)
+from protocol.fixture.token import (
+    wbnb_token,
+    eth_token,
+    btc_token,
+    sol_token,
+    shib_token,
+    cake_token
+)
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from apispec import APISpec
@@ -84,6 +96,7 @@ from invest_agent.investment.order.order_submitter import OrderSubmitter
 from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
 from shared.http_request.infrastructure.requests_http_request import RequestsHttpRequest
 from shared.id_generator.id_generator import IdGenerator
+from shared.random_generator.random_generator import RandomGenerator
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
@@ -177,6 +190,8 @@ aiohttp_http_request = AiohttpHttpRequest()
 
 id_generator = IdGenerator()
 
+random_generator = RandomGenerator()
+
 api_client = ZeroXApiClient(
     configuration={
         "zero_x_api_url": configuration.zero_x_api_url,
@@ -204,7 +219,6 @@ agent_to_agent_client = AiohttpAgentToAgentClient(
     aiohttp_http_request=aiohttp_http_request,
 )
 
-db_path = f"./database/{configuration.agent_env}/{configuration.agent_name}.db"
 langgraph_db_path = (
     f"./database/{configuration.agent_env}/{configuration.agent_name}.langgraph.db"
 )
@@ -265,6 +279,8 @@ order_submitter = OrderSubmitter(
     order_repository=order_repository,
     transaction_repository=transaction_repository,
     posting_repository=posting_repository,
+    random_generator=random_generator,
+    configuration={"environment": configuration.agent_env},
 )
 
 build_priced_investment_plan_use_case = BuildPricedInvestmentPlanUseCase(
@@ -288,8 +304,8 @@ execute_pending_orders_use_case = ExecutePendingOrdersUseCase(
 get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(exchange=exchange, chain=chain)
 
 
-@tool(response_format="content_and_artifact", parse_docstring=True)
-async def get_tokens_from_query(query: str):
+@tool(parse_docstring=True)
+async def get_tokens_from_query(query: str) -> list[TokenResponse | BasketResponse]:
     """
     Retrieve a list of available tokens to invest or from a given query.
 
@@ -300,6 +316,18 @@ async def get_tokens_from_query(query: str):
         A list of documents containing tokens.
         Each token has a name, display_name, ticker and address (contract address) property.
     """
+
+    # TODO: Handle test case more elegantly
+    if configuration.agent_env == 'test':
+        return [
+            TokenResponse.from_domain(wbnb_token),
+            TokenResponse.from_domain(eth_token),
+            TokenResponse.from_domain(btc_token),
+            TokenResponse.from_domain(sol_token),
+            TokenResponse.from_domain(shib_token),
+            TokenResponse.from_domain(cake_token)
+        ]
+
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
@@ -312,13 +340,11 @@ async def get_tokens_from_query(query: str):
     if isinstance(res.data, str):
         raise ValueError(f"Response is not a valid response: {res.data}")
 
-    return "\n\n".join(
-        [str(asset.to_domain()) for asset in res.data.assets]
-    ), res.data.assets
+    return res.data.assets
 
 
-@tool(response_format="content_and_artifact", parse_docstring=True)
-async def get_baskets_from_query(query: str):
+@tool(parse_docstring=True)
+async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketResponse]:
     """
     Retrieve a list of available baskets from a given query.
 
@@ -331,6 +357,13 @@ async def get_baskets_from_query(query: str):
         Each token has a name, display_name, ticker and address (contract address) property.
     """
 
+    # TODO: Handle test case more elegantly
+    if configuration.agent_env == 'test':
+        return [
+            BasketResponse.from_domain(big4_basket),
+            BasketResponse.from_domain(memecoinmania_basket)
+        ]
+
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
         SimilarAssetsQuery(
@@ -342,9 +375,8 @@ async def get_baskets_from_query(query: str):
     if isinstance(res.data, str):
         raise ValueError(f"Response is not a valid response: {res.data}")
 
-    return "\n\n".join(
-        [str(asset.to_domain()) for asset in res.data.assets]
-    ), res.data.assets
+    return res.data.assets
+
 
 
 @tool(parse_docstring=True)
@@ -357,6 +389,13 @@ async def get_all_available_baskets():
         Each basket is made of a name, a description and a list of tokens.
         Each token has a name, display_name, ticker and address (contract address) property.
     """
+
+    # TODO: Handle test case more elegantly
+    if configuration.agent_env == 'test':
+        return [
+            big4_basket,
+            memecoinmania_basket
+        ]
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(

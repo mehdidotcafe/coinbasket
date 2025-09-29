@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Any
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.order.order import ChainTransaction, Order, Try
-from pytest import fixture
+from pytest import fixture, mark
 from sqlalchemy import select
 
 from invest_agent.main import execute_pending_orders_use_case
@@ -42,6 +42,7 @@ def current_orders_no_try():
                 decimals=18,
             ),
             type="BUY",
+            asset_type="TOKEN",
             created_at=1939494,
             status="PENDING",
             trigger="MANUAL",
@@ -63,6 +64,7 @@ def current_orders_no_try():
                 decimals=18,
             ),
             type="BUY",
+            asset_type="TOKEN",
             created_at=1939494,
             status="SUCCESS",
             trigger="MANUAL",
@@ -84,6 +86,7 @@ def current_orders_no_try():
                 decimals=18,
             ),
             type="BUY",
+            asset_type="TOKEN",
             created_at=1939494,
             status="FAIL",
             trigger="MANUAL",
@@ -121,6 +124,7 @@ def current_orders_tries():
                 decimals=18,
             ),
             type="BUY",
+            asset_type="TOKEN",
             created_at=1939494,
             status="PENDING",
             trigger="MANUAL",
@@ -167,6 +171,7 @@ def current_orders_tries():
                 decimals=18,
             ),
             type="BUY",
+            asset_type="TOKEN",
             created_at=1939494,
             status="PENDING",
             trigger="MANUAL",
@@ -213,6 +218,7 @@ def current_orders_tries():
                 decimals=18,
             ),
             type="BUY",
+            asset_type="TOKEN",
             created_at=1939494,
             status="PENDING",
             trigger="MANUAL",
@@ -313,9 +319,10 @@ async def fetch_transaction_by_order_id(order_id: str):
 
 
 async def wait_for_orders():
-    await sleep(60)
+    await sleep(20)
 
 
+@mark.asyncio(loop_scope="session")
 async def test_integration_execute_pending_orders_use_case_no_try(
     seed_orders_no_try: Any,
     cleanup_all: Any,  # noqa: F811
@@ -336,6 +343,7 @@ async def test_integration_execute_pending_orders_use_case_no_try(
     assert len(transactions) == 1
 
 
+@mark.asyncio(loop_scope="session")
 async def test_integration_execute_pending_orders_use_case_with_tries(
     seed_orders_tries: Any,
     cleanup_all: Any,  # noqa: F811
