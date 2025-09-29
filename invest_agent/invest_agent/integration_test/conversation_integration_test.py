@@ -15,6 +15,7 @@ agent_key = env.str("AGENT_KEY")
 def investment_plan() -> dict[str, Any]:
     return {
         "investment_plan": {
+            "status": "CONFIRM",
             "steps": [
                 {
                     "buy_balance": {
@@ -55,7 +56,7 @@ def investment_plan() -> dict[str, Any]:
                         "amount": "15.95",
                     },
                 }
-            ]
+            ],
         }
     }
 
@@ -107,7 +108,7 @@ def test_integration_conversation(investment_plan: dict[str, Any], cleanup_all: 
     assert response_2.status_code == 200
     assert response_2_json["is_interrupting"] is True
     assert response_2_json["content"] is None
-    assert len(response_2_json["ui"]["args"]["intent_investment_plan"]["steps"]) == 2
+    assert len(response_2_json["ui"]["args"]["priced_investment_plan"]["steps"]) == 2
 
     response_3 = requests.post(
         f"http://localhost:{agent_port}/conversation",

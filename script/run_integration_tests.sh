@@ -21,8 +21,10 @@ API_PID=$!
 env-cmd -f .env.test poetry run pytest -k "test_integration" "$@"
 TEST_RESULT=$?
 
+
+(cd .. && ./nx infra:test:down $PROJECT)
+
 # Kill API
 kill $API_PID
-wait $API_PID 2>/dev/null
 
 exit $TEST_RESULT

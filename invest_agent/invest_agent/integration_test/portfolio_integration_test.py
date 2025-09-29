@@ -327,7 +327,6 @@ def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, clean
                 "decimals": 18,
             },
             "type": "BUY",
-            "tries": [],
             "created_at": 0,
             "status": "PENDING",
             "trigger": "MANUAL",

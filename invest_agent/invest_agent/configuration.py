@@ -1,15 +1,21 @@
+from typing import Literal, cast
 import uuid
 from environs import env
 from marshmallow.validate import OneOf
 
+AgentEnv = Literal["development", "test", "production"]
+
 
 class Configuration:
     def __init__(self):
-        self.agent_env = env.str(
-            "AGENT_ENV",
-            validate=OneOf(
-                ["development", "production", "test"],
-                error="AGENT_ENV must be one of: {choices}",
+        self.agent_env: AgentEnv = cast(
+            AgentEnv,
+            env.str(
+                "AGENT_ENV",
+                validate=OneOf(
+                    ["development", "production", "test"],
+                    error="AGENT_ENV must be one of: {choices}",
+                ),
             ),
         )
         self.agent_name = env.str("AGENT_NAME")
