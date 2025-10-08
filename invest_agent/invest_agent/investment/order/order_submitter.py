@@ -137,58 +137,59 @@ class OrderSubmitter:
                 )
 
                 if parsed_receipt:
-                    created_at = self.date_time.now()
-                    transaction = self.__map_order_to_transaction(
-                        order, order_try, created_at, parsed_receipt
-                    )
+                    await self._on_order_success(order, order_try, parsed_receipt)
 
-                    await self.order_repository.set_order_to_success(order.id)
+                    # if order.parent_order_id:
+                    #     sibling_order = await self.order_repository.get_orders(
+                    #         parent_order_id=order.parent_order_id
+                    #     )
 
-                    await self.transaction_repository.create_transaction(transaction)
-                    if not self.chain.is_native_token(transaction.sell_balance.asset):
-                        await self.posting_repository.create_posting(
-                            self.__map_transaction_to_posting(
-                                transaction=transaction,
-                                balance=parsed_receipt.executed_sell_balance,
-                                created_at=created_at,
-                                multiplier=-1,
-                            )
-                        )
-                    if not self.chain.is_native_token(transaction.buy_balance.asset):
-                        await self.posting_repository.create_posting(
-                            self.__map_transaction_to_posting(
-                                transaction=transaction,
-                                balance=parsed_receipt.executed_buy_balance,
-                                created_at=created_at,
-                                multiplier=1,
-                            )
-                        )
+                    #     if all(sibling.status == "SUCCESS" for sibling in sibling_order):
+                    #         parent_order = await self.order_repository.get_order(
+                    #             order.parent_order_id
+                    #         )
+
+                    #         if parent_order and parent_order.status == "PENDING":
+                    #             print(f"Hello world {parent_order.id}")
+                    #             await self._on_order_success(
+                    #                 parent_order,
+                    #                 None,
+                    #                 ParsedReceipt(
+                    #                     # TODO: Compute real executed balances for parent order
+                    #                     # Sell leftovers?
+                    #                     executed_sell_balance=parent_order.sell_balance,
+                    #                     executed_buy_balance=parent_order.buy_balance,
+                    #                     rate=Decimal(parent_order.buy_balance.amount_atomic)
+                    #                     / Decimal(parent_order.sell_balance.amount_atomic),
+                    #                 ),
+                    #             )
 
                     return
             except Exception as e:
                 print(f"Error submitting order {order.id}: {e}")
 
-        await self.order_repository.set_order_to_fail(order.id)
+        await self._on_order_fail(order)
 
     def __map_order_to_transaction(
         self,
         order: Order,
-        order_try: Try,
+        order_try: Try | None,
         created_at: int,
         parsed_receipt: ParsedReceipt,
     ) -> Transaction:
         return Transaction(
             id=order.id,
-            sell_balance=cast(BalanceAtomic[Token], order.sell_balance),
-            buy_balance=cast(BalanceAtomic[Token], order.buy_balance),
+            parent_transaction_id=order.parent_order_id,
+            sell_balance=order.sell_balance,
+            buy_balance=order.buy_balance,
             executed_sell_balance=parsed_receipt.executed_sell_balance,
             executed_buy_balance=parsed_receipt.executed_buy_balance,
             type=order.type,
             created_at=created_at,
-            fees=order_try.fees,
+            fees=order_try.fees if order_try else None,
             transaction_hash=order_try.chain_transactions[-1].hash
-            if self._is_production()
-            else "DUMMY",
+            if order_try
+            else None,
             order_id=order.id,
             trigger=order.trigger,
             basket_id=order.basket_id,
@@ -196,13 +197,18 @@ class OrderSubmitter:
 
     def __map_transaction_to_posting(
         self,
+        kind: Literal["IN", "OUT"],
         transaction: Transaction,
-        balance: BalanceAtomic[Token],
+        balance: BalanceAtomic,
         created_at: int,
-        multiplier: int,
     ) -> Posting:
+        multiplier = 1 if kind == "IN" else -1
+
         return Posting(
-            id=self.id_generator.generate_random_id(),
+            id=f"{transaction.id}-{kind}",
+            parent_posting_id=f"{transaction.parent_transaction_id}-{kind}"
+            if transaction.parent_transaction_id
+            else None,
             transaction_id=transaction.id,
             asset_balance=BalanceAtomic(
                 asset=balance.asset,
@@ -242,7 +248,7 @@ class OrderSubmitter:
                     transaction=transaction,
                     balance=parsed_receipt.executed_sell_balance,
                     created_at=created_at,
-                    multiplier=-1,
+                    kind="OUT",
                 )
             )
             await self.posting_repository.create_posting(
@@ -250,7 +256,7 @@ class OrderSubmitter:
                     transaction=transaction,
                     balance=parsed_receipt.executed_buy_balance,
                     created_at=created_at,
-                    multiplier=1,
+                    kind="IN",
                 )
             )
 
@@ -307,7 +313,7 @@ class OrderSubmitter:
         return self.configuration["environment"] == "production"
 
     def _build_dummy_parsed_receipt(self, order: Order):
-        random_factor = self.random_generator.generate_number(0, 2)
+        random_factor = self.random_generator.generate_number(98, 100)
         executed_buy_balance_amount = order.buy_balance.amount * random_factor / 100
         executed_buy_balance_atomic_amount = int(
             order.buy_balance.amount_atomic * random_factor / 100
@@ -324,3 +330,36 @@ class OrderSubmitter:
             rate=Decimal(executed_buy_balance_atomic_amount)
             / Decimal(order.sell_balance.amount_atomic),
         )
+
+    async def _on_order_success(
+        self, order: Order, order_try: Try | None, parsed_receipt: ParsedReceipt
+    ):
+        created_at = self.date_time.now()
+        transaction = self.__map_order_to_transaction(
+            order, order_try, created_at, parsed_receipt
+        )
+
+        await self.order_repository.set_order_to_success(order.id)
+
+        await self.transaction_repository.create_transaction(transaction)
+        if not self.chain.is_native_token(transaction.sell_balance.asset):
+            await self.posting_repository.create_posting(
+                self.__map_transaction_to_posting(
+                    transaction=transaction,
+                    balance=parsed_receipt.executed_sell_balance,
+                    created_at=created_at,
+                    kind="OUT",
+                )
+            )
+        if not self.chain.is_native_token(transaction.buy_balance.asset):
+            await self.posting_repository.create_posting(
+                self.__map_transaction_to_posting(
+                    transaction=transaction,
+                    balance=parsed_receipt.executed_buy_balance,
+                    created_at=created_at,
+                    kind="IN",
+                )
+            )
+
+    async def _on_order_fail(self, order: Order):
+        await self.order_repository.set_order_to_fail(order.id)

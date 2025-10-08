@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from protocol.asset import Asset
 from protocol.token import Token
 
 from invest_agent.chain.balance import (
@@ -26,18 +27,18 @@ class Gas:
 
 @dataclass
 class ParsedReceipt:
-    executed_sell_balance: BalanceAtomic[Token]
-    executed_buy_balance: BalanceAtomic[Token]
+    executed_sell_balance: BalanceAtomic
+    executed_buy_balance: BalanceAtomic
     rate: Decimal | None = None
 
 
 class Chain(ABC):
     @abstractmethod
-    def is_native_token(self, token: Token) -> bool:
+    def is_native_token(self, asset: Asset) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    def is_wrapped_native_token(self, token: Token) -> bool:
+    def is_wrapped_native_token(self, asset: Asset) -> bool:
         raise NotImplementedError
 
     @abstractmethod

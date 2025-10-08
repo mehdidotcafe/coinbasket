@@ -31,7 +31,7 @@ class OrderRepository(ABC):
 
     @abstractmethod
     async def get_orders(
-        self, status: OrderStatus | None, limit: int, offset: int
+        self, status: OrderStatus | None = None, limit: int | None = None, offset: int | None = None, parent_order_id: Id | None = None
     ) -> list[Order]:
         """Fetch all orders with the given status if passed. Returns all orders otherwise."""
         raise NotImplementedError

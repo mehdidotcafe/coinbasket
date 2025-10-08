@@ -144,7 +144,7 @@ class OrderModel(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     parent_order_id: Mapped[str | None] = mapped_column(
         String(36),
-        ForeignKey("orders.id", name="fk_orders_parent_order_id_orders_id"),
+        # No ForeignKey constraint because parent order might be created after child orders
         nullable=True,
     )
 
@@ -166,11 +166,6 @@ class OrderModel(Base):
     status: Mapped[str] = mapped_column()
     trigger: Mapped[str] = mapped_column()
     basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
-
-    parent_order: Mapped["OrderModel | None"] = relationship(
-        "OrderModel",
-        remote_side=[id],
-    )
 
     tries: Mapped[list[OrderTryModel]] = relationship(
         "OrderTryModel",
@@ -313,6 +308,8 @@ class SqlAlchemyOrderRepository(OrderRepository):
                         )
                     )
                     .where(OrderModel.status == "PENDING")
+                    # TODO: Remove this line when basket as order is fully implemented
+                    .where(OrderModel.asset_type == 'TOKEN')
                 )
 
                 result = await session.execute(stmt)
@@ -321,14 +318,23 @@ class SqlAlchemyOrderRepository(OrderRepository):
                 return [row.to_domain() for row in order_models]
 
     async def get_orders(
-        self, status: OrderStatus | None, limit: int, offset: int
+        self, status: OrderStatus | None = None, limit: int | None = None, offset: int | None = None, parent_order_id: Id | None = None
     ) -> list[Order]:
         async with self.AsyncSessionLocal(bind=self.engine) as session:
             async with session.begin():
-                stmt = select(OrderModel).limit(limit).offset(offset)
+                stmt = select(OrderModel)
+
+                if limit:
+                    stmt = stmt.limit(limit)
+
+                if offset:
+                    stmt = stmt.offset(offset)
 
                 if status:
                     stmt = stmt.where(OrderModel.status == status)
+
+                if parent_order_id is not None:
+                    stmt = stmt.where(OrderModel.parent_order_id == parent_order_id)
 
                 result = await session.execute(stmt)
                 order_models = result.scalars().all()

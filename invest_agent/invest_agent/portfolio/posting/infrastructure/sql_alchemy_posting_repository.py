@@ -1,12 +1,11 @@
 from typing import TYPE_CHECKING
 from decimal import Decimal
 import json
-from typing import cast
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
 
 from invest_agent.portfolio.posting.posting import Posting, PostingType
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
-from protocol.token import Token
+from protocol.asset import Asset
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy import ForeignKey, String, select, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -22,7 +21,7 @@ if TYPE_CHECKING:
 class PostingModel(Base):
     __tablename__ = "postings"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
 
     asset_id: Mapped[str] = mapped_column(String())
     asset: Mapped[str] = mapped_column()
@@ -42,12 +41,18 @@ class PostingModel(Base):
         back_populates="postings",
     )
 
+    parent_posting_id: Mapped[str | None] = mapped_column(
+        String(40),
+        # No ForeignKey constraint because parent posting is created after child posting
+        nullable=True
+    )
+
     def to_domain(self) -> Posting:
         return Posting(
             id=self.id,
             transaction_id=self.transaction_id,
             asset_balance=BalanceAtomic(
-                asset=cast(Token, BalanceAtomic.deserialize_asset(self.asset)),
+                asset=BalanceAtomic.deserialize_asset(self.asset),
                 amount=Decimal(self.amount),
                 amount_atomic=int(self.amount_atomic),
                 decimals=self.decimals,
@@ -84,7 +89,7 @@ class SqlAlchemyPostingRepository(PostingRepository):
                 session.add(PostingModel.from_domain(posting))
         return posting
 
-    async def get_holding_balances(self) -> list[BalanceAtomic[Token]]:
+    async def get_holding_balances(self) -> list[BalanceAtomic]:
         async with self.AsyncSessionLocal(bind=self.engine) as session:
             async with session.begin():
                 result = await session.execute(self._get_default_holding_statement())
@@ -92,7 +97,7 @@ class SqlAlchemyPostingRepository(PostingRepository):
 
                 return [
                     BalanceAtomic(
-                        asset=cast(Token, BalanceAtomic.deserialize_asset(asset_json)),
+                        asset=BalanceAtomic.deserialize_asset(asset_json),
                         amount=total_amount_atomic / Decimal(10**decimals),
                         amount_atomic=int(total_amount_atomic),
                         decimals=decimals,
@@ -100,18 +105,18 @@ class SqlAlchemyPostingRepository(PostingRepository):
                     for _asset_id, asset_json, decimals, total_amount_atomic in rows
                 ]
 
-    async def get_holding_balance(self, token: Token) -> BalanceAtomic[Token]:
+    async def get_holding_balance(self, asset: Asset) -> BalanceAtomic:
         async with self.AsyncSessionLocal(bind=self.engine) as session:
             async with session.begin():
                 stmt = self._get_default_holding_statement().where(
-                    PostingModel.asset_id == token.id
+                    PostingModel.asset_id == asset.id
                 )
                 result = await session.execute(stmt)
                 rows = result.all()
 
                 if not rows:
                     return BalanceAtomic(
-                        asset=token,
+                        asset=asset,
                         amount=Decimal(0),
                         amount_atomic=0,
                         decimals=0,
@@ -122,7 +127,7 @@ class SqlAlchemyPostingRepository(PostingRepository):
                 total_amount_atomic = rows[0][3]
 
                 return BalanceAtomic(
-                    asset=cast(Token, BalanceAtomic.deserialize_asset(asset_json)),
+                    asset=BalanceAtomic.deserialize_asset(asset_json),
                     amount=total_amount_atomic / Decimal(10**decimals),
                     amount_atomic=int(total_amount_atomic),
                     decimals=decimals,

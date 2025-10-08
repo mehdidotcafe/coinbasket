@@ -3,7 +3,6 @@ from typing import Literal
 
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.fees import Fees
-from protocol.token import Token
 
 Id = str
 
@@ -29,7 +28,7 @@ class Try:
     created_at: int
     chain_transactions: list[ChainTransaction]
     provider: str
-    buy_balance: BalanceAtomic[Token]
+    buy_balance: BalanceAtomic
     # TODO: Make fees required
     fees: Fees | None = None
 

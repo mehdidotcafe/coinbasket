@@ -9,6 +9,7 @@ from invest_agent.chain.infrastructure.bsc.nonce_manager import NonceManager
 from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
+from protocol.asset import Asset
 from tenacity import retry, stop_after_attempt, wait_fixed
 from web3 import AsyncWeb3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
@@ -73,11 +74,11 @@ class BscChain(Chain):
             layer=0,
         )
 
-    def is_native_token(self, token: Token) -> bool:
-        return token.address.lower() == self.base_token.address.lower()
+    def is_native_token(self, asset: Asset) -> bool:
+        return isinstance(asset, Token) and asset.address.lower() == self.base_token.address.lower()
 
-    def is_wrapped_native_token(self, token: Token) -> bool:
-        return token.address.lower() == self.wrapped_base_token.address.lower()
+    def is_wrapped_native_token(self, asset: Asset) -> bool:
+        return isinstance(asset, Token) and asset.address.lower() == self.wrapped_base_token.address.lower()
 
     def __is_native_token_address(self, token_address: str) -> bool:
         return token_address.lower() == self.base_token.address.lower()

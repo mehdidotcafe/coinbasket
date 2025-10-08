@@ -302,6 +302,7 @@ async def test_order_submitter_submit_and_wait_order_success(
     date_time.now.return_value = 1752268296
     chain.sign_send_transaction.return_value = "12345"
     chain.wait_transaction.return_value = True
+    chain.is_native_token.side_effect = [False, True]
     chain.parse_transaction_receipt.return_value = ParsedReceipt(
         executed_sell_balance=BalanceAtomic(
             amount=Decimal("0.33"),
@@ -352,8 +353,8 @@ async def test_order_submitter_submit_and_wait_order_success(
         [
             # create_posting should only called once for buy_balance because sell_balance is a native token
             mock.call.create_posting(
-                Posting(
-                    id=order.id,
+                Posting(            
+                    id=f"{order.id}-IN",
                     transaction_id=order.id,
                     asset_balance=BalanceAtomic(
                         amount=Decimal("5.12"),
@@ -368,7 +369,6 @@ async def test_order_submitter_submit_and_wait_order_success(
             ),
         ]
     )
-
 
 @mark.asyncio
 async def test_order_submitter_submit_and_wait_order_asset_type_basket_success(
@@ -549,7 +549,6 @@ async def test_order_submitter_submit_and_wait_order_with_environment_not_produc
     transaction_repository: TransactionRepository,
     posting_repository: PostingRepository,
     random_generator: RandomGenerator,
-    tries: list[Try],
 ):
     order = Order(
         id="1",
@@ -564,7 +563,7 @@ async def test_order_submitter_submit_and_wait_order_with_environment_not_produc
         ),
         type="BUY",
         asset_type="TOKEN",
-        tries=tries,
+        tries=[],
         created_at=1752268296,
         status="PENDING",
         trigger="MANUAL",
@@ -574,6 +573,7 @@ async def test_order_submitter_submit_and_wait_order_with_environment_not_produc
     id_generator.generate_random_id.return_value = "1"
     random_generator.generate_number.return_value = 50
     date_time.now.return_value = 1752268296
+    chain.is_native_token.side_effect = [True, False]
 
     await OrderSubmitter(
         exchange,
@@ -613,7 +613,7 @@ async def test_order_submitter_submit_and_wait_order_with_environment_not_produc
             type=order.type,
             created_at=1752268296,
             fees=None,
-            transaction_hash="DUMMY",
+            transaction_hash="DUMMY_TRANSACTION_HASH",
             order_id=order.id,
             trigger=order.trigger,
             basket_id=order.basket_id,
@@ -624,7 +624,7 @@ async def test_order_submitter_submit_and_wait_order_with_environment_not_produc
             # create_posting should only called once for buy_balance because sell_balance is a native token
             mock.call.create_posting(
                 Posting(
-                    id=order.id,
+                    id=f"{order.id}-IN",
                     transaction_id=order.id,
                     asset_balance=BalanceAtomic(
                         amount=Decimal("2.5"),

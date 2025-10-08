@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from typing import Literal
 
 from invest_agent.chain.balance import BalanceAtomic
-from invest_agent.investment.transaction.basket_transaction import BasketTransaction
-from protocol.token import Token
 
 Id = str
 
@@ -14,9 +12,8 @@ PostingType = Literal["SELL", "BUY", "SWAP"]
 class Posting:
     id: Id
     transaction_id: Id
-    # Executed asset balance
-    asset_balance: BalanceAtomic[Token]
+    asset_balance: BalanceAtomic
     created_at: int
     type: PostingType
     basket_id: Id | None = None
-    basket_transaction: BasketTransaction | None = None
+    parent_posting_id: Id | None = None
