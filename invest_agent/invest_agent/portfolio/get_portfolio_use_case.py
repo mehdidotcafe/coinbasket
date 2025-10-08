@@ -17,7 +17,7 @@ from protocol.token import Token
 
 @dataclass
 class PortfolioBalance:
-    native_balance: BalanceAtomic[Token]
+    native_balance: BalanceAtomic
     converted_balance: BalanceAtomic[Token]
 
 
@@ -84,22 +84,36 @@ class GetPortfolioUseCase:
 
         converted_balances = await asyncio.gather(
             *[
-                self.exchange.convert_balance_to_token(
+                self._convert_asset_balance_to_token(
                     balance=balance,
-                    token=conversion_token,
-                    investment_parameters=investment_parameters,
+                    conversion_token=conversion_token,
                 )
                 for balance in raw_holding_balances
             ]
         )
 
-        return [
-            PortfolioBalance(
-                native_balance=converted_balance.sell_balance,
-                converted_balance=converted_balance.buy_balance,
-            )
-            for converted_balance in converted_balances
-        ]
+        return converted_balances
+
+    async def _convert_asset_balance_to_token(
+        self, balance: BalanceAtomic, conversion_token: Token
+    ) -> PortfolioBalance:
+        token_balance = BalanceAtomic[Token](
+            asset=balance.asset.get_pricing_token(),
+            amount=balance.amount * balance.asset.get_denomination(),
+            amount_atomic=int(balance.amount_atomic * balance.asset.get_denomination()),
+            decimals=balance.decimals,
+        )
+
+        converted_balance = await self.exchange.convert_balance_to_token(
+            balance=token_balance,
+            token=conversion_token,
+            investment_parameters=investment_parameters,
+        )
+
+        return PortfolioBalance(
+            native_balance=balance,
+            converted_balance=converted_balance.buy_balance,
+        )
 
     def __sum_balances(
         self,

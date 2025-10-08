@@ -22,6 +22,7 @@ from protocol.fixture.token import (
     wbnb_token,
     usdt_token,
 )
+from protocol.fixture.basket import big4_basket
 
 
 @fixture
@@ -187,7 +188,7 @@ async def test_get_portfolio_use_case_holding_balances(
     exchange: Exchange,
     investment_parameters: InvestmentParameters,
 ):
-    holding_balances = [
+    holding_balances: list[BalanceAtomic] = [
         BalanceAtomic(
             asset=wbnb_token,
             amount=Decimal("1.0"),
@@ -201,6 +202,12 @@ async def test_get_portfolio_use_case_holding_balances(
             asset=eth_token,
             amount=Decimal("0.85"),
             amount_atomic=85 * 10**16,
+            decimals=18,
+        ),
+        BalanceAtomic(
+            asset=big4_basket,
+            amount=Decimal("1000"),
+            amount_atomic=1000 * 10**18,
             decimals=18,
         ),
     ]
@@ -246,6 +253,20 @@ async def test_get_portfolio_use_case_holding_balances(
                 asset=usdt_token,
                 amount=Decimal("3956"),
                 amount_atomic=3956 * 10**18,
+                decimals=18,
+            ),
+        ),
+        ExchangeConvertedBalance(
+            sell_balance=BalanceAtomic(
+                asset=usdt_token,
+                amount=Decimal("10000"),
+                amount_atomic=10000 * 10**18,
+                decimals=18,
+            ),
+            buy_balance=BalanceAtomic(
+                asset=usdt_token,
+                amount=Decimal("10000"),
+                amount_atomic=10000 * 10**18,
                 decimals=18,
             ),
         ),
@@ -295,6 +316,17 @@ async def test_get_portfolio_use_case_holding_balances(
                 token=usdt_token,
                 investment_parameters=investment_parameters,
             ),
+            # big4 basket should be converted to usdt
+            mock.call.convert_balance_to_token(
+                balance=BalanceAtomic(
+                    asset=usdt_token,
+                    amount=Decimal("1.0E+4"),
+                    amount_atomic=10000 * 10**18,
+                    decimals=18,
+                ),
+                token=usdt_token,
+                investment_parameters=investment_parameters,
+            ),
         ]
     )
 
@@ -338,6 +370,20 @@ async def test_get_portfolio_use_case_holding_balances(
                 asset=usdt_token,
                 amount=Decimal("3956"),
                 amount_atomic=3956 * 10**18,
+                decimals=18,
+            ),
+        ),
+        PortfolioBalance(
+            native_balance=BalanceAtomic(
+                asset=big4_basket,
+                amount=Decimal("1000"),
+                amount_atomic=1000 * 10**18,
+                decimals=18,
+            ),
+            converted_balance=BalanceAtomic(
+                asset=usdt_token,
+                amount=Decimal("10000"),
+                amount_atomic=10000 * 10**18,
                 decimals=18,
             ),
         ),
