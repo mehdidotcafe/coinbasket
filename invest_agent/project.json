@@ -76,6 +76,30 @@
       },
       "cache": false
     },
+    "worker": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "poetry run python -m invest_agent.worker",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "worker:test": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test --use-shell 'poetry run python -m invest_agent.worker'",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "worker:production": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m invest_agent.worker'",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
     "cli": {
       "executor": "@nxlv/python:run-commands",
       "dependsOn": ["infra"],

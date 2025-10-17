@@ -49,6 +49,7 @@ readme = "README.md"
   alembic = "^1.16.4"
   asyncpg = "^0.30.0"
   psycopg2-binary = "^2.9.10"
+  temporalio = "^1.18.1"
 
     [tool.poetry.dependencies.langchain]
     extras = [ "openapi" ]

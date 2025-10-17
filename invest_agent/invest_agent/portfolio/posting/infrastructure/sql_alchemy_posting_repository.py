@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from decimal import Decimal
 import json
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
+from invest_agent.database.infrastructure.sql_alchemy_base_repository import NullableSession, SqlAlchemyBaseRepository
 
 from invest_agent.portfolio.posting.posting import Posting, PostingType
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
@@ -78,60 +79,53 @@ class PostingModel(Base):
         )
 
 
-class SqlAlchemyPostingRepository(PostingRepository):
+class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
     def __init__(self, engine: AsyncEngine, AsyncSessionLocal: type[AsyncSession]):
         self.engine = engine
         self.AsyncSessionLocal = AsyncSessionLocal
 
-    async def create_posting(self, posting: Posting) -> Posting:
-        async with self.AsyncSessionLocal(bind=self.engine) as session:
-            async with session.begin():
-                session.add(PostingModel.from_domain(posting))
+    async def create_posting(self, posting: Posting, session: NullableSession = None) -> Posting:
+        async with self.get_session(session) as session:
+            session.add(PostingModel.from_domain(posting))
         return posting
 
-    async def get_holding_balances(self) -> list[BalanceAtomic]:
-        async with self.AsyncSessionLocal(bind=self.engine) as session:
-            async with session.begin():
-                result = await session.execute(self._get_default_holding_statement())
-                rows = result.all()
-
-                return [
-                    BalanceAtomic(
-                        asset=BalanceAtomic.deserialize_asset(asset_json),
-                        amount=total_amount_atomic / Decimal(10**decimals),
-                        amount_atomic=int(total_amount_atomic),
-                        decimals=decimals,
-                    )
-                    for _asset_id, asset_json, decimals, total_amount_atomic in rows
-                ]
-
-    async def get_holding_balance(self, asset: Asset) -> BalanceAtomic:
-        async with self.AsyncSessionLocal(bind=self.engine) as session:
-            async with session.begin():
-                stmt = self._get_default_holding_statement().where(
-                    PostingModel.asset_id == asset.id
-                )
-                result = await session.execute(stmt)
-                rows = result.all()
-
-                if not rows:
-                    return BalanceAtomic(
-                        asset=asset,
-                        amount=Decimal(0),
-                        amount_atomic=0,
-                        decimals=0,
-                    )
-
-                asset_json = rows[0][1]
-                decimals = rows[0][2]
-                total_amount_atomic = rows[0][3]
-
-                return BalanceAtomic(
+    async def get_holding_balances(self, session: NullableSession = None) -> list[BalanceAtomic]:
+        async with self.get_session(session) as session:
+            result = await session.execute(self._get_default_holding_statement())
+            rows = result.all()
+            return [
+                BalanceAtomic(
                     asset=BalanceAtomic.deserialize_asset(asset_json),
                     amount=total_amount_atomic / Decimal(10**decimals),
                     amount_atomic=int(total_amount_atomic),
                     decimals=decimals,
                 )
+                for _asset_id, asset_json, decimals, total_amount_atomic in rows
+            ]
+
+    async def get_holding_balance(self, asset: Asset, session: NullableSession = None) -> BalanceAtomic:
+        async with self.get_session(session) as session:
+            stmt = self._get_default_holding_statement().where(
+                PostingModel.asset_id == asset.id
+            )
+            result = await session.execute(stmt)
+            rows = result.all()
+            if not rows:
+                return BalanceAtomic(
+                    asset=asset,
+                    amount=Decimal(0),
+                    amount_atomic=0,
+                    decimals=0,
+                )
+            asset_json = rows[0][1]
+            decimals = rows[0][2]
+            total_amount_atomic = rows[0][3]
+            return BalanceAtomic(
+                asset=BalanceAtomic.deserialize_asset(asset_json),
+                amount=total_amount_atomic / Decimal(10**decimals),
+                amount_atomic=int(total_amount_atomic),
+                decimals=decimals,
+            )
 
     def _get_default_holding_statement(self):
         return (

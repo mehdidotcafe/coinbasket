@@ -89,6 +89,8 @@ class ExecuteInvestmentPlanUseCase:
             )
         )
 
+        if len(orders) == 0:
+            return []
         return await self.order_submitter.submit_orders(orders)
 
     def __map_flattened_investment_plan_step_to_orders(

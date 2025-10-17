@@ -3,6 +3,7 @@ from typing import Literal
 
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.fees import Fees
+from invest_agent.chain.chain import Gas
 
 Id = str
 
@@ -16,9 +17,12 @@ class ChainTransaction:
     try_id: Id
     order_id: Id
     type: ChainTransactionType
+    amount: int
     data: str
-    hash: str
     status: ChainTransactionStatus
+    hash: str | None = None
+    to_address: str | None = None
+    gas: Gas | None = None
 
 
 @dataclass

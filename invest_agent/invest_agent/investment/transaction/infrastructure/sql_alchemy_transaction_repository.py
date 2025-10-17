@@ -7,6 +7,7 @@ from invest_agent.investment.transaction.transaction_repository import (
     TransactionRepository,
 )
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
+from invest_agent.database.infrastructure.sql_alchemy_base_repository import NullableSession, SqlAlchemyBaseRepository
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import NUMERIC
 import json
@@ -119,13 +120,12 @@ class TransactionModel(Base):
         )
 
 
-class SqlAlchemyTransactionRepository(TransactionRepository):
+class SqlAlchemyTransactionRepository(TransactionRepository, SqlAlchemyBaseRepository):
     def __init__(self, engine: AsyncEngine, AsyncSessionLocal: type[AsyncSession]):
         self.engine = engine
         self.AsyncSessionLocal = AsyncSessionLocal
 
-    async def create_transaction(self, transaction: Transaction) -> Transaction:
-        async with self.AsyncSessionLocal(bind=self.engine) as session:
-            async with session.begin():
-                session.add(TransactionModel.from_domain(transaction))
+    async def create_transaction(self, transaction: Transaction, session: NullableSession = None) -> Transaction:
+        async with self.get_session(session) as session:
+            session.add(TransactionModel.from_domain(transaction))
         return transaction

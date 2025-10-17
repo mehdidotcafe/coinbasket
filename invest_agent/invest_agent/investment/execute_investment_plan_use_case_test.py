@@ -194,7 +194,7 @@ async def test_execute_investment_plan_use_case_empty_sell_balance(
         )
     )
 
-    order_submitter.submit_orders.assert_called_once_with([])
+    order_submitter.submit_orders.assert_not_called()
 
     assert len(orders) == 0
 
