@@ -21,3 +21,11 @@ services:
       - "${DATABASE_PORT}:5432"
     volumes:
       - /var/lib/postgresql/data
+  temporal_test:
+    container_name: temporal_test
+    image: temporalio/temporal:1.5
+    command: ["server", "start-dev", "--ip", "0.0.0.0"]
+    ports:
+      - "${TEMPORAL_PORT}:7233"
+    volumes:
+      - /tmp/temporal

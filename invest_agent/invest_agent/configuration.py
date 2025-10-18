@@ -62,4 +62,5 @@ class Configuration:
         self.zero_x_api_url = env.str("ZERO_X_API_URL")
         self.zero_x_api_key = env.str("ZERO_X_API_KEY")
 
-        self.temporal_url = env.str("TEMPORAL_URL")
+        self.temporal_port = env.int("TEMPORAL_PORT")
+        self.temporal_host = env.str("TEMPORAL_HOST")

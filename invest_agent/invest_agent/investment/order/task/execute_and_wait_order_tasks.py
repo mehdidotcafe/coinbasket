@@ -1,4 +1,3 @@
-
 from decimal import Decimal
 from typing import Literal, TypedDict, cast
 from invest_agent.chain.balance import BalanceAtomic
@@ -11,7 +10,10 @@ from invest_agent.investment.order.order import ChainTransaction, Try, Order
 from invest_agent.investment.exchange.exchange import Exchange, TransactionData
 from protocol.token import Token
 from shared.random_generator.random_generator import RandomGenerator
-from invest_agent.investment.order.exception.order_without_send_transaction import OrderWithoutSendTransaction
+from invest_agent.investment.order.exception.order_without_send_transaction import (
+    OrderWithoutSendTransaction,
+)
+
 
 class Configuration(TypedDict):
     environment: Literal["development", "production", "test"]
@@ -20,8 +22,17 @@ class Configuration(TypedDict):
 def is_production(configuration: Configuration) -> bool:
     return configuration["environment"] == "production"
 
+
 class CreateOrderTryTask:
-    def __init__(self, order_repository: OrderRepository, exchange: Exchange, chain: Chain, id_generator: IdGenerator, date_time: DateTime, configuration: Configuration):
+    def __init__(
+        self,
+        order_repository: OrderRepository,
+        exchange: Exchange,
+        chain: Chain,
+        id_generator: IdGenerator,
+        date_time: DateTime,
+        configuration: Configuration,
+    ):
         self.order_repository = order_repository
         self.exchange = exchange
         self.chain = chain
@@ -31,12 +42,12 @@ class CreateOrderTryTask:
 
     async def execute(self, order: Order):
         if is_production(self.configuration):
-          transactions_data = await self.exchange.build_transactions(
-              order,
-              InvestmentParameters(
-                  slippage_tolerance_in_percentage=Decimal("1"),
-              ),
-          )
+            transactions_data = await self.exchange.build_transactions(
+                order,
+                InvestmentParameters(
+                    slippage_tolerance_in_percentage=Decimal("1"),
+                ),
+            )
         else:
             transactions_data = [
                 # Dummy TransactionData
@@ -48,6 +59,9 @@ class CreateOrderTryTask:
             ]
 
         try_id = self.id_generator.generate_random_id()
+
+        print("Transactions Data:")
+        print(transactions_data)
 
         order_try = Try(
             id=try_id,
@@ -77,8 +91,18 @@ class CreateOrderTryTask:
 
         return order_try
 
+
 class ExecuteOrderTryTask:
-    def __init__(self, order_repository: OrderRepository, exchange: Exchange, chain: Chain, id_generator: IdGenerator, date_time: DateTime, random_generator: RandomGenerator, configuration: Configuration):
+    def __init__(
+        self,
+        order_repository: OrderRepository,
+        exchange: Exchange,
+        chain: Chain,
+        id_generator: IdGenerator,
+        date_time: DateTime,
+        random_generator: RandomGenerator,
+        configuration: Configuration,
+    ):
         self.order_repository = order_repository
         self.exchange = exchange
         self.chain = chain
@@ -88,23 +112,36 @@ class ExecuteOrderTryTask:
         self.configuration = configuration
 
     async def execute(self, order_try: Try):
-      for chain_transaction in order_try.chain_transactions:
-        if is_production(self.configuration):
-            transaction_hash = await self.chain.sign_send_transaction(
-                amount=chain_transaction.amount,
-                gas=chain_transaction.gas,
-                to_address=chain_transaction.to_address,
-                encoded_input=chain_transaction.data,
-            )
-        else:
-            transaction_hash = "DUMMY_TRANSACTION_HASH"
+        for chain_transaction in order_try.chain_transactions:
+            print("Chain transaction:")
+            print(chain_transaction)
 
-        await self.order_repository.set_order_try_chain_transaction_hash(
-            chain_transaction.id, transaction_hash
-        )
+            if is_production(self.configuration):
+                transaction_hash = await self.chain.sign_send_transaction(
+                    amount=chain_transaction.amount,
+                    gas=chain_transaction.gas,
+                    to_address=chain_transaction.to_address,
+                    encoded_input=chain_transaction.data,
+                )
+            else:
+                transaction_hash = "DUMMY_TRANSACTION_HASH"
+
+            await self.order_repository.set_order_try_chain_transaction_hash(
+                chain_transaction.id, transaction_hash
+            )
+
 
 class WaitOrderTryTask:
-    def __init__(self, order_repository: OrderRepository, exchange: Exchange, chain: Chain, id_generator: IdGenerator, date_time: DateTime, random_generator: RandomGenerator, configuration: Configuration):
+    def __init__(
+        self,
+        order_repository: OrderRepository,
+        exchange: Exchange,
+        chain: Chain,
+        id_generator: IdGenerator,
+        date_time: DateTime,
+        random_generator: RandomGenerator,
+        configuration: Configuration,
+    ):
         self.order_repository = order_repository
         self.exchange = exchange
         self.chain = chain
@@ -155,7 +192,7 @@ class WaitOrderTryTask:
             parsed_transaction_receipt = self._build_dummy_parsed_receipt(order)
 
         return parsed_transaction_receipt
-    
+
     def _build_dummy_parsed_receipt(self, order: Order):
         random_factor = self.random_generator.generate_number(98, 100)
         executed_buy_balance_amount = order.buy_balance.amount * random_factor / 100
@@ -175,10 +212,13 @@ class WaitOrderTryTask:
             / Decimal(order.sell_balance.amount_atomic),
         )
 
+
 class FailOrderTryTask:
     def __init__(self, order_repository: OrderRepository, date_time: DateTime):
         self.order_repository = order_repository
         self.date_time = date_time
 
     async def execute(self, order_try: Try):
-        await self.order_repository.set_order_try_chain_transactions_to_fail(order_try.id)
+        await self.order_repository.set_order_try_chain_transactions_to_fail(
+            order_try.id
+        )

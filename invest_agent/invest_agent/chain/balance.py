@@ -145,3 +145,115 @@ class BalanceAtomic(Balance, Generic[T]):
                 tokens=[deserialize_token(token) for token in asset_as_json["tokens"]],
             )
         return deserialize_token(asset_as_json)
+
+    def __add_decimal(self, amount_atomic: Decimal) -> "BalanceAtomic[T]":
+        amount_atomic = self.amount_atomic + amount_atomic
+        amount = Decimal(amount_atomic) / (10**self.decimals)
+
+        return BalanceAtomic(
+            asset=self.asset,
+            amount=amount,
+            amount_atomic=int(amount_atomic),
+            decimals=self.decimals,
+        )
+
+    def __add__(self, other: "BalanceAtomic[T] | Decimal") -> "BalanceAtomic[T]":
+        if isinstance(other, Decimal):
+            return self.__add_decimal(other)
+
+        if self.asset.id != other.asset.id:
+            raise ValueError("Cannot add balances with different assets")
+
+        amount_atomic = self.amount_atomic + other.amount_atomic
+        amount = Decimal(amount_atomic) / (10**self.decimals)
+
+        return BalanceAtomic(
+            asset=self.asset,
+            amount=amount,
+            amount_atomic=amount_atomic,
+            decimals=self.decimals,
+        )
+
+    def __sub_decimal(self, amount_atomic: Decimal) -> "BalanceAtomic[T]":
+        amount_atomic = self.amount_atomic - amount_atomic
+        amount = Decimal(amount_atomic) / (10**self.decimals)
+
+        return BalanceAtomic(
+            asset=self.asset,
+            amount=amount,
+            amount_atomic=int(amount_atomic),
+            decimals=self.decimals,
+        )
+
+    def __sub__(self, other: "BalanceAtomic[T] | Decimal") -> "BalanceAtomic[T]":
+        if isinstance(other, Decimal):
+            return self.__sub_decimal(other)
+
+        if self.asset.id != other.asset.id:
+            raise ValueError("Cannot subtract balances with different assets")
+
+        amount_atomic = self.amount_atomic - other.amount_atomic
+        amount = Decimal(amount_atomic) / (10**self.decimals)
+
+        return BalanceAtomic(
+            asset=self.asset,
+            amount=amount,
+            amount_atomic=amount_atomic,
+            decimals=self.decimals,
+        )
+
+    def __mul_decimal(self, factor: Decimal) -> "BalanceAtomic[T]":
+        amount_atomic = int(self.amount_atomic * factor)
+        amount = Decimal(amount_atomic) / (10**self.decimals)
+
+        return BalanceAtomic(
+            asset=self.asset,
+            amount=amount,
+            amount_atomic=amount_atomic,
+            decimals=self.decimals,
+        )
+
+    def __mul__(self, other: "BalanceAtomic[T] | Decimal") -> "BalanceAtomic[T]":
+        if isinstance(other, Decimal):
+            return self.__mul_decimal(other)
+
+        if self.asset.id != other.asset.id:
+            raise ValueError("Cannot multiply balances with different assets")
+
+        amount_atomic = int(self.amount_atomic * other.amount_atomic)
+        amount = Decimal(amount_atomic) / (10**self.decimals)
+
+        return BalanceAtomic(
+            asset=self.asset,
+            amount=amount,
+            amount_atomic=amount_atomic,
+            decimals=self.decimals,
+        )
+
+    def __div_decimal(self, divisor: Decimal) -> "BalanceAtomic[T]":
+        amount_atomic = int(self.amount_atomic / divisor)
+        amount = Decimal(amount_atomic) / (10**self.decimals)
+
+        return BalanceAtomic(
+            asset=self.asset,
+            amount=amount,
+            amount_atomic=amount_atomic,
+            decimals=self.decimals,
+        )
+
+    def __truediv__(self, other: "BalanceAtomic[T] | Decimal") -> "BalanceAtomic[T]":
+        if isinstance(other, Decimal):
+            return self.__div_decimal(other)
+
+        if self.asset.id != other.asset.id:
+            raise ValueError("Cannot divide balances with different assets")
+
+        amount_atomic = int(self.amount_atomic / other.amount_atomic)
+        amount = Decimal(amount_atomic) / (10**self.decimals)
+
+        return BalanceAtomic(
+            asset=self.asset,
+            amount=amount,
+            amount_atomic=amount_atomic,
+            decimals=self.decimals,
+        )

@@ -30,6 +30,16 @@ services:
       - "${REDOC_PORT}:80"
     environment:
       SPEC_URL: "http://127.0.0.1:${AGENT_PORT}/openapi"
+  temporal:
+    container_name: temporal
+    image: temporalio/temporal:1.5.0
+    command: ["server", "start-dev", "--ip", "0.0.0.0"]
+    ports:
+      - "${TEMPORAL_PORT}:7233"
+      - "${TEMPORAL_WEB_PORT}:8233"
+    volumes:
+      - temporal-data:/tmp/temporal
 volumes:
   postgres-data:
   anvil-data:
+  temporal-data:

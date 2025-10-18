@@ -4,7 +4,9 @@ from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
 
-from invest_agent.database.infrastructure.sql_alchemy_session_manager import SqlAlchemySessionManager
+from invest_agent.database.infrastructure.sql_alchemy_session_manager import (
+    SqlAlchemySessionManager,
+)
 from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
     SqlAlchemyOrderRepository,
 )
@@ -26,7 +28,9 @@ from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_clie
     AiohttpAgentToAgentClient,
 )
 from invest_agent.chain.infrastructure.bsc.nonce_manager import NonceManager
-from invest_agent.investment.order.infrastructure.temporal_order_submitter import TemporalOrderSubmitter
+from invest_agent.investment.order.infrastructure.temporal_order_submitter import (
+    TemporalOrderSubmitter,
+)
 from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
 from shared.http_request.infrastructure.requests_http_request import RequestsHttpRequest
 from shared.id_generator.id_generator import IdGenerator
@@ -139,7 +143,13 @@ conversation_repository = LangchainSqliteConversationRepository(
 order_submitter = TemporalOrderSubmitter(
     order_repository=order_repository,
     id_generator=id_generator,
-    configuration={"temporal_url": configuration.temporal_url, "agent_name": configuration.agent_name},
+    configuration={
+        "temporal_host": configuration.temporal_host,
+        "temporal_port": configuration.temporal_port,
+        "agent_name": configuration.agent_name,
+    },
 )
 
-session_manager = SqlAlchemySessionManager(engine=engine, AsyncSessionLocal=AsyncSessionLocal)
+session_manager = SqlAlchemySessionManager(
+    engine=engine, AsyncSessionLocal=AsyncSessionLocal
+)

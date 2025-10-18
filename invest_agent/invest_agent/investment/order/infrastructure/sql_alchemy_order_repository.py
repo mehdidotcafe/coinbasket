@@ -5,11 +5,14 @@ import json
 from typing import TYPE_CHECKING, Any, cast
 from invest_agent.chain.chain import Gas
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
-from invest_agent.database.infrastructure.sql_alchemy_base_repository import NullableSession, SqlAlchemyBaseRepository
+from invest_agent.database.infrastructure.sql_alchemy_base_repository import (
+    NullableSession,
+    SqlAlchemyBaseRepository,
+)
 from invest_agent.investment.fees import Fees
 from protocol.token import Token
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy import ForeignKey, String, update
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, relationship, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import insert, NUMERIC, JSONB
@@ -62,6 +65,7 @@ class OrderTryChainTransactionModel(Base):
             hash=self.hash,
             status=cast(ChainTransactionStatus, self.status),
             amount=int(self.amount),
+            to_address=self.to_address,
             gas=Gas(**self.gas) if self.gas else None,
         )
 
@@ -248,7 +252,10 @@ class OrderModel(Base):
 
 class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
     async def set_order_try_chain_transaction_hash(
-        self, chain_transaction_id: Id, transaction_hash: str, session: AsyncSession | None = None
+        self,
+        chain_transaction_id: Id,
+        transaction_hash: str,
+        session: AsyncSession | None = None,
     ) -> None:
         async with self.get_session(session) as session:
             await session.execute(
@@ -257,11 +264,14 @@ class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
                 .values(hash=transaction_hash)
                 .execution_options(synchronize_session="fetch")
             )
+
     def __init__(self, engine: AsyncEngine, AsyncSessionLocal: type[AsyncSession]):
         self.engine = engine
         self.AsyncSessionLocal = AsyncSessionLocal
 
-    async def create_order(self, order: Order, session: NullableSession = None) -> Order:
+    async def create_order(
+        self, order: Order, session: NullableSession = None
+    ) -> Order:
         async with self.get_session(session) as session:
             order_model = OrderModel.from_domain(order)
             stmt = (
@@ -290,46 +300,54 @@ class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
             )
             await session.execute(stmt)
         return order
-    
-    async def create_orders(self, orders: list[Order], session: NullableSession = None) -> list[Order]:
+
+    async def create_orders(
+        self, orders: list[Order], session: NullableSession = None
+    ) -> list[Order]:
         async with self.get_session(session) as session:
             order_models = [OrderModel.from_domain(order) for order in orders]
             stmt = (
                 insert(OrderModel)
-                .values([
-                    {
-                        'id': order_model.id,
-                        'parent_order_id': order_model.parent_order_id,
-                        'sell_balance_asset_id': order_model.sell_balance_asset_id,
-                        'sell_balance_asset': order_model.sell_balance_asset,
-                        'sell_balance_amount': order_model.sell_balance_amount,
-                        'sell_balance_amount_atomic': order_model.sell_balance_amount_atomic,
-                        'sell_balance_decimals': order_model.sell_balance_decimals,
-                        'buy_balance_asset_id': order_model.buy_balance_asset_id,
-                        'buy_balance_asset': order_model.buy_balance_asset,
-                        'buy_balance_amount': order_model.buy_balance_amount,
-                        'buy_balance_amount_atomic': order_model.buy_balance_amount_atomic,
-                        'buy_balance_decimals': order_model.buy_balance_decimals,
-                        'type': order_model.type,
-                        'asset_type': order_model.asset_type,
-                        'created_at': order_model.created_at,
-                        'status': order_model.status,
-                        'trigger': order_model.trigger,
-                        'basket_id': order_model.basket_id,
-                    } for order_model in order_models
-                ])
+                .values(
+                    [
+                        {
+                            "id": order_model.id,
+                            "parent_order_id": order_model.parent_order_id,
+                            "sell_balance_asset_id": order_model.sell_balance_asset_id,
+                            "sell_balance_asset": order_model.sell_balance_asset,
+                            "sell_balance_amount": order_model.sell_balance_amount,
+                            "sell_balance_amount_atomic": order_model.sell_balance_amount_atomic,
+                            "sell_balance_decimals": order_model.sell_balance_decimals,
+                            "buy_balance_asset_id": order_model.buy_balance_asset_id,
+                            "buy_balance_asset": order_model.buy_balance_asset,
+                            "buy_balance_amount": order_model.buy_balance_amount,
+                            "buy_balance_amount_atomic": order_model.buy_balance_amount_atomic,
+                            "buy_balance_decimals": order_model.buy_balance_decimals,
+                            "type": order_model.type,
+                            "asset_type": order_model.asset_type,
+                            "created_at": order_model.created_at,
+                            "status": order_model.status,
+                            "trigger": order_model.trigger,
+                            "basket_id": order_model.basket_id,
+                        }
+                        for order_model in order_models
+                    ]
+                )
                 .on_conflict_do_nothing(index_elements=[OrderModel.id])
             )
             await session.execute(stmt)
         return orders
 
-    async def add_order_try(self, order_id: Id, order_try: Try, session: NullableSession = None) -> Try:
+    async def add_order_try(
+        self, order_id: Id, order_try: Try, session: NullableSession = None
+    ) -> Try:
         async with self.get_session(session) as session:
             session.add(OrderTryModel.from_domain(order_try))
         return order_try
 
-    
-    async def get_order_try(self, order_try_id: Id, session: NullableSession = None) -> Try | None:
+    async def get_order_try(
+        self, order_try_id: Id, session: NullableSession = None
+    ) -> Try | None:
         async with self.get_session(session) as session:
             stmt = select(OrderTryModel).where(OrderTryModel.id == order_try_id)
             result = await session.execute(stmt)
@@ -337,8 +355,9 @@ class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
 
             return order_try_model.to_domain() if order_try_model else None
 
-
-    async def set_order_to_success(self, order_id: Id, session: NullableSession = None) -> None:
+    async def set_order_to_success(
+        self, order_id: Id, session: NullableSession = None
+    ) -> None:
         async with self.get_session(session) as session:
             await session.execute(
                 update(OrderModel)
@@ -347,7 +366,9 @@ class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
                 .execution_options(synchronize_session="fetch")
             )
 
-    async def set_order_to_fail(self, order_id: Id, session: NullableSession = None) -> None:
+    async def set_order_to_fail(
+        self, order_id: Id, session: NullableSession = None
+    ) -> None:
         async with self.get_session(session) as session:
             await session.execute(
                 update(OrderModel)
@@ -367,14 +388,19 @@ class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
                 )
                 .where(OrderModel.status == "PENDING")
                 # TODO: Remove this line when basket as order is fully implemented
-                .where(OrderModel.asset_type == 'TOKEN')
+                .where(OrderModel.asset_type == "TOKEN")
             )
             result = await session.execute(stmt)
             order_models = result.scalars().all()
             return [row.to_domain() for row in order_models]
 
     async def get_orders(
-        self, status: OrderStatus | None = None, limit: int | None = None, offset: int | None = None, parent_order_id: Id | None = None, session: NullableSession = None
+        self,
+        status: OrderStatus | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        parent_order_id: Id | None = None,
+        session: NullableSession = None,
     ) -> list[Order]:
         async with self.get_session(session) as session:
             stmt = select(OrderModel)

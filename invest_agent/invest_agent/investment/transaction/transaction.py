@@ -5,6 +5,9 @@ from invest_agent.investment.fees import Fees
 
 Id = str
 
+TransactionType = Literal["SELL", "BUY", "SWAP"]
+TransactionTrigger = Literal["MANUAL", "AUTOMATIC"]
+
 
 @dataclass
 class Transaction:

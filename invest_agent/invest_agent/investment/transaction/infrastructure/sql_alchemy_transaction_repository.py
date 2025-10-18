@@ -1,13 +1,22 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from decimal import Decimal
+from invest_agent.chain.balance import BalanceAtomic
+from invest_agent.investment.fees import Fees
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy import ForeignKey, String, Integer, Text
-from invest_agent.investment.transaction.transaction import Transaction
+from sqlalchemy import ForeignKey, String, Integer, Text, select
+from invest_agent.investment.transaction.transaction import (
+    Transaction,
+    TransactionTrigger,
+    TransactionType,
+)
 from invest_agent.investment.transaction.transaction_repository import (
     TransactionRepository,
 )
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
-from invest_agent.database.infrastructure.sql_alchemy_base_repository import NullableSession, SqlAlchemyBaseRepository
+from invest_agent.database.infrastructure.sql_alchemy_base_repository import (
+    NullableSession,
+    SqlAlchemyBaseRepository,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import NUMERIC
 import json
@@ -60,7 +69,7 @@ class TransactionModel(Base):
     parent_transaction_id: Mapped[str | None] = mapped_column(
         String(36),
         # No ForeignKey constraint because parent transaction is created after child transactions
-        nullable=True
+        nullable=True,
     )
 
     postings: Mapped[list["PostingModel"]] = relationship(
@@ -119,13 +128,66 @@ class TransactionModel(Base):
             postings=[],
         )
 
+    def to_domain(self) -> Transaction:
+        """Convert a TransactionModel to a Transaction domain object."""
+        return Transaction(
+            id=self.id,
+            sell_balance=BalanceAtomic(
+                asset=BalanceAtomic.deserialize_asset(self.sell_balance_asset),
+                amount=Decimal(self.sell_balance_amount),
+                amount_atomic=int(self.sell_balance_amount_atomic),
+                decimals=self.sell_balance_decimals,
+            ),
+            buy_balance=BalanceAtomic(
+                asset=BalanceAtomic.deserialize_asset(self.buy_balance_asset),
+                amount=Decimal(self.buy_balance_amount),
+                amount_atomic=int(self.buy_balance_amount_atomic),
+                decimals=self.buy_balance_decimals,
+            ),
+            executed_sell_balance=BalanceAtomic(
+                asset=BalanceAtomic.deserialize_asset(self.executed_sell_balance_asset),
+                amount=Decimal(self.executed_sell_balance_amount),
+                amount_atomic=int(self.executed_sell_balance_amount_atomic),
+                decimals=self.executed_sell_balance_decimals,
+            ),
+            executed_buy_balance=BalanceAtomic(
+                asset=BalanceAtomic.deserialize_asset(self.executed_buy_balance_asset),
+                amount=Decimal(self.executed_buy_balance_amount),
+                amount_atomic=int(self.executed_buy_balance_amount_atomic),
+                decimals=self.executed_buy_balance_decimals,
+            ),
+            type=cast(TransactionType, self.type),
+            created_at=self.created_at,
+            transaction_hash=self.transaction_hash,
+            order_id=self.order_id,
+            trigger=cast(TransactionTrigger, self.trigger),
+            fees=Fees.deserialize(self.fees) if self.fees else None,
+            basket_id=self.basket_id,
+            parent_transaction_id=self.parent_transaction_id,
+        )
+
 
 class SqlAlchemyTransactionRepository(TransactionRepository, SqlAlchemyBaseRepository):
     def __init__(self, engine: AsyncEngine, AsyncSessionLocal: type[AsyncSession]):
         self.engine = engine
         self.AsyncSessionLocal = AsyncSessionLocal
 
-    async def create_transaction(self, transaction: Transaction, session: NullableSession = None) -> Transaction:
+    async def create_transaction(
+        self, transaction: Transaction, session: NullableSession = None
+    ) -> Transaction:
         async with self.get_session(session) as session:
             session.add(TransactionModel.from_domain(transaction))
         return transaction
+
+    async def get_transactions(
+        self, transaction_ids: list[str], session: NullableSession = None
+    ) -> list[Transaction]:
+        async with self.get_session(session) as session:
+            stmt = select(TransactionModel).where(
+                TransactionModel.id.in_(transaction_ids)
+            )
+
+            result = await session.execute(stmt)
+
+            transaction_models = result.scalars().all()
+            return [model.to_domain() for model in transaction_models]
