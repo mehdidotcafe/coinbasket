@@ -164,7 +164,7 @@
         'display_name': 'Cryptoummah.com Certified Halal',
         'id': '0f4b83f3-47eb-45a1-a698-688365ef2e64',
         'name': 'Cryptoummah.com Certified Halal',
-        'ticker': 'HALLAL',
+        'ticker': 'HALAL',
         'tokens': list([
           dict({
             'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
