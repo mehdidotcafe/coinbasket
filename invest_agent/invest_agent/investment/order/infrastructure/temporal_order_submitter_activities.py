@@ -151,11 +151,6 @@ async def eventually_success_parent_order(
         else None
     )
 
-    print("eventually_success_parent_order")
-    print(transactions)
-    print(first_order)
-    print(parent_order)
-
     if not transactions:
         raise Exception("Transactions not found")
 

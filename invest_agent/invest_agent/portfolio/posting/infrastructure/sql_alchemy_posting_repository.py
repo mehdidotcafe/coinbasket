@@ -2,9 +2,16 @@ from typing import TYPE_CHECKING
 from decimal import Decimal
 import json
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
-from invest_agent.database.infrastructure.sql_alchemy_base_repository import NullableSession, SqlAlchemyBaseRepository
+from invest_agent.database.infrastructure.sql_alchemy_base_repository import (
+    NullableSession,
+    SqlAlchemyBaseRepository,
+)
 
-from invest_agent.portfolio.posting.posting import Posting, PostingType
+from invest_agent.portfolio.posting.posting import (
+    Posting,
+    PostingAssetType,
+    PostingType,
+)
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.asset import Asset
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -35,6 +42,7 @@ class PostingModel(Base):
     )
     created_at: Mapped[int] = mapped_column()
     type: Mapped[PostingType] = mapped_column()
+    asset_type: Mapped[PostingAssetType] = mapped_column()
     basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
 
     transaction: Mapped["TransactionModel"] = relationship(
@@ -45,7 +53,7 @@ class PostingModel(Base):
     parent_posting_id: Mapped[str | None] = mapped_column(
         String(40),
         # No ForeignKey constraint because parent posting is created after child posting
-        nullable=True
+        nullable=True,
     )
 
     def to_domain(self) -> Posting:
@@ -61,6 +69,8 @@ class PostingModel(Base):
             type=self.type,
             created_at=self.created_at,
             basket_id=self.basket_id,
+            parent_posting_id=self.parent_posting_id,
+            asset_type=self.asset_type,
         )
 
     @staticmethod
@@ -75,7 +85,9 @@ class PostingModel(Base):
             decimals=posting.asset_balance.decimals,
             created_at=posting.created_at,
             type=posting.type,
+            asset_type=posting.asset_type,
             basket_id=posting.basket_id,
+            parent_posting_id=posting.parent_posting_id,
         )
 
 
@@ -84,12 +96,16 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
         self.engine = engine
         self.AsyncSessionLocal = AsyncSessionLocal
 
-    async def create_posting(self, posting: Posting, session: NullableSession = None) -> Posting:
+    async def create_posting(
+        self, posting: Posting, session: NullableSession = None
+    ) -> Posting:
         async with self.get_session(session) as session:
             session.add(PostingModel.from_domain(posting))
         return posting
 
-    async def get_holding_balances(self, session: NullableSession = None) -> list[BalanceAtomic]:
+    async def get_holding_balances(
+        self, session: NullableSession = None
+    ) -> list[BalanceAtomic]:
         async with self.get_session(session) as session:
             result = await session.execute(self._get_default_holding_statement())
             rows = result.all()
@@ -103,7 +119,9 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
                 for _asset_id, asset_json, decimals, total_amount_atomic in rows
             ]
 
-    async def get_holding_balance(self, asset: Asset, session: NullableSession = None) -> BalanceAtomic:
+    async def get_holding_balance(
+        self, asset: Asset, session: NullableSession = None
+    ) -> BalanceAtomic:
         async with self.get_session(session) as session:
             stmt = self._get_default_holding_statement().where(
                 PostingModel.asset_id == asset.id
@@ -136,6 +154,9 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
                 func.min(PostingModel.decimals).label("decimals"),
                 func.sum(PostingModel.amount_atomic).label("total_amount_atomic"),
             )
+            # Exclude basket posting children
+            .where(PostingModel.parent_posting_id.is_(None))
             .group_by(PostingModel.asset_id)
+            .order_by(PostingModel.asset_id.desc())
             .having(func.sum(PostingModel.amount_atomic) > 0)
         )

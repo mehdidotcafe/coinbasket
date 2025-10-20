@@ -23,7 +23,7 @@ services:
       - /var/lib/postgresql/data
   temporal_test:
     container_name: temporal_test
-    image: temporalio/temporal:1.5
+    image: temporalio/temporal:1.5.0
     command: ["server", "start-dev", "--ip", "0.0.0.0"]
     ports:
       - "${TEMPORAL_PORT}:7233"

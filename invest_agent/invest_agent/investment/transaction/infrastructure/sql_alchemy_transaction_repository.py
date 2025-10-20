@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from decimal import Decimal
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.fees import Fees
@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy import ForeignKey, String, Integer, Text, select
 from invest_agent.investment.transaction.transaction import (
     Transaction,
+    TransactionAssetType,
     TransactionTrigger,
     TransactionType,
 )
@@ -59,11 +60,12 @@ class TransactionModel(Base):
     executed_sell_balance_amount_atomic: Mapped[Decimal] = mapped_column(NUMERIC(78, 0))
     executed_sell_balance_decimals: Mapped[int] = mapped_column()
 
-    type: Mapped[str] = mapped_column(String)
+    type: Mapped[TransactionType] = mapped_column(String)
+    asset_type: Mapped[TransactionAssetType] = mapped_column()
     created_at: Mapped[int] = mapped_column(Integer)
     transaction_hash: Mapped[str] = mapped_column(String, nullable=True)
     order_id: Mapped[str] = mapped_column(String(36), ForeignKey("orders.id"))
-    trigger: Mapped[str] = mapped_column(String)
+    trigger: Mapped[TransactionTrigger] = mapped_column(String)
     fees: Mapped[str | None] = mapped_column(Text, nullable=True)
     basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
     parent_transaction_id: Mapped[str | None] = mapped_column(
@@ -118,6 +120,7 @@ class TransactionModel(Base):
             executed_buy_balance_amount_atomic=transaction.executed_buy_balance.amount_atomic,
             executed_buy_balance_decimals=transaction.executed_buy_balance.decimals,
             type=transaction.type,
+            asset_type=transaction.asset_type,
             created_at=transaction.created_at,
             transaction_hash=transaction.transaction_hash,
             order_id=transaction.order_id,
@@ -156,11 +159,12 @@ class TransactionModel(Base):
                 amount_atomic=int(self.executed_buy_balance_amount_atomic),
                 decimals=self.executed_buy_balance_decimals,
             ),
-            type=cast(TransactionType, self.type),
+            type=self.type,
+            asset_type=self.asset_type,
             created_at=self.created_at,
             transaction_hash=self.transaction_hash,
             order_id=self.order_id,
-            trigger=cast(TransactionTrigger, self.trigger),
+            trigger=self.trigger,
             fees=Fees.deserialize(self.fees) if self.fees else None,
             basket_id=self.basket_id,
             parent_transaction_id=self.parent_transaction_id,

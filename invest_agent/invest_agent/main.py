@@ -9,9 +9,15 @@ from invest_agent.asset.get_asset_swap_price_use_case import (
     GetAssetSwapPriceUseCase,
 )
 from invest_agent.conversation.conversation_use_case import ConversationUseCase
-from invest_agent.conversation.get_conversation_messages_use_case import GetConversationMessagesUseCase
-from invest_agent.investment.build_priced_investment_plan_use_case import BuildPricedInvestmentPlanUseCase
-from invest_agent.investment.execute_investment_plan_use_case import ExecuteInvestmentPlanUseCase
+from invest_agent.conversation.get_conversation_messages_use_case import (
+    GetConversationMessagesUseCase,
+)
+from invest_agent.investment.build_priced_investment_plan_use_case import (
+    BuildPricedInvestmentPlanUseCase,
+)
+from invest_agent.investment.execute_investment_plan_use_case import (
+    ExecuteInvestmentPlanUseCase,
+)
 from invest_agent.investment.fees import Fees
 from invest_agent.investment.investment_planner.intent_investment_plan import (
     IntentInvestmentPlan,
@@ -42,17 +48,14 @@ from invest_agent.portfolio.get_portfolio_use_case import (
     PortfolioBalance,
 )
 from protocol.basket import Basket
-from protocol.fixture.basket import (
-    big4_basket,
-    memecoinmania_basket
-)
+from protocol.fixture.basket import big4_basket, memecoinmania_basket
 from protocol.fixture.token import (
     wbnb_token,
     eth_token,
     btc_token,
     sol_token,
     shib_token,
-    cake_token
+    cake_token,
 )
 from apispec import APISpec
 from invest_agent.registry import (
@@ -142,7 +145,6 @@ execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
 )
 
 
-
 get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(exchange=exchange, chain=chain)
 
 if configuration.langsmith_tracing:
@@ -179,16 +181,15 @@ async def get_tokens_from_query(query: str) -> list[TokenResponse | BasketRespon
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == 'test':
+    if configuration.agent_env == "test":
         return [
             TokenResponse.from_domain(wbnb_token),
             TokenResponse.from_domain(eth_token),
             TokenResponse.from_domain(btc_token),
             TokenResponse.from_domain(sol_token),
             TokenResponse.from_domain(shib_token),
-            TokenResponse.from_domain(cake_token)
+            TokenResponse.from_domain(cake_token),
         ]
-
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
@@ -219,10 +220,10 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == 'test':
+    if configuration.agent_env == "test":
         return [
             BasketResponse.from_domain(big4_basket),
-            BasketResponse.from_domain(memecoinmania_basket)
+            BasketResponse.from_domain(memecoinmania_basket),
         ]
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
@@ -239,7 +240,6 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
     return res.data.assets
 
 
-
 @tool(parse_docstring=True)
 async def get_all_available_baskets():
     """
@@ -252,11 +252,8 @@ async def get_all_available_baskets():
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == 'test':
-        return [
-            big4_basket,
-            memecoinmania_basket
-        ]
+    if configuration.agent_env == "test":
+        return [big4_basket, memecoinmania_basket]
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
@@ -656,13 +653,18 @@ class IntentInvestmentPlanRequest(Model):
 
 class InvestmentPlanResponse(Model):
     message: str
-    orders: list[OrderResponse]
+    orders: list[list[OrderResponse]]
 
     @staticmethod
-    def from_domain(message: str, orders: list[Order]) -> "InvestmentPlanResponse":
+    def from_domain(
+        message: str, orders: list[list[Order]]
+    ) -> "InvestmentPlanResponse":
         return InvestmentPlanResponse(
             message=message,
-            orders=[OrderResponse.from_domain(order) for order in orders],
+            orders=[
+                [OrderResponse.from_domain(order) for order in order_group]
+                for order_group in orders
+            ],
         )
 
 

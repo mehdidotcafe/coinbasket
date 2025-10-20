@@ -94,9 +94,9 @@ def transactions():
             transaction_hash="0x1234567890abcdef",
             order_id="f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef",
             trigger="MANUAL",
+            asset_type="TOKEN",
         )
     ]
-
 
 
 @fixture
@@ -113,6 +113,7 @@ def postings():
             ),
             created_at=0,
             type="BUY",
+            asset_type="TOKEN",
         ),
     ]
 
@@ -144,11 +145,10 @@ def investment_plan_only_tokens():
         ]
     )
 
+
 @fixture(scope="function")
 async def seed_fixtures(
-    orders: list[Order],
-    transactions: list[Transaction],
-    postings: list[Posting]
+    orders: list[Order], transactions: list[Transaction], postings: list[Posting]
 ):
     async with make_session() as session:
         async with session.begin():
@@ -160,7 +160,6 @@ async def seed_fixtures(
                 session.add(PostingModel.from_domain(posting))
 
     yield postings
-
 
 
 async def fetch_all_orders(excluded_order_ids: list[str] = []):
@@ -221,7 +220,9 @@ async def test_integration_execute_investment_plan_use_case_only_tokens(
     assert orders[1].status == "SUCCESS"
     assert orders[1].asset_type == "TOKEN"
 
-    transactions = list(await fetch_all_transactions(["f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef"]))
+    transactions = list(
+        await fetch_all_transactions(["f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef"])
+    )
 
     assert len(transactions) == 2
 
@@ -241,7 +242,14 @@ async def test_integration_execute_investment_plan_use_case_only_tokens(
     )
 
     # Check if all buy balances are reflected in postings
-    assert all([
-        posting.id in [f"{transaction.id}-{suffix}" for transaction in transactions for suffix in ("IN", "OUT")]
-        for posting in postings
-    ])
+    assert all(
+        [
+            posting.id
+            in [
+                f"{transaction.id}-{suffix}"
+                for transaction in transactions
+                for suffix in ("IN", "OUT")
+            ]
+            for posting in postings
+        ]
+    )

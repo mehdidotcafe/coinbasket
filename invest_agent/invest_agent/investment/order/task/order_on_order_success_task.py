@@ -91,6 +91,7 @@ class OnOrderSuccessTask:
                 decimals=balance.decimals,
             ),
             type=transaction.type,
+            asset_type=transaction.asset_type,
             created_at=created_at,
             basket_id=transaction.basket_id,
         )
@@ -110,6 +111,7 @@ class OnOrderSuccessTask:
             executed_sell_balance=parsed_receipt.executed_sell_balance,
             executed_buy_balance=parsed_receipt.executed_buy_balance,
             type=order.type,
+            asset_type=order.asset_type,
             created_at=created_at,
             fees=order_try.fees if order_try else None,
             transaction_hash=order_try.chain_transactions[-1].hash

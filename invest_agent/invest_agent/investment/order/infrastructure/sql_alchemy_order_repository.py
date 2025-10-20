@@ -387,8 +387,7 @@ class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
                     )
                 )
                 .where(OrderModel.status == "PENDING")
-                # TODO: Remove this line when basket as order is fully implemented
-                .where(OrderModel.asset_type == "TOKEN")
+                .where(OrderModel.parent_order_id.is_(None))
             )
             result = await session.execute(stmt)
             order_models = result.scalars().all()

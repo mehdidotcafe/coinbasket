@@ -7,6 +7,7 @@ Id = str
 
 TransactionType = Literal["SELL", "BUY", "SWAP"]
 TransactionTrigger = Literal["MANUAL", "AUTOMATIC"]
+TransactionAssetType = Literal["BASKET", "TOKEN"]
 
 
 @dataclass
@@ -16,10 +17,11 @@ class Transaction:
     buy_balance: BalanceAtomic
     executed_sell_balance: BalanceAtomic
     executed_buy_balance: BalanceAtomic
-    type: Literal["SELL", "BUY", "SWAP"]
+    type: TransactionType
+    asset_type: TransactionAssetType
     created_at: int
     order_id: Id
-    trigger: Literal["MANUAL", "AUTOMATIC"]
+    trigger: TransactionTrigger
     # TODO: Make fees required
     fees: Fees | None = None
     # No transaction hash for parent transactions

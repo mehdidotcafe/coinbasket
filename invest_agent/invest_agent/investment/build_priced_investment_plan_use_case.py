@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.investment.exchange.exchange import Exchange
@@ -189,18 +190,19 @@ class BuildPricedInvestmentPlanUseCase:
         )
 
     def _get_available_amount(
-        self, holding_balances_per_token: dict[str, BalanceAtomic[Token]], asset: Asset
+        self, holding_balances_per_token: dict[str, BalanceAtomic], asset: Asset
     ) -> Decimal:
         holding_balance = holding_balances_per_token.get(asset.id)
 
         return holding_balance.amount if holding_balance else Decimal("0")
 
-    async def _get_all_holding_balances(self) -> dict[str, BalanceAtomic[Token]]:
+    async def _get_all_holding_balances(self) -> dict[str, BalanceAtomic]:
         holdings = await self.posting_repository.get_holding_balances()
         available_balance = await self.chain.get_native_token_balance()
 
         holding_balances_per_token = {
-            balance.asset.id: balance for balance in [*holdings, available_balance]
+            balance.asset.id: balance
+            for balance in cast(list[BalanceAtomic], [*holdings, available_balance])
         }
 
         return holding_balances_per_token

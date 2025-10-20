@@ -1,4 +1,5 @@
 from typing import Any, cast
+from temporalio.client import Client as TemporalClient
 
 from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
@@ -148,6 +149,7 @@ order_submitter = TemporalOrderSubmitter(
         "temporal_port": configuration.temporal_port,
         "agent_name": configuration.agent_name,
     },
+    TemporalClient=TemporalClient,
 )
 
 session_manager = SqlAlchemySessionManager(

@@ -47,6 +47,7 @@ def transactions():
             ),
             type="BUY",
             trigger="MANUAL",
+            asset_type="TOKEN",
         ),
         Transaction(
             id="tx2",
@@ -66,6 +67,7 @@ def transactions():
             ),
             type="BUY",
             trigger="MANUAL",
+            asset_type="TOKEN",
         ),
     ]
 
