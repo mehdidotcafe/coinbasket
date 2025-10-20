@@ -202,7 +202,10 @@ class BuildPricedInvestmentPlanUseCase:
 
         holding_balances_per_token = {
             balance.asset.id: balance
-            for balance in cast(list[BalanceAtomic], [*holdings, available_balance])
+            for balance in cast(
+                list[BalanceAtomic],
+                [*[holding.balance for holding in holdings], available_balance],
+            )
         }
 
         return holding_balances_per_token

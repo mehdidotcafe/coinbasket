@@ -32,6 +32,7 @@ from protocol.fixture.token import (
     usdt_token,
 )
 from shared.id_generator.id_generator import IdGenerator
+from invest_agent.portfolio.holding.holding import Holding
 
 
 @fixture
@@ -106,11 +107,14 @@ async def test_execute_investment_plan_use_case_not_enough_holdings(
     use_case: ExecuteInvestmentPlanUseCase,
 ):
     posting_repository.get_holding_balances.return_value = [
-        BalanceAtomic(
-            amount=Decimal("0.75"),
-            amount_atomic=75 * 10**16,
-            decimals=18,
-            asset=eth_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("0.75"),
+                amount_atomic=75 * 10**16,
+                decimals=18,
+                asset=eth_token,
+            ),
+            children=None,
         ),
     ]
     chain.get_native_token_balance.return_value = BalanceAtomic(
@@ -877,17 +881,23 @@ async def test_execute_investment_plan_use_case_sell_only_tokens(
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["1", "2"]
     posting_repository.get_holding_balances.return_value = [
-        BalanceAtomic(
-            amount=Decimal("75"),
-            amount_atomic=75 * 10**18,
-            decimals=18,
-            asset=wbnb_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("75"),
+                amount_atomic=75 * 10**18,
+                decimals=18,
+                asset=wbnb_token,
+            ),
+            children=None,
         ),
-        BalanceAtomic(
-            amount=Decimal("75"),
-            amount_atomic=75 * 10**18,
-            decimals=18,
-            asset=eth_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("75"),
+                amount_atomic=75 * 10**18,
+                decimals=18,
+                asset=eth_token,
+            ),
+            children=None,
         ),
     ]
     chain.get_native_token_balance.return_value = BalanceAtomic(
@@ -1017,41 +1027,59 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["100", "1", "2", "101", "3", "4"]
     posting_repository.get_holding_balances.return_value = [
-        BalanceAtomic(
-            amount=Decimal("5"),
-            amount_atomic=5 * 10**18,
-            decimals=18,
-            asset=wbnb_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("5"),
+                amount_atomic=5 * 10**18,
+                decimals=18,
+                asset=wbnb_token,
+            ),
+            children=None,
         ),
-        BalanceAtomic(
-            amount=Decimal("75"),
-            amount_atomic=75 * 10**18,
-            decimals=18,
-            asset=sol_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("75"),
+                amount_atomic=75 * 10**18,
+                decimals=18,
+                asset=sol_token,
+            ),
+            children=None,
         ),
-        BalanceAtomic(
-            amount=Decimal("75"),
-            amount_atomic=75 * 10**18,
-            decimals=18,
-            asset=eth_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("75"),
+                amount_atomic=75 * 10**18,
+                decimals=18,
+                asset=eth_token,
+            ),
+            children=None,
         ),
-        BalanceAtomic(
-            amount=Decimal("75"),
-            amount_atomic=75 * 10**18,
-            decimals=18,
-            asset=usdt_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("75"),
+                amount_atomic=75 * 10**18,
+                decimals=18,
+                asset=usdt_token,
+            ),
+            children=None,
         ),
-        BalanceAtomic(
-            amount=Decimal("5"),
-            amount_atomic=5 * 10**18,
-            decimals=18,
-            asset=basket1,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("5"),
+                amount_atomic=5 * 10**18,
+                decimals=18,
+                asset=basket1,
+            ),
+            children=None,
         ),
-        BalanceAtomic(
-            amount=Decimal("3"),
-            amount_atomic=3 * 10**18,
-            decimals=18,
-            asset=basket2,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("3"),
+                amount_atomic=3 * 10**18,
+                decimals=18,
+                asset=basket2,
+            ),
+            children=None,
         ),
     ]
     chain.get_native_token_balance.return_value = BalanceAtomic(
@@ -1345,23 +1373,32 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
     date_time.now.return_value = 1752268296
     id_generator.generate_random_id.side_effect = ["100", "1", "2", "3", "4"]
     posting_repository.get_holding_balances.return_value = [
-        BalanceAtomic(
-            amount=Decimal("75"),
-            amount_atomic=75 * 10**18,
-            decimals=18,
-            asset=wbnb_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("75"),
+                amount_atomic=75 * 10**18,
+                decimals=18,
+                asset=wbnb_token,
+            ),
+            children=None,
         ),
-        BalanceAtomic(
-            amount=Decimal("75"),
-            amount_atomic=75 * 10**18,
-            decimals=18,
-            asset=eth_token,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("75"),
+                amount_atomic=75 * 10**18,
+                decimals=18,
+                asset=eth_token,
+            ),
+            children=None,
         ),
-        BalanceAtomic(
-            amount=Decimal("3"),
-            amount_atomic=3 * 10**18,
-            decimals=18,
-            asset=basket1,
+        Holding(
+            balance=BalanceAtomic(
+                amount=Decimal("3"),
+                amount_atomic=3 * 10**18,
+                decimals=18,
+                asset=basket1,
+            ),
+            children=None,
         ),
     ]
     chain.get_native_token_balance.return_value = BalanceAtomic(

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, Sequence, Tuple
 from decimal import Decimal
 import json
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
@@ -7,6 +7,7 @@ from invest_agent.database.infrastructure.sql_alchemy_base_repository import (
     SqlAlchemyBaseRepository,
 )
 
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting import (
     Posting,
     PostingAssetType,
@@ -15,7 +16,7 @@ from invest_agent.portfolio.posting.posting import (
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.asset import Asset
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy import ForeignKey, String, select, func
+from sqlalchemy import ForeignKey, Row, String, or_, select, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import NUMERIC
 from invest_agent.chain.balance import BalanceAtomic
@@ -105,58 +106,114 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
 
     async def get_holding_balances(
         self, session: NullableSession = None
-    ) -> list[BalanceAtomic]:
+    ) -> list[Holding]:
         async with self.get_session(session) as session:
             result = await session.execute(self._get_default_holding_statement())
             rows = result.all()
-            return [
-                BalanceAtomic(
-                    asset=BalanceAtomic.deserialize_asset(asset_json),
-                    amount=total_amount_atomic / Decimal(10**decimals),
-                    amount_atomic=int(total_amount_atomic),
-                    decimals=decimals,
-                )
-                for _asset_id, asset_json, decimals, total_amount_atomic in rows
-            ]
+
+            return self._map_rows_to_holdings(rows)
 
     async def get_holding_balance(
         self, asset: Asset, session: NullableSession = None
-    ) -> BalanceAtomic:
+    ) -> Holding:
         async with self.get_session(session) as session:
             stmt = self._get_default_holding_statement().where(
-                PostingModel.asset_id == asset.id
+                or_(
+                    PostingModel.asset_id == asset.id,
+                    PostingModel.basket_id == asset.id,
+                )
             )
             result = await session.execute(stmt)
             rows = result.all()
-            if not rows:
-                return BalanceAtomic(
-                    asset=asset,
-                    amount=Decimal(0),
-                    amount_atomic=0,
-                    decimals=0,
-                )
-            asset_json = rows[0][1]
-            decimals = rows[0][2]
-            total_amount_atomic = rows[0][3]
-            return BalanceAtomic(
-                asset=BalanceAtomic.deserialize_asset(asset_json),
-                amount=total_amount_atomic / Decimal(10**decimals),
-                amount_atomic=int(total_amount_atomic),
-                decimals=decimals,
-            )
+
+            return self._map_rows_to_holdings(rows)[0]
 
     def _get_default_holding_statement(self):
         return (
             select(
                 PostingModel.asset_id,
+                PostingModel.basket_id,
+                func.min(PostingModel.asset_type),
                 # Select any asset value of the same asset_id
                 func.min(PostingModel.asset),
                 func.min(PostingModel.decimals).label("decimals"),
                 func.sum(PostingModel.amount_atomic).label("total_amount_atomic"),
             )
-            # Exclude basket posting children
-            .where(PostingModel.parent_posting_id.is_(None))
-            .group_by(PostingModel.asset_id)
+            .group_by(PostingModel.asset_id, PostingModel.basket_id)
             .order_by(PostingModel.asset_id.desc())
             .having(func.sum(PostingModel.amount_atomic) > 0)
+        )
+
+    # AI Generated
+    def _map_rows_to_holdings(
+        self,
+        rows: Sequence[
+            Row[Tuple[str, str | None, Literal["BASKET", "TOKEN"], str, int, Decimal]]
+        ],
+    ):
+        # Parse rows into dicts for easier processing
+        parsed: list[dict[str, Any]] = []
+        for (
+            asset_id,
+            basket_id,
+            asset_type,
+            asset_json,
+            decimals,
+            total_amount_atomic,
+        ) in rows:
+            parsed.append(
+                {
+                    "asset_id": asset_id,
+                    "basket_id": basket_id,
+                    "asset_type": asset_type,
+                    "asset_json": asset_json,
+                    "decimals": decimals,
+                    "total_amount_atomic": total_amount_atomic,
+                }
+            )
+
+        # Build lookup for children: basket_id -> list of child rows
+        children_by_basket: dict[str, list[dict[str, Any]]] = {}
+        for row in parsed:
+            if row["asset_type"] == "TOKEN" and row["basket_id"]:
+                children_by_basket.setdefault(row["basket_id"], []).append(row)
+
+        # Track asset_ids of all children to filter them out from top-level
+        child_asset_ids: set[str] = set()
+        for child_list in children_by_basket.values():
+            for child in child_list:
+                child_asset_ids.add(child["asset_id"])
+
+        holdings: list[Holding] = []
+        for row in parsed:
+            # Only skip if this row is a child (TOKEN with basket_id) and is being included as a child in a basket
+            if (
+                row["asset_type"] == "TOKEN"
+                and row["basket_id"]
+                and row["asset_id"] in child_asset_ids
+            ):
+                continue  # skip child holdings that are included in a basket
+            if row["asset_type"] == "BASKET":
+                # Find children for this basket
+                children_rows = children_by_basket.get(row["asset_id"], [])
+                children = [self._map_row_to_balance(child) for child in children_rows]
+                holding = Holding(
+                    balance=self._map_row_to_balance(row),
+                    children=children or None,
+                )
+                holdings.append(holding)
+            else:
+                holding = Holding(
+                    balance=self._map_row_to_balance(row),
+                    children=None,
+                )
+                holdings.append(holding)
+        return holdings
+
+    def _map_row_to_balance(self, row: dict[str, Any]):
+        return BalanceAtomic(
+            asset=BalanceAtomic.deserialize_asset(row["asset_json"]),
+            amount=row["total_amount_atomic"] / Decimal(10 ** row["decimals"]),
+            amount_atomic=int(row["total_amount_atomic"]),
+            decimals=row["decimals"],
         )

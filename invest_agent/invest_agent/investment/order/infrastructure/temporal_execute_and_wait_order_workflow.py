@@ -79,7 +79,7 @@ class TemporalExecuteAndWaitOrderWorkflow:
             executed_atomic_amounts = await workflow.execute_activity(
                 "wait_order_try",
                 OrderTryRequest(id=order_try_id),
-                schedule_to_close_timeout=timedelta(seconds=120),
+                schedule_to_close_timeout=timedelta(seconds=60 * 5),
                 retry_policy=retry_policy,
             )
 

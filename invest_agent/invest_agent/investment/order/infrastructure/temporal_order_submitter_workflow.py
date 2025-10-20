@@ -104,7 +104,7 @@ class TemporalOrderSubmitterWorkflow:
                 await workflow.execute_activity(
                     "eventually_revert_order_leftovers",
                     orders,
-                    schedule_to_close_timeout=timedelta(seconds=120),
+                    schedule_to_close_timeout=timedelta(seconds=60 * 5),
                     retry_policy=retry_policy,
                 )
             )

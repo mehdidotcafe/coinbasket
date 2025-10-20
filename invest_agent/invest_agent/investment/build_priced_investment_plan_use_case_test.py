@@ -15,6 +15,7 @@ from invest_agent.investment.investment_planner.priced_investment_plan import (
     PricedInvestmentPlanBalance,
     PricedInvestmentPlanStep,
 )
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, mark
 from protocol.fixture.token import eth_token, bnb_token, usdt_token
@@ -440,12 +441,15 @@ async def test_build_priced_investment_plan_use_case_execute_available_amount_de
         decimals=18,
     )
     posting_repository.get_holding_balances.return_value = [
-        BalanceAtomic(
-            asset=usdt_token,
-            amount=Decimal("80000"),
-            amount_atomic=80000 * 10**18,
-            decimals=18,
-        ),
+        Holding(
+            balance=BalanceAtomic(
+                asset=usdt_token,
+                amount=Decimal("80000"),
+                amount_atomic=80000 * 10**18,
+                decimals=18,
+            ),
+            children=None,
+        )
     ]
     exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
