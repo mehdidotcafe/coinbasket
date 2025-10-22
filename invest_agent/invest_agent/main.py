@@ -277,20 +277,20 @@ def get_agent_address():
 @tool(
     parse_docstring=True,
 )
-async def get_portfolio_summary(token: Token = usdt_token):
+async def get_portfolio_summary(conversion_token: Token = usdt_token):
     """EXPENSIVE/SLOW. Retrieve the portfolio. Only use this tool when the user asks for his portfolio.
     The portfolio contains the list of assets held by the agent (holdings) and their balances both in asset token and in converted token (defaults to USDT).
     It also contains the available cash balance in BNB and the list of pending (processing) orders.
 
     Args:
-        token: The token to convert the asset balances to (defaults to USDT).
+        conversion_token: The token to convert the portfolio asset balances to (defaults to USDT).
 
     Returns:
         The portfolio of the agent.
     """
 
     return PortfolioResponse.from_domain(
-        await get_portfolio_use_case.execute(token)
+        await get_portfolio_use_case.execute(conversion_token)
     ).json()
 
 
@@ -324,11 +324,11 @@ async def get_token_holding(token: Token):
     Returns:
         The holding balance of the held token in the agent's wallet.
     """
-    balance = await posting_repository.get_holding_balance(
+    holding = await posting_repository.get_holding_balance(
         token if not chain.is_native_token(token) else chain.get_wrapped_base_token()
     )
 
-    return BalanceAtomicResponse.from_domain(balance).json()
+    return BalanceAtomicResponse.from_domain(holding.balance).json()
 
 
 @tool(
@@ -676,7 +676,7 @@ async def execute_intent_investment_plan_use_case(
 ):
     """Executes the intent investment plan.
     If the user confirms the investment plan, the orders are submitted to the chain.
-    If the user cancels the investment plan, no order is submitted, and don't try to invest in the investment plan again.
+    If the user cancels the investment plan, no order is submitted 't try to invest in the investment plan again.
 
     Args:
         intent_investment_plan (IntentInvestmentPlanRequest): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.

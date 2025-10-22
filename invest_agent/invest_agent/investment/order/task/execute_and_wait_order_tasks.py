@@ -1,4 +1,5 @@
 from decimal import Decimal
+from time import sleep
 from typing import Literal, TypedDict, cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain, ParsedReceipt
@@ -124,6 +125,8 @@ class ExecuteOrderTryTask:
                     encoded_input=chain_transaction.data,
                 )
             else:
+                # Mock a delay for testing
+                sleep(5)
                 transaction_hash = "DUMMY_TRANSACTION_HASH"
 
             await self.order_repository.set_order_try_chain_transaction_hash(
@@ -168,6 +171,8 @@ class WaitOrderTryTask:
                     cast(str, chain_transaction.hash)
                 )
             else:
+                # Mock a delay for testing
+                sleep(60)
                 is_chain_transaction_success = True
 
             if not is_chain_transaction_success:

@@ -35,7 +35,7 @@ def plan_activity(name: str, *args: Any, **kwargs: Any) -> Callable[[], Awaitabl
 class TemporalOrderSubmitterWorkflow:
     @workflow.run
     async def run(self, orders: list[OrderRequest]):
-        default_schedule_to_close_timeout = timedelta(10)
+        default_start_to_close_timeout = timedelta(20)
         retry_policy = RetryPolicy(maximum_attempts=5)
 
         compensations: list[Callable[[], Awaitable[Any]]] = []
@@ -49,6 +49,7 @@ class TemporalOrderSubmitterWorkflow:
                     TemporalExecuteAndWaitOrderWorkflow.run,
                     order,
                     retry_policy=retry_policy,
+                    run_timeout=timedelta(minutes=10),
                 )
                 for order in orders
             ]
@@ -56,9 +57,15 @@ class TemporalOrderSubmitterWorkflow:
                 *execute_and_wait_order_handles, return_exceptions=True
             )
 
-            outputs.append(transaction_ids)
-
             print("TemporalOrderSubmitterWorkflow > execute_and_wait_order", outputs)
+
+            outputs.append(
+                {
+                    "execute_and_wait_order": [
+                        str(transaction_id) for transaction_id in transaction_ids
+                    ]
+                }
+            )
 
             some_transactions_failed = False
             succeeded_orders: list[OrderRequest] = []
@@ -69,20 +76,18 @@ class TemporalOrderSubmitterWorkflow:
                         plan_activity(
                             "fail_order",
                             order,
-                            schedule_to_close_timeout=default_schedule_to_close_timeout,
+                            start_to_close_timeout=default_start_to_close_timeout,
                             retry_policy=retry_policy,
                         )
                     )
                 else:
-                    outputs.append(transaction_id)
                     succeeded_orders.append(order)
-                    pass
 
             compensations.append(
                 plan_activity(
                     "revert_succeeded_orders",
                     succeeded_orders,
-                    schedule_to_close_timeout=default_schedule_to_close_timeout,
+                    start_to_close_timeout=default_start_to_close_timeout,
                     retry_policy=retry_policy,
                 )
             )
@@ -92,7 +97,7 @@ class TemporalOrderSubmitterWorkflow:
                 plan_activity(
                     "eventually_fail_parent_order",
                     orders[0],
-                    schedule_to_close_timeout=default_schedule_to_close_timeout,
+                    start_to_close_timeout=default_start_to_close_timeout,
                     retry_policy=retry_policy,
                 )
             )
@@ -100,13 +105,17 @@ class TemporalOrderSubmitterWorkflow:
             if some_transactions_failed:
                 raise BaseException("One or more orders failed")
 
+            eventually_revert_order_leftovers_result = await workflow.execute_activity(
+                "eventually_revert_order_leftovers",
+                orders,
+                start_to_close_timeout=timedelta(minutes=10),
+                retry_policy=RetryPolicy(maximum_attempts=5),
+            )
+
             outputs.append(
-                await workflow.execute_activity(
-                    "eventually_revert_order_leftovers",
-                    orders,
-                    schedule_to_close_timeout=timedelta(seconds=60 * 5),
-                    retry_policy=retry_policy,
-                )
+                {
+                    "eventually_revert_order_leftovers": eventually_revert_order_leftovers_result
+                }
             )
 
             print(
@@ -114,16 +123,20 @@ class TemporalOrderSubmitterWorkflow:
                 outputs,
             )
 
+            eventually_success_parent_order_result = await workflow.execute_activity(
+                "eventually_success_parent_order",
+                EventuallySuccessParentOrderRequest(
+                    order_ids=[order.id for order in orders],
+                    transaction_ids=cast(list[str], transaction_ids),
+                ),
+                start_to_close_timeout=default_start_to_close_timeout,
+                retry_policy=retry_policy,
+            )
+
             outputs.append(
-                await workflow.execute_activity(
-                    "eventually_success_parent_order",
-                    EventuallySuccessParentOrderRequest(
-                        order_ids=[order.id for order in orders],
-                        transaction_ids=cast(list[str], transaction_ids),
-                    ),
-                    schedule_to_close_timeout=default_schedule_to_close_timeout,
-                    retry_policy=retry_policy,
-                )
+                {
+                    "eventually_success_parent_order": eventually_success_parent_order_result
+                }
             )
 
             print(
@@ -133,10 +146,11 @@ class TemporalOrderSubmitterWorkflow:
 
         except BaseException as e:
             print("TemporalOrderSubmitterWorkflow > Exception in workflow:", e)
-            outputs.append(
-                await asyncio.gather(
-                    *(c() for c in compensations), return_exceptions=True
-                )
+            compensation_results = await asyncio.gather(
+                *(c() for c in compensations), return_exceptions=True
             )
+            outputs.append({"compensation_results": compensation_results})
+
+        print("TemporalOrderSubmitterWorkflow > end", outputs)
 
         return outputs

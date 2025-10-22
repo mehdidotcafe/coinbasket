@@ -31,8 +31,8 @@ def plan_activity(name: str, *args: Any, **kwargs: Any) -> Callable[[], Awaitabl
     return _run
 
 
-default_schedule_to_close_timeout = timedelta(seconds=10)
-retry_policy = RetryPolicy(maximum_attempts=5)
+default_start_to_close_timeout = timedelta(seconds=10)
+retry_policy = RetryPolicy(maximum_attempts=1)
 
 
 @workflow.defn
@@ -48,11 +48,11 @@ class TemporalExecuteAndWaitOrderWorkflow:
             order_try_id = await workflow.execute_activity(
                 "create_order_try",
                 order_request,
-                schedule_to_close_timeout=default_schedule_to_close_timeout,
-                retry_policy=retry_policy,
+                start_to_close_timeout=default_start_to_close_timeout,
+                retry_policy=RetryPolicy(maximum_attempts=3),
             )
 
-            outputs.append(order_try_id)
+            outputs.append({"create_order_try": order_try_id})
 
             print("TemporalExecuteAndWaitOrderWorkflow > create_order_try", outputs)
 
@@ -60,30 +60,30 @@ class TemporalExecuteAndWaitOrderWorkflow:
                 plan_activity(
                     "fail_order_try",
                     OrderTryRequest(id=order_try_id),
-                    schedule_to_close_timeout=default_schedule_to_close_timeout,
-                    retry_policy=retry_policy,
+                    start_to_close_timeout=default_start_to_close_timeout,
+                    retry_policy=RetryPolicy(maximum_attempts=3),
                 )
             )
 
             parsed_receipt = await workflow.execute_activity(
                 "execute_order_try",
                 OrderTryRequest(id=order_try_id),
-                schedule_to_close_timeout=default_schedule_to_close_timeout,
+                start_to_close_timeout=timedelta(seconds=60),
                 retry_policy=retry_policy,
             )
 
-            outputs.append(parsed_receipt)
+            outputs.append({"execute_order_try": parsed_receipt})
 
             print("TemporalExecuteAndWaitOrderWorkflow > execute_order_try", outputs)
 
             executed_atomic_amounts = await workflow.execute_activity(
                 "wait_order_try",
                 OrderTryRequest(id=order_try_id),
-                schedule_to_close_timeout=timedelta(seconds=60 * 5),
-                retry_policy=retry_policy,
+                start_to_close_timeout=timedelta(minutes=5),
+                retry_policy=RetryPolicy(maximum_attempts=5),
             )
 
-            outputs.append(parsed_receipt)
+            outputs.append({"wait_order_try": executed_atomic_amounts})
 
             print("TemporalExecuteAndWaitOrderWorkflow > wait_order_try", outputs)
 
@@ -99,20 +99,22 @@ class TemporalExecuteAndWaitOrderWorkflow:
                     ],
                     rate=executed_atomic_amounts["rate"],
                 ),
-                schedule_to_close_timeout=default_schedule_to_close_timeout,
-                retry_policy=retry_policy,
+                start_to_close_timeout=default_start_to_close_timeout,
+                retry_policy=RetryPolicy(maximum_attempts=3),
             )
 
-            outputs.append(transaction_id)
+            outputs.append({"on_order_success": transaction_id})
 
             print("TemporalExecuteAndWaitOrderWorkflow > on_order_success", outputs)
 
             return transaction_id
         except Exception as e:
-            print("TemporalExecuteAndWaitOrderWorkflow > Exception in workflow:", e)
-            outputs.append(
-                await asyncio.gather(
-                    *[c() for c in compensations], return_exceptions=True
-                )
+            print(
+                "TemporalExecuteAndWaitOrderWorkflow > Exception in workflow:", str(e)
             )
+            compensation_results = await asyncio.gather(
+                *[c() for c in compensations], return_exceptions=True
+            )
+
+            outputs.append({"compensation_results": compensation_results})
             raise e
