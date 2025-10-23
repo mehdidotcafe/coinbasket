@@ -3,6 +3,19 @@ from protocol.basket import Basket
 from protocol.fixture.token import btc_token, wbnb_token, eth_token, sol_token
 from protocol.token import Token
 
+test_basket = Basket(
+    id="0d83917d-a2bd-4482-83e6-68d52c8f293a",
+    name="Test Basket",
+    display_name="Test Basket",
+    ticker="TEST",
+    description="A basket for testing purposes",
+    denomination=Decimal("10.0"),
+    tokens=[
+        btc_token,
+        eth_token,
+    ],
+)
+
 big4_basket = Basket(
     id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
     name="Big4",

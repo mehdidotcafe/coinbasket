@@ -19,6 +19,7 @@ from invest_agent.investment.investment_planner.investment_plan import (
 )
 from invest_agent.investment.order.order import Order, OrderAssetType
 from invest_agent.investment.order.order_submitter import OrderSubmitter
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.asset import Asset
 from protocol.basket import Basket
@@ -74,9 +75,13 @@ class ExecuteInvestmentPlanUseCase:
             A list of Orders created for the assets in the investment plan.
         """
 
-        priced_investment_plan = await self.__price_investment_plan(investment_plan)
+        holdings = await self.posting_repository.get_holding_balances()
 
-        await self._assert_has_sufficient_balances(priced_investment_plan)
+        priced_investment_plan = await self.__price_investment_plan(
+            investment_plan, holdings
+        )
+
+        await self._assert_has_sufficient_balances(priced_investment_plan, holdings)
 
         orders = [
             self.__map_priced_investment_plan_step_to_orders(step)
@@ -119,7 +124,7 @@ class ExecuteInvestmentPlanUseCase:
         return "SWAP"
 
     async def __price_investment_plan(
-        self, investment_plan: InvestmentPlan
+        self, investment_plan: InvestmentPlan, holdings: list[Holding]
     ) -> PricedInvestmentPlan:
         steps: list[list[PricedInvestmentStep]] = []
 
@@ -127,13 +132,13 @@ class ExecuteInvestmentPlanUseCase:
         for step in investment_plan.steps:
             if step.sell_balance.amount <= 0:
                 continue
-            priced_step = await self.__price_investment_plan_step(step)
+            priced_step = await self.__price_investment_plan_step(step, holdings)
             steps.append(priced_step)
 
         return PricedInvestmentPlan(steps)
 
     async def __price_investment_plan_step(
-        self, step: InvestmentPlanStep
+        self, step: InvestmentPlanStep, holdings: list[Holding]
     ) -> list[PricedInvestmentStep]:
         buy_balance = step.buy_balance
         sell_balance = step.sell_balance
@@ -192,6 +197,7 @@ class ExecuteInvestmentPlanUseCase:
                     amount_atomic=sell_balance_amount_atomic,
                     decimals=sell_balance_decimals,
                 ),
+                holdings=holdings,
             )
         if isinstance(sell_balance.asset, Token) and isinstance(
             buy_balance.asset, Token
@@ -275,23 +281,41 @@ class ExecuteInvestmentPlanUseCase:
         return priced_basket_steps
 
     async def __build_steps_for_sell_basket(
-        self, sell_balance: BalanceAtomic[Basket], buy_balance: BalanceAtomic[Token]
+        self,
+        sell_balance: BalanceAtomic[Basket],
+        buy_balance: BalanceAtomic[Token],
+        holdings: list[Holding],
     ) -> list[PricedInvestmentStep]:
         parent_id = self.id_generator.generate_random_id()
 
+        holding_basket = next(
+            (
+                holding
+                for holding in holdings
+                if holding.balance.asset.id == sell_balance.asset.id
+            ),
+            None,
+        )
+
+        if not holding_basket or not holding_basket.children:
+            raise InsufficientAssetBalance(sell_balance.asset)
+
+        sell_ratio = sell_balance.amount / holding_basket.balance.amount
+
+        print(f"sell ratio: {sell_ratio}")
+
+        print(f"basket children: {holding_basket.children}")
+
         tasks = [
             self.exchange.convert_balance_to_token(
-                # TODO: Handle selling basket
-                balance=BalanceAtomic(
-                    asset=token, amount=Decimal("0"), amount_atomic=0, decimals=18
-                ),
+                balance=balance * sell_ratio,
                 token=buy_balance.asset,
                 investment_parameters=investment_parameters,
             )
-            for token in sell_balance.asset.tokens
+            for balance in holding_basket.children
         ]
 
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        results = await asyncio.gather(*tasks)
 
         priced_basket_steps: list[PricedInvestmentStep] = [
             PricedInvestmentStep(
@@ -337,10 +361,11 @@ class ExecuteInvestmentPlanUseCase:
         )
 
     async def _assert_has_sufficient_balances(
-        self, priced_investment_plan: PricedInvestmentPlan
+        self,
+        priced_investment_plan: PricedInvestmentPlan,
+        holdings: list[Holding],
     ):
-        holding_balances_per_token = await self._get_all_holding_balances()
-
+        all_holdings = await self._get_all_holding_balances(holdings)
         for step_matrix in priced_investment_plan.steps:
             # Give priority to basket orders to avoid insufficient balance errors
             basket_order = next(
@@ -350,18 +375,17 @@ class ExecuteInvestmentPlanUseCase:
             # Only basket orders will have several steps
             step = basket_order if basket_order else step_matrix[0]
 
-            if step.sell_balance.asset.id not in holding_balances_per_token:
+            if step.sell_balance.asset.id not in all_holdings:
                 raise InsufficientAssetBalance(step.sell_balance.asset)
 
-            holding_balances_per_token[
-                step.sell_balance.asset.id
-            ].amount -= step.sell_balance.amount
+            all_holdings[step.sell_balance.asset.id].amount -= step.sell_balance.amount
 
-            if holding_balances_per_token[step.sell_balance.asset.id].amount < 0:
+            if all_holdings[step.sell_balance.asset.id].amount < 0:
                 raise InsufficientAssetBalance(step.sell_balance.asset)
 
-    async def _get_all_holding_balances(self) -> dict[str, BalanceAtomic]:
-        holdings = await self.posting_repository.get_holding_balances()
+    async def _get_all_holding_balances(
+        self, holdings: list[Holding]
+    ) -> dict[str, BalanceAtomic]:
         available_balance = await self.chain.get_native_token_balance()
 
         holding_balances_per_token = {

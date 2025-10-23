@@ -18,8 +18,8 @@ from invest_agent.investment.investment_planner.priced_investment_plan import (
 from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, mark
-from protocol.fixture.token import eth_token, bnb_token, usdt_token
-from protocol.fixture.basket import big4_basket
+from protocol.fixture.token import eth_token, bnb_token, usdt_token, btc_token
+from protocol.fixture.basket import big4_basket, test_basket
 from decimal import ROUND_DOWN, Decimal
 
 
@@ -360,28 +360,68 @@ async def test_build_priced_investment_plan_use_case_execute_defined_sell_basket
                     amount=None,
                 ),
                 sell_asset_with_amount=IntentInvestmentPlanBalance(
-                    asset=big4_basket,
+                    asset=test_basket,
                     amount=Decimal("50.0"),
                 ),
             )
         ]
     )
 
-    posting_repository.get_holding_balances.return_value = []
-    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
-        sell_balance=BalanceAtomic(
-            asset=usdt_token,
-            amount=Decimal("500"),
-            amount_atomic=500 * 10**18,
-            decimals=18,
+    posting_repository.get_holding_balances.return_value = [
+        Holding(
+            balance=BalanceAtomic(
+                asset=test_basket,
+                amount=Decimal("100"),
+                amount_atomic=100 * 10**18,
+                decimals=18,
+            ),
+            children=[
+                BalanceAtomic(
+                    asset=btc_token,
+                    amount=Decimal("800"),
+                    amount_atomic=800 * 10**18,
+                    decimals=18,
+                ),
+                BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("780"),
+                    amount_atomic=780 * 10**18,
+                    decimals=18,
+                ),
+            ],
         ),
-        buy_balance=BalanceAtomic(
-            asset=bnb_token,
-            amount=Decimal("1"),
-            amount_atomic=1 * 10**18,
-            decimals=18,
+    ]
+
+    exchange.convert_balance_to_token.side_effect = [
+        ExchangeConvertedBalance(
+            sell_balance=BalanceAtomic(
+                asset=btc_token,
+                amount=Decimal("800"),
+                amount_atomic=800 * 10**18,
+                decimals=18,
+            ),
+            buy_balance=BalanceAtomic(
+                asset=bnb_token,
+                amount=Decimal("8000"),
+                amount_atomic=8000 * 10**18,
+                decimals=18,
+            ),
         ),
-    )
+        ExchangeConvertedBalance(
+            sell_balance=BalanceAtomic(
+                asset=eth_token,
+                amount=Decimal("780"),
+                amount_atomic=780 * 10**18,
+                decimals=18,
+            ),
+            buy_balance=BalanceAtomic(
+                asset=bnb_token,
+                amount=Decimal("7800"),
+                amount_atomic=7800 * 10**18,
+                decimals=18,
+            ),
+        ),
+    ]
 
     priced_investment_plan = await use_case.execute(intent_investment_plan)
 
@@ -389,26 +429,42 @@ async def test_build_priced_investment_plan_use_case_execute_defined_sell_basket
         steps=[
             PricedInvestmentPlanStep(
                 buy_asset_with_amount=PricedInvestmentPlanBalance(
-                    asset=bnb_token, amount=Decimal("1"), available_amount=Decimal("0")
+                    asset=bnb_token,
+                    amount=Decimal("15800"),
+                    available_amount=Decimal("0"),
                 ),
                 sell_asset_with_amount=PricedInvestmentPlanBalance(
-                    asset=big4_basket,
+                    asset=test_basket,
                     amount=Decimal("50.0"),
-                    available_amount=Decimal("0"),
+                    available_amount=Decimal("100"),
                 ),
             )
         ]
     )
 
-    exchange.convert_balance_to_token.assert_called_once_with(
-        balance=BalanceAtomic(
-            asset=usdt_token,
-            amount=Decimal("500"),
-            amount_atomic=500 * 10**18,
-            decimals=18,
-        ),
-        token=bnb_token,
-        investment_parameters=mock.ANY,
+    exchange.assert_has_calls(
+        [
+            mock.call.convert_balance_to_token(
+                balance=BalanceAtomic(
+                    asset=btc_token,
+                    amount=Decimal("400"),
+                    amount_atomic=400 * 10**18,
+                    decimals=18,
+                ),
+                token=bnb_token,
+                investment_parameters=mock.ANY,
+            ),
+            mock.call.convert_balance_to_token(
+                balance=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("390"),
+                    amount_atomic=390 * 10**18,
+                    decimals=18,
+                ),
+                token=bnb_token,
+                investment_parameters=mock.ANY,
+            ),
+        ]
     )
 
 

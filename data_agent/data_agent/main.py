@@ -109,9 +109,7 @@ async def get_similar_assets(
     if req.agent_key != configuration.agent_key:
         raise InvalidAgentKey()
 
-    print(f"Query: {req.query}")
-
-    assets = await get_similar_assets_use_case.execute(req.query)
+    assets = await get_similar_assets_use_case.execute(req.query, req.type)
 
     return SimilarAssetsResponse(
         data=SimilarAssetsValidResponse(

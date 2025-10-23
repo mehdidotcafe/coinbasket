@@ -3,9 +3,15 @@ from langchain_core.embeddings import Embeddings
 
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.documents import Document
-from qdrant_client import AsyncQdrantClient, QdrantClient, models
-from qdrant_client.models import VectorParams, Distance, Record
-
+from qdrant_client import AsyncQdrantClient, QdrantClient
+from qdrant_client.models import (
+    VectorParams,
+    Distance,
+    Record,
+    Filter,
+    FieldCondition,
+    MatchValue,
+)
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
@@ -58,13 +64,25 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
         self.configuration = configuration
         self.embeddings = embeddings
 
-    async def similarity_search(self, query: str):
+    async def similarity_search(self, query: str, filters: dict[str, Any] | None):
         """
         Performs a similarity search in the Qdrant vector store."""
 
+        qdrant_filters = Filter(
+            must=[
+                FieldCondition(
+                    key=f"metadata.{key}",
+                    match=MatchValue(value=value),
+                )
+                for key, value in (filters or {}).items()
+            ]
+        )
+
         return [
             self.__map_document_to_similarity_document(doc)
-            for doc in await self.qdrant.asimilarity_search(query, 10)
+            for doc in await self.qdrant.asimilarity_search(
+                query, 10, filter=qdrant_filters
+            )
         ]
 
     def get(self, ids: list[str]):
@@ -80,11 +98,11 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
         while True:
             points, next_offset = await self.async_client.scroll(
                 collection_name=self.configuration["qdrant_collection"],
-                scroll_filter=models.Filter(
+                scroll_filter=Filter(
                     should=[
-                        models.FieldCondition(
+                        FieldCondition(
                             key=f"metadata.{name}",
-                            match=models.MatchValue(value=value),
+                            match=MatchValue(value=value),
                         ),
                     ]
                 ),

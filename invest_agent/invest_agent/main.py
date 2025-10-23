@@ -194,7 +194,9 @@ async def get_tokens_from_query(query: str) -> list[TokenResponse | BasketRespon
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
         SimilarAssetsQuery(
-            query=f"{query} type: token", agent_key=configuration.data_agent_key
+            query=f"{query}",
+            agent_key=configuration.data_agent_key,
+            type="TOKEN",
         ),
         SimilarAssetsResponse,
     )
@@ -229,7 +231,7 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
         SimilarAssetsQuery(
-            query=f"{query} type: basket", agent_key=configuration.data_agent_key
+            query=f"{query}", agent_key=configuration.data_agent_key, type="BASKET"
         ),
         SimilarAssetsResponse,
     )
@@ -736,8 +738,6 @@ async def execute_intent_investment_plan_use_case(
     priced_investment_plan = await build_priced_investment_plan_use_case.execute(
         intent_investment_plan.to_domain()
     )
-
-    print(f"priced_investment_plan: {priced_investment_plan}")
 
     investment_plan_as_dict = interrupt(
         {

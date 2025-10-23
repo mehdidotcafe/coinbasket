@@ -24,7 +24,13 @@ from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlanStep,
 )
 
-from protocol.fixture.token import btc_token, sol_token, usdt_token
+from protocol.fixture.token import (
+    btc_token,
+    sol_token,
+    usdt_token,
+    eth_token,
+)
+from protocol.fixture.basket import test_basket
 
 from sqlalchemy import select
 
@@ -115,11 +121,55 @@ def postings():
             type="BUY",
             asset_type="TOKEN",
         ),
+        Posting(
+            id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0b-IN",
+            transaction_id="f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef",
+            asset_balance=BalanceAtomic(
+                asset=test_basket,
+                amount=Decimal("50"),
+                amount_atomic=int(50 * 10**18),
+                decimals=18,
+            ),
+            created_at=0,
+            type="BUY",
+            asset_type="BASKET",
+            basket_id="0d83917d-a2bd-4482-83e6-68d52c8f293a",
+        ),
+        Posting(
+            id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0c-IN",
+            transaction_id="f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef",
+            asset_balance=BalanceAtomic(
+                asset=eth_token,
+                amount=Decimal("100"),
+                amount_atomic=int(100 * 10**18),
+                decimals=18,
+            ),
+            created_at=0,
+            type="BUY",
+            asset_type="TOKEN",
+            basket_id="0d83917d-a2bd-4482-83e6-68d52c8f293a",
+            parent_posting_id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0b-IN",
+        ),
+        Posting(
+            id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0d-IN",
+            transaction_id="f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef",
+            asset_balance=BalanceAtomic(
+                asset=btc_token,
+                amount=Decimal("60"),
+                amount_atomic=int(60 * 10**18),
+                decimals=18,
+            ),
+            created_at=0,
+            type="BUY",
+            asset_type="TOKEN",
+            basket_id="0d83917d-a2bd-4482-83e6-68d52c8f293a",
+            parent_posting_id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0b-IN",
+        ),
     ]
 
 
 @fixture
-def investment_plan_only_tokens():
+def investment_plan_buy_only_tokens():
     return InvestmentPlan(
         steps=[
             InvestmentPlanStep(
@@ -140,6 +190,24 @@ def investment_plan_only_tokens():
                 sell_balance=Balance(
                     asset=usdt_token,
                     amount=Decimal(1),
+                ),
+            ),
+        ]
+    )
+
+
+@fixture
+def investment_plan_sell_only_basket():
+    return InvestmentPlan(
+        steps=[
+            InvestmentPlanStep(
+                buy_balance=Balance(
+                    amount=Decimal("1"),
+                    asset=sol_token,
+                ),
+                sell_balance=Balance(
+                    asset=test_basket,
+                    amount=Decimal("7"),
                 ),
             ),
         ]
@@ -196,16 +264,16 @@ async def fetch_all_postings(excluded_posting_ids: list[str] = []):
 
 
 async def wait_for_orders():
-    await sleep(5)
+    await sleep(45)
 
 
 @mark.asyncio(loop_scope="session")
 async def test_integration_execute_investment_plan_use_case_only_tokens(
-    investment_plan_only_tokens: InvestmentPlan,
+    investment_plan_buy_only_tokens: InvestmentPlan,
     seed_fixtures: Any,  # noqa: F811
     cleanup_all: Any,  # noqa: F811
 ):
-    await execute_investment_plan_use_case.execute(investment_plan_only_tokens)
+    await execute_investment_plan_use_case.execute(investment_plan_buy_only_tokens)
 
     await wait_for_orders()
 
@@ -232,9 +300,87 @@ async def test_integration_execute_investment_plan_use_case_only_tokens(
         for transaction in transactions
     )
 
-    postings = list(await fetch_all_postings(["6dcba8f1-a95e-4d3f-b9c8-006c12082d0a"]))
+    postings = list(
+        await fetch_all_postings(
+            [
+                "6dcba8f1-a95e-4d3f-b9c8-006c12082d0a",
+                "6dcba8f1-a95e-4d3f-b9c8-006c12082d0b-IN",
+                "6dcba8f1-a95e-4d3f-b9c8-006c12082d0c-IN",
+                "6dcba8f1-a95e-4d3f-b9c8-006c12082d0d-IN",
+            ]
+        )
+    )
 
     assert len(postings) == 4
+
+    assert all(
+        transaction.order_id in [order.id for order in orders]
+        for transaction in transactions
+    )
+
+    # Check if all buy balances are reflected in postings
+    assert all(
+        [
+            posting.id
+            in [
+                f"{transaction.id}-{suffix}"
+                for transaction in transactions
+                for suffix in ("IN", "OUT")
+            ]
+            for posting in postings
+        ]
+    )
+
+
+@mark.asyncio(loop_scope="session")
+async def test_integration_execute_investment_plan_use_case_only_basket(
+    investment_plan_sell_only_basket: InvestmentPlan,
+    seed_fixtures: Any,  # noqa: F811
+    cleanup_all: Any,  # noqa: F811
+):
+    await execute_investment_plan_use_case.execute(investment_plan_sell_only_basket)
+
+    await wait_for_orders()
+
+    orders = list(await fetch_all_orders(["f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef"]))
+
+    assert len(orders) == 3
+
+    # Basket order
+    assert orders[0].status == "SUCCESS"
+    assert orders[0].asset_type == "BASKET"
+
+    # Token orders
+    assert orders[1].status == "SUCCESS"
+    assert orders[1].asset_type == "TOKEN"
+
+    assert orders[2].status == "SUCCESS"
+    assert orders[2].asset_type == "TOKEN"
+
+    transactions = list(
+        await fetch_all_transactions(["f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef"])
+    )
+
+    assert len(transactions) == 3
+
+    # Check if all transactions are linked to the correct orders regardless of order
+    assert all(
+        transaction.order_id in [order.id for order in orders]
+        for transaction in transactions
+    )
+
+    postings = list(
+        await fetch_all_postings(
+            [
+                "6dcba8f1-a95e-4d3f-b9c8-006c12082d0a",
+                "6dcba8f1-a95e-4d3f-b9c8-006c12082d0b-IN",
+                "6dcba8f1-a95e-4d3f-b9c8-006c12082d0c-IN",
+                "6dcba8f1-a95e-4d3f-b9c8-006c12082d0d-IN",
+            ]
+        )
+    )
+
+    assert len(postings) == 6
 
     assert all(
         transaction.order_id in [order.id for order in orders]

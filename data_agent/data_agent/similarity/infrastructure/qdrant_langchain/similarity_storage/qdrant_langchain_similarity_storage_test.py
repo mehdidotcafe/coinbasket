@@ -3,7 +3,13 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore
 from pytest import fixture, mark
-from qdrant_client.models import VectorParams, Distance
+from qdrant_client.models import (
+    VectorParams,
+    Distance,
+    Filter,
+    FieldCondition,
+    MatchValue,
+)
 
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.similarity.infrastructure.qdrant_langchain.similarity_storage.qdrant_langchain_similarity_storage import (
@@ -116,7 +122,7 @@ async def test_qdrant_langchain_similarity_storage_search(
         Document(page_content="page content 2", metadata={"_id": "2"}),
     ]
 
-    similarities = await similarity_storage.similarity_search(query)
+    similarities = await similarity_storage.similarity_search(query, {"type": "token"})
 
     assert similarities == [
         SimilarityDocument(
@@ -139,7 +145,18 @@ async def test_qdrant_langchain_similarity_storage_search(
         collection_name="datasets",
         embedding=embeddings,
     )
-    qdrant_vector_store.asimilarity_search.assert_called_once_with(query, 10)
+    qdrant_vector_store.asimilarity_search.assert_called_once_with(
+        query,
+        10,
+        filter=Filter(
+            must=[
+                FieldCondition(
+                    key="metadata.type",
+                    match=MatchValue(value="token"),
+                )
+            ]
+        ),
+    )
 
 
 def test_qdrant_langchain_similarity_storage_get(

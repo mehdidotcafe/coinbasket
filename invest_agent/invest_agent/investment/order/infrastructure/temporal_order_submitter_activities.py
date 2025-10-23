@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal, TypedDict
@@ -85,7 +84,7 @@ async def revert_succeeded_orders(order_requests: list[OrderRequest]) -> bool:
 async def eventually_fail_parent_order(order_request: OrderRequest) -> bool:
     order = await order_repository.get_order(order_request.id)
     if not order:
-        raise Exception("Order not found")
+        raise Exception(f"Order {order_request.id} not found")
     parent_order = (
         await order_repository.get_order(order.parent_order_id)
         if order.parent_order_id
@@ -100,17 +99,14 @@ async def eventually_fail_parent_order(order_request: OrderRequest) -> bool:
 @activity.defn(name="eventually_revert_order_leftovers")
 async def eventually_revert_order_leftovers(order_requests: list[OrderRequest]) -> bool:
     print("Eventually revert leftovers")
-    await asyncio.sleep(1)
     return True
 
 
 @activity.defn(name="on_order_success")
 async def on_order_success(request: OnOrderSuccessRequest):
-    print(f"on_order_success: {request}")
-
     order = await order_repository.get_order(request.id)
     if not order:
-        raise Exception("Order not found")
+        raise Exception(f"Order {request.id} not found")
 
     transaction = await on_order_success_task.execute(
         order,

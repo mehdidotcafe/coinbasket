@@ -48,7 +48,7 @@ class TemporalExecuteAndWaitOrderWorkflow:
             order_try_id = await workflow.execute_activity(
                 "create_order_try",
                 order_request,
-                start_to_close_timeout=default_start_to_close_timeout,
+                start_to_close_timeout=timedelta(minutes=5),
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
 
@@ -68,7 +68,7 @@ class TemporalExecuteAndWaitOrderWorkflow:
             parsed_receipt = await workflow.execute_activity(
                 "execute_order_try",
                 OrderTryRequest(id=order_try_id),
-                start_to_close_timeout=timedelta(seconds=60),
+                start_to_close_timeout=timedelta(minutes=5),
                 retry_policy=retry_policy,
             )
 
@@ -99,7 +99,7 @@ class TemporalExecuteAndWaitOrderWorkflow:
                     ],
                     rate=executed_atomic_amounts["rate"],
                 ),
-                start_to_close_timeout=default_start_to_close_timeout,
+                start_to_close_timeout=timedelta(minutes=5),
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
 
@@ -116,5 +116,7 @@ class TemporalExecuteAndWaitOrderWorkflow:
                 *[c() for c in compensations], return_exceptions=True
             )
 
-            outputs.append({"compensation_results": compensation_results})
+            outputs.append(
+                {"compensation_results": [str(r) for r in compensation_results]}
+            )
             raise e

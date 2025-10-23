@@ -1,5 +1,4 @@
 from decimal import Decimal
-from time import sleep
 from typing import Literal, TypedDict, cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain, ParsedReceipt
@@ -61,9 +60,6 @@ class CreateOrderTryTask:
 
         try_id = self.id_generator.generate_random_id()
 
-        print("Transactions Data:")
-        print(transactions_data)
-
         order_try = Try(
             id=try_id,
             order_id=order.id,
@@ -114,9 +110,6 @@ class ExecuteOrderTryTask:
 
     async def execute(self, order_try: Try):
         for chain_transaction in order_try.chain_transactions:
-            print("Chain transaction:")
-            print(chain_transaction)
-
             if is_production(self.configuration):
                 transaction_hash = await self.chain.sign_send_transaction(
                     amount=chain_transaction.amount,
@@ -125,8 +118,6 @@ class ExecuteOrderTryTask:
                     encoded_input=chain_transaction.data,
                 )
             else:
-                # Mock a delay for testing
-                sleep(5)
                 transaction_hash = "DUMMY_TRANSACTION_HASH"
 
             await self.order_repository.set_order_try_chain_transaction_hash(
@@ -172,7 +163,6 @@ class WaitOrderTryTask:
                 )
             else:
                 # Mock a delay for testing
-                sleep(60)
                 is_chain_transaction_success = True
 
             if not is_chain_transaction_success:

@@ -71,6 +71,15 @@ class BalanceAtomic(Balance, Generic[T]):
     amount_atomic: AmountAtomic
     decimals: int
 
+    @staticmethod
+    def empty(asset: T, decimals: int) -> "BalanceAtomic[T]":
+        return BalanceAtomic(
+            asset=asset,
+            amount=Decimal(0),
+            amount_atomic=0,
+            decimals=decimals,
+        )
+
     def serialize(self):
         """Serialize a balance to JSON."""
         return json.dumps(

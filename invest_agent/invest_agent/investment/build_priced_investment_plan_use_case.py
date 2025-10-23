@@ -1,4 +1,6 @@
+import asyncio
 from decimal import Decimal
+from functools import reduce
 from typing import cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
@@ -12,6 +14,7 @@ from invest_agent.investment.investment_planner.priced_investment_plan import (
     PricedInvestmentPlanBalance,
     PricedInvestmentPlanStep,
 )
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.asset import Asset
 from protocol.token import Token
@@ -30,7 +33,8 @@ class BuildPricedInvestmentPlanUseCase:
     ) -> PricedInvestmentPlan:
         steps: list[PricedInvestmentPlanStep] = []
 
-        holding_balances_per_token = await self._get_all_holding_balances()
+        holdings = await self.posting_repository.get_holding_balances()
+        holding_balances = await self._get_all_holding_balances(holdings)
 
         for step in intent_investment_plan.steps:
             sell_asset = (
@@ -41,7 +45,7 @@ class BuildPricedInvestmentPlanUseCase:
             sell_token = sell_asset.get_pricing_token()
 
             sell_asset_available_amount = self._get_available_amount(
-                holding_balances_per_token, sell_asset
+                holding_balances, sell_asset
             )
 
             buy_asset = (
@@ -52,55 +56,119 @@ class BuildPricedInvestmentPlanUseCase:
             buy_token = buy_asset.get_pricing_token()
 
             buy_asset_available_amount = self._get_available_amount(
-                holding_balances_per_token, buy_asset
+                holding_balances, buy_asset
             )
 
-            if sell_token.address == buy_token.address:
+            if (
+                isinstance(sell_asset, Token)
+                and sell_asset.address == buy_token.address
+            ):
                 continue
 
             if step.sell_asset_with_amount and step.sell_asset_with_amount.amount:
-                sell_amount = (
-                    step.sell_asset_with_amount.amount * sell_asset.get_denomination()
-                )
+                if isinstance(step.sell_asset_with_amount.asset, Token):
+                    sell_amount = (
+                        step.sell_asset_with_amount.amount
+                        * sell_asset.get_denomination()
+                    )
 
-                (
-                    sell_balance_amount_atomic,
-                    sell_balance_decimals,
-                ) = await self.chain.convert_amount_to_amount_atomic(
-                    token=sell_token,
-                    amount_readable=sell_amount,
-                )
-                sell_balance = BalanceAtomic[Token](
-                    asset=sell_token,
-                    amount=sell_amount,
-                    amount_atomic=sell_balance_amount_atomic,
-                    decimals=sell_balance_decimals,
-                )
+                    (
+                        sell_balance_amount_atomic,
+                        sell_balance_decimals,
+                    ) = await self.chain.convert_amount_to_amount_atomic(
+                        token=sell_token,
+                        amount_readable=sell_amount,
+                    )
+                    sell_balance = BalanceAtomic[Token](
+                        asset=sell_token,
+                        amount=sell_amount,
+                        amount_atomic=sell_balance_amount_atomic,
+                        decimals=sell_balance_decimals,
+                    )
 
-                converted_balance = await self.exchange.convert_balance_to_token(
-                    balance=sell_balance,
-                    token=buy_token,
-                    investment_parameters=InvestmentParameters(
-                        slippage_tolerance_in_percentage=Decimal(1)
-                    ),
-                )
-
-                steps.append(
-                    PricedInvestmentPlanStep(
-                        sell_asset_with_amount=PricedInvestmentPlanBalance(
-                            asset=sell_asset,
-                            amount=converted_balance.sell_balance.amount
-                            / sell_asset.get_denomination(),
-                            available_amount=sell_asset_available_amount,
-                        ),
-                        buy_asset_with_amount=PricedInvestmentPlanBalance(
-                            asset=buy_asset,
-                            amount=converted_balance.buy_balance.amount
-                            / buy_asset.get_denomination(),
-                            available_amount=buy_asset_available_amount,
+                    converted_balance = await self.exchange.convert_balance_to_token(
+                        balance=sell_balance,
+                        token=buy_token,
+                        investment_parameters=InvestmentParameters(
+                            slippage_tolerance_in_percentage=Decimal(1)
                         ),
                     )
-                )
+
+                    steps.append(
+                        PricedInvestmentPlanStep(
+                            sell_asset_with_amount=PricedInvestmentPlanBalance(
+                                asset=sell_asset,
+                                amount=converted_balance.sell_balance.amount
+                                / sell_asset.get_denomination(),
+                                available_amount=sell_asset_available_amount,
+                            ),
+                            buy_asset_with_amount=PricedInvestmentPlanBalance(
+                                asset=buy_asset,
+                                amount=converted_balance.buy_balance.amount
+                                / buy_asset.get_denomination(),
+                                available_amount=buy_asset_available_amount,
+                            ),
+                        )
+                    )
+                else:
+                    holding_basket = next(
+                        (
+                            holding
+                            for holding in holdings
+                            if holding.balance.asset.id
+                            == step.sell_asset_with_amount.asset.id
+                        ),
+                        None,
+                    )
+
+                    if not holding_basket or not holding_basket.children:
+                        raise Exception(
+                            f"No holding basket found for asset {step.sell_asset_with_amount.asset.id}"
+                        )
+
+                    sell_ratio = (
+                        step.sell_asset_with_amount.amount
+                        / holding_basket.balance.amount
+                    )
+
+                    print(f"sell ratio: {sell_ratio}")
+
+                    tasks = [
+                        self.exchange.convert_balance_to_token(
+                            balance=balance * sell_ratio,
+                            token=buy_token,
+                            investment_parameters=InvestmentParameters(
+                                slippage_tolerance_in_percentage=Decimal(1)
+                            ),
+                        )
+                        for balance in holding_basket.children
+                    ]
+
+                    balances = await asyncio.gather(*tasks)
+
+                    print("BASKET BALANCES:", balances)
+
+                    steps.append(
+                        PricedInvestmentPlanStep(
+                            sell_asset_with_amount=PricedInvestmentPlanBalance(
+                                asset=sell_asset,
+                                amount=step.sell_asset_with_amount.amount,
+                                available_amount=sell_asset_available_amount,
+                            ),
+                            buy_asset_with_amount=PricedInvestmentPlanBalance(
+                                asset=buy_asset,
+                                amount=reduce(
+                                    lambda acc, balance: acc + balance.buy_balance,
+                                    balances,
+                                    BalanceAtomic.empty(
+                                        balances[0].buy_balance.asset,
+                                        balances[0].buy_balance.decimals,
+                                    ),
+                                ).amount,
+                                available_amount=buy_asset_available_amount,
+                            ),
+                        )
+                    )
                 continue
 
             if step.buy_asset_with_amount and step.buy_asset_with_amount.amount:
@@ -152,7 +220,7 @@ class BuildPricedInvestmentPlanUseCase:
                     PricedInvestmentPlanStep(
                         sell_asset_with_amount=PricedInvestmentPlanBalance(
                             asset=sell_asset,
-                            amount=step.sell_asset_with_amount.amount,
+                            amount=None,
                             available_amount=sell_asset_available_amount,
                         ),
                         buy_asset_with_amount=PricedInvestmentPlanBalance(
@@ -178,7 +246,7 @@ class BuildPricedInvestmentPlanUseCase:
                         ),
                         buy_asset_with_amount=PricedInvestmentPlanBalance(
                             asset=buy_asset,
-                            amount=step.buy_asset_with_amount.amount,
+                            amount=None,
                             available_amount=buy_asset_available_amount,
                         ),
                     )
@@ -196,8 +264,9 @@ class BuildPricedInvestmentPlanUseCase:
 
         return holding_balance.amount if holding_balance else Decimal("0")
 
-    async def _get_all_holding_balances(self) -> dict[str, BalanceAtomic]:
-        holdings = await self.posting_repository.get_holding_balances()
+    async def _get_all_holding_balances(
+        self, holdings: list[Holding]
+    ) -> dict[str, BalanceAtomic]:
         available_balance = await self.chain.get_native_token_balance()
 
         holding_balances_per_token = {
