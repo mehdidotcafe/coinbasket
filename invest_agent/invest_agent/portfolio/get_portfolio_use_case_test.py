@@ -2,6 +2,11 @@ from decimal import Decimal
 from unittest import mock
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
+from invest_agent.investment.calculator.asset_balance_converter import (
+    AssetBalanceConverter,
+    ConvertedAssetBalance,
+    ConvertedBalance,
+)
 from invest_agent.investment.exchange.exchange import ExchangeConvertedBalance, Exchange
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.order.order import Order
@@ -48,6 +53,11 @@ def chain():
 
 
 @fixture
+def asset_balance_converter():
+    return mock.Mock(spec=AssetBalanceConverter)
+
+
+@fixture
 def investment_parameters():
     return InvestmentParameters(
         slippage_tolerance_in_percentage=Decimal("1"),
@@ -60,8 +70,11 @@ def use_case(
     posting_repository: PostingRepository,
     exchange: Exchange,
     chain: Chain,
+    asset_balance_converter: AssetBalanceConverter,
 ):
-    return GetPortfolioUseCase(order_repository, posting_repository, exchange, chain)
+    return GetPortfolioUseCase(
+        order_repository, posting_repository, exchange, chain, asset_balance_converter
+    )
 
 
 @mark.asyncio
@@ -189,7 +202,7 @@ async def test_get_portfolio_use_case_holding_balances(
     posting_repository: PostingRepository,
     exchange: Exchange,
     chain: Chain,
-    investment_parameters: InvestmentParameters,
+    asset_balance_converter: AssetBalanceConverter,
 ):
     holding_balances: list[Holding] = [
         Holding(
@@ -257,106 +270,79 @@ async def test_get_portfolio_use_case_holding_balances(
 
     chain.get_token_decimals.return_value = 18
     posting_repository.get_holding_balances.return_value = holding_balances
+
+    asset_balance_converter.convert.side_effect = [
+        ConvertedAssetBalance(
+            total_balance=ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=wbnb_token,
+                    amount=Decimal("1.0"),
+                    amount_atomic=1 * 10**18,
+                    decimals=18,
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token,
+                    amount=Decimal("800.0"),
+                    amount_atomic=800 * 10**18,
+                    decimals=18,
+                ),
+            ),
+            balances=[],
+        ),
+        ConvertedAssetBalance(
+            total_balance=ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=sol_token,
+                    amount=Decimal("4"),
+                    amount_atomic=4 * 10**18,
+                    decimals=18,
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token,
+                    amount=Decimal("600.0"),
+                    amount_atomic=600 * 10**18,
+                    decimals=18,
+                ),
+            ),
+            balances=[],
+        ),
+        ConvertedAssetBalance(
+            total_balance=ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("0.85"),
+                    amount_atomic=85 * 10**16,
+                    decimals=18,
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token,
+                    amount=Decimal("3956"),
+                    amount_atomic=3956 * 10**18,
+                    decimals=18,
+                ),
+            ),
+            balances=[],
+        ),
+        ConvertedAssetBalance(
+            total_balance=ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=big4_basket,
+                    amount=Decimal("1000"),
+                    amount_atomic=1000 * 10**18,
+                    decimals=18,
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token,
+                    amount=Decimal("36"),
+                    amount_atomic=36 * 10**18,
+                    decimals=18,
+                ),
+            ),
+            balances=[],
+        ),
+    ]
+
     exchange.convert_balance_to_token.side_effect = [
-        ExchangeConvertedBalance(
-            sell_balance=BalanceAtomic(
-                asset=wbnb_token,
-                amount=Decimal("1.0"),
-                amount_atomic=1 * 10**18,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("800.0"),
-                amount_atomic=800 * 10**18,
-                decimals=18,
-            ),
-        ),
-        ExchangeConvertedBalance(
-            sell_balance=BalanceAtomic(
-                asset=sol_token,
-                amount=Decimal("4"),
-                amount_atomic=4 * 10**18,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("600.0"),
-                amount_atomic=600 * 10**18,
-                decimals=18,
-            ),
-        ),
-        ExchangeConvertedBalance(
-            sell_balance=BalanceAtomic(
-                asset=eth_token,
-                amount=Decimal("0.85"),
-                amount_atomic=85 * 10**16,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("3956"),
-                amount_atomic=3956 * 10**18,
-                decimals=18,
-            ),
-        ),
-        # Basket child holdings
-        ExchangeConvertedBalance(
-            sell_balance=BalanceAtomic(
-                asset=eth_token,
-                amount=Decimal("0.1"),
-                amount_atomic=1 * 10**17,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("1"),
-                amount_atomic=1 * 10**18,
-                decimals=18,
-            ),
-        ),
-        ExchangeConvertedBalance(
-            sell_balance=BalanceAtomic(
-                asset=wbnb_token,
-                amount=Decimal("0.5"),
-                amount_atomic=5 * 10**17,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("5"),
-                amount_atomic=5 * 10**18,
-                decimals=18,
-            ),
-        ),
-        ExchangeConvertedBalance(
-            sell_balance=BalanceAtomic(
-                asset=sol_token,
-                amount=Decimal("2"),
-                amount_atomic=2 * 10**18,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("20"),
-                amount_atomic=20 * 10**18,
-                decimals=18,
-            ),
-        ),
-        ExchangeConvertedBalance(
-            sell_balance=BalanceAtomic(
-                asset=btc_token,
-                amount=Decimal("1"),
-                amount_atomic=1000 * 10**18,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("10"),
-                amount_atomic=10 * 10**18,
-                decimals=18,
-            ),
-        ),
         # Get available_balance mock
         ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
@@ -371,78 +357,47 @@ async def test_get_portfolio_use_case_holding_balances(
     portfolio = await use_case.execute(usdt_token)
 
     posting_repository.get_holding_balances.assert_called_once()
-    exchange.assert_has_calls(
+    asset_balance_converter.assert_has_calls(
         [
-            mock.call.convert_balance_to_token(
-                balance=BalanceAtomic(
+            mock.call.convert(
+                sell_balance=BalanceAtomic(
                     asset=wbnb_token,
                     amount=Decimal("1.0"),
                     amount_atomic=1 * 10**18,
                     decimals=18,
                 ),
-                token=usdt_token,
-                investment_parameters=investment_parameters,
+                buy_asset=usdt_token,
+                holdings=holding_balances,
             ),
-            mock.call.convert_balance_to_token(
-                balance=BalanceAtomic(
+            mock.call.convert(
+                sell_balance=BalanceAtomic(
                     asset=sol_token,
                     amount=Decimal("4"),
                     amount_atomic=4 * 10**18,
                     decimals=18,
                 ),
-                token=usdt_token,
-                investment_parameters=investment_parameters,
+                buy_asset=usdt_token,
+                holdings=holding_balances,
             ),
-            mock.call.convert_balance_to_token(
-                balance=BalanceAtomic(
+            mock.call.convert(
+                sell_balance=BalanceAtomic(
                     asset=eth_token,
                     amount=Decimal("0.85"),
                     amount_atomic=85 * 10**16,
                     decimals=18,
                 ),
-                token=usdt_token,
-                investment_parameters=investment_parameters,
+                buy_asset=usdt_token,
+                holdings=holding_balances,
             ),
-            # big4 basket should convert its children holdings
-            mock.call.convert_balance_to_token(
-                balance=BalanceAtomic(
-                    asset=eth_token,
-                    amount=Decimal("0.1"),
-                    amount_atomic=1 * 10**17,
+            mock.call.convert(
+                sell_balance=BalanceAtomic(
+                    asset=big4_basket,
+                    amount=Decimal("1000"),
+                    amount_atomic=1000 * 10**18,
                     decimals=18,
                 ),
-                token=usdt_token,
-                investment_parameters=investment_parameters,
-            ),
-            mock.call.convert_balance_to_token(
-                balance=BalanceAtomic(
-                    asset=wbnb_token,
-                    amount=Decimal("0.5"),
-                    amount_atomic=5 * 10**17,
-                    decimals=18,
-                ),
-                token=usdt_token,
-                investment_parameters=investment_parameters,
-            ),
-            mock.call.convert_balance_to_token(
-                balance=BalanceAtomic(
-                    asset=sol_token,
-                    amount=Decimal("2"),
-                    amount_atomic=2 * 10**18,
-                    decimals=18,
-                ),
-                token=usdt_token,
-                investment_parameters=investment_parameters,
-            ),
-            mock.call.convert_balance_to_token(
-                balance=BalanceAtomic(
-                    asset=btc_token,
-                    amount=Decimal("1"),
-                    amount_atomic=1 * 10**18,
-                    decimals=18,
-                ),
-                token=usdt_token,
-                investment_parameters=investment_parameters,
+                buy_asset=usdt_token,
+                holdings=holding_balances,
             ),
         ]
     )
@@ -513,6 +468,7 @@ async def test_get_portfolio_use_case_total_balance(
     posting_repository: PostingRepository,
     exchange: Exchange,
     chain: Chain,
+    asset_balance_converter: AssetBalanceConverter,
 ):
     holding_balances = [
         Holding(
@@ -534,21 +490,27 @@ async def test_get_portfolio_use_case_total_balance(
     )
     chain.get_token_decimals.return_value = 18
     posting_repository.get_holding_balances.return_value = holding_balances
-    exchange.convert_balance_to_token.side_effect = [
-        ExchangeConvertedBalance(
-            sell_balance=BalanceAtomic(
-                asset=eth_token,
-                amount=Decimal("0.85"),
-                amount_atomic=85 * 10**16,
-                decimals=18,
+    asset_balance_converter.convert.side_effect = [
+        ConvertedAssetBalance(
+            total_balance=ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("0.85"),
+                    amount_atomic=85 * 10**16,
+                    decimals=18,
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token,
+                    amount=Decimal("3956"),
+                    amount_atomic=3956 * 10**18,
+                    decimals=18,
+                ),
             ),
-            buy_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("3956"),
-                amount_atomic=3956 * 10**18,
-                decimals=18,
-            ),
+            balances=[],
         ),
+    ]
+
+    exchange.convert_balance_to_token.side_effect = [
         ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=bnb_token,

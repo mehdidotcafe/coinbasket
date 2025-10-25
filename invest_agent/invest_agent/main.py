@@ -71,6 +71,7 @@ from invest_agent.registry import (
     agent_to_agent_client,
     langgraph_db_path,
     nonce_manager,
+    asset_balance_converter,
 )
 from invest_agent.authentication.authentication import authentication
 from invest_agent.chain.balance import Balance, BalanceAtomic
@@ -112,6 +113,7 @@ get_portfolio_use_case = GetPortfolioUseCase(
     posting_repository=posting_repository,
     exchange=exchange,
     chain=chain,
+    asset_balance_converter=asset_balance_converter,
 )
 
 get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
@@ -132,7 +134,10 @@ get_conversation_messages_use_case = GetConversationMessagesUseCase(
 
 
 build_priced_investment_plan_use_case = BuildPricedInvestmentPlanUseCase(
-    exchange=exchange, chain=chain, posting_repository=posting_repository
+    exchange=exchange,
+    chain=chain,
+    posting_repository=posting_repository,
+    asset_balance_converter=asset_balance_converter,
 )
 
 execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
@@ -142,10 +147,15 @@ execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
     order_submitter=order_submitter,
     exchange=exchange,
     posting_repository=posting_repository,
+    asset_balance_converter=asset_balance_converter,
 )
 
 
-get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(exchange=exchange, chain=chain)
+get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
+    chain=chain,
+    posting_repository=posting_repository,
+    asset_balance_converter=asset_balance_converter,
+)
 
 if configuration.langsmith_tracing:
     os.environ["LANGSMITH_TRACING"] = str(configuration.langsmith_tracing)

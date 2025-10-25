@@ -1,5 +1,8 @@
 from decimal import ROUND_DOWN, Decimal
 from unittest import mock
+from invest_agent.investment.calculator.asset_balance_converter import (
+    AssetBalanceConverter,
+)
 from invest_agent.investment.exception.insufficient_asset_balance import (
     InsufficientAssetBalance,
 )
@@ -80,6 +83,11 @@ def posting_repository():
 
 
 @fixture
+def asset_balance_converter():
+    return mock.Mock(spec=AssetBalanceConverter)
+
+
+@fixture
 def investment_parameters():
     return InvestmentParameters(
         slippage_tolerance_in_percentage=Decimal("1"),
@@ -94,9 +102,16 @@ def use_case(
     order_submitter: OrderSubmitter,
     exchange: Exchange,
     posting_repository: PostingRepository,
+    asset_balance_converter: AssetBalanceConverter,
 ):
     return ExecuteInvestmentPlanUseCase(
-        id_generator, date_time, chain, order_submitter, exchange, posting_repository
+        id_generator,
+        date_time,
+        chain,
+        order_submitter,
+        exchange,
+        posting_repository,
+        asset_balance_converter,
     )
 
 

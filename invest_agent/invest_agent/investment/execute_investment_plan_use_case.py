@@ -5,6 +5,9 @@ from typing import cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.datetime.date_time import DateTime
+from invest_agent.investment.calculator.asset_balance_converter import (
+    AssetBalanceConverter,
+)
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
 )
@@ -58,6 +61,7 @@ class ExecuteInvestmentPlanUseCase:
         order_submitter: OrderSubmitter,
         exchange: Exchange,
         posting_repository: PostingRepository,
+        asset_balance_converter: AssetBalanceConverter,
     ):
         self.id_generator = id_generator
         self.date_time = date_time
@@ -65,7 +69,9 @@ class ExecuteInvestmentPlanUseCase:
         self.order_submitter = order_submitter
         self.exchange = exchange
         self.posting_repository = posting_repository
+        self.asset_balance_converter = asset_balance_converter
 
+    # TODO: Use asset_balance_convert when frontend will be sending children balances for baskets
     async def execute(self, investment_plan: InvestmentPlan) -> list[list[Order]]:
         """Swap assets.
 

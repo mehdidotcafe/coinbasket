@@ -6,6 +6,7 @@ from pytest import fixture
 import requests
 from environs import env
 from invest_agent.test.database.cleanup_all import cleanup_all  # noqa: F401
+from syrupy.filters import paths
 
 agent_port = env.int("AGENT_PORT")
 agent_key = env.str("AGENT_KEY")
@@ -61,7 +62,9 @@ def investment_plan() -> dict[str, Any]:
     }
 
 
-def test_integration_conversation(investment_plan: dict[str, Any], cleanup_all: Any):  # noqa: F811
+def test_integration_conversation(
+    investment_plan: dict[str, Any], cleanup_all: Any, snapshot
+):  # noqa: F811
     response_1 = requests.post(
         f"http://localhost:{agent_port}/conversation",
         json={
@@ -108,7 +111,13 @@ def test_integration_conversation(investment_plan: dict[str, Any], cleanup_all: 
     assert response_2.status_code == 200
     assert response_2_json["is_interrupting"] is True
     assert response_2_json["content"] is None
-    assert len(response_2_json["ui"]["args"]["priced_investment_plan"]["steps"]) == 2
+
+    assert response_2_json["ui"] == snapshot(
+        exclude=paths(
+            "args.priced_investment_plan.steps.0.sell_asset_with_amount.amount",
+            "args.priced_investment_plan.steps.1.sell_asset_with_amount.amount",
+        )
+    )
 
     response_3 = requests.post(
         f"http://localhost:{agent_port}/conversation",

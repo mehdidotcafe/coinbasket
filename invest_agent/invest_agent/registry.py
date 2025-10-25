@@ -1,4 +1,7 @@
 from typing import Any, cast
+from invest_agent.investment.calculator.asset_balance_converter import (
+    AssetBalanceConverter,
+)
 from temporalio.client import Client as TemporalClient
 
 from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
@@ -155,3 +158,5 @@ order_submitter = TemporalOrderSubmitter(
 session_manager = SqlAlchemySessionManager(
     engine=engine, AsyncSessionLocal=AsyncSessionLocal
 )
+
+asset_balance_converter = AssetBalanceConverter(exchange=exchange)
