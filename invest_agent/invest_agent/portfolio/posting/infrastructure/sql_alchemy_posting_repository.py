@@ -115,7 +115,7 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
 
     async def get_holding_balance(
         self, asset: Asset, session: NullableSession = None
-    ) -> Holding:
+    ) -> Holding | None:
         async with self.get_session(session) as session:
             stmt = self._get_default_holding_statement().where(
                 or_(
@@ -126,6 +126,8 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
             result = await session.execute(stmt)
             rows = result.all()
 
+            if not rows:
+                return None
             return self._map_rows_to_holdings(rows)[0]
 
     def _get_default_holding_statement(self):

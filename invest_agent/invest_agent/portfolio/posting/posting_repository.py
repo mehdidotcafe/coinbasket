@@ -23,6 +23,6 @@ class PostingRepository(ABC):
     @abstractmethod
     async def get_holding_balance(
         self, asset: Asset, session: NullableSession = None
-    ) -> Holding:
+    ) -> Holding | None:
         """Get the holding balance for a specific asset."""
         raise NotImplementedError

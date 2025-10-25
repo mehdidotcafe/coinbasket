@@ -340,7 +340,9 @@ async def get_token_holding(token: Token):
         token if not chain.is_native_token(token) else chain.get_wrapped_base_token()
     )
 
-    return BalanceAtomicResponse.from_domain(holding.balance).json()
+    return (
+        BalanceAtomicResponse.from_domain(holding.balance).json() if holding else None
+    )
 
 
 @tool(
@@ -384,7 +386,7 @@ class ChainTransactionResponse(Model):
     order_id: str
     type: ChainTransactionType
     data: str
-    hash: str
+    hash: str | None
     status: ChainTransactionStatus
 
     @staticmethod
@@ -1210,13 +1212,15 @@ class PortfolioResponse(Model):
 
 
 class PortfolioAssetBalanceResponse(Model):
-    holding_balance: BalanceAtomicResponse
+    holding_balance: BalanceAtomicResponse | None = None
     available_balance: BalanceAtomicResponse | None = None
 
     @staticmethod
     def from_domain(domain: PortfolioAssetBalance) -> "PortfolioAssetBalanceResponse":
         return PortfolioAssetBalanceResponse(
-            holding_balance=BalanceAtomicResponse.from_domain(domain.holding_balance),
+            holding_balance=BalanceAtomicResponse.from_domain(domain.holding_balance)
+            if domain.holding_balance
+            else None,
             available_balance=BalanceAtomicResponse.from_domain(
                 domain.available_balance
             )
