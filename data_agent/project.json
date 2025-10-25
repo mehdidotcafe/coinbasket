@@ -67,6 +67,15 @@
       },
       "cache": true
     },
+    "start:all": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          { "command": "nx start data_agent" }
+        ],
+        "parallel": true
+      }
+    },
     "dev": {
       "executor": "@nxlv/python:run-commands",
       "dependsOn": ["infra"],
@@ -75,6 +84,15 @@
         "cwd": "{projectRoot}"
       },
       "cache": true
+    },
+    "dev:all": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          { "command": "nx dev data_agent" }
+        ],
+        "parallel": true
+      }
     },
     "test": {
       "executor": "@nxlv/python:run-commands",

@@ -3,7 +3,6 @@ from unittest import mock
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.investment.calculator.asset_balance_converter import (
     AssetBalanceConverter,
-    ConvertedAssetBalance,
     ConvertedBalance,
 )
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (

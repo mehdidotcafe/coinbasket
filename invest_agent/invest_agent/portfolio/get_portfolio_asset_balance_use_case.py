@@ -32,8 +32,8 @@ class GetPortfolioAssetBalanceUseCase:
                 holding_balance=holding.balance if holding else None,
             )
 
-        holding = await self.posting_repository.get_holding_balance(
-            self.chain.get_wrapped_base_token()
-        )
+        holding = await self.posting_repository.get_holding_balance(token)
 
-        return PortfolioAssetBalance(holding_balance=holding.balance if holding else None)
+        return PortfolioAssetBalance(
+            holding_balance=holding.balance if holding else None
+        )

@@ -47,9 +47,11 @@ From the root of the repository, run:
 ./nx infra invest_agent
 ./nx migration:run invest_agent
 ./nx dev invest_agent
+./nx dev:worker invest_agent
 ```
 This will install any required Python dependencies, start the necessary dev containers, run the migrations and launch the invest agent.
 
+⚠️ Note: If you don't start the worker, Orders won't be executed.
 
 ## Production Mode
 Use this mode to connect the agent to a live blockchain for deployment.
@@ -62,6 +64,10 @@ From the root of the repository, run:
 ./nx infra:production invest_agent
 ./nx migration:production:run invest_agent
 ./nx start invest_agent
+./nx start:worker invest_agent
 ```
 This will install Python dependencies, start the necessary production containers, run the migrations and start the invest agent.
+
+⚠️ Note: If you don't start the worker, Orders won't be executed.
+
 Note that by updating the database variables of the `.env.production` file, you are able to connect the agent to any postgresql database.

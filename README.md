@@ -11,22 +11,30 @@ Please refer to the individual directories for more information on each agent:
 Once the environment variables are set up for both agents, you can choose to run the entire stack in either development or production mode.
 
 ### Development mode
-To run the entire stack in development mode, you can use the following command:
+To run the entire stack in development mode, you can use the following commands:
 
 ```bash
-nx run-many --target=dev
+./nx run-many --target=dev
+./nx run-many --target=dev:worker
 ```
+
+⚠️ Note: If you don't start the worker, Orders won't be executed.
 
 This will start both the data agent and invest agent in development mode, along with their respective dependencies.
 
 ### Production mode
-To run the entire stack in production mode, you can use the following command:
+To run the entire stack in production mode, you can use the following commands:
 ```bash
-nx run-many --target=start
+./nx run-many --target=start
+./nx run-many --target=start:worker
 ```
+
+⚠️ Note: If you don't start the worker, Orders won't be executed.
+
 
 This will start both the data agent and invest agent in production mode, along with their respective dependencies.
 
 ## Interacting with the agents
 You can use the [Coinbasket online Frontend](https://app.coinbasket.ai) to register and interact with your invest agent. The frontend provides a user-friendly interface to manage your investment strategies and monitor the performance of your portfolio.
+
 ⚠️ Note: Your invest agent needs to be publicly accessible for the frontend to interact with it.

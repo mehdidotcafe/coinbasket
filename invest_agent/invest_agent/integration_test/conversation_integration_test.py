@@ -63,8 +63,10 @@ def investment_plan() -> dict[str, Any]:
 
 
 def test_integration_conversation(
-    investment_plan: dict[str, Any], cleanup_all: Any, snapshot
-):  # noqa: F811
+    investment_plan: dict[str, Any],
+    cleanup_all: Any,  # noqa: F811
+    snapshot,
+):
     response_1 = requests.post(
         f"http://localhost:{agent_port}/conversation",
         json={
