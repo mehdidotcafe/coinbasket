@@ -44,13 +44,13 @@ class GetAssetSwapPriceUseCase:
 
         converted_asset_balance = await self.asset_balance_converter.convert(
             sell_balance=BalanceAtomic(
-                asset=pricing_sell_token,
+                asset=asset_swap_price_info.sell_asset,
                 amount=asset_swap_price_info.sell_asset_amount,
                 amount_atomic=amount_atomic,
                 decimals=decimals,
             ),
             buy_asset=asset_swap_price_info.buy_asset,
-            holdings=[holding],
+            holdings=[holding] if holding else [],
         )
 
         return converted_asset_balance.total_balance
