@@ -1,5 +1,7 @@
 from decimal import Decimal
 from unittest import mock
+from invest_agent.investment.infrastructure.zero_x.exception.swap_validation_failed import SwapValidationFailed
+from shared.http_request.exception.failed_request import FailedRequest
 from shared.http_request.http_request import HttpRequest
 from invest_agent.investment.infrastructure.zero_x.fee import Fee, Fees
 from invest_agent.investment.infrastructure.zero_x.quote import (
@@ -19,7 +21,7 @@ from invest_agent.investment.investment_parameters import (
     IntegratorFee,
     InvestmentParameters,
 )
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 from protocol.fixture.token import bnb_token
 
 
@@ -107,6 +109,40 @@ async def test_zero_x_api_client_get_price_success(
         },
         Price,
     )
+
+
+
+@mark.asyncio
+async def test_zero_x_api_client_get_price_swap_validation_failed(
+    configuration: Configuration,
+    http_request: HttpRequest,
+    investment_parameters: InvestmentParameters,
+):
+    client = ZeroXApiClient(configuration, http_request)
+
+    taker = "0x1234567890abcdef1234567890abcdef12345678"
+    chain_id = 1
+    sell_token = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
+    buy_token = "0x1234567890abcdef1234567890abcdef12345678"
+    amount = 1000000000000000000  # 1 ETH in wei
+
+    http_request.get.side_effect = FailedRequest(
+        status_code=400,
+        response="{SWAP_VALIDATION_FAILED}"
+
+    )
+
+    with raises(SwapValidationFailed):
+        await client.get_price(
+            taker=taker,
+            chain_id=chain_id,
+            sell_token=sell_token,
+            buy_token=buy_token,
+            amount=amount,
+            slippage_bps=Decimal("100"),
+            investment_parameters=investment_parameters,
+        )
+
 
 
 @mark.asyncio

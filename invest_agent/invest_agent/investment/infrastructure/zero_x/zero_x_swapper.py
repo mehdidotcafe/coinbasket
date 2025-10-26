@@ -13,6 +13,9 @@ from invest_agent.investment.exchange.exchange import (
 from invest_agent.investment.infrastructure.zero_x.exception.swap_insufficient_liquidity import (
     SwapInsufficientLiquidity,
 )
+from invest_agent.investment.infrastructure.zero_x.exception.swap_validation_failed import (
+    SwapValidationFailed,
+)
 from invest_agent.investment.infrastructure.zero_x.price import Price
 from invest_agent.investment.infrastructure.zero_x.quote import (
     InsufficientLiquidityQuote,
@@ -158,14 +161,27 @@ class ZeroXSwapper(Exchange):
             amount_readable=balance.amount,
         )
 
-        price = await self.api_client.get_price(
-            chain_id=await self.chain.get_chain_id(),
-            taker=self.account.address,
-            sell_token=balance.asset.address,
-            buy_token=token.address,
-            amount=amount_atomic,
-            investment_parameters=investment_parameters,
-        )
+        try:
+            price = await self.api_client.get_price(
+                chain_id=await self.chain.get_chain_id(),
+                taker=self.account.address,
+                sell_token=balance.asset.address,
+                buy_token=token.address,
+                amount=amount_atomic,
+                investment_parameters=investment_parameters,
+            )
+        except SwapValidationFailed as e:
+            token_decimals = await self.chain.get_token_decimals(token.address)
+
+            return ExchangeConvertedBalance(
+                sell_balance=balance,
+                buy_balance=BalanceAtomic(
+                    asset=token,
+                    amount=Decimal("0"),
+                    amount_atomic=0,
+                    decimals=token_decimals,
+                ),
+            )
 
         sell_balance_amount_atomic = int(price.sellAmount)
         buy_balance_amount_atomic = int(price.buyAmount)
