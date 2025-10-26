@@ -13,11 +13,42 @@
     'sell_balance': dict({
       'amount': '1',
       'asset': dict({
-        'address': '0x55d398326f99059ff775485246999027b3197955',
-        'display_name': 'Tether USD',
-        'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
-        'name': 'Tether USD',
-        'ticker': 'USDT',
+        'denomination': '10.0',
+        'description': 'This curated basket offers broad exposure to the crypto market through a selection of established, high-liquidity digital assets spanning different blockchain ecosystems. It is designed to balance long-term value preservation with growth potential, reflecting both foundational and emerging trends in decentralized technology. The combination supports diversification across transaction layers, use cases, and network adoption, making it a resilient core holding for crypto-oriented portfolios.',
+        'display_name': 'Big4',
+        'id': '2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70',
+        'name': 'Big4',
+        'ticker': 'B4',
+        'tokens': list([
+          dict({
+            'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+            'display_name': 'Bitcoin',
+            'id': 'bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+            'name': 'Binance Pegged Bitcoin',
+            'ticker': 'BTC',
+          }),
+          dict({
+            'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+            'display_name': 'Ethereum',
+            'id': 'bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+            'name': 'Binance Pegged Ethereum',
+            'ticker': 'ETH',
+          }),
+          dict({
+            'address': '0x570A5D26f7765Ecb712C0924E4De545B89fD43dF',
+            'display_name': 'Solana',
+            'id': 'bsc:0x570A5D26f7765Ecb712C0924E4De545B89fD43dF',
+            'name': 'SOLANA',
+            'ticker': 'SOL',
+          }),
+          dict({
+            'address': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            'display_name': 'Binance Coin',
+            'id': 'bsc:0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            'name': 'WBNB Token',
+            'ticker': 'WBNB',
+          }),
+        ]),
       }),
     }),
   })
