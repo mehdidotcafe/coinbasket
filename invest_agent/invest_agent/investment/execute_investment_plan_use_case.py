@@ -1,10 +1,13 @@
 import asyncio
 from dataclasses import dataclass
 from decimal import ROUND_DOWN, Decimal
-import itertools
+from typing import cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.datetime.date_time import DateTime
+from invest_agent.investment.calculator.asset_balance_converter import (
+    AssetBalanceConverter,
+)
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
 )
@@ -19,6 +22,7 @@ from invest_agent.investment.investment_planner.investment_plan import (
 )
 from invest_agent.investment.order.order import Order, OrderAssetType
 from invest_agent.investment.order.order_submitter import OrderSubmitter
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.asset import Asset
 from protocol.basket import Basket
@@ -27,7 +31,7 @@ from shared.id_generator.id_generator import IdGenerator
 
 
 @dataclass
-class FlattenedInvestmentStep:
+class PricedInvestmentStep:
     id: str
     sell_balance: BalanceAtomic
     buy_balance: BalanceAtomic
@@ -37,8 +41,8 @@ class FlattenedInvestmentStep:
 
 
 @dataclass
-class FlattenedInvestmentPlan:
-    steps: list[FlattenedInvestmentStep]
+class PricedInvestmentPlan:
+    steps: list[list[PricedInvestmentStep]]
 
 
 investment_parameters = InvestmentParameters(
@@ -57,6 +61,7 @@ class ExecuteInvestmentPlanUseCase:
         order_submitter: OrderSubmitter,
         exchange: Exchange,
         posting_repository: PostingRepository,
+        asset_balance_converter: AssetBalanceConverter,
     ):
         self.id_generator = id_generator
         self.date_time = date_time
@@ -64,8 +69,10 @@ class ExecuteInvestmentPlanUseCase:
         self.order_submitter = order_submitter
         self.exchange = exchange
         self.posting_repository = posting_repository
+        self.asset_balance_converter = asset_balance_converter
 
-    async def execute(self, investment_plan: InvestmentPlan) -> list[Order]:
+    # TODO: Use asset_balance_convert when frontend will be sending children balances for baskets
+    async def execute(self, investment_plan: InvestmentPlan) -> list[list[Order]]:
         """Swap assets.
 
         Args:
@@ -74,25 +81,25 @@ class ExecuteInvestmentPlanUseCase:
             A list of Orders created for the assets in the investment plan.
         """
 
-        flattened_investment_plan = await self.__flatten_investment_plan(
-            investment_plan
+        holdings = await self.posting_repository.get_holding_balances()
+
+        priced_investment_plan = await self.__price_investment_plan(
+            investment_plan, holdings
         )
 
-        await self._assert_has_sufficient_balances(flattened_investment_plan)
+        await self._assert_has_sufficient_balances(priced_investment_plan, holdings)
 
-        orders = list(
-            itertools.chain.from_iterable(
-                [
-                    self.__map_flattened_investment_plan_step_to_orders(step)
-                    for step in flattened_investment_plan.steps
-                ]
-            )
-        )
+        orders = [
+            self.__map_priced_investment_plan_step_to_orders(step)
+            for step in priced_investment_plan.steps
+        ]
 
+        if len(orders) == 0:
+            return []
         return await self.order_submitter.submit_orders(orders)
 
-    def __map_flattened_investment_plan_step_to_orders(
-        self, step: FlattenedInvestmentStep
+    def __map_priced_investment_plan_step_to_orders(
+        self, step_matrix: list[PricedInvestmentStep]
     ) -> list[Order]:
         return [
             Order(
@@ -110,6 +117,7 @@ class ExecuteInvestmentPlanUseCase:
                 asset_type=step.asset_type,
                 basket_id=step.basket_id,
             )
+            for step in step_matrix
         ]
 
     def __get_order_type(self, sell_asset: Asset, buy_asset: Asset):
@@ -121,23 +129,23 @@ class ExecuteInvestmentPlanUseCase:
             return "SELL"
         return "SWAP"
 
-    async def __flatten_investment_plan(
-        self, investment_plan: InvestmentPlan
-    ) -> FlattenedInvestmentPlan:
-        steps: list[FlattenedInvestmentStep] = []
+    async def __price_investment_plan(
+        self, investment_plan: InvestmentPlan, holdings: list[Holding]
+    ) -> PricedInvestmentPlan:
+        steps: list[list[PricedInvestmentStep]] = []
 
         # TODO: Make async
         for step in investment_plan.steps:
             if step.sell_balance.amount <= 0:
                 continue
-            flattened_step = await self.__flatten_investment_plan_step(step)
-            steps.extend(flattened_step)
+            priced_step = await self.__price_investment_plan_step(step, holdings)
+            steps.append(priced_step)
 
-        return FlattenedInvestmentPlan(steps)
+        return PricedInvestmentPlan(steps)
 
-    async def __flatten_investment_plan_step(
-        self, step: InvestmentPlanStep
-    ) -> list[FlattenedInvestmentStep]:
+    async def __price_investment_plan_step(
+        self, step: InvestmentPlanStep, holdings: list[Holding]
+    ) -> list[PricedInvestmentStep]:
         buy_balance = step.buy_balance
         sell_balance = step.sell_balance
 
@@ -195,6 +203,7 @@ class ExecuteInvestmentPlanUseCase:
                     amount_atomic=sell_balance_amount_atomic,
                     decimals=sell_balance_decimals,
                 ),
+                holdings=holdings,
             )
         if isinstance(sell_balance.asset, Token) and isinstance(
             buy_balance.asset, Token
@@ -213,7 +222,7 @@ class ExecuteInvestmentPlanUseCase:
             )
 
             return [
-                FlattenedInvestmentStep(
+                PricedInvestmentStep(
                     id=self.id_generator.generate_random_id(),
                     asset_type="TOKEN",
                     sell_balance=BalanceAtomic(
@@ -234,7 +243,7 @@ class ExecuteInvestmentPlanUseCase:
 
     async def __build_steps_for_buy_basket(
         self, buy_balance: BalanceAtomic[Basket], sell_balance: BalanceAtomic[Token]
-    ) -> list[FlattenedInvestmentStep]:
+    ) -> list[PricedInvestmentStep]:
         parent_id = self.id_generator.generate_random_id()
 
         tasks = [
@@ -250,8 +259,8 @@ class ExecuteInvestmentPlanUseCase:
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        flattened_basket_steps: list[FlattenedInvestmentStep] = [
-            FlattenedInvestmentStep(
+        priced_basket_steps: list[PricedInvestmentStep] = [
+            PricedInvestmentStep(
                 id=parent_id,
                 asset_type="BASKET",
                 sell_balance=sell_balance,
@@ -262,10 +271,10 @@ class ExecuteInvestmentPlanUseCase:
 
         for i, result in enumerate(results):
             if isinstance(result, BaseException):
-                print(f"Flatten Investment Plan step {i} failed: {result!r}")
+                print(f"price Investment Plan step {i} failed: {result!r}")
             else:
-                flattened_basket_steps.append(
-                    FlattenedInvestmentStep(
+                priced_basket_steps.append(
+                    PricedInvestmentStep(
                         id=self.id_generator.generate_random_id(),
                         asset_type="TOKEN",
                         sell_balance=result.sell_balance,
@@ -275,29 +284,47 @@ class ExecuteInvestmentPlanUseCase:
                     )
                 )
 
-        return flattened_basket_steps
+        return priced_basket_steps
 
     async def __build_steps_for_sell_basket(
-        self, sell_balance: BalanceAtomic[Basket], buy_balance: BalanceAtomic[Token]
-    ) -> list[FlattenedInvestmentStep]:
+        self,
+        sell_balance: BalanceAtomic[Basket],
+        buy_balance: BalanceAtomic[Token],
+        holdings: list[Holding],
+    ) -> list[PricedInvestmentStep]:
         parent_id = self.id_generator.generate_random_id()
+
+        holding_basket = next(
+            (
+                holding
+                for holding in holdings
+                if holding.balance.asset.id == sell_balance.asset.id
+            ),
+            None,
+        )
+
+        if not holding_basket or not holding_basket.children:
+            raise InsufficientAssetBalance(sell_balance.asset)
+
+        sell_ratio = sell_balance.amount / holding_basket.balance.amount
+
+        print(f"sell ratio: {sell_ratio}")
+
+        print(f"basket children: {holding_basket.children}")
 
         tasks = [
             self.exchange.convert_balance_to_token(
-                # TODO: Handle selling basket
-                balance=BalanceAtomic(
-                    asset=token, amount=Decimal("0"), amount_atomic=0, decimals=18
-                ),
+                balance=balance * sell_ratio,
                 token=buy_balance.asset,
                 investment_parameters=investment_parameters,
             )
-            for token in sell_balance.asset.tokens
+            for balance in holding_basket.children
         ]
 
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        results = await asyncio.gather(*tasks)
 
-        flattened_basket_steps: list[FlattenedInvestmentStep] = [
-            FlattenedInvestmentStep(
+        priced_basket_steps: list[PricedInvestmentStep] = [
+            PricedInvestmentStep(
                 id=parent_id,
                 asset_type="BASKET",
                 sell_balance=sell_balance,
@@ -308,10 +335,10 @@ class ExecuteInvestmentPlanUseCase:
 
         for i, result in enumerate(results):
             if isinstance(result, BaseException):
-                print(f"Flatten Investment Plan step {i} failed: {result!r}")
+                print(f"price Investment Plan step {i} failed: {result!r}")
             else:
-                flattened_basket_steps.append(
-                    FlattenedInvestmentStep(
+                priced_basket_steps.append(
+                    PricedInvestmentStep(
                         id=self.id_generator.generate_random_id(),
                         asset_type="TOKEN",
                         sell_balance=result.sell_balance,
@@ -321,7 +348,7 @@ class ExecuteInvestmentPlanUseCase:
                     )
                 )
 
-        return flattened_basket_steps
+        return priced_basket_steps
 
     def __compute_token_balance_with_basket_weight(
         self, basket: Basket, balance: BalanceAtomic[Token]
@@ -340,27 +367,39 @@ class ExecuteInvestmentPlanUseCase:
         )
 
     async def _assert_has_sufficient_balances(
-        self, flattened_investment_plan: FlattenedInvestmentPlan
+        self,
+        priced_investment_plan: PricedInvestmentPlan,
+        holdings: list[Holding],
     ):
-        holding_balances_per_token = await self._get_all_holding_balances()
+        all_holdings = await self._get_all_holding_balances(holdings)
+        for step_matrix in priced_investment_plan.steps:
+            # Give priority to basket orders to avoid insufficient balance errors
+            basket_order = next(
+                (step for step in step_matrix if step.asset_type == "BASKET"), None
+            )
 
-        for step in flattened_investment_plan.steps:
-            if step.sell_balance.asset.id not in holding_balances_per_token:
+            # Only basket orders will have several steps
+            step = basket_order if basket_order else step_matrix[0]
+
+            if step.sell_balance.asset.id not in all_holdings:
                 raise InsufficientAssetBalance(step.sell_balance.asset)
 
-            holding_balances_per_token[
-                step.sell_balance.asset.id
-            ].amount -= step.sell_balance.amount
+            all_holdings[step.sell_balance.asset.id].amount -= step.sell_balance.amount
 
-            if holding_balances_per_token[step.sell_balance.asset.id].amount < 0:
+            if all_holdings[step.sell_balance.asset.id].amount < 0:
                 raise InsufficientAssetBalance(step.sell_balance.asset)
 
-    async def _get_all_holding_balances(self) -> dict[str, BalanceAtomic[Token]]:
-        holdings = await self.posting_repository.get_holding_balances()
+    async def _get_all_holding_balances(
+        self, holdings: list[Holding]
+    ) -> dict[str, BalanceAtomic]:
         available_balance = await self.chain.get_native_token_balance()
 
         holding_balances_per_token = {
-            balance.asset.id: balance for balance in [*holdings, available_balance]
+            balance.asset.id: balance
+            for balance in cast(
+                list[BalanceAtomic],
+                [*[holding.balance for holding in holdings], available_balance],
+            )
         }
 
         return holding_balances_per_token

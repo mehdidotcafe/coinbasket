@@ -5,14 +5,18 @@ from typing import Any, Dict, Literal, Optional, cast
 import aiosqlite
 from invest_agent.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
-    GetAssetSwapPriceUseCase,
     ConvertedBalance,
+    GetAssetSwapPriceUseCase,
 )
-from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
-    BscTransactionReceiptParser,
+from invest_agent.conversation.conversation_use_case import ConversationUseCase
+from invest_agent.conversation.get_conversation_messages_use_case import (
+    GetConversationMessagesUseCase,
 )
 from invest_agent.investment.build_priced_investment_plan_use_case import (
     BuildPricedInvestmentPlanUseCase,
+)
+from invest_agent.investment.execute_investment_plan_use_case import (
+    ExecuteInvestmentPlanUseCase,
 )
 from invest_agent.investment.fees import Fees
 from invest_agent.investment.investment_planner.intent_investment_plan import (
@@ -24,9 +28,6 @@ from invest_agent.investment.investment_planner.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
 )
-from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
-    SqlAlchemyOrderRepository,
-)
 from invest_agent.investment.order.order import (
     ChainTransaction,
     ChainTransactionStatus,
@@ -37,9 +38,6 @@ from invest_agent.investment.order.order import (
     OrderType,
     Try,
 )
-from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
-    SqlAlchemyTransactionRepository,
-)
 from invest_agent.portfolio.get_portfolio_asset_balance_use_case import (
     GetPortfolioAssetBalanceUseCase,
     PortfolioAssetBalance,
@@ -49,77 +47,47 @@ from invest_agent.portfolio.get_portfolio_use_case import (
     Portfolio,
     PortfolioBalance,
 )
-from invest_agent.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
-    SqlAlchemyPostingRepository,
-)
 from protocol.basket import Basket
-from protocol.fixture.basket import (
-    big4_basket,
-    memecoinmania_basket
-)
+from protocol.fixture.basket import big4_basket, memecoinmania_basket
 from protocol.fixture.token import (
     wbnb_token,
     eth_token,
     btc_token,
     sol_token,
     shib_token,
-    cake_token
+    cake_token,
 )
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
 from apispec import APISpec
+from invest_agent.registry import (
+    chain,
+    configuration,
+    conversation_repository,
+    date_time,
+    exchange,
+    id_generator,
+    order_repository,
+    posting_repository,
+    order_submitter,
+    agent_to_agent_client,
+    langgraph_db_path,
+    nonce_manager,
+    asset_balance_converter,
+)
 from invest_agent.authentication.authentication import authentication
 from invest_agent.chain.balance import Balance, BalanceAtomic
-from invest_agent.conversation.get_conversation_messages_use_case import (
-    GetConversationMessagesUseCase,
-)
 from invest_agent.conversation.message import Message, QueryMessage
-from invest_agent.conversation.repository.infrastructure.langchain_sqlite_conversation_repository import (
-    LangchainSqliteConversationRepository,
-)
-from invest_agent.datetime.infrastructure.python_date_time import PythonDateTime
 from invest_agent.documentation.response.invalid_authentication_key import (
     invalid_authentication_key,
 )
-from invest_agent.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_client import (
-    AiohttpAgentToAgentClient,
-)
-from invest_agent.conversation.conversation_use_case import ConversationUseCase
-from invest_agent.chain.infrastructure.bsc.nonce_manager import NonceManager
-from invest_agent.investment.execute_pending_orders_use_case import (
-    ExecutePendingOrdersUseCase,
-)
-from invest_agent.investment.execute_investment_plan_use_case import (
-    ExecuteInvestmentPlanUseCase,
-)
-from invest_agent.investment.order.order_submitter import OrderSubmitter
-from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
-from shared.http_request.infrastructure.requests_http_request import RequestsHttpRequest
-from shared.id_generator.id_generator import IdGenerator
-from shared.random_generator.random_generator import RandomGenerator
-from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
-    ZeroXApiClient,
-)
-from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import ZeroXSwapper
 
 from invest_agent.documentation.openapi import openapi
 from protocol.token import Token
 from pydantic import RootModel
 from pydantic.v1 import root_validator, validator
 from uagents import Agent, Context, Model
-from uagents.storage import KeyValueStore
 
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage
-
-from web3 import AsyncWeb3, AsyncHTTPProvider
-
-from invest_agent.chain.infrastructure.bsc.bsc_chain import BscChain
-from invest_agent.chain.infrastructure.bsc.bsc_contract import BscContract
-from invest_agent.configuration import Configuration
-from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
-    FetchAiStorage,
-)
 
 from protocol import (
     AssetResponse,
@@ -137,15 +105,57 @@ from langchain.chat_models import init_chat_model
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import interrupt
 
-
-date_time = PythonDateTime()
-
-
-configuration = Configuration()
-
 print(f"Thread ID: {configuration.langchain_thread_id}")
 print(f"Agent Env: {configuration.agent_env}")
 
+get_portfolio_use_case = GetPortfolioUseCase(
+    order_repository=order_repository,
+    posting_repository=posting_repository,
+    exchange=exchange,
+    chain=chain,
+    asset_balance_converter=asset_balance_converter,
+)
+
+get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
+    chain=chain, posting_repository=posting_repository
+)
+
+conversation_use_case = ConversationUseCase(
+    date_time=date_time,
+    id_generator=id_generator,
+    configuration={
+        "langchain_thread_id": configuration.langchain_thread_id,
+    },
+)
+
+get_conversation_messages_use_case = GetConversationMessagesUseCase(
+    conversation_repository=conversation_repository
+)
+
+
+build_priced_investment_plan_use_case = BuildPricedInvestmentPlanUseCase(
+    exchange=exchange,
+    chain=chain,
+    posting_repository=posting_repository,
+    asset_balance_converter=asset_balance_converter,
+)
+
+execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
+    id_generator=id_generator,
+    date_time=date_time,
+    chain=chain,
+    order_submitter=order_submitter,
+    exchange=exchange,
+    posting_repository=posting_repository,
+    asset_balance_converter=asset_balance_converter,
+)
+
+
+get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
+    chain=chain,
+    posting_repository=posting_repository,
+    asset_balance_converter=asset_balance_converter,
+)
 
 if configuration.langsmith_tracing:
     os.environ["LANGSMITH_TRACING"] = str(configuration.langsmith_tracing)
@@ -165,143 +175,6 @@ invest_agent = Agent(
     port=configuration.agent_port,
     endpoint=f"http://localhost:{configuration.agent_port}/submit",
 )
-w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
-
-nonce_manager = NonceManager(
-    w3=w3,
-    configuration={
-        "private_key": configuration.bsc_private_key,
-    },
-)
-transaction_receipt_parser = BscTransactionReceiptParser(w3=w3)
-
-chain = BscChain(
-    w3=w3,
-    nonce_manager=nonce_manager,
-    private_key=configuration.bsc_private_key,
-    transaction_receipt_parser=transaction_receipt_parser,
-)
-
-contract = BscContract(w3=w3)
-
-requests_http_request = RequestsHttpRequest()
-
-aiohttp_http_request = AiohttpHttpRequest()
-
-id_generator = IdGenerator()
-
-random_generator = RandomGenerator()
-
-api_client = ZeroXApiClient(
-    configuration={
-        "zero_x_api_url": configuration.zero_x_api_url,
-        "zero_x_api_key": configuration.zero_x_api_key,
-    },
-    http_request=requests_http_request,
-)
-
-exchange = ZeroXSwapper(
-    api_client=api_client,
-    chain=chain,
-    contract=contract,
-    w3=w3,
-    configuration={
-        "bsc_rpc_url": configuration.bsc_rpc_url,
-        "private_key": configuration.bsc_private_key,
-    },
-)
-storage = FetchAiStorage[Any](
-    configuration.langchain_thread_id,
-    store=KeyValueStore(configuration.agent_name, "./database"),
-)
-agent_to_agent_client = AiohttpAgentToAgentClient(
-    configuration={"agent_url": configuration.data_agent_url},
-    aiohttp_http_request=aiohttp_http_request,
-)
-
-langgraph_db_path = (
-    f"./database/{configuration.agent_env}/{configuration.agent_name}.langgraph.db"
-)
-
-engine = create_async_engine(
-    f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.agent_name}",
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-)
-AsyncSessionLocal = cast(
-    type[AsyncSession], sessionmaker(expire_on_commit=False, class_=AsyncSession)
-)
-
-order_repository = SqlAlchemyOrderRepository(
-    AsyncSessionLocal=AsyncSessionLocal, engine=engine
-)
-transaction_repository = SqlAlchemyTransactionRepository(
-    AsyncSessionLocal=AsyncSessionLocal, engine=engine
-)
-posting_repository = SqlAlchemyPostingRepository(
-    AsyncSessionLocal=AsyncSessionLocal, engine=engine
-)
-
-
-get_portfolio_use_case = GetPortfolioUseCase(
-    order_repository=order_repository,
-    posting_repository=posting_repository,
-    exchange=exchange,
-    chain=chain,
-)
-
-get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
-    chain=chain, posting_repository=posting_repository
-)
-
-conversation_use_case = ConversationUseCase(
-    date_time=date_time,
-    id_generator=id_generator,
-    configuration={
-        "langchain_thread_id": configuration.langchain_thread_id,
-    },
-)
-
-conversation_repository = LangchainSqliteConversationRepository(
-    db_path=langgraph_db_path, date_time=date_time, id_generator=id_generator
-)
-
-get_conversation_messages_use_case = GetConversationMessagesUseCase(
-    conversation_repository=conversation_repository
-)
-
-order_submitter = OrderSubmitter(
-    chain=chain,
-    exchange=exchange,
-    id_generator=id_generator,
-    date_time=date_time,
-    order_repository=order_repository,
-    transaction_repository=transaction_repository,
-    posting_repository=posting_repository,
-    random_generator=random_generator,
-    configuration={"environment": configuration.agent_env},
-)
-
-build_priced_investment_plan_use_case = BuildPricedInvestmentPlanUseCase(
-    exchange=exchange, chain=chain, posting_repository=posting_repository
-)
-
-execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
-    id_generator=id_generator,
-    date_time=date_time,
-    chain=chain,
-    order_submitter=order_submitter,
-    exchange=exchange,
-    posting_repository=posting_repository,
-)
-execute_pending_orders_use_case = ExecutePendingOrdersUseCase(
-    order_submitter=order_submitter,
-    order_repository=order_repository,
-)
-
-
-get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(exchange=exchange, chain=chain)
 
 
 @tool(parse_docstring=True)
@@ -318,21 +191,22 @@ async def get_tokens_from_query(query: str) -> list[TokenResponse | BasketRespon
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == 'test':
+    if configuration.agent_env == "test":
         return [
             TokenResponse.from_domain(wbnb_token),
             TokenResponse.from_domain(eth_token),
             TokenResponse.from_domain(btc_token),
             TokenResponse.from_domain(sol_token),
             TokenResponse.from_domain(shib_token),
-            TokenResponse.from_domain(cake_token)
+            TokenResponse.from_domain(cake_token),
         ]
-
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
         SimilarAssetsQuery(
-            query=f"{query} type: token", agent_key=configuration.data_agent_key
+            query=f"{query}",
+            agent_key=configuration.data_agent_key,
+            type="TOKEN",
         ),
         SimilarAssetsResponse,
     )
@@ -358,16 +232,16 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == 'test':
+    if configuration.agent_env == "test":
         return [
             BasketResponse.from_domain(big4_basket),
-            BasketResponse.from_domain(memecoinmania_basket)
+            BasketResponse.from_domain(memecoinmania_basket),
         ]
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
         SimilarAssetsQuery(
-            query=f"{query} type: basket", agent_key=configuration.data_agent_key
+            query=f"{query}", agent_key=configuration.data_agent_key, type="BASKET"
         ),
         SimilarAssetsResponse,
     )
@@ -376,7 +250,6 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
         raise ValueError(f"Response is not a valid response: {res.data}")
 
     return res.data.assets
-
 
 
 @tool(parse_docstring=True)
@@ -391,11 +264,8 @@ async def get_all_available_baskets():
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == 'test':
-        return [
-            big4_basket,
-            memecoinmania_basket
-        ]
+    if configuration.agent_env == "test":
+        return [big4_basket, memecoinmania_basket]
 
     # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
     res = await agent_to_agent_client.send_and_receive_message(
@@ -419,20 +289,20 @@ def get_agent_address():
 @tool(
     parse_docstring=True,
 )
-async def get_portfolio_summary(token: Token = usdt_token):
+async def get_portfolio_summary(conversion_token: Token = usdt_token):
     """EXPENSIVE/SLOW. Retrieve the portfolio. Only use this tool when the user asks for his portfolio.
     The portfolio contains the list of assets held by the agent (holdings) and their balances both in asset token and in converted token (defaults to USDT).
     It also contains the available cash balance in BNB and the list of pending (processing) orders.
 
     Args:
-        token: The token to convert the asset balances to (defaults to USDT).
+        conversion_token: The token to convert the portfolio asset balances to (defaults to USDT).
 
     Returns:
         The portfolio of the agent.
     """
 
     return PortfolioResponse.from_domain(
-        await get_portfolio_use_case.execute(token)
+        await get_portfolio_use_case.execute(conversion_token)
     ).json()
 
 
@@ -466,11 +336,13 @@ async def get_token_holding(token: Token):
     Returns:
         The holding balance of the held token in the agent's wallet.
     """
-    balance = await posting_repository.get_holding_balance(
+    holding = await posting_repository.get_holding_balance(
         token if not chain.is_native_token(token) else chain.get_wrapped_base_token()
     )
 
-    return BalanceAtomicResponse.from_domain(balance).json()
+    return (
+        BalanceAtomicResponse.from_domain(holding.balance).json() if holding else None
+    )
 
 
 @tool(
@@ -514,7 +386,7 @@ class ChainTransactionResponse(Model):
     order_id: str
     type: ChainTransactionType
     data: str
-    hash: str
+    hash: str | None
     status: ChainTransactionStatus
 
     @staticmethod
@@ -795,13 +667,18 @@ class IntentInvestmentPlanRequest(Model):
 
 class InvestmentPlanResponse(Model):
     message: str
-    orders: list[OrderResponse]
+    orders: list[list[OrderResponse]]
 
     @staticmethod
-    def from_domain(message: str, orders: list[Order]) -> "InvestmentPlanResponse":
+    def from_domain(
+        message: str, orders: list[list[Order]]
+    ) -> "InvestmentPlanResponse":
         return InvestmentPlanResponse(
             message=message,
-            orders=[OrderResponse.from_domain(order) for order in orders],
+            orders=[
+                [OrderResponse.from_domain(order) for order in order_group]
+                for order_group in orders
+            ],
         )
 
 
@@ -813,7 +690,7 @@ async def execute_intent_investment_plan_use_case(
 ):
     """Executes the intent investment plan.
     If the user confirms the investment plan, the orders are submitted to the chain.
-    If the user cancels the investment plan, no order is submitted, and don't try to invest in the investment plan again.
+    If the user cancels the investment plan, no order is submitted 't try to invest in the investment plan again.
 
     Args:
         intent_investment_plan (IntentInvestmentPlanRequest): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.
@@ -874,8 +751,6 @@ async def execute_intent_investment_plan_use_case(
         intent_investment_plan.to_domain()
     )
 
-    print(f"priced_investment_plan: {priced_investment_plan}")
-
     investment_plan_as_dict = interrupt(
         {
             "ui": {
@@ -925,7 +800,6 @@ tools = [
 @invest_agent.on_event("startup")
 async def on_startup(_ctx: Context):
     await nonce_manager.resync()
-    await execute_pending_orders_use_case.execute()
 
 
 class QueryMessageRequest(Model):
@@ -1338,13 +1212,15 @@ class PortfolioResponse(Model):
 
 
 class PortfolioAssetBalanceResponse(Model):
-    holding_balance: BalanceAtomicResponse
+    holding_balance: BalanceAtomicResponse | None = None
     available_balance: BalanceAtomicResponse | None = None
 
     @staticmethod
     def from_domain(domain: PortfolioAssetBalance) -> "PortfolioAssetBalanceResponse":
         return PortfolioAssetBalanceResponse(
-            holding_balance=BalanceAtomicResponse.from_domain(domain.holding_balance),
+            holding_balance=BalanceAtomicResponse.from_domain(domain.holding_balance)
+            if domain.holding_balance
+            else None,
             available_balance=BalanceAtomicResponse.from_domain(
                 domain.available_balance
             )

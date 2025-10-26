@@ -54,15 +54,15 @@ class ConversationUseCase:
             elif "tools" in step:
                 step["tools"]["messages"][-1].pretty_print()
 
+            if Interrupt.is_step_interrupt(step):
+                return Interrupt.to_message(
+                    cast(LanggraphInterrupt, step["__interrupt__"][0]),
+                    self.id_generator.generate_random_id(),
+                    self.date_time.now_str(),
+                )
+
         if not step:
             raise ValueError("No steps returned from the agent executor.")
-
-        if Interrupt.is_step_interrupt(step):
-            return Interrupt.to_message(
-                cast(LanggraphInterrupt, step["__interrupt__"][0]),
-                self.id_generator.generate_random_id(),
-                self.date_time.now_str(),
-            )
 
         last_message = cast(AIMessage | HumanMessage, step["agent"]["messages"][-1])
 

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
@@ -8,7 +7,7 @@ from protocol.token import Token
 
 @dataclass
 class PortfolioAssetBalance:
-    holding_balance: BalanceAtomic[Token]
+    holding_balance: BalanceAtomic | None = None
     available_balance: BalanceAtomic[Token] | None = None
 
 
@@ -25,13 +24,16 @@ class GetPortfolioAssetBalanceUseCase:
         if self.chain.is_native_token(token) or self.chain.is_wrapped_native_token(
             token
         ):
+            holding = await self.posting_repository.get_holding_balance(
+                self.chain.get_wrapped_base_token()
+            )
             return PortfolioAssetBalance(
                 available_balance=await self.chain.get_native_token_balance(),
-                holding_balance=cast(BalanceAtomic[Token], await self.posting_repository.get_holding_balance(
-                    self.chain.get_wrapped_base_token()
-                )),
+                holding_balance=holding.balance if holding else None,
             )
 
+        holding = await self.posting_repository.get_holding_balance(token)
+
         return PortfolioAssetBalance(
-            holding_balance=cast(BalanceAtomic[Token], await self.posting_repository.get_holding_balance(token))
+            holding_balance=holding.balance if holding else None
         )

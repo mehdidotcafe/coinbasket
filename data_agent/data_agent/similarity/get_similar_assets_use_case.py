@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 from protocol.basket import Basket
 from protocol.token import Token
 from data_agent.similarity.exception.invalid_similarity_document import (
@@ -16,8 +16,12 @@ class GetSimilarAssetsUseCase:
     def __init__(self, storage: SimilarityStorage):
         self.storage = storage
 
-    async def execute(self, query: str):
-        documents = await self.storage.similarity_search(query)
+    async def execute(
+        self, query: str, type: Literal["BASKET", "TOKEN"] | None
+    ) -> list[Asset]:
+        documents = await self.storage.similarity_search(
+            query, {"type": type.lower() if type else None}
+        )
 
         return [self._map_similarity_document_to_asset(doc) for doc in documents]
 

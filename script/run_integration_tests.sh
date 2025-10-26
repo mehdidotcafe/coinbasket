@@ -11,6 +11,8 @@ sleep 5
 
 if [ "$PROJECT" = "invest_agent" ]; then
 	(cd .. && ./nx migration:test:run $PROJECT)
+	env-cmd -f .env.test poetry run python -m $PROJECT.worker &
+	WORKER_PID=$!
 fi
 
 env-cmd -f .env.test poetry run python -m $PROJECT.main &
@@ -23,6 +25,11 @@ TEST_RESULT=$?
 
 
 (cd .. && ./nx infra:test:down $PROJECT)
+
+if [ "$PROJECT" = "invest_agent" ]; then
+	# Kill Worker
+	kill $WORKER_PID
+fi
 
 # Kill API
 kill $API_PID

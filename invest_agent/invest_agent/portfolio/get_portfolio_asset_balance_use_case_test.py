@@ -6,6 +6,7 @@ from invest_agent.portfolio.get_portfolio_asset_balance_use_case import (
     GetPortfolioAssetBalanceUseCase,
     PortfolioAssetBalance,
 )
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, mark
 
@@ -38,8 +39,11 @@ async def test_get_portfolio_asset_balance_use_case_with_native_token(
     chain.get_native_token_balance.return_value = BalanceAtomic(
         asset=bnb_token, amount=Decimal("10"), amount_atomic=10 * 10**18, decimals=18
     )
-    posting_repository.get_holding_balance.return_value = BalanceAtomic(
-        asset=wbnb_token, amount=Decimal("5"), amount_atomic=5 * 10**18, decimals=18
+    posting_repository.get_holding_balance.return_value = Holding(
+        balance=BalanceAtomic(
+            asset=wbnb_token, amount=Decimal("5"), amount_atomic=5 * 10**18, decimals=18
+        ),
+        children=[],
     )
 
     portfolio_asset_balance = await use_case.execute(bnb_token)
@@ -73,10 +77,12 @@ async def test_get_portfolio_asset_balance_use_case_with_wrapped_native_token(
     chain.get_native_token_balance.return_value = BalanceAtomic(
         asset=bnb_token, amount=Decimal("10"), amount_atomic=10 * 10**18, decimals=18
     )
-    posting_repository.get_holding_balance.return_value = BalanceAtomic(
-        asset=wbnb_token, amount=Decimal("5"), amount_atomic=5 * 10**18, decimals=18
+    posting_repository.get_holding_balance.return_value = Holding(
+        balance=BalanceAtomic(
+            asset=wbnb_token, amount=Decimal("5"), amount_atomic=5 * 10**18, decimals=18
+        ),
+        children=[],
     )
-
     portfolio_asset_balance = await use_case.execute(wbnb_token)
 
     chain.is_wrapped_native_token.assert_called_once_with(wbnb_token)
@@ -102,8 +108,14 @@ async def test_get_portfolio_asset_balance_use_case_with_token(
 ):
     chain.is_native_token.return_value = False
     chain.is_wrapped_native_token.return_value = False
-    posting_repository.get_holding_balance.return_value = BalanceAtomic(
-        asset=eth_token, amount=Decimal("42"), amount_atomic=10 * 10**18, decimals=18
+    posting_repository.get_holding_balance.return_value = Holding(
+        balance=BalanceAtomic(
+            asset=eth_token,
+            amount=Decimal("42"),
+            amount_atomic=10 * 10**18,
+            decimals=18,
+        ),
+        children=[],
     )
 
     asset_balance = await use_case.execute(eth_token)

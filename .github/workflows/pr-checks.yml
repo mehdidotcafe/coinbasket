@@ -103,7 +103,7 @@ jobs:
       # TODO: See how to handle this better. Maybe mocking every external API with MockServer.
       - name: Create .env file from GitHub Secret
         run: |
-          echo "${{ secrets.ENV_FILE_CONTENTS }}" > ${{ matrix.project }}/.env
+          echo "${{ secrets[format('{0}_ENV_FILE_CONTENTS', matrix.project)] }}" > ${{ matrix.project }}/.env
 
       - name: Run unit tests
         run: npx nx test ${{ matrix.project }}
@@ -144,7 +144,7 @@ jobs:
       # TODO: See how to handle this better. Maybe mocking every external API with MockServer.
       - name: Create .env file from GitHub Secret
         run: |
-          echo "${{ secrets.ENV_FILE_CONTENTS }}" > ${{ matrix.project }}/.env
+          echo "${{ secrets[format('{0}_ENV_FILE_CONTENTS', matrix.project)] }}" > ${{ matrix.project }}/.env
 
       - name: Run integration tests
         run: ./nx test:integration ${{ matrix.project }}

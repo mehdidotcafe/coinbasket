@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Literal
 from protocol.basket import Basket
 from protocol.token import Token
 from uagents import Model
@@ -74,6 +75,7 @@ AssetResponse = TokenResponse | BasketResponse
 class SimilarAssetsQuery(Model):
     query: str
     agent_key: str
+    type: Literal["TOKEN", "BASKET"] | None
 
 
 class SimilarAssetsValidResponse(Model):

@@ -38,7 +38,7 @@ async def test_get_similar_assets_use_case_fail_document_without_metadata(
     use_case = GetSimilarAssetsUseCase(similarity_storage)
 
     with raises(InvalidSimilarityDocument):
-        await use_case.execute(query)
+        await use_case.execute(query, None)
 
 
 @mark.asyncio
@@ -71,7 +71,7 @@ async def test_get_similar_assets_use_case_fail_document_with_invalid_type(
     use_case = GetSimilarAssetsUseCase(similarity_storage)
 
     with raises(InvalidSimilarityDocument):
-        await use_case.execute(query)
+        await use_case.execute(query, None)
 
 
 @mark.asyncio
@@ -120,7 +120,7 @@ async def test_get_similar_assets_use_case_execute_with_tokens(
 
     use_case = GetSimilarAssetsUseCase(similarity_storage)
 
-    assets = await use_case.execute(query)
+    assets = await use_case.execute(query, "TOKEN")
 
     assert assets == [
         Token(
@@ -139,7 +139,9 @@ async def test_get_similar_assets_use_case_execute_with_tokens(
         ),
     ]
 
-    similarity_storage.similarity_search.assert_called_once_with(query)
+    similarity_storage.similarity_search.assert_called_once_with(
+        query, {"type": "token"}
+    )
 
 
 @mark.asyncio
@@ -188,7 +190,7 @@ async def test_get_similar_assets_use_case_execute_with_baskets(
 
     use_case = GetSimilarAssetsUseCase(similarity_storage)
 
-    assets = await use_case.execute(query)
+    assets = await use_case.execute(query, "BASKET")
 
     assert assets == [
         Basket(
@@ -217,4 +219,6 @@ async def test_get_similar_assets_use_case_execute_with_baskets(
         )
     ]
 
-    similarity_storage.similarity_search.assert_called_once_with(query)
+    similarity_storage.similarity_search.assert_called_once_with(
+        query, {"type": "basket"}
+    )

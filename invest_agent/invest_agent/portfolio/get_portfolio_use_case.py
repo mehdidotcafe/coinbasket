@@ -4,11 +4,15 @@ from decimal import Decimal
 
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
+from invest_agent.investment.calculator.asset_balance_converter import (
+    AssetBalanceConverter,
+)
 from invest_agent.investment.exchange.exchange import Exchange
 
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.order.order import Order
 from invest_agent.investment.order.order_repository import OrderRepository
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import (
     PostingRepository,
 )
@@ -18,7 +22,7 @@ from protocol.token import Token
 @dataclass
 class PortfolioBalance:
     native_balance: BalanceAtomic
-    converted_balance: BalanceAtomic[Token]
+    converted_balance: BalanceAtomic
 
 
 @dataclass
@@ -41,24 +45,29 @@ class GetPortfolioUseCase:
         posting_repository: PostingRepository,
         exchange: Exchange,
         chain: Chain,
+        asset_balance_converter: AssetBalanceConverter,
     ):
         self.order_repository = order_repository
         self.posting_repository = posting_repository
         self.exchange = exchange
         self.chain = chain
+        self.asset_balance_converter = asset_balance_converter
 
     async def execute(self, conversion_token: Token):
-        holding_balances = await self.__fetch_holding_balances(conversion_token)
-        available_balance = await self.__fetch_available_balance(conversion_token)
         conversion_token_decimals = await self.chain.get_token_decimals(
             conversion_token.address
         )
+        holding_balances = await self.__fetch_holding_balances(conversion_token)
+        available_balance = await self.__fetch_available_balance(conversion_token)
 
         return Portfolio(
             available_balance=available_balance,
             holding_balances=holding_balances,
-            total_balance=self.__sum_balances(
-                [available_balance, *holding_balances],
+            total_balance=self.__sum_balances_balances(
+                [
+                    available_balance.converted_balance,
+                    *[balance.converted_balance for balance in holding_balances],
+                ],
                 conversion_token,
                 conversion_token_decimals,
             ),
@@ -80,55 +89,48 @@ class GetPortfolioUseCase:
         )
 
     async def __fetch_holding_balances(self, conversion_token: Token):
-        raw_holding_balances = await self.posting_repository.get_holding_balances()
+        raw_holdings = await self.posting_repository.get_holding_balances()
 
         converted_balances = await asyncio.gather(
             *[
-                self._convert_asset_balance_to_token(
-                    balance=balance,
+                self._convert_holding_balance_to_token(
+                    holding=holding,
+                    holdings=raw_holdings,
                     conversion_token=conversion_token,
                 )
-                for balance in raw_holding_balances
+                for holding in raw_holdings
             ]
         )
 
         return converted_balances
 
-    async def _convert_asset_balance_to_token(
-        self, balance: BalanceAtomic, conversion_token: Token
+    async def _convert_holding_balance_to_token(
+        self,
+        holding: Holding,
+        holdings: list[Holding],
+        conversion_token: Token,
     ) -> PortfolioBalance:
-        token_balance = BalanceAtomic[Token](
-            asset=balance.asset.get_pricing_token(),
-            amount=balance.amount * balance.asset.get_denomination(),
-            amount_atomic=int(balance.amount_atomic * balance.asset.get_denomination()),
-            decimals=balance.decimals,
-        )
-
-        converted_balance = await self.exchange.convert_balance_to_token(
-            balance=token_balance,
-            token=conversion_token,
-            investment_parameters=investment_parameters,
+        converted_asset_balance = await self.asset_balance_converter.convert(
+            sell_balance=holding.balance, buy_asset=conversion_token, holdings=holdings
         )
 
         return PortfolioBalance(
-            native_balance=balance,
-            converted_balance=converted_balance.buy_balance,
+            native_balance=converted_asset_balance.total_balance.sell_balance,
+            converted_balance=converted_asset_balance.total_balance.buy_balance,
         )
 
-    def __sum_balances(
+    def __sum_balances_balances(
         self,
-        balances: list[PortfolioBalance],
+        balances: list[BalanceAtomic],
         conversion_token: Token,
         conversion_token_decimals: int,
     ):
         return BalanceAtomic(
             asset=conversion_token,
             amount=sum(
-                [balance.converted_balance.amount for balance in balances],
+                [balance.amount for balance in balances],
                 Decimal(0),
             ),
-            amount_atomic=sum(
-                [balance.converted_balance.amount_atomic for balance in balances]
-            ),
+            amount_atomic=sum([balance.amount_atomic for balance in balances]),
             decimals=conversion_token_decimals,
         )

@@ -4,6 +4,11 @@ from invest_agent.chain.chain import Chain
 from invest_agent.investment.build_priced_investment_plan_use_case import (
     BuildPricedInvestmentPlanUseCase,
 )
+from invest_agent.investment.calculator.asset_balance_converter import (
+    AssetBalanceConverter,
+    ConvertedAssetBalance,
+    ConvertedBalance,
+)
 from invest_agent.investment.exchange.exchange import Exchange, ExchangeConvertedBalance
 from invest_agent.investment.investment_planner.intent_investment_plan import (
     IntentInvestmentPlan,
@@ -15,10 +20,11 @@ from invest_agent.investment.investment_planner.priced_investment_plan import (
     PricedInvestmentPlanBalance,
     PricedInvestmentPlanStep,
 )
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, mark
-from protocol.fixture.token import eth_token, bnb_token, usdt_token
-from protocol.fixture.basket import big4_basket
+from protocol.fixture.token import eth_token, bnb_token, usdt_token, btc_token
+from protocol.fixture.basket import big4_basket, test_basket
 from decimal import ROUND_DOWN, Decimal
 
 
@@ -52,15 +58,28 @@ def posting_repository():
 
 
 @fixture
-def use_case(exchange: Exchange, chain: Chain, posting_repository: PostingRepository):
+def asset_balance_converter():
+    return mock.Mock(spec=AssetBalanceConverter)
+
+
+@fixture
+def use_case(
+    exchange: Exchange,
+    chain: Chain,
+    posting_repository: PostingRepository,
+    asset_balance_converter: AssetBalanceConverter,
+):
     return BuildPricedInvestmentPlanUseCase(
-        exchange=exchange, chain=chain, posting_repository=posting_repository
+        exchange=exchange,
+        chain=chain,
+        posting_repository=posting_repository,
+        asset_balance_converter=asset_balance_converter,
     )
 
 
 @mark.asyncio
 async def test_build_priced_investment_plan_use_case_execute_defined_sell_token_amount(
-    exchange: Exchange,
+    asset_balance_converter: AssetBalanceConverter,
     posting_repository: PostingRepository,
     use_case: BuildPricedInvestmentPlanUseCase,
 ):
@@ -80,19 +99,23 @@ async def test_build_priced_investment_plan_use_case_execute_defined_sell_token_
     )
 
     posting_repository.get_holding_balances.return_value = []
-    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
-        sell_balance=BalanceAtomic(
-            asset=bnb_token,
-            amount=Decimal("100"),
-            amount_atomic=100 * 10**18,
-            decimals=18,
+
+    asset_balance_converter.convert.return_value = ConvertedAssetBalance(
+        total_balance=ConvertedBalance(
+            sell_balance=BalanceAtomic(
+                asset=bnb_token,
+                amount=Decimal("100"),
+                amount_atomic=100 * 10**18,
+                decimals=18,
+            ),
+            buy_balance=BalanceAtomic(
+                asset=eth_token,
+                amount=Decimal("42"),
+                amount_atomic=42 * 10**18,
+                decimals=18,
+            ),
         ),
-        buy_balance=BalanceAtomic(
-            asset=eth_token,
-            amount=Decimal("42"),
-            amount_atomic=42 * 10**18,
-            decimals=18,
-        ),
+        balances=[],
     )
 
     priced_investment_plan = await use_case.execute(intent_investment_plan)
@@ -347,7 +370,7 @@ async def test_build_priced_investment_plan_use_case_execute_defined_buy_basket_
 
 @mark.asyncio
 async def test_build_priced_investment_plan_use_case_execute_defined_sell_basket_amount(
-    exchange: Exchange,
+    asset_balance_converter: AssetBalanceConverter,
     posting_repository: PostingRepository,
     use_case: BuildPricedInvestmentPlanUseCase,
 ):
@@ -359,27 +382,54 @@ async def test_build_priced_investment_plan_use_case_execute_defined_sell_basket
                     amount=None,
                 ),
                 sell_asset_with_amount=IntentInvestmentPlanBalance(
-                    asset=big4_basket,
+                    asset=test_basket,
                     amount=Decimal("50.0"),
                 ),
             )
         ]
     )
 
-    posting_repository.get_holding_balances.return_value = []
-    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
-        sell_balance=BalanceAtomic(
-            asset=usdt_token,
-            amount=Decimal("500"),
-            amount_atomic=500 * 10**18,
-            decimals=18,
+    posting_repository.get_holding_balances.return_value = [
+        Holding(
+            balance=BalanceAtomic(
+                asset=test_basket,
+                amount=Decimal("100"),
+                amount_atomic=100 * 10**18,
+                decimals=18,
+            ),
+            children=[
+                BalanceAtomic(
+                    asset=btc_token,
+                    amount=Decimal("800"),
+                    amount_atomic=800 * 10**18,
+                    decimals=18,
+                ),
+                BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("780"),
+                    amount_atomic=780 * 10**18,
+                    decimals=18,
+                ),
+            ],
         ),
-        buy_balance=BalanceAtomic(
-            asset=bnb_token,
-            amount=Decimal("1"),
-            amount_atomic=1 * 10**18,
-            decimals=18,
+    ]
+
+    asset_balance_converter.convert.return_value = ConvertedAssetBalance(
+        total_balance=ConvertedBalance(
+            sell_balance=BalanceAtomic(
+                asset=test_basket,
+                amount=Decimal("50.0"),
+                amount_atomic=50 * 10**18,
+                decimals=18,
+            ),
+            buy_balance=BalanceAtomic(
+                asset=bnb_token,
+                amount=Decimal("15800"),
+                amount_atomic=8000 * 10**18,
+                decimals=18,
+            ),
         ),
+        balances=[],
     )
 
     priced_investment_plan = await use_case.execute(intent_investment_plan)
@@ -388,26 +438,17 @@ async def test_build_priced_investment_plan_use_case_execute_defined_sell_basket
         steps=[
             PricedInvestmentPlanStep(
                 buy_asset_with_amount=PricedInvestmentPlanBalance(
-                    asset=bnb_token, amount=Decimal("1"), available_amount=Decimal("0")
+                    asset=bnb_token,
+                    amount=Decimal("15800"),
+                    available_amount=Decimal("0"),
                 ),
                 sell_asset_with_amount=PricedInvestmentPlanBalance(
-                    asset=big4_basket,
+                    asset=test_basket,
                     amount=Decimal("50.0"),
-                    available_amount=Decimal("0"),
+                    available_amount=Decimal("100"),
                 ),
             )
         ]
-    )
-
-    exchange.convert_balance_to_token.assert_called_once_with(
-        balance=BalanceAtomic(
-            asset=usdt_token,
-            amount=Decimal("500"),
-            amount_atomic=500 * 10**18,
-            decimals=18,
-        ),
-        token=bnb_token,
-        investment_parameters=mock.ANY,
     )
 
 
@@ -440,12 +481,15 @@ async def test_build_priced_investment_plan_use_case_execute_available_amount_de
         decimals=18,
     )
     posting_repository.get_holding_balances.return_value = [
-        BalanceAtomic(
-            asset=usdt_token,
-            amount=Decimal("80000"),
-            amount_atomic=80000 * 10**18,
-            decimals=18,
-        ),
+        Holding(
+            balance=BalanceAtomic(
+                asset=usdt_token,
+                amount=Decimal("80000"),
+                amount_atomic=80000 * 10**18,
+                decimals=18,
+            ),
+            children=None,
+        )
     ]
     exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(

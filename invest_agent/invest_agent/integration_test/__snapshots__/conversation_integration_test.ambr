@@ -1,17 +1,19 @@
 # serializer version: 1
-# name: test_integration_conversation[response_2_ui]
+# name: test_integration_conversation
   dict({
     'args': dict({
-      'intent_investment_plan': dict({
+      'priced_investment_plan': dict({
         'steps': list([
           dict({
             'buy_asset_with_amount': dict({
               'amount': '1',
               'asset': dict({
-                'denomination': '0.1',
-                'description': 'This basket offers concentrated exposure to the memecoin sector—tokens driven by internet culture, viral trends, and highly engaged online communities.',
+                'denomination': '1',
+                'description': 'A basket of popular memecoins',
+                'display_name': 'Memecoin Mania',
                 'id': 'c0e724d3-c4d0-4bd0-973d-edd3907ecf51',
-                'name': 'Memecoin mania',
+                'name': 'Memecoin Mania',
+                'ticker': 'MEME',
                 'tokens': list([
                   dict({
                     'address': '0xbA2aE424d960c26247Dd6c32edC70B295c744C43',
@@ -24,7 +26,7 @@
                     'address': '0x2859e4544C4bB03966803b044A93563Bd2D0DD4D',
                     'display_name': 'Shiba Inu',
                     'id': 'bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D',
-                    'name': 'Shiba Inu',
+                    'name': 'SHIBA INU',
                     'ticker': 'SHIB',
                   }),
                   dict({
@@ -34,38 +36,20 @@
                     'name': 'Pepe',
                     'ticker': 'PEPE',
                   }),
-                  dict({
-                    'address': '0xfb5b838b6cfeedc2873ab27866079ac55363d37e',
-                    'display_name': 'FLOKI',
-                    'id': 'bsc:0xfb5b838b6cfeedc2873ab27866079ac55363d37e',
-                    'name': 'FLOKI',
-                    'ticker': 'FLOKI',
-                  }),
-                  dict({
-                    'address': '0xA697e272a73744b343528C3Bc4702F2565b2F422',
-                    'display_name': 'Bonk',
-                    'id': 'bsc:0xA697e272a73744b343528C3Bc4702F2565b2F422',
-                    'name': 'Bonk',
-                    'ticker': 'BONK',
-                  }),
-                  dict({
-                    'address': '0x86Bb94DdD16Efc8bc58e6b056e8df71D9e666429',
-                    'display_name': 'Test',
-                    'id': 'bsc:0x86Bb94DdD16Efc8bc58e6b056e8df71D9e666429',
-                    'name': 'Test',
-                    'ticker': 'TST',
-                  }),
-                  dict({
-                    'address': '0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6',
-                    'display_name': 'mubarak',
-                    'id': 'bsc:0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6',
-                    'name': 'mubarak',
-                    'ticker': 'MUBARAK',
-                  }),
                 ]),
               }),
+              'available_amount': '0',
             }),
-            'sell_asset_with_amount': None,
+            'sell_asset_with_amount': dict({
+              'asset': dict({
+                'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                'display_name': 'Binance Coin',
+                'id': 'bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                'name': 'Binance Coin',
+                'ticker': 'BNB',
+              }),
+              'available_amount': '10000',
+            }),
           }),
           dict({
             'buy_asset_with_amount': dict({
@@ -77,8 +61,18 @@
                 'name': 'Bitcoin',
                 'ticker': 'BTC',
               }),
+              'available_amount': '0',
             }),
-            'sell_asset_with_amount': None,
+            'sell_asset_with_amount': dict({
+              'asset': dict({
+                'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                'display_name': 'Binance Coin',
+                'id': 'bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                'name': 'Binance Coin',
+                'ticker': 'BNB',
+              }),
+              'available_amount': '10000',
+            }),
           }),
         ]),
       }),

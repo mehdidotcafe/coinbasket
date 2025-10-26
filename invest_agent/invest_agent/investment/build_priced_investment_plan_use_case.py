@@ -1,6 +1,10 @@
 from decimal import Decimal
+from typing import cast
 from invest_agent.chain.balance import BalanceAtomic
 from invest_agent.chain.chain import Chain
+from invest_agent.investment.calculator.asset_balance_converter import (
+    AssetBalanceConverter,
+)
 from invest_agent.investment.exchange.exchange import Exchange
 from invest_agent.investment.investment_parameters import InvestmentParameters
 from invest_agent.investment.investment_planner.intent_investment_plan import (
@@ -11,6 +15,7 @@ from invest_agent.investment.investment_planner.priced_investment_plan import (
     PricedInvestmentPlanBalance,
     PricedInvestmentPlanStep,
 )
+from invest_agent.portfolio.holding.holding import Holding
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.asset import Asset
 from protocol.token import Token
@@ -18,18 +23,24 @@ from protocol.token import Token
 
 class BuildPricedInvestmentPlanUseCase:
     def __init__(
-        self, exchange: Exchange, chain: Chain, posting_repository: PostingRepository
+        self,
+        exchange: Exchange,
+        chain: Chain,
+        posting_repository: PostingRepository,
+        asset_balance_converter: AssetBalanceConverter,
     ):
         self.exchange = exchange
         self.chain = chain
         self.posting_repository = posting_repository
+        self.asset_balance_converter = asset_balance_converter
 
     async def execute(
         self, intent_investment_plan: IntentInvestmentPlan
     ) -> PricedInvestmentPlan:
         steps: list[PricedInvestmentPlanStep] = []
 
-        holding_balances_per_token = await self._get_all_holding_balances()
+        holdings = await self.posting_repository.get_holding_balances()
+        holding_balances = await self._get_all_holding_balances(holdings)
 
         for step in intent_investment_plan.steps:
             sell_asset = (
@@ -40,7 +51,7 @@ class BuildPricedInvestmentPlanUseCase:
             sell_token = sell_asset.get_pricing_token()
 
             sell_asset_available_amount = self._get_available_amount(
-                holding_balances_per_token, sell_asset
+                holding_balances, sell_asset
             )
 
             buy_asset = (
@@ -51,51 +62,45 @@ class BuildPricedInvestmentPlanUseCase:
             buy_token = buy_asset.get_pricing_token()
 
             buy_asset_available_amount = self._get_available_amount(
-                holding_balances_per_token, buy_asset
+                holding_balances, buy_asset
             )
 
-            if sell_token.address == buy_token.address:
+            if (
+                isinstance(sell_asset, Token)
+                and sell_asset.address == buy_token.address
+            ):
                 continue
 
             if step.sell_asset_with_amount and step.sell_asset_with_amount.amount:
-                sell_amount = (
-                    step.sell_asset_with_amount.amount * sell_asset.get_denomination()
-                )
-
                 (
                     sell_balance_amount_atomic,
                     sell_balance_decimals,
                 ) = await self.chain.convert_amount_to_amount_atomic(
                     token=sell_token,
-                    amount_readable=sell_amount,
-                )
-                sell_balance = BalanceAtomic[Token](
-                    asset=sell_token,
-                    amount=sell_amount,
-                    amount_atomic=sell_balance_amount_atomic,
-                    decimals=sell_balance_decimals,
+                    amount_readable=step.sell_asset_with_amount.amount,
                 )
 
-                converted_balance = await self.exchange.convert_balance_to_token(
-                    balance=sell_balance,
-                    token=buy_token,
-                    investment_parameters=InvestmentParameters(
-                        slippage_tolerance_in_percentage=Decimal(1)
+                converted_asset_balance = await self.asset_balance_converter.convert(
+                    sell_balance=BalanceAtomic[Asset](
+                        asset=sell_asset,
+                        amount=step.sell_asset_with_amount.amount,
+                        amount_atomic=sell_balance_amount_atomic,
+                        decimals=sell_balance_decimals,
                     ),
+                    buy_asset=buy_asset,
+                    holdings=holdings,
                 )
 
                 steps.append(
                     PricedInvestmentPlanStep(
                         sell_asset_with_amount=PricedInvestmentPlanBalance(
                             asset=sell_asset,
-                            amount=converted_balance.sell_balance.amount
-                            / sell_asset.get_denomination(),
+                            amount=converted_asset_balance.total_balance.sell_balance.amount,
                             available_amount=sell_asset_available_amount,
                         ),
                         buy_asset_with_amount=PricedInvestmentPlanBalance(
                             asset=buy_asset,
-                            amount=converted_balance.buy_balance.amount
-                            / buy_asset.get_denomination(),
+                            amount=converted_asset_balance.total_balance.buy_balance.amount,
                             available_amount=buy_asset_available_amount,
                         ),
                     )
@@ -120,6 +125,7 @@ class BuildPricedInvestmentPlanUseCase:
                     decimals=buy_balance_decimals,
                 )
 
+                # TODO: Flipping sell and buy token is inaccurate
                 converted_balance = await self.exchange.convert_balance_to_token(
                     balance=buy_balance,
                     token=sell_token,
@@ -151,7 +157,7 @@ class BuildPricedInvestmentPlanUseCase:
                     PricedInvestmentPlanStep(
                         sell_asset_with_amount=PricedInvestmentPlanBalance(
                             asset=sell_asset,
-                            amount=step.sell_asset_with_amount.amount,
+                            amount=None,
                             available_amount=sell_asset_available_amount,
                         ),
                         buy_asset_with_amount=PricedInvestmentPlanBalance(
@@ -177,7 +183,7 @@ class BuildPricedInvestmentPlanUseCase:
                         ),
                         buy_asset_with_amount=PricedInvestmentPlanBalance(
                             asset=buy_asset,
-                            amount=step.buy_asset_with_amount.amount,
+                            amount=None,
                             available_amount=buy_asset_available_amount,
                         ),
                     )
@@ -189,18 +195,23 @@ class BuildPricedInvestmentPlanUseCase:
         )
 
     def _get_available_amount(
-        self, holding_balances_per_token: dict[str, BalanceAtomic[Token]], asset: Asset
+        self, holding_balances_per_token: dict[str, BalanceAtomic], asset: Asset
     ) -> Decimal:
         holding_balance = holding_balances_per_token.get(asset.id)
 
         return holding_balance.amount if holding_balance else Decimal("0")
 
-    async def _get_all_holding_balances(self) -> dict[str, BalanceAtomic[Token]]:
-        holdings = await self.posting_repository.get_holding_balances()
+    async def _get_all_holding_balances(
+        self, holdings: list[Holding]
+    ) -> dict[str, BalanceAtomic]:
         available_balance = await self.chain.get_native_token_balance()
 
         holding_balances_per_token = {
-            balance.asset.id: balance for balance in [*holdings, available_balance]
+            balance.asset.id: balance
+            for balance in cast(
+                list[BalanceAtomic],
+                [*[holding.balance for holding in holdings], available_balance],
+            )
         }
 
         return holding_balances_per_token

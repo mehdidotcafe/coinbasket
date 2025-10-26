@@ -106,6 +106,7 @@ def transactions():
             transaction_hash="0x1234567890abcdef",
             order_id="f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef",
             trigger="MANUAL",
+            asset_type="TOKEN",
         )
     ]
 
@@ -124,6 +125,7 @@ def postings():
             ),
             created_at=0,
             type="BUY",
+            asset_type="TOKEN",
         ),
         Posting(
             id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0b",
@@ -136,6 +138,7 @@ def postings():
             ),
             created_at=0,
             type="SELL",
+            asset_type="TOKEN",
         ),
         Posting(
             id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0c",
@@ -148,6 +151,7 @@ def postings():
             ),
             created_at=0,
             type="BUY",
+            asset_type="TOKEN",
         ),
         Posting(
             id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0d",
@@ -160,6 +164,7 @@ def postings():
             ),
             created_at=0,
             type="SELL",
+            asset_type="TOKEN",
         ),
         Posting(
             id="6dcba8f1-a95e-4d3f-b9c8-006c12082d0e",
@@ -172,6 +177,7 @@ def postings():
             ),
             created_at=0,
             type="BUY",
+            asset_type="TOKEN",
         ),
         Posting(
             id="6dcba8f1-a95e-4d3f-b9c8-006c12082d1a",
@@ -184,6 +190,7 @@ def postings():
             ),
             created_at=0,
             type="BUY",
+            asset_type="TOKEN",
         ),
         Posting(
             id="6dcba8f1-a95e-4d3f-b9c8-006c12082d1b",
@@ -196,6 +203,7 @@ def postings():
             ),
             created_at=0,
             type="SELL",
+            asset_type="TOKEN",
         ),
     ]
 
@@ -257,8 +265,19 @@ def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, clean
 
     # Holding Balances
     assert portfolio["holding_balances"][0]["native_balance"] == {
-        "amount": "9.99",
-        "amount_atomic": "9990000000000000000",
+        "asset": {
+            "id": "bsc:0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
+            "name": "SOLANA",
+            "display_name": "Solana",
+            "ticker": "SOL",
+            "address": "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
+        },
+        "amount": "2.32",
+        "amount_atomic": "2320000000000000000",
+        "decimals": 18,
+    }
+
+    assert portfolio["holding_balances"][1]["native_balance"] == {
         "asset": {
             "id": "bsc:0x55d398326f99059ff775485246999027b3197955",
             "name": "Tether USD",
@@ -266,6 +285,21 @@ def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, clean
             "ticker": "USDT",
             "address": "0x55d398326f99059ff775485246999027b3197955",
         },
+        "amount": "9.99",
+        "amount_atomic": "9990000000000000000",
+        "decimals": 18,
+    }
+
+    assert portfolio["holding_balances"][2]["native_balance"] == {
+        "asset": {
+            "id": "bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            "name": "Binance Pegged Ethereum",
+            "display_name": "Ethereum",
+            "ticker": "ETH",
+            "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        },
+        "amount": "10.83",
+        "amount_atomic": "10830000000000000000",
         "decimals": 18,
     }
 

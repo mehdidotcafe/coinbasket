@@ -9,7 +9,9 @@
   ],
   "[python]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "charliermarsh.ruff"
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false,
   },
   "python.analysis.typeCheckingMode": "strict",
   "python.languageServer": "Pylance",
