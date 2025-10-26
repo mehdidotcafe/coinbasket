@@ -159,4 +159,4 @@ session_manager = SqlAlchemySessionManager(
     engine=engine, AsyncSessionLocal=AsyncSessionLocal
 )
 
-asset_balance_converter = AssetBalanceConverter(exchange=exchange)
+asset_balance_converter = AssetBalanceConverter(exchange=exchange, chain=chain)

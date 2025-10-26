@@ -16,6 +16,7 @@ from invest_agent.investment.infrastructure.zero_x.quote import (
     Transaction,
 )
 from invest_agent.investment.exchange.exchange import (
+    ExchangeConvertedBalance,
     TransactionData,
 )
 from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
@@ -26,6 +27,9 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import (
     ZeroXSwapper,
 )
 from invest_agent.investment.investment_parameters import InvestmentParameters
+from invest_agent.investment.infrastructure.zero_x.exception.swap_validation_failed import (
+    SwapValidationFailed,
+)
 
 from invest_agent.investment.order.order import Order
 from pytest import fixture, mark, raises
@@ -344,3 +348,38 @@ async def test_zero_x_swapper_build_transactions_data_with_approval(
     assert transactions_data[0].encoded_input is not None
 
     assert transactions_data[1].type == "SEND"
+
+
+@mark.asyncio
+async def test_zero_x_swapper_convert_balance_to_token_swap_validation_failed(
+    zero_x_api_client: ZeroXApiClient,
+    zero_x_swapper: ZeroXSwapper,
+    chain: Chain,
+):
+    chain.is_native_token.return_value = False
+    chain.get_token_decimals.return_value = 10
+    zero_x_api_client.get_price.side_effect = SwapValidationFailed()
+
+    exchange_converted_balance = await zero_x_swapper.convert_balance_to_token(
+        balance=BalanceAtomic(
+            asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        token=eth_token,
+        investment_parameters=InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+        ),
+    )
+
+    assert exchange_converted_balance == ExchangeConvertedBalance(
+        sell_balance=BalanceAtomic(
+            asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        buy_balance=BalanceAtomic(
+            asset=eth_token,
+            amount=Decimal("0"),
+            amount_atomic=0,
+            decimals=10,
+        ),
+    )
+
+    chain.get_token_decimals.assert_awaited_once_with(eth_token.address)
