@@ -1,5 +1,9 @@
 from decimal import Decimal
 from typing import TypedDict
+from invest_agent.investment.infrastructure.zero_x.exception.swap_validation_failed import (
+    SwapValidationFailed,
+)
+from shared.http_request.exception.failed_request import FailedRequest
 from shared.http_request.http_request import HttpRequest
 from invest_agent.investment.infrastructure.zero_x.price import Price
 from invest_agent.investment.infrastructure.zero_x.quote import QuoteResult
@@ -46,14 +50,20 @@ class ZeroXApiClient:
             slippage_bps,
         )
 
-        return await self.http_request.get(
-            {
-                "url": url,
-                "params": params,
-                "headers": self.default_headers,
-            },
-            Price,
-        )
+        try:
+            return await self.http_request.get(
+                {
+                    "url": url,
+                    "params": params,
+                    "headers": self.default_headers,
+                },
+                Price,
+            )
+        except FailedRequest as e:
+            print(e)
+            if "SWAP_VALIDATION_FAILED" in e.response:
+                raise SwapValidationFailed(e)
+            raise e
 
     async def get_quote(
         self,

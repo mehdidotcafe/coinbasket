@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import cast
 from invest_agent.chain.balance import BalanceAtomic
+from invest_agent.chain.chain import Chain
 from invest_agent.investment.exception.cannot_swap_basket_for_another_exception import (
     CannotSwapBasketForAnotherException,
 )
@@ -28,8 +29,9 @@ class ConvertedAssetBalance:
 
 
 class AssetBalanceConverter:
-    def __init__(self, exchange: Exchange):
+    def __init__(self, exchange: Exchange, chain: Chain):
         self.exchange = exchange
+        self.chain = chain
 
     async def convert(
         self, sell_balance: BalanceAtomic, buy_asset: Asset, holdings: list[Holding]
@@ -62,12 +64,12 @@ class AssetBalanceConverter:
             (h for h in holdings if h.balance.asset == sell_balance.asset), None
         )
         if not basket_holding or not basket_holding.children:
-            raise Exception("Temporary")
+            return await self._build_empty_balance(sell_balance, buy_token)
 
         # Calculate the sell ratio (portion of the basket to sell)
         total_basket_amount = basket_holding.balance.amount
         if total_basket_amount == 0:
-            raise Exception("Temporary")
+            return await self._build_empty_balance(sell_balance, buy_token)
         sell_ratio = sell_balance.amount / total_basket_amount
 
         sell_child_balances = [
@@ -125,7 +127,10 @@ class AssetBalanceConverter:
         # Split the sell_balance equally among the buy_basket's tokens
         num_tokens = len(buy_basket.tokens)
         if num_tokens == 0 or sell_balance.amount == 0:
-            raise Exception("Temporary")
+            return await self._build_empty_balance(
+                sell_balance=sell_balance,
+                buy_asset=buy_basket,
+            )
 
         split_amount = sell_balance.amount / num_tokens
         split_amount_atomic = int(sell_balance.amount_atomic / num_tokens)
@@ -210,6 +215,22 @@ class AssetBalanceConverter:
             total_balance=ConvertedBalance(
                 sell_balance=result.sell_balance,
                 buy_balance=result.buy_balance,
+            ),
+            balances=[],
+        )
+
+    async def _build_empty_balance(
+        self, sell_balance: BalanceAtomic, buy_asset: Asset
+    ) -> ConvertedAssetBalance:
+        buy_token_decimals = await self.chain.get_token_decimals(
+            buy_asset.get_pricing_token().address
+        )
+        return ConvertedAssetBalance(
+            total_balance=ConvertedBalance(
+                sell_balance=sell_balance,
+                buy_balance=BalanceAtomic.empty(
+                    asset=buy_asset, decimals=buy_token_decimals
+                ),
             ),
             balances=[],
         )
