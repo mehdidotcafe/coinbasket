@@ -1,5 +1,4 @@
 from decimal import Decimal
-import os
 from typing import Any, Dict, Literal, Optional, cast
 
 import aiosqlite
@@ -48,6 +47,7 @@ from invest_agent.portfolio.get_portfolio_use_case import (
     PortfolioBalance,
 )
 from protocol.basket import Basket
+from protocol.asset import Asset
 from protocol.fixture.basket import big4_basket, memecoinmania_basket
 from protocol.fixture.token import (
     wbnb_token,
@@ -156,12 +156,6 @@ get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
     posting_repository=posting_repository,
     asset_balance_converter=asset_balance_converter,
 )
-
-if configuration.langsmith_tracing:
-    os.environ["LANGSMITH_TRACING"] = str(configuration.langsmith_tracing)
-    os.environ["LANGSMITH_API_KEY"] = configuration.langsmith_api_key
-    os.environ["LANGSMITH_PROJECT"] = configuration.langsmith_project
-
 
 spec = APISpec(
     title=configuration.agent_name,
@@ -293,6 +287,7 @@ async def get_portfolio_summary(conversion_token: Token = usdt_token):
     """EXPENSIVE/SLOW. Retrieve the portfolio. Only use this tool when the user asks for his portfolio.
     The portfolio contains the list of assets held by the agent (holdings) and their balances both in asset token and in converted token (defaults to USDT).
     It also contains the available cash balance in BNB and the list of pending (processing) orders.
+    IMPORTANT: Do not call another tool if this returns results.
 
     Args:
         conversion_token: The token to convert the portfolio asset balances to (defaults to USDT).
@@ -309,16 +304,16 @@ async def get_portfolio_summary(conversion_token: Token = usdt_token):
 @tool(
     parse_docstring=True,
 )
-async def get_token_holding_and_available_cash(token: Token):
-    """FAST. Retrieve ONLY the available cash and holding of a specific token in the agent's wallet, including both held balance and available balance.
+async def get_asset_holding_and_available_cash(asset: Asset):
+    """FAST. Retrieve ONLY the available cash and holding of a specific asset in the agent's wallet, including both held balance and available balance.
 
     Args:
-        token: The token to retrieve the available cash and holding for.
+        asset: The token to retrieve the available cash and holding for.
 
     Returns:
-        The the available cash and holding balances of the token in the agent's wallet.
+        The the available cash and holding balances of the asset in the agent's wallet.
     """
-    asset_balance = await get_portfolio_asset_balance_use_case.execute(token)
+    asset_balance = await get_portfolio_asset_balance_use_case.execute(asset)
 
     return PortfolioAssetBalanceResponse.from_domain(asset_balance).json()
 
@@ -326,23 +321,24 @@ async def get_token_holding_and_available_cash(token: Token):
 @tool(
     parse_docstring=True,
 )
-async def get_token_holding(token: Token):
-    """FAST. Retrieve ONLY the holding balance of a specific held token.
-    Use this tool when the user asks for his token holding.
+async def get_asset_holding(asset: Asset):
+    """FAST. Retrieve ONLY the holding balance of a specific asset.
+    Use this tool when the user asks for his asset holding.
 
     Args:
-        token: The held token to retrieve the balance for.
+        asset: The held asset to retrieve the balance for.
 
     Returns:
-        The holding balance of the held token in the agent's wallet.
+        The holding balance of the asset in the agent's wallet.
     """
+    decimals = await chain.get_token_decimals(asset.get_pricing_token().address)
+
     holding = await posting_repository.get_holding_balance(
-        token if not chain.is_native_token(token) else chain.get_wrapped_base_token()
+        asset if not chain.is_native_token(asset) else chain.get_wrapped_base_token(),
+        decimals,
     )
 
-    return (
-        BalanceAtomicResponse.from_domain(holding.balance).json() if holding else None
-    )
+    return BalanceAtomicResponse.from_domain(holding.balance).json()
 
 
 @tool(
@@ -618,6 +614,8 @@ class IntentInvestmentPlanBalanceRequest(Model):
         return IntentInvestmentPlanBalance(
             asset=self.asset.to_domain(),
             amount=Decimal(self.amount)
+            if self.amount
+            else None
             if self.amount is not None and self.amount != ""
             else None,
         )
@@ -682,21 +680,20 @@ class InvestmentPlanResponse(Model):
         )
 
 
-@tool(
-    parse_docstring=True,
-)
+@tool(parse_docstring=True)
 async def execute_intent_investment_plan_use_case(
     intent_investment_plan: IntentInvestmentPlanRequest,
 ):
     """Executes the intent investment plan.
-    If the user confirms the investment plan, the orders are submitted to the chain.
-    If the user cancels the investment plan, no order is submitted 't try to invest in the investment plan again.
+    If no buy_asset, buy_asset_amount, sell_asset or sell_asset_amount set the field to None
+    IMPORTANT: Do not call this tool more than once.
+    IMPORTANT: Do not call another tool if this returns results.
 
     Args:
         intent_investment_plan (IntentInvestmentPlanRequest): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.
 
     Returns:
-        list[Order]: A list of submitted orders for the assets in the investment plan.
+        list[InvestmentPlanResponse]: A list of submitted orders for the assets in the investment plan. The list will be empty is user cancels the investment plan.
 
     Example:
         IntentInvestmentPlanRequest(
@@ -709,7 +706,7 @@ async def execute_intent_investment_plan_use_case(
                         ticker="ETH",
                         address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
                     ),
-                    buy_asset_amount="5.33"),
+                    buy_asset_amount="5.33",
                     sell_asset=AssetRequest(
                         id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
                         name="Binance Coin",
@@ -717,7 +714,7 @@ async def execute_intent_investment_plan_use_case(
                         ticker="BNB",
                         address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeEEeE",
                     ),
-                    sell_asset_amount="10.95"),
+                    sell_asset_amount="10.95",
                 ),
                 IntentInvestmentPlanStepRequest(
                     buy_asset=None,
@@ -787,8 +784,8 @@ tools = [
     execute_intent_investment_plan_use_case,
     get_agent_address,
     get_available_cash,
-    get_token_holding,
-    get_token_holding_and_available_cash,
+    get_asset_holding,
+    get_asset_holding_and_available_cash,
     get_portfolio_summary,
     get_orders,
     get_order,
@@ -908,9 +905,9 @@ def __create_agent_executor(conn: aiosqlite.Connection):
             "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket of tokens.  "
             "Users can buy, sell, or swap assets in their portfolio.  "
             "Before buying, selling or swapping assets, ALWAYS show the user the intent investment plan you are creating by showing the list of assets to buy, sell or swap.  "
-            "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't mention excluded assets.  "
+            "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't mention excluded assets.  Don't use a link when displaying a basket.  "
             "ALWAYS display amount as you get them, don't use scientific notation.  "
-            "When asked for portfolio, order, asset, or balance information, ALWAYS use a tool to fetch the data.  "
+            "When asked for portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  "
             "When an order has a status 'PENDING', it means the order is being processed.  "
             "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  "
             "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
@@ -1212,15 +1209,13 @@ class PortfolioResponse(Model):
 
 
 class PortfolioAssetBalanceResponse(Model):
-    holding_balance: BalanceAtomicResponse | None = None
+    holding_balance: BalanceAtomicResponse
     available_balance: BalanceAtomicResponse | None = None
 
     @staticmethod
     def from_domain(domain: PortfolioAssetBalance) -> "PortfolioAssetBalanceResponse":
         return PortfolioAssetBalanceResponse(
-            holding_balance=BalanceAtomicResponse.from_domain(domain.holding_balance)
-            if domain.holding_balance
-            else None,
+            holding_balance=BalanceAtomicResponse.from_domain(domain.holding_balance),
             available_balance=BalanceAtomicResponse.from_domain(
                 domain.available_balance
             )

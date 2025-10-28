@@ -1,23 +1,14 @@
 from decimal import Decimal
 from invest_agent.chain.balance import BalanceAtomic
-from invest_agent.investment.order.infrastructure.sql_alchemy_order_repository import (
-    OrderModel,
-)
 from invest_agent.investment.order.order import Order
-from invest_agent.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
-    TransactionModel,
-)
 from invest_agent.investment.transaction.transaction import Transaction
-from invest_agent.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
-    PostingModel,
-)
 from invest_agent.portfolio.posting.posting import Posting
-from invest_agent.test.database.make_session import make_session
 from pytest import fixture
 from protocol.fixture.token import sol_token, eth_token, usdt_token, cake_token
 import requests
 from environs import env
 from invest_agent.test.database.cleanup_all import cleanup_all  # noqa: F401
+from invest_agent.test.database.seed_fixtures import seed_fixtures  # noqa: F401
 
 
 agent_port = env.int("AGENT_PORT")
@@ -206,22 +197,6 @@ def postings():
             asset_type="TOKEN",
         ),
     ]
-
-
-@fixture(scope="function")
-async def seed_fixtures(
-    orders: list[Order], transactions: list[Transaction], postings: list[Posting]
-):
-    async with make_session() as session:
-        async with session.begin():
-            for order in orders:
-                session.add(OrderModel.from_domain(order))
-            for transaction in transactions:
-                session.add(TransactionModel.from_domain(transaction))
-            for posting in postings:
-                session.add(PostingModel.from_domain(posting))
-
-    yield postings
 
 
 # TODO: Enhance this test once zero_x API is mocked in integration tests

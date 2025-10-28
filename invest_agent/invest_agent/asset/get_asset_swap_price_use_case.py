@@ -33,8 +33,12 @@ class GetAssetSwapPriceUseCase:
     async def execute(
         self, asset_swap_price_info: AssetSwapPriceInfo
     ) -> ConvertedBalance:
+        sell_asset_decimals = await self.chain.get_token_decimals(
+            asset_swap_price_info.sell_asset.get_pricing_token().address
+        )
+
         holding = await self.posting_repository.get_holding_balance(
-            asset_swap_price_info.sell_asset
+            asset_swap_price_info.sell_asset, sell_asset_decimals
         )
         pricing_sell_token = asset_swap_price_info.sell_asset.get_pricing_token()
         amount_atomic, decimals = await self.chain.convert_amount_to_amount_atomic(
@@ -50,7 +54,7 @@ class GetAssetSwapPriceUseCase:
                 decimals=decimals,
             ),
             buy_asset=asset_swap_price_info.buy_asset,
-            holdings=[holding] if holding else [],
+            holdings=[holding],
         )
 
         return converted_asset_balance.total_balance

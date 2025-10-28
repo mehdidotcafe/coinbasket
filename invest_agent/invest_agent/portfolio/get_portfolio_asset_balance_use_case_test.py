@@ -15,7 +15,11 @@ from protocol.fixture.token import bnb_token, eth_token, wbnb_token
 
 @fixture
 def chain():
-    return mock.Mock(spec=Chain)
+    chain = mock.Mock(spec=Chain)
+
+    chain.get_token_decimals.return_value = 10
+
+    return chain
 
 
 @fixture
@@ -50,7 +54,7 @@ async def test_get_portfolio_asset_balance_use_case_with_native_token(
 
     chain.is_native_token.assert_called_once_with(bnb_token)
     chain.get_native_token_balance.assert_called_once()
-    posting_repository.get_holding_balance.assert_called_once_with(wbnb_token)
+    posting_repository.get_holding_balance.assert_called_once_with(wbnb_token, 10)
 
     assert portfolio_asset_balance == PortfolioAssetBalance(
         holding_balance=BalanceAtomic(
@@ -121,7 +125,7 @@ async def test_get_portfolio_asset_balance_use_case_with_token(
     asset_balance = await use_case.execute(eth_token)
 
     chain.is_native_token.assert_called_once_with(eth_token)
-    posting_repository.get_holding_balance.assert_called_once_with(eth_token)
+    posting_repository.get_holding_balance.assert_called_once_with(eth_token, 10)
 
     assert asset_balance == PortfolioAssetBalance(
         holding_balance=BalanceAtomic(
