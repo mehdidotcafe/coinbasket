@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_integration_conversation
+# name: test_integration_conversation_buy_basket_and_token
   dict({
     'args': dict({
       'priced_investment_plan': dict({

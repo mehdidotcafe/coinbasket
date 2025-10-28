@@ -1,5 +1,6 @@
 from typing import Literal, cast
 import uuid
+import os
 from environs import env
 from marshmallow.validate import OneOf
 
@@ -64,3 +65,8 @@ class Configuration:
 
         self.temporal_port = env.int("TEMPORAL_PORT")
         self.temporal_host = env.str("TEMPORAL_HOST")
+
+        if self.langsmith_tracing:
+            os.environ["LANGSMITH_TRACING"] = "true"
+            os.environ["LANGSMITH_API_KEY"] = self.langsmith_api_key
+            os.environ["LANGSMITH_PROJECT"] = self.langsmith_project

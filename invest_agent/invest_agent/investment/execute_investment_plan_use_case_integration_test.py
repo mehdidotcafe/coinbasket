@@ -37,6 +37,7 @@ from sqlalchemy import select
 from invest_agent.test.database.make_session import make_session
 
 from invest_agent.test.database.cleanup_all import cleanup_all  # noqa: F401
+from invest_agent.test.database.seed_fixtures import seed_fixtures  # noqa: F401
 
 
 @fixture
@@ -212,22 +213,6 @@ def investment_plan_sell_only_basket():
             ),
         ]
     )
-
-
-@fixture(scope="function")
-async def seed_fixtures(
-    orders: list[Order], transactions: list[Transaction], postings: list[Posting]
-):
-    async with make_session() as session:
-        async with session.begin():
-            for order in orders:
-                session.add(OrderModel.from_domain(order))
-            for transaction in transactions:
-                session.add(TransactionModel.from_domain(transaction))
-            for posting in postings:
-                session.add(PostingModel.from_domain(posting))
-
-    yield postings
 
 
 async def fetch_all_orders(excluded_order_ids: list[str] = []):

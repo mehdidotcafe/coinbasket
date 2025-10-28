@@ -62,7 +62,7 @@ def investment_plan() -> dict[str, Any]:
     }
 
 
-def test_integration_conversation(
+def test_integration_conversation_buy_basket_and_token(
     investment_plan: dict[str, Any],
     cleanup_all: Any,  # noqa: F811
     snapshot,

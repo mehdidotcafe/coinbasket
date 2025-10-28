@@ -30,15 +30,15 @@ readme = "README.md"
   python = ">=3.10,<4.0"
   uagents = ">=0.22.4,<0.23.0"
   python-dotenv = ">=1.1.0,<2.0.0"
-  langchain-openai = "^0.3.29"
-  langchain-core = "^0.3.74"
-  langgraph = "^0.6.4"
+  langchain-openai = "^1.0.1"
+  langchain-core = "^1.0.1"
+  langgraph = "^1.0.1"
   jq = ">=1.8.0,<2.0.0"
   web3 = ">=7.10.0,<8.0.0"
   environs = ">=14.1.1,<15.0.0"
   uniswap-universal-router-decoder = ">=2.0.0,<3.0.0"
   jsonpickle = ">=4.0.5,<5.0.0"
-  langgraph-checkpoint-sqlite = "^2.0.11"
+  langgraph-checkpoint-sqlite = "^3.0.0"
   aiosqlite = "^0.21.0"
   anyio = "^4.9.0"
   aiohttp = "^3.11.18"
@@ -51,10 +51,7 @@ readme = "README.md"
   psycopg2-binary = "^2.9.10"
   temporalio = "^1.18.1"
 
-    [tool.poetry.dependencies.langchain]
-    extras = [ "openapi" ]
-    version = "^0.3.25"
-
+  langchain = "^1.0.2"
     [tool.poetry.dependencies.protocol]
     path = "../protocol"
     develop = true

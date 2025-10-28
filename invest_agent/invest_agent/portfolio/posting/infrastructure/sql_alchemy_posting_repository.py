@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Literal, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Literal, Sequence, Tuple, cast
 from decimal import Decimal
 import json
 from invest_agent.database.infrastructure.sql_alchemy_base import Base
@@ -15,6 +15,7 @@ from invest_agent.portfolio.posting.posting import (
 )
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from protocol.asset import Asset
+from protocol.token import Token
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy import ForeignKey, Row, String, or_, select, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -114,8 +115,8 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
             return self._map_rows_to_holdings(rows)
 
     async def get_holding_balance(
-        self, asset: Asset, session: NullableSession = None
-    ) -> Holding | None:
+        self, asset: Asset, asset_decimals: int, session: NullableSession = None
+    ) -> Holding:
         async with self.get_session(session) as session:
             stmt = self._get_default_holding_statement().where(
                 or_(
@@ -126,9 +127,15 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
             result = await session.execute(stmt)
             rows = result.all()
 
-            if not rows:
-                return None
-            return self._map_rows_to_holdings(rows)[0]
+            holdings = self._map_rows_to_holdings(rows)
+
+            if not holdings:
+                return Holding(
+                    balance=BalanceAtomic.empty(asset=asset, decimals=asset_decimals),
+                    children=[],
+                )
+
+            return holdings[0]
 
     def _get_default_holding_statement(self):
         return (
@@ -201,7 +208,7 @@ class SqlAlchemyPostingRepository(PostingRepository, SqlAlchemyBaseRepository):
                 children = [self._map_row_to_balance(child) for child in children_rows]
                 holding = Holding(
                     balance=self._map_row_to_balance(row),
-                    children=children or None,
+                    children=cast(list[BalanceAtomic[Token]], children) or None,
                 )
                 holdings.append(holding)
             else:
