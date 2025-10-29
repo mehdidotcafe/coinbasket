@@ -1,0 +1,146 @@
+# serializer version: 1
+# name: test_integration_get_portfolio
+  dict({
+    'available_balance': dict({
+      'converted_balance': dict({
+        'asset': dict({
+          'address': '0x55d398326f99059ff775485246999027b3197955',
+          'display_name': 'Tether USD',
+          'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
+          'name': 'Tether USD',
+          'ticker': 'USDT',
+        }),
+        'decimals': 18,
+      }),
+      'native_balance': dict({
+        'amount': '10000',
+        'amount_atomic': '10000000000000000000000',
+        'asset': dict({
+          'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+          'display_name': 'Binance Coin',
+          'id': 'bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+          'name': 'Binance Coin',
+          'ticker': 'BNB',
+        }),
+        'decimals': 18,
+      }),
+    }),
+    'holding_balances': list([
+      dict({
+        'converted_balance': dict({
+          'asset': dict({
+            'address': '0x55d398326f99059ff775485246999027b3197955',
+            'display_name': 'Tether USD',
+            'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
+            'name': 'Tether USD',
+            'ticker': 'USDT',
+          }),
+          'decimals': 18,
+        }),
+        'native_balance': dict({
+          'amount': '2.32',
+          'amount_atomic': '2320000000000000000',
+          'asset': dict({
+            'address': '0x570A5D26f7765Ecb712C0924E4De545B89fD43dF',
+            'display_name': 'Solana',
+            'id': 'bsc:0x570A5D26f7765Ecb712C0924E4De545B89fD43dF',
+            'name': 'SOLANA',
+            'ticker': 'SOL',
+          }),
+          'decimals': 18,
+        }),
+      }),
+      dict({
+        'converted_balance': dict({
+          'asset': dict({
+            'address': '0x55d398326f99059ff775485246999027b3197955',
+            'display_name': 'Tether USD',
+            'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
+            'name': 'Tether USD',
+            'ticker': 'USDT',
+          }),
+          'decimals': 18,
+        }),
+        'native_balance': dict({
+          'amount': '9.99',
+          'amount_atomic': '9990000000000000000',
+          'asset': dict({
+            'address': '0x55d398326f99059ff775485246999027b3197955',
+            'display_name': 'Tether USD',
+            'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
+            'name': 'Tether USD',
+            'ticker': 'USDT',
+          }),
+          'decimals': 18,
+        }),
+      }),
+      dict({
+        'converted_balance': dict({
+          'asset': dict({
+            'address': '0x55d398326f99059ff775485246999027b3197955',
+            'display_name': 'Tether USD',
+            'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
+            'name': 'Tether USD',
+            'ticker': 'USDT',
+          }),
+          'decimals': 18,
+        }),
+        'native_balance': dict({
+          'amount': '10.83',
+          'amount_atomic': '10830000000000000000',
+          'asset': dict({
+            'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+            'display_name': 'Ethereum',
+            'id': 'bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+            'name': 'Binance Pegged Ethereum',
+            'ticker': 'ETH',
+          }),
+          'decimals': 18,
+        }),
+      }),
+    ]),
+    'pending_orders': list([
+      dict({
+        'buy_balance': dict({
+          'amount': '100.00',
+          'amount_atomic': '100000000000000000000',
+          'asset': dict({
+            'address': '0x55d398326f99059ff775485246999027b3197955',
+            'display_name': 'Tether USD',
+            'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
+            'name': 'Tether USD',
+            'ticker': 'USDT',
+          }),
+          'decimals': 18,
+        }),
+        'created_at': 0,
+        'id': 'cac0d510-d084-4881-967c-003c6d32983e',
+        'sell_balance': dict({
+          'amount': '100.00',
+          'amount_atomic': '100000000000000000000',
+          'asset': dict({
+            'address': '0x55d398326f99059ff775485246999027b3197955',
+            'display_name': 'Tether USD',
+            'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
+            'name': 'Tether USD',
+            'ticker': 'USDT',
+          }),
+          'decimals': 18,
+        }),
+        'status': 'PENDING',
+        'trigger': 'MANUAL',
+        'type': 'BUY',
+      }),
+    ]),
+    'total_balance': dict({
+      'asset': dict({
+        'address': '0x55d398326f99059ff775485246999027b3197955',
+        'display_name': 'Tether USD',
+        'id': 'bsc:0x55d398326f99059ff775485246999027b3197955',
+        'name': 'Tether USD',
+        'ticker': 'USDT',
+      }),
+      'decimals': 18,
+    }),
+  })
+# ---

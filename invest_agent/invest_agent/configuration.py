@@ -60,6 +60,8 @@ class Configuration:
             "FEE_VALUE_IN_PERCENTAGE", default=None
         )
 
+        self.small_balance_threshold = env.decimal("SMALL_BALANCE_USD_THRESHOLD")
+
         self.zero_x_api_url = env.str("ZERO_X_API_URL")
         self.zero_x_api_key = env.str("ZERO_X_API_KEY")
 

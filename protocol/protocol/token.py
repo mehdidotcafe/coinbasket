@@ -33,3 +33,8 @@ type: token
 
     def get_denomination(self) -> Decimal:
         return Decimal("1")
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Token):
+            return False
+        return self.id == value.id
