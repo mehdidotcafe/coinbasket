@@ -72,6 +72,7 @@ from invest_agent.registry import (
     langgraph_db_path,
     nonce_manager,
     asset_balance_converter,
+    small_balance_policy,
 )
 from invest_agent.authentication.authentication import authentication
 from invest_agent.chain.balance import Balance, BalanceAtomic
@@ -114,6 +115,7 @@ get_portfolio_use_case = GetPortfolioUseCase(
     exchange=exchange,
     chain=chain,
     asset_balance_converter=asset_balance_converter,
+    small_balance_policy=small_balance_policy,
 )
 
 get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(

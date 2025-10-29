@@ -19,6 +19,7 @@ from invest_agent.portfolio.get_portfolio_use_case import (
     GetPortfolioUseCase,
     PortfolioBalance,
 )
+from invest_agent.portfolio.small_balance.small_balance_policy import SmallBalancePolicy
 from pytest import fixture, mark
 
 from protocol.fixture.token import (
@@ -58,6 +59,11 @@ def asset_balance_converter():
 
 
 @fixture
+def small_balance_policy():
+    return mock.Mock(spec=SmallBalancePolicy)
+
+
+@fixture
 def investment_parameters():
     return InvestmentParameters(
         slippage_tolerance_in_percentage=Decimal("1"),
@@ -71,9 +77,15 @@ def use_case(
     exchange: Exchange,
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
+    small_balance_policy: SmallBalancePolicy,
 ):
     return GetPortfolioUseCase(
-        order_repository, posting_repository, exchange, chain, asset_balance_converter
+        order_repository,
+        posting_repository,
+        exchange,
+        chain,
+        asset_balance_converter,
+        small_balance_policy,
     )
 
 
@@ -203,6 +215,7 @@ async def test_get_portfolio_use_case_holding_balances(
     exchange: Exchange,
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
+    small_balance_policy: SmallBalancePolicy,
 ):
     holding_balances: list[Holding] = [
         Holding(
@@ -316,8 +329,8 @@ async def test_get_portfolio_use_case_holding_balances(
                 ),
                 buy_balance=BalanceAtomic(
                     asset=usdt_token,
-                    amount=Decimal("3956"),
-                    amount_atomic=3956 * 10**18,
+                    amount=Decimal("0.001"),
+                    amount_atomic=1 * 10**15,
                     decimals=18,
                 ),
             ),
@@ -353,6 +366,7 @@ async def test_get_portfolio_use_case_holding_balances(
             ),
         ),
     ]
+    small_balance_policy.is_small_balance.side_effect = [False, False, True, False]
 
     portfolio = await use_case.execute(usdt_token)
 
@@ -431,20 +445,7 @@ async def test_get_portfolio_use_case_holding_balances(
                 decimals=18,
             ),
         ),
-        PortfolioBalance(
-            native_balance=BalanceAtomic(
-                asset=eth_token,
-                amount=Decimal("0.85"),
-                amount_atomic=85 * 10**16,
-                decimals=18,
-            ),
-            converted_balance=BalanceAtomic(
-                asset=usdt_token,
-                amount=Decimal("3956"),
-                amount_atomic=3956 * 10**18,
-                decimals=18,
-            ),
-        ),
+        # ETH should be excluded as small balance
         PortfolioBalance(
             native_balance=BalanceAtomic(
                 asset=big4_basket,
@@ -463,12 +464,105 @@ async def test_get_portfolio_use_case_holding_balances(
 
 
 @mark.asyncio
+async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
+    use_case: GetPortfolioUseCase,
+    posting_repository: PostingRepository,
+    exchange: Exchange,
+    chain: Chain,
+    asset_balance_converter: AssetBalanceConverter,
+    small_balance_policy: SmallBalancePolicy,
+):
+    holding_balances: list[Holding] = [
+        Holding(
+            balance=BalanceAtomic(
+                asset=wbnb_token,
+                amount=Decimal("5.0"),
+                amount_atomic=5 * 10**18,
+                decimals=18,
+            ),
+            children=None,
+        ),
+    ]
+
+    chain.get_token_decimals.return_value = 18
+    posting_repository.get_holding_balances.return_value = holding_balances
+
+    asset_balance_converter.convert.side_effect = [
+        ConvertedAssetBalance(
+            total_balance=ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("1.0"),
+                    amount_atomic=1 * 10**18,
+                    decimals=18,
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=usdt_token,
+                    amount=Decimal("0.001"),
+                    amount_atomic=1 * 10**15,
+                    decimals=18,
+                ),
+            ),
+            balances=[],
+        ),
+        ConvertedAssetBalance(
+            total_balance=ConvertedBalance(
+                sell_balance=BalanceAtomic(
+                    asset=wbnb_token,
+                    amount=Decimal("5.0"),
+                    amount_atomic=5 * 10**18,
+                    decimals=18,
+                ),
+                buy_balance=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("9"),
+                    amount_atomic=9 * 10**18,
+                    decimals=18,
+                ),
+            ),
+            balances=[],
+        ),
+    ]
+
+    exchange.convert_balance_to_token.side_effect = [
+        # Get available_balance mock
+        ExchangeConvertedBalance(
+            sell_balance=BalanceAtomic(
+                asset=bnb_token, amount=Decimal("0"), amount_atomic=0, decimals=18
+            ),
+            buy_balance=BalanceAtomic(
+                asset=usdt_token, amount=Decimal("0"), amount_atomic=0, decimals=18
+            ),
+        ),
+    ]
+    small_balance_policy.is_small_balance.return_value = True
+
+    await use_case.execute(eth_token)
+
+    small_balance_policy.is_small_balance.assert_called_once_with(
+        BalanceAtomic(
+            asset=eth_token,
+            amount=Decimal("9"),
+            amount_atomic=9 * 10**18,
+            decimals=18,
+        ),
+        BalanceAtomic(
+            asset=usdt_token,
+            amount=Decimal("0.001"),
+            amount_atomic=1 * 10**15,
+            decimals=18,
+        ),
+    )
+
+
+@mark.asyncio
 async def test_get_portfolio_use_case_total_balance(
     use_case: GetPortfolioUseCase,
     posting_repository: PostingRepository,
     exchange: Exchange,
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
+    small_balance_policy: SmallBalancePolicy,
 ):
     holding_balances = [
         Holding(
@@ -526,6 +620,8 @@ async def test_get_portfolio_use_case_total_balance(
             ),
         ),
     ]
+
+    small_balance_policy.is_small_balance.return_value = False
 
     portfolio = await use_case.execute(usdt_token)
 

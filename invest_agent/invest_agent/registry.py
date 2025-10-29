@@ -2,6 +2,9 @@ from typing import Any, cast
 from invest_agent.investment.calculator.asset_balance_converter import (
     AssetBalanceConverter,
 )
+from invest_agent.portfolio.small_balance.absolute_small_balance_policy import (
+    AbsoluteSmallBalancePolicy,
+)
 from temporalio.client import Client as TemporalClient
 
 from invest_agent.chain.infrastructure.bsc.transaction_receipt_parser import (
@@ -160,3 +163,7 @@ session_manager = SqlAlchemySessionManager(
 )
 
 asset_balance_converter = AssetBalanceConverter(exchange=exchange, chain=chain)
+
+small_balance_policy = AbsoluteSmallBalancePolicy(
+    {"threshold": configuration.small_balance_threshold}
+)

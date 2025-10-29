@@ -50,7 +50,7 @@ usdt_token = Token(
 )
 
 shib_token = Token(
-    id="bsc:0x55d398326f99059ff775485246999027b3197955",
+    id="bsc:0x2859e4544c4bb03966803b044a93563bd2d0dd4d",
     name="Shiba Inu",
     display_name="Shiba Inu",
     ticker="SHIB",

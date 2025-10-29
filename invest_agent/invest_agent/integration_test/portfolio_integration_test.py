@@ -4,11 +4,18 @@ from invest_agent.investment.order.order import Order
 from invest_agent.investment.transaction.transaction import Transaction
 from invest_agent.portfolio.posting.posting import Posting
 from pytest import fixture
-from protocol.fixture.token import sol_token, eth_token, usdt_token, cake_token
+from protocol.fixture.token import (
+    sol_token,
+    eth_token,
+    usdt_token,
+    cake_token,
+    shib_token,
+)
 import requests
 from environs import env
 from invest_agent.test.database.cleanup_all import cleanup_all  # noqa: F401
 from invest_agent.test.database.seed_fixtures import seed_fixtures  # noqa: F401
+from syrupy.filters import paths
 
 
 agent_port = env.int("AGENT_PORT")
@@ -196,11 +203,24 @@ def postings():
             type="SELL",
             asset_type="TOKEN",
         ),
+        Posting(
+            id="6dcba8f1-a95e-4d3f-b9c8-006c12082d1c",
+            transaction_id="f9bd9283-fea4-4e2d-9f3c-4ad0b66503ef",
+            asset_balance=BalanceAtomic(
+                asset=shib_token,
+                amount=Decimal("1"),
+                amount_atomic=int(1 * 10**18),
+                decimals=18,
+            ),
+            created_at=0,
+            type="BUY",
+            asset_type="TOKEN",
+        ),
     ]
 
 
 # TODO: Enhance this test once zero_x API is mocked in integration tests
-def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, cleanup_all):  # noqa: F811
+def test_integration_get_portfolio(seed_fixtures, cleanup_all, snapshot):  # noqa: F811
     response = requests.post(
         f"http://localhost:{agent_port}/portfolio",
         json={"agent_key": agent_key, "token": usdt_token.to_dict()},
@@ -209,135 +229,17 @@ def test_integration_get_portfolio(postings: list[Posting], seed_fixtures, clean
 
     assert response.status_code == 200
 
-    portfolio = response.json()
-
-    # Available Balance
-    assert portfolio["available_balance"]["native_balance"] == {
-        "amount": "10000",
-        "amount_atomic": "10000000000000000000000",
-        "asset": {
-            "id": "bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-            "name": "Binance Coin",
-            "display_name": "Binance Coin",
-            "ticker": "BNB",
-            "address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-        },
-        "decimals": 18,
-    }
-
-    assert Decimal(portfolio["available_balance"]["converted_balance"]["amount"]) > 0
-    assert (
-        Decimal(portfolio["available_balance"]["converted_balance"]["amount_atomic"])
-        > 0
+    assert response.json() == snapshot(
+        exclude=paths(
+            "available_balance.converted_balance.amount",
+            "available_balance.converted_balance.amount_atomic",
+            "holding_balances.0.converted_balance.amount",
+            "holding_balances.0.converted_balance.amount_atomic",
+            "holding_balances.1.converted_balance.amount",
+            "holding_balances.1.converted_balance.amount_atomic",
+            "holding_balances.2.converted_balance.amount",
+            "holding_balances.2.converted_balance.amount_atomic",
+            "total_balance.amount",
+            "total_balance.amount_atomic",
+        )
     )
-    assert portfolio["available_balance"]["converted_balance"]["asset"] == {
-        "id": "bsc:0x55d398326f99059ff775485246999027b3197955",
-        "name": "Tether USD",
-        "display_name": "Tether USD",
-        "ticker": "USDT",
-        "address": "0x55d398326f99059ff775485246999027b3197955",
-    }
-
-    # Holding Balances
-    assert portfolio["holding_balances"][0]["native_balance"] == {
-        "asset": {
-            "id": "bsc:0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
-            "name": "SOLANA",
-            "display_name": "Solana",
-            "ticker": "SOL",
-            "address": "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
-        },
-        "amount": "2.32",
-        "amount_atomic": "2320000000000000000",
-        "decimals": 18,
-    }
-
-    assert portfolio["holding_balances"][1]["native_balance"] == {
-        "asset": {
-            "id": "bsc:0x55d398326f99059ff775485246999027b3197955",
-            "name": "Tether USD",
-            "display_name": "Tether USD",
-            "ticker": "USDT",
-            "address": "0x55d398326f99059ff775485246999027b3197955",
-        },
-        "amount": "9.99",
-        "amount_atomic": "9990000000000000000",
-        "decimals": 18,
-    }
-
-    assert portfolio["holding_balances"][2]["native_balance"] == {
-        "asset": {
-            "id": "bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
-            "name": "Binance Pegged Ethereum",
-            "display_name": "Ethereum",
-            "ticker": "ETH",
-            "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
-        },
-        "amount": "10.83",
-        "amount_atomic": "10830000000000000000",
-        "decimals": 18,
-    }
-
-    for i in range(0, 2):
-        assert (
-            Decimal(portfolio["holding_balances"][i]["converted_balance"]["amount"]) > 0
-        )
-        assert (
-            Decimal(
-                portfolio["holding_balances"][i]["converted_balance"]["amount_atomic"]
-            )
-            > 0
-        )
-        assert portfolio["holding_balances"][i]["converted_balance"]["asset"] == {
-            "id": "bsc:0x55d398326f99059ff775485246999027b3197955",
-            "name": "Tether USD",
-            "display_name": "Tether USD",
-            "ticker": "USDT",
-            "address": "0x55d398326f99059ff775485246999027b3197955",
-        }
-
-    # Total balance
-    assert Decimal(portfolio["total_balance"]["amount"]) > 0
-    assert Decimal(portfolio["total_balance"]["amount_atomic"]) > 0
-    assert portfolio["total_balance"]["asset"] == {
-        "id": "bsc:0x55d398326f99059ff775485246999027b3197955",
-        "name": "Tether USD",
-        "display_name": "Tether USD",
-        "ticker": "USDT",
-        "address": "0x55d398326f99059ff775485246999027b3197955",
-    }
-
-    # Pending Orders
-    assert portfolio["pending_orders"] == [
-        {
-            "id": "cac0d510-d084-4881-967c-003c6d32983e",
-            "sell_balance": {
-                "amount": "100.00",
-                "amount_atomic": "100000000000000000000",
-                "asset": {
-                    "id": "bsc:0x55d398326f99059ff775485246999027b3197955",
-                    "name": "Tether USD",
-                    "display_name": "Tether USD",
-                    "ticker": "USDT",
-                    "address": "0x55d398326f99059ff775485246999027b3197955",
-                },
-                "decimals": 18,
-            },
-            "buy_balance": {
-                "amount": "100.00",
-                "amount_atomic": "100000000000000000000",
-                "asset": {
-                    "id": "bsc:0x55d398326f99059ff775485246999027b3197955",
-                    "name": "Tether USD",
-                    "display_name": "Tether USD",
-                    "ticker": "USDT",
-                    "address": "0x55d398326f99059ff775485246999027b3197955",
-                },
-                "decimals": 18,
-            },
-            "type": "BUY",
-            "created_at": 0,
-            "status": "PENDING",
-            "trigger": "MANUAL",
-        }
-    ]
