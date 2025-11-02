@@ -1,3 +1,4 @@
+from data_agent.asset.get_asset_by_id_use_case import GetAssetByIdUseCase
 from data_agent.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from pydantic import SecretStr
 from data_agent.ingestion.id.id_generator import IdGenerator
@@ -47,6 +48,9 @@ from protocol import (
     GetAllBasketsQuery,
     GetAllBasketsResponse,
     TokenResponse,
+    GetAssetByIdQuery,
+    GetAssetByIdResponse,
+    GetAssetByIdValidResponse,
 )
 
 configuration = Configuration()
@@ -81,6 +85,8 @@ similarity_storage = QdrantLangChainSimilarityStorage(
 get_similar_assets_use_case = GetSimilarAssetsUseCase(similarity_storage)
 
 get_all_baskets_use_case = GetAllBasketsUseCase(similarity_storage)
+
+get_asset_by_id_use_case = GetAssetByIdUseCase(similarity_storage)
 
 ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
@@ -137,7 +143,7 @@ async def on_get_similar_assets_message(
 
     query = msg.query
 
-    assets = await get_similar_assets_use_case.execute(query)
+    assets = await get_similar_assets_use_case.execute(query, type=None)
 
     await ctx.send(
         sender,
@@ -166,6 +172,28 @@ async def get_all_baskets(
 
     return GetAllBasketsResponse(
         baskets=[BasketResponse.from_domain(basket) for basket in baskets]
+    )
+
+
+@data_agent.on_rest_post("/asset", GetAssetByIdQuery, GetAssetByIdResponse)
+async def get_asset_by_id(
+    _ctx: Context, req: GetAssetByIdQuery
+) -> GetAssetByIdResponse:
+    if req.agent_key != configuration.agent_key:
+        raise InvalidAgentKey()
+
+    asset_id = req.asset_id
+    asset = await get_asset_by_id_use_case.execute(asset_id)
+
+    if not asset:
+        raise ValueError(f"Asset id {asset_id} not found")
+
+    return GetAssetByIdResponse(
+        data=GetAssetByIdValidResponse(
+            asset=TokenResponse.from_domain(asset)
+            if isinstance(asset, Token)
+            else BasketResponse.from_domain(asset)
+        )
     )
 
 

@@ -85,10 +85,10 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
             )
         ]
 
-    def get(self, ids: list[str]):
+    async def get(self, ids: list[str]):
         return [
             self.__map_document_to_similarity_document(doc)
-            for doc in self.qdrant.get_by_ids(ids)
+            for doc in await self.qdrant.aget_by_ids(ids)
         ]
 
     async def get_by_field(self, name: str, value: str) -> list[SimilarityDocument]:

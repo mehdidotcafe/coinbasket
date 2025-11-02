@@ -98,6 +98,8 @@ from protocol import (
     GetAllBasketsQuery,
     GetAllBasketsResponse,
     TokenResponse,
+    GetAssetByIdQuery,
+    GetAssetByIdResponse,
 )
 from protocol.fixture.token import usdt_token
 
@@ -210,7 +212,14 @@ async def get_tokens_from_query(query: str) -> list[TokenResponse | BasketRespon
     if isinstance(res.data, str):
         raise ValueError(f"Response is not a valid response: {res.data}")
 
-    return res.data.assets
+    return [
+        (
+            TokenResponse.from_domain(asset.to_domain())
+            if isinstance(asset, TokenResponse)
+            else BasketResponse.from_domain(asset.to_domain())
+        )
+        for asset in res.data.assets
+    ]
 
 
 @tool(parse_docstring=True)
@@ -245,7 +254,14 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
     if isinstance(res.data, str):
         raise ValueError(f"Response is not a valid response: {res.data}")
 
-    return res.data.assets
+    return [
+        (
+            TokenResponse.from_domain(asset.to_domain())
+            if isinstance(asset, TokenResponse)
+            else BasketResponse.from_domain(asset.to_domain())
+        )
+        for asset in res.data.assets
+    ]
 
 
 @tool(parse_docstring=True)
@@ -609,12 +625,35 @@ class InvestmentPlanRequest(Model):
 
 
 class IntentInvestmentPlanBalanceRequest(Model):
-    asset: AssetRequest
+    asset_id: str
     amount: str | None = None
 
-    def to_domain(self):
+    async def to_domain(self):
+        asset = None
+
+        # TODO: Handle test case more elegantly
+        if configuration.agent_env == "test":
+            asset = (
+                btc_token
+                if self.asset_id == "bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
+                else memecoinmania_basket
+            )
+        else:
+            res = await agent_to_agent_client.send_and_receive_message(
+                GetAssetByIdQuery(
+                    agent_key=configuration.data_agent_key, asset_id=self.asset_id
+                ),
+                GetAssetByIdResponse,
+                "asset",
+            )
+
+            if isinstance(res.data, str):
+                raise ValueError(f"Response is not a valid response: {res.data}")
+
+            asset = res.data.asset.to_domain()
+
         return IntentInvestmentPlanBalance(
-            asset=self.asset.to_domain(),
+            asset=asset,
             amount=Decimal(self.amount)
             if self.amount
             else None
@@ -625,7 +664,7 @@ class IntentInvestmentPlanBalanceRequest(Model):
     def to_dict(self) -> dict[str, Any]:
         """Convert the IntentInvestmentPlanBalance to a dictionary."""
         return {
-            "asset": self.asset.to_domain().to_dict(),
+            "asset_id": self.asset_id,
             "amount": format(self.amount, "f") if self.amount is not None else None,
         }
 
@@ -646,12 +685,12 @@ class IntentInvestmentPlanStepRequest(Model):
 
         return values
 
-    def to_domain(self):
+    async def to_domain(self):
         return IntentInvestmentPlanStep(
-            buy_asset_with_amount=self.buy_asset_with_amount.to_domain()
+            buy_asset_with_amount=await self.buy_asset_with_amount.to_domain()
             if self.buy_asset_with_amount
             else None,
-            sell_asset_with_amount=self.sell_asset_with_amount.to_domain()
+            sell_asset_with_amount=await self.sell_asset_with_amount.to_domain()
             if self.sell_asset_with_amount
             else None,
         )
@@ -660,9 +699,11 @@ class IntentInvestmentPlanStepRequest(Model):
 class IntentInvestmentPlanRequest(Model):
     steps: list[IntentInvestmentPlanStepRequest]
 
-    def to_domain(self) -> IntentInvestmentPlan:
+    async def to_domain(self) -> IntentInvestmentPlan:
         """Convert the IntentInvestmentPlan to a dictionary."""
-        return IntentInvestmentPlan(steps=[step.to_domain() for step in self.steps])
+        return IntentInvestmentPlan(
+            steps=[await step.to_domain() for step in self.steps]
+        )
 
 
 class InvestmentPlanResponse(Model):
@@ -747,7 +788,7 @@ async def execute_intent_investment_plan_use_case(
     """
 
     priced_investment_plan = await build_priced_investment_plan_use_case.execute(
-        intent_investment_plan.to_domain()
+        await intent_investment_plan.to_domain()
     )
 
     investment_plan_as_dict = interrupt(

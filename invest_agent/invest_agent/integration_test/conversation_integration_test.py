@@ -118,6 +118,8 @@ def test_integration_conversation_buy_basket_and_token(
         exclude=paths(
             "args.priced_investment_plan.steps.0.sell_asset_with_amount.amount",
             "args.priced_investment_plan.steps.1.sell_asset_with_amount.amount",
+            "args.priced_investment_plan.steps.0.buy_asset_with_amount.amount",
+            "args.priced_investment_plan.steps.1.buy_asset_with_amount.amount",
         )
     )
 
