@@ -26,7 +26,7 @@ class IngestDataUseCase:
             try:
                 documents = await data_source.get()
 
-                stored_documents = self.similarity_storage.get(
+                stored_documents = await self.similarity_storage.get(
                     [doc.id for doc in documents]
                 )
 

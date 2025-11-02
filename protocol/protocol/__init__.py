@@ -93,3 +93,16 @@ class GetAllBasketsQuery(Model):
 
 class GetAllBasketsResponse(Model):
     baskets: list[BasketResponse]
+
+
+class GetAssetByIdQuery(Model):
+    agent_key: str
+    asset_id: str
+
+
+class GetAssetByIdValidResponse(Model):
+    asset: AssetResponse
+
+
+class GetAssetByIdResponse(Model):
+    data: GetAssetByIdValidResponse | str

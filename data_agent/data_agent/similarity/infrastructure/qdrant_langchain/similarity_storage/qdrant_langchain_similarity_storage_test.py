@@ -159,7 +159,8 @@ async def test_qdrant_langchain_similarity_storage_search(
     )
 
 
-def test_qdrant_langchain_similarity_storage_get(
+@mark.asyncio
+async def test_qdrant_langchain_similarity_storage_get(
     qdrant_client: type[QdrantClient],
     qdrant_vector_store: type[QdrantVectorStore],
     embeddings: OpenAIEmbeddings,
@@ -179,12 +180,12 @@ def test_qdrant_langchain_similarity_storage_get(
         embeddings,
     )
 
-    qdrant_vector_store.get_by_ids.return_value = [
+    qdrant_vector_store.aget_by_ids.return_value = [
         Document(page_content="page content 1", metadata={"_id": "1"}),
         Document(page_content="page content 2", metadata={"_id": "2"}),
     ]
 
-    similarities = similarity_storage.get(ids)
+    similarities = await similarity_storage.get(ids)
 
     assert similarities == [
         SimilarityDocument(
@@ -195,7 +196,7 @@ def test_qdrant_langchain_similarity_storage_get(
         ),
     ]
 
-    qdrant_vector_store.get_by_ids.assert_called_once_with(ids)
+    qdrant_vector_store.aget_by_ids.assert_called_once_with(ids)
 
 
 def test_qdrant_langchain_similarity_storage_set(
