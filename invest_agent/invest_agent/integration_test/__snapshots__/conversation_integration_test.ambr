@@ -6,7 +6,6 @@
         'steps': list([
           dict({
             'buy_asset_with_amount': dict({
-              'amount': '1',
               'asset': dict({
                 'denomination': '1',
                 'description': 'A basket of popular memecoins',
@@ -53,12 +52,11 @@
           }),
           dict({
             'buy_asset_with_amount': dict({
-              'amount': '1',
               'asset': dict({
                 'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
                 'display_name': 'Bitcoin',
                 'id': 'bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
-                'name': 'Bitcoin',
+                'name': 'Binance Pegged Bitcoin',
                 'ticker': 'BTC',
               }),
               'available_amount': '0',
