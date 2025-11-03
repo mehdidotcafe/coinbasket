@@ -1,0 +1,70 @@
+{
+  "name": "coinbasket-root",
+  "version": "1.0.0",
+  "targets": {
+    "dev:data_agent": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./nx dev data_agent",
+        "stream": true
+      }
+    },
+    "dev:invest_agent": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./nx dev invest_agent",
+        "stream": true,
+        "readyWhen": "Invest Agent Ready"
+      }
+    },
+    "dev:worker:invest_agent": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["dev:invest_agent"],
+      "options": {
+        "command": "./nx dev:worker invest_agent",
+        "stream": true
+      }
+    },
+    "dev:all": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["dev:data_agent", "dev:worker:invest_agent"],
+      "options": {
+        "commands": ["echo coinbasket dev started."],
+        "parallel": false,
+        "stream": true
+      }
+    },
+    "start:data_agent": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./nx start data_agent",
+        "stream": true
+      }
+    },
+    "start:invest_agent": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./nx start invest_agent",
+        "stream": true,
+        "readyWhen": "Invest Agent Ready"
+      }
+    },
+    "start:worker:invest_agent": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["start:invest_agent"],
+      "options": {
+        "command": "./nx start:worker invest_agent",
+        "stream": true
+      }
+    },
+    "start:all": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["start:data_agent", "start:worker:invest_agent"],
+      "options": {
+        "commands": ["echo coinbasket production started."],
+        "parallel": false,
+        "stream": true
+      }
+    }
+  }
+}

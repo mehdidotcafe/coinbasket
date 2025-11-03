@@ -840,6 +840,7 @@ tools = [
 @invest_agent.on_event("startup")
 async def on_startup(_ctx: Context):
     await nonce_manager.resync()
+    _ctx.logger.info("Invest Agent Ready.")
 
 
 class QueryMessageRequest(Model):

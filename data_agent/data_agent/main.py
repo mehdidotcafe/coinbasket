@@ -103,7 +103,8 @@ ingest_data_use_case = IngestDataUseCase(
 
 @data_agent.on_event("startup")
 async def on_startup(ctx: Context):
-    ctx.logger.info(f"{configuration.agent_name} ready, address ${ctx.agent.address}.")
+    ctx.logger.info("Data Agent Ready.")
+    ctx.logger.info(f"Data Agent address: {ctx.agent.address}.")
 
     await ingest_data_use_case.execute()
 
