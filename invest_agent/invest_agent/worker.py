@@ -48,7 +48,7 @@ async def main():
             fail_order_try,
         ],
     )
-    print(f"{agent_name} worker started.")
+    print("Invest Agent Worker Ready.")
     await worker.run()
 
 

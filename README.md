@@ -11,11 +11,20 @@ Please refer to the individual directories for more information on each agent:
 Once the environment variables are set up for both agents, you can choose to run the entire stack in either development or production mode.
 
 ### Development mode
-To run the entire stack in development mode, you can use the following commands:
+To run the entire stack in development mode, you can use the following quick start command:
 
 ```bash
-./nx run-many --target=dev
-./nx run-many --target=dev:worker
+./nx dev:all
+```
+
+This will start the data agent, invest agent and invest agent worker in development mode, along with their respective dependencies.
+
+Otherwise, you can choose to start each component separately using the following commands:
+
+```bash
+./nx dev data_agent
+./nx dev invest_agent
+./nx dev:worker invest_agent
 ```
 
 ⚠️ Note: If you don't start the worker, Orders won't be executed.
@@ -23,14 +32,23 @@ To run the entire stack in development mode, you can use the following commands:
 This will start both the data agent and invest agent in development mode, along with their respective dependencies.
 
 ### Production mode
-To run the entire stack in production mode, you can use the following commands:
+To run the entire stack in production mode, you can use the following quick start command:
+
 ```bash
-./nx run-many --target=start
-./nx run-many --target=start:worker
+./nx start:all
+```
+
+This will start the data agent, invest agent and invest agent worker in production mode, along with their respective dependencies.
+
+Otherwise, you can choose to start each component separately using the following commands:
+
+```bash
+./nx start data_agent
+./nx start invest_agent
+./nx start:worker invest_agent
 ```
 
 ⚠️ Note: If you don't start the worker, Orders won't be executed.
-
 
 This will start both the data agent and invest agent in production mode, along with their respective dependencies.
 
