@@ -51,7 +51,14 @@ async def test_conversation_use_case_execute_agent_last_step(
     )
 
     step = {
-        "agent": {"messages": [mock.Mock(id="1", content="Hello, how can I help you?")]}
+        "agent": {
+            "messages": [
+                mock.Mock(
+                    id="1",
+                    content=[{"text": "Hello, how can I help you?", "type": "text"}],
+                )
+            ]
+        }
     }
     agent_executor.astream = mock.MagicMock()
     agent_executor.astream.return_value.__aiter__.return_value = [step]

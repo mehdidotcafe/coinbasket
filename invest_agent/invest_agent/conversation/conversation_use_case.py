@@ -65,12 +65,16 @@ class ConversationUseCase:
             raise ValueError("No steps returned from the agent executor.")
 
         last_message = cast(AIMessage | HumanMessage, step["agent"]["messages"][-1])
+        last_message_text = cast(
+            str,
+            next((c["text"] for c in last_message.content if c["type"] == "text"), ""),
+        )
 
         return Message(
             id=cast(str, last_message.id),
             role=isinstance(last_message, HumanMessage) and "user" or "assistant",
             is_interrupting=False,
             ui=None,
-            content=cast(str, last_message.content),
+            content=last_message_text,
             created_at=self.date_time.now_str(),
         )
