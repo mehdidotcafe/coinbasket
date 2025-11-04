@@ -17,21 +17,21 @@
                   dict({
                     'address': '0xbA2aE424d960c26247Dd6c32edC70B295c744C43',
                     'display_name': 'Dogecoin',
-                    'id': 'bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43',
+                    'id': 'bsc:0xba2ae424d960c26247dd6c32edc70b295c744c43',
                     'name': 'Dogecoin',
                     'ticker': 'DOGE',
                   }),
                   dict({
                     'address': '0x2859e4544C4bB03966803b044A93563Bd2D0DD4D',
                     'display_name': 'Shiba Inu',
-                    'id': 'bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D',
+                    'id': 'bsc:0x2859e4544c4bb03966803b044a93563bd2d0dd4d',
                     'name': 'SHIBA INU',
                     'ticker': 'SHIB',
                   }),
                   dict({
                     'address': '0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00',
                     'display_name': 'Pepe',
-                    'id': 'bsc:0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00',
+                    'id': 'bsc:0x25d887ce7a35172c62febfd67a1856f20faebb00',
                     'name': 'Pepe',
                     'ticker': 'PEPE',
                   }),
@@ -43,7 +43,7 @@
               'asset': dict({
                 'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
                 'display_name': 'Binance Coin',
-                'id': 'bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
                 'name': 'Binance Coin',
                 'ticker': 'BNB',
               }),
@@ -53,11 +53,35 @@
           dict({
             'buy_asset_with_amount': dict({
               'asset': dict({
-                'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
-                'display_name': 'Bitcoin',
-                'id': 'bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
-                'name': 'Binance Pegged Bitcoin',
-                'ticker': 'BTC',
+                'denomination': '1',
+                'description': 'A basket of popular memecoins',
+                'display_name': 'Memecoin Mania',
+                'id': 'c0e724d3-c4d0-4bd0-973d-edd3907ecf51',
+                'name': 'Memecoin Mania',
+                'ticker': 'MEME',
+                'tokens': list([
+                  dict({
+                    'address': '0xbA2aE424d960c26247Dd6c32edC70B295c744C43',
+                    'display_name': 'Dogecoin',
+                    'id': 'bsc:0xba2ae424d960c26247dd6c32edc70b295c744c43',
+                    'name': 'Dogecoin',
+                    'ticker': 'DOGE',
+                  }),
+                  dict({
+                    'address': '0x2859e4544C4bB03966803b044A93563Bd2D0DD4D',
+                    'display_name': 'Shiba Inu',
+                    'id': 'bsc:0x2859e4544c4bb03966803b044a93563bd2d0dd4d',
+                    'name': 'SHIBA INU',
+                    'ticker': 'SHIB',
+                  }),
+                  dict({
+                    'address': '0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00',
+                    'display_name': 'Pepe',
+                    'id': 'bsc:0x25d887ce7a35172c62febfd67a1856f20faebb00',
+                    'name': 'Pepe',
+                    'ticker': 'PEPE',
+                  }),
+                ]),
               }),
               'available_amount': '0',
             }),
@@ -65,7 +89,7 @@
               'asset': dict({
                 'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
                 'display_name': 'Binance Coin',
-                'id': 'bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
                 'name': 'Binance Coin',
                 'ticker': 'BNB',
               }),

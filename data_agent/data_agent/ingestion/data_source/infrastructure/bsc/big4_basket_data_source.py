@@ -52,7 +52,7 @@ class Big4BasketDataSource(DataSource):
         return [self.__map_basket_to_similarity_document(self.basket)]
 
     def version(self):
-        return 2
+        return 3
 
     def __map_basket_to_similarity_document(self, basket: Basket) -> SimilarityDocument:
         """

@@ -1,14 +1,21 @@
-from dataclasses import dataclass
 from decimal import Decimal
 
 
-@dataclass
 class Token:
     id: str
     name: str
     display_name: str
     ticker: str
     address: str
+
+    def __init__(
+        self, id: str, name: str, display_name: str, ticker: str, address: str
+    ):
+        self.id = id.lower()
+        self.name = name
+        self.display_name = display_name
+        self.ticker = ticker
+        self.address = address
 
     def __str__(self) -> str:
         return f"""

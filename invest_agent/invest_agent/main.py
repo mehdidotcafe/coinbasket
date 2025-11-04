@@ -47,7 +47,6 @@ from invest_agent.portfolio.get_portfolio_use_case import (
     PortfolioBalance,
 )
 from protocol.basket import Basket
-from protocol.asset import Asset
 from protocol.fixture.basket import big4_basket, memecoinmania_basket
 from protocol.fixture.token import (
     wbnb_token,
@@ -173,6 +172,72 @@ invest_agent = Agent(
     port=configuration.agent_port,
     endpoint=f"http://localhost:{configuration.agent_port}/submit",
 )
+
+
+class TokenRequest(Model):
+    id: str
+    name: str
+    display_name: str
+    ticker: str
+    address: str
+
+    @staticmethod
+    def from_domain(token: Token) -> "TokenRequest":
+        """Convert a Token to a TokenRequest."""
+        return TokenRequest(
+            id=token.id,
+            name=token.name,
+            display_name=token.display_name,
+            ticker=token.ticker,
+            address=token.address,
+        )
+
+    def to_domain(self) -> Token:
+        """Convert the request to a Token."""
+        return Token(
+            id=self.id,
+            name=self.name,
+            display_name=self.display_name,
+            ticker=self.ticker,
+            address=self.address,
+        )
+
+
+class BasketRequest(Model):
+    id: str
+    name: str
+    display_name: str
+    ticker: str
+    description: str
+    denomination: str
+    tokens: list[TokenRequest]
+
+    @validator("tokens")
+    @classmethod
+    def at_least_one_token(cls, v):
+        """Ensure at least one token in basket."""
+        if not v or len(v) == 0:
+            raise ValueError("At least one token must be provided.")
+        return v
+
+    def to_domain(self) -> Basket:
+        """Convert the request to a Basket."""
+        return Basket(
+            id=self.id,
+            name=self.name,
+            display_name=self.display_name,
+            ticker=self.ticker,
+            description=self.description,
+            denomination=Decimal(self.denomination),
+            tokens=[token.to_domain() for token in self.tokens],
+        )
+
+
+AssetRequest = BasketRequest | TokenRequest
+
+
+class ToolAssetRequest(Model):
+    asset: AssetRequest
 
 
 @tool(parse_docstring=True)
@@ -301,7 +366,9 @@ def get_agent_address():
 @tool(
     parse_docstring=True,
 )
-async def get_portfolio_summary(conversion_token: Token = usdt_token):
+async def get_portfolio_summary(
+    conversion_token: TokenRequest = TokenRequest.from_domain(usdt_token),
+):
     """EXPENSIVE/SLOW. Retrieve the portfolio. Only use this tool when the user asks for his portfolio.
     The portfolio contains the list of assets held by the agent (holdings) and their balances both in asset token and in converted token (defaults to USDT).
     It also contains the available cash balance in BNB and the list of pending (processing) orders.
@@ -315,14 +382,14 @@ async def get_portfolio_summary(conversion_token: Token = usdt_token):
     """
 
     return PortfolioResponse.from_domain(
-        await get_portfolio_use_case.execute(conversion_token)
+        await get_portfolio_use_case.execute(conversion_token.to_domain())
     ).json()
 
 
 @tool(
     parse_docstring=True,
 )
-async def get_asset_holding_and_available_cash(asset: Asset):
+async def get_asset_holding_and_available_cash(asset: ToolAssetRequest):
     """FAST. Retrieve ONLY the available cash and holding of a specific asset in the agent's wallet, including both held balance and available balance.
 
     Args:
@@ -331,7 +398,9 @@ async def get_asset_holding_and_available_cash(asset: Asset):
     Returns:
         The the available cash and holding balances of the asset in the agent's wallet.
     """
-    asset_balance = await get_portfolio_asset_balance_use_case.execute(asset)
+    asset_balance = await get_portfolio_asset_balance_use_case.execute(
+        asset.asset.to_domain()
+    )
 
     return PortfolioAssetBalanceResponse.from_domain(asset_balance).json()
 
@@ -339,7 +408,7 @@ async def get_asset_holding_and_available_cash(asset: Asset):
 @tool(
     parse_docstring=True,
 )
-async def get_asset_holding(asset: Asset):
+async def get_asset_holding(asset: ToolAssetRequest):
     """FAST. Retrieve ONLY the holding balance of a specific asset.
     Use this tool when the user asks for his asset holding.
 
@@ -349,10 +418,13 @@ async def get_asset_holding(asset: Asset):
     Returns:
         The holding balance of the asset in the agent's wallet.
     """
-    decimals = await chain.get_token_decimals(asset.get_pricing_token().address)
+    asset_domain = asset.asset.to_domain()
+    decimals = await chain.get_token_decimals(asset_domain.get_pricing_token().address)
 
     holding = await posting_repository.get_holding_balance(
-        asset if not chain.is_native_token(asset) else chain.get_wrapped_base_token(),
+        asset_domain
+        if not chain.is_native_token(asset_domain)
+        else chain.get_wrapped_base_token(),
         decimals,
     )
 
@@ -540,57 +612,6 @@ def get_current_datetime():
     return date_time.now_str()
 
 
-class TokenRequest(Model):
-    id: str
-    name: str
-    display_name: str
-    ticker: str
-    address: str
-
-    def to_domain(self) -> Token:
-        """Convert the request to a Token."""
-        return Token(
-            id=self.id,
-            name=self.name,
-            display_name=self.display_name,
-            ticker=self.ticker,
-            address=self.address,
-        )
-
-
-class BasketRequest(Model):
-    id: str
-    name: str
-    display_name: str
-    ticker: str
-    description: str
-    denomination: str
-    tokens: list[TokenRequest]
-
-    @validator("tokens")
-    @classmethod
-    def at_least_one_token(cls, v):
-        """Ensure at least one token in basket."""
-        if not v or len(v) == 0:
-            raise ValueError("At least one token must be provided.")
-        return v
-
-    def to_domain(self) -> Basket:
-        """Convert the request to a Basket."""
-        return Basket(
-            id=self.id,
-            name=self.name,
-            display_name=self.display_name,
-            ticker=self.ticker,
-            description=self.description,
-            denomination=Decimal(self.denomination),
-            tokens=[token.to_domain() for token in self.tokens],
-        )
-
-
-AssetRequest = BasketRequest | TokenRequest
-
-
 class BalanceRequest(Model):
     asset: AssetRequest
     amount: str
@@ -638,6 +659,9 @@ class IntentInvestmentPlanBalanceRequest(Model):
                 if self.asset_id == "bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
                 else memecoinmania_basket
             )
+
+        elif self.asset_id.lower() == chain.base_token.id:
+            asset = chain.base_token
         else:
             res = await agent_to_agent_client.send_and_receive_message(
                 GetAssetByIdQuery(

@@ -19,7 +19,7 @@ class GetAssetByIdUseCase:
     async def execute(self, id: str) -> Asset | None:
         similarity_documents = await self.asset_repository.get_by_field(
             name="source.id",
-            value=id,
+            value=id.lower(),
         )
 
         if not similarity_documents:

@@ -95,7 +95,7 @@ async def test_get_asset_by_id_use_case_found_basket(
         ),
     ]
 
-    result = await use_case.execute("123456")
+    result = await use_case.execute("123456A")
 
     assert result == Basket(
         id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
@@ -123,7 +123,7 @@ async def test_get_asset_by_id_use_case_found_basket(
     )
 
     asset_repository.get_by_field.assert_called_once_with(
-        name="source.id", value="123456"
+        name="source.id", value="123456a"
     )
 
 
@@ -151,7 +151,7 @@ async def test_get_asset_by_id_use_case_found_token(
         ),
     ]
 
-    result = await use_case.execute("123456")
+    result = await use_case.execute("123456A")
 
     assert result == Token(
         address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
@@ -162,5 +162,5 @@ async def test_get_asset_by_id_use_case_found_token(
     )
 
     asset_repository.get_by_field.assert_called_once_with(
-        name="source.id", value="123456"
+        name="source.id", value="123456a"
     )
