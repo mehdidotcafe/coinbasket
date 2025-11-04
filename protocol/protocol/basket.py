@@ -1,11 +1,9 @@
-from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
 from protocol.token import Token
 
 
-@dataclass
 class Basket:
     id: str
     name: str
@@ -15,6 +13,24 @@ class Basket:
     denomination: Decimal
     # TODO: Use weight
     tokens: list[Token]
+
+    def __init__(
+        self,
+        id: str,
+        name: str,
+        display_name: str,
+        ticker: str,
+        description: str,
+        denomination: Decimal,
+        tokens: list[Token],
+    ):
+        self.id = id.lower()
+        self.name = name
+        self.display_name = display_name
+        self.ticker = ticker
+        self.description = description
+        self.denomination = denomination
+        self.tokens = tokens
 
     def __str__(self) -> str:
         return f"""
@@ -57,3 +73,8 @@ denomination: {str(self.denomination)}
 
     def get_denomination(self):
         return self.denomination
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Basket):
+            return False
+        return self.id == value.id

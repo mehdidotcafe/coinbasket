@@ -5,7 +5,7 @@
       'asset': dict({
         'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
         'display_name': 'Bitcoin',
-        'id': 'bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+        'id': 'bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c',
         'name': 'Binance Pegged Bitcoin',
         'ticker': 'BTCB',
       }),

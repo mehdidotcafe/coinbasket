@@ -65,4 +65,4 @@ def test_coingecko_tokens_data_source_version(
     data_source = CoingeckoTokenListDataSource(http_request, id_generator)
     version = data_source.version()
 
-    assert version == 2
+    assert version == 3

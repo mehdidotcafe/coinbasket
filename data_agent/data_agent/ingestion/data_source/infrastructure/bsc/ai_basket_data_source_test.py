@@ -16,4 +16,4 @@ def test_ai_basket_data_source_version():
     data_source = AiBasketDataSource()
     version = data_source.version()
 
-    assert version == 2
+    assert version == 3

@@ -48,7 +48,7 @@ class CoingeckoTokenListDataSource(DataSource):
         ]
 
     def version(self):
-        return 2
+        return 3
 
     def __map_coingecko_token_to_similarity_document(
         self, coingecko_token: CoingeckoToken
