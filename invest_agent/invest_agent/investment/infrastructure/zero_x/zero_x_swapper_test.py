@@ -116,7 +116,8 @@ def order():
         created_at=1234567890,
         status="PENDING",
         trigger="MANUAL",
-        basket_id=None,
+        buy_basket_id=None,
+        sell_basket_id=None,
     )
 
 
@@ -335,7 +336,8 @@ async def test_zero_x_swapper_build_transactions_data_with_approval(
             created_at=1234567890,
             status="PENDING",
             trigger="MANUAL",
-            basket_id=None,
+            buy_basket_id=None,
+            sell_basket_id=None,
         ),
         investment_parameters=investment_parameters,
     )

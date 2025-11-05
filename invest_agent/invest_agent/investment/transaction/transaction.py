@@ -26,5 +26,6 @@ class Transaction:
     fees: Fees | None = None
     # No transaction hash for parent transactions
     transaction_hash: str | None = None
-    basket_id: Id | None = None
+    buy_basket_id: Id | None = None
+    sell_basket_id: Id | None = None
     parent_transaction_id: Id | None = None

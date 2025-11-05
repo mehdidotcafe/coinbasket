@@ -181,7 +181,8 @@ class OrderModel(Base):
     created_at: Mapped[int] = mapped_column()
     status: Mapped[str] = mapped_column()
     trigger: Mapped[str] = mapped_column()
-    basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
+    buy_basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
+    sell_basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
 
     tries: Mapped[list[OrderTryModel]] = relationship(
         "OrderTryModel",
@@ -222,7 +223,8 @@ class OrderModel(Base):
             created_at=self.created_at,
             status=cast(OrderStatus, self.status),
             trigger=cast(OrderTrigger, self.trigger),
-            basket_id=self.basket_id,
+            buy_basket_id=self.buy_basket_id,
+            sell_basket_id=self.sell_basket_id,
             tries=[t.to_domain() for t in self.tries],
         )
 
@@ -246,7 +248,8 @@ class OrderModel(Base):
             created_at=order.created_at,
             status=order.status,
             trigger=order.trigger,
-            basket_id=order.basket_id,
+            buy_basket_id=order.buy_basket_id,
+            sell_basket_id=order.sell_basket_id,
         )
 
 
@@ -294,7 +297,8 @@ class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
                     created_at=order_model.created_at,
                     status=order_model.status,
                     trigger=order_model.trigger,
-                    basket_id=order_model.basket_id,
+                    buy_basket_id=order_model.buy_basket_id,
+                    sell_basket_id=order_model.sell_basket_id,
                 )
                 .on_conflict_do_nothing(index_elements=[OrderModel.id])
             )
@@ -328,7 +332,8 @@ class SqlAlchemyOrderRepository(OrderRepository, SqlAlchemyBaseRepository):
                             "created_at": order_model.created_at,
                             "status": order_model.status,
                             "trigger": order_model.trigger,
-                            "basket_id": order_model.basket_id,
+                            "buy_basket_id": order_model.buy_basket_id,
+                            "sell_basket_id": order_model.sell_basket_id,
                         }
                         for order_model in order_models
                     ]

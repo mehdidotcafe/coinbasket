@@ -56,7 +56,7 @@ async def test_temporal_order_submitter_submit_orders(
         created_at=0,
         status="PENDING",
         trigger="MANUAL",
-        basket_id="basket1",
+        buy_basket_id="basket1",
     )
     order2 = Order(
         id="order2",
@@ -68,7 +68,7 @@ async def test_temporal_order_submitter_submit_orders(
         created_at=0,
         status="PENDING",
         trigger="MANUAL",
-        basket_id="basket2",
+        buy_basket_id="basket2",
     )
 
     order3 = Order(
@@ -81,7 +81,7 @@ async def test_temporal_order_submitter_submit_orders(
         created_at=0,
         status="PENDING",
         trigger="MANUAL",
-        basket_id="basket2",
+        buy_basket_id="basket2",
     )
     orders_matrix = [[order1], [order2, order3]]
 
