@@ -275,7 +275,7 @@ async def test_execute_investment_plan_use_case_buy_only_tokens(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id=None,
+                    buy_basket_id=None,
                 ),
             ],
             [
@@ -299,7 +299,7 @@ async def test_execute_investment_plan_use_case_buy_only_tokens(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id=None,
+                    buy_basket_id=None,
                 ),
             ],
         ]
@@ -502,7 +502,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    buy_basket_id="basket1",
                 ),
                 Order(
                     id="1",
@@ -525,7 +525,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    buy_basket_id="basket1",
                 ),
                 Order(
                     id="2",
@@ -548,7 +548,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    buy_basket_id="basket1",
                 ),
             ],
             [
@@ -583,7 +583,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket2",
+                    buy_basket_id="basket2",
                 ),
                 Order(
                     id="3",
@@ -606,7 +606,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket2",
+                    buy_basket_id="basket2",
                 ),
                 Order(
                     id="4",
@@ -629,7 +629,7 @@ async def test_execute_investment_plan_use_case_buy_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket2",
+                    buy_basket_id="basket2",
                 ),
             ],
         ]
@@ -750,7 +750,7 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    buy_basket_id="basket1",
                 ),
                 Order(
                     id="1",
@@ -773,7 +773,7 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    buy_basket_id="basket1",
                 ),
                 Order(
                     id="2",
@@ -796,7 +796,7 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    buy_basket_id="basket1",
                 ),
             ],
             [
@@ -820,7 +820,7 @@ async def test_execute_investment_plan_use_case_buy_token_and_basket(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id=None,
+                    buy_basket_id=None,
                 )
             ],
         ]
@@ -972,7 +972,7 @@ async def test_execute_investment_plan_use_case_sell_only_tokens(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id=None,
+                    buy_basket_id=None,
                 ),
             ],
             [
@@ -996,7 +996,7 @@ async def test_execute_investment_plan_use_case_sell_only_tokens(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id=None,
+                    buy_basket_id=None,
                 ),
             ],
         ]
@@ -1277,7 +1277,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    sell_basket_id="basket1",
                 ),
                 Order(
                     id="1",
@@ -1300,7 +1300,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    sell_basket_id="basket1",
                 ),
                 Order(
                     id="2",
@@ -1323,7 +1323,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    sell_basket_id="basket1",
                 ),
             ],
             [
@@ -1347,7 +1347,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket2",
+                    sell_basket_id="basket2",
                 ),
                 Order(
                     id="3",
@@ -1370,7 +1370,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket2",
+                    sell_basket_id="basket2",
                 ),
                 Order(
                     id="4",
@@ -1393,7 +1393,7 @@ async def test_execute_investment_plan_use_case_sell_only_baskets(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket2",
+                    sell_basket_id="basket2",
                 ),
             ],
         ]
@@ -1545,7 +1545,7 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    sell_basket_id="basket1",
                 ),
                 Order(
                     id="1",
@@ -1568,7 +1568,7 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    sell_basket_id="basket1",
                 ),
                 Order(
                     id="2",
@@ -1591,7 +1591,7 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id="basket1",
+                    sell_basket_id="basket1",
                 ),
             ],
             [
@@ -1615,7 +1615,7 @@ async def test_execute_investment_plan_use_case_sell_token_and_basket(
                     created_at=1752268296,
                     status="PENDING",
                     trigger="MANUAL",
-                    basket_id=None,
+                    buy_basket_id=None,
                 ),
             ],
         ]

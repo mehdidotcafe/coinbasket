@@ -67,7 +67,8 @@ class TransactionModel(Base):
     order_id: Mapped[str] = mapped_column(String(36), ForeignKey("orders.id"))
     trigger: Mapped[TransactionTrigger] = mapped_column(String)
     fees: Mapped[str | None] = mapped_column(Text, nullable=True)
-    basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
+    buy_basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
+    sell_basket_id: Mapped[str | None] = mapped_column(String(), nullable=True)
     parent_transaction_id: Mapped[str | None] = mapped_column(
         String(36),
         # No ForeignKey constraint because parent transaction is created after child transactions
@@ -126,7 +127,8 @@ class TransactionModel(Base):
             order_id=transaction.order_id,
             trigger=transaction.trigger,
             fees=transaction.fees.serialize() if transaction.fees else None,
-            basket_id=transaction.basket_id,
+            buy_basket_id=transaction.buy_basket_id,
+            sell_basket_id=transaction.sell_basket_id,
             parent_transaction_id=transaction.parent_transaction_id,
             postings=[],
         )
@@ -166,7 +168,8 @@ class TransactionModel(Base):
             order_id=self.order_id,
             trigger=self.trigger,
             fees=Fees.deserialize(self.fees) if self.fees else None,
-            basket_id=self.basket_id,
+            buy_basket_id=self.buy_basket_id,
+            sell_basket_id=self.sell_basket_id,
             parent_transaction_id=self.parent_transaction_id,
         )
 

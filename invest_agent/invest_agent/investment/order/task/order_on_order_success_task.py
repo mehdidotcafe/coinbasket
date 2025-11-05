@@ -93,7 +93,9 @@ class OnOrderSuccessTask:
             type=transaction.type,
             asset_type=transaction.asset_type,
             created_at=created_at,
-            basket_id=transaction.basket_id,
+            basket_id=transaction.sell_basket_id
+            if kind == "OUT"
+            else transaction.buy_basket_id,
         )
 
     def __map_order_to_transaction(
@@ -119,5 +121,6 @@ class OnOrderSuccessTask:
             else None,
             order_id=order.id,
             trigger=order.trigger,
-            basket_id=order.basket_id,
+            buy_basket_id=order.buy_basket_id,
+            sell_basket_id=order.sell_basket_id,
         )

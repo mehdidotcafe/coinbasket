@@ -36,7 +36,8 @@ class PricedInvestmentStep:
     sell_balance: BalanceAtomic
     buy_balance: BalanceAtomic
     asset_type: OrderAssetType
-    basket_id: str | None = None
+    buy_basket_id: str | None = None
+    sell_basket_id: str | None = None
     parent_id: str | None = None
 
 
@@ -115,7 +116,8 @@ class ExecuteInvestmentPlanUseCase:
                 status="PENDING",
                 trigger="MANUAL",
                 asset_type=step.asset_type,
-                basket_id=step.basket_id,
+                buy_basket_id=step.buy_basket_id,
+                sell_basket_id=step.sell_basket_id,
             )
             for step in step_matrix
         ]
@@ -265,7 +267,8 @@ class ExecuteInvestmentPlanUseCase:
                 asset_type="BASKET",
                 sell_balance=sell_balance,
                 buy_balance=buy_balance,
-                basket_id=buy_balance.asset.id,
+                buy_basket_id=buy_balance.asset.id,
+                sell_basket_id=None,
             )
         ]
 
@@ -279,7 +282,8 @@ class ExecuteInvestmentPlanUseCase:
                         asset_type="TOKEN",
                         sell_balance=result.sell_balance,
                         buy_balance=result.buy_balance,
-                        basket_id=buy_balance.asset.id,
+                        buy_basket_id=buy_balance.asset.id,
+                        sell_basket_id=None,
                         parent_id=parent_id,
                     )
                 )
@@ -329,7 +333,8 @@ class ExecuteInvestmentPlanUseCase:
                 asset_type="BASKET",
                 sell_balance=sell_balance,
                 buy_balance=buy_balance,
-                basket_id=sell_balance.asset.id,
+                buy_basket_id=None,
+                sell_basket_id=sell_balance.asset.id,
             )
         ]
 
@@ -343,7 +348,8 @@ class ExecuteInvestmentPlanUseCase:
                         asset_type="TOKEN",
                         sell_balance=result.sell_balance,
                         buy_balance=result.buy_balance,
-                        basket_id=sell_balance.asset.id,
+                        buy_basket_id=None,
+                        sell_basket_id=sell_balance.asset.id,
                         parent_id=parent_id,
                     )
                 )

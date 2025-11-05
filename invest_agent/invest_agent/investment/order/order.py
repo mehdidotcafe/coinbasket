@@ -54,5 +54,6 @@ class Order:
     created_at: int
     status: OrderStatus
     trigger: OrderTrigger
-    basket_id: Id | None = None
+    buy_basket_id: Id | None = None
+    sell_basket_id: Id | None = None
     parent_order_id: Id | None = None
