@@ -85,6 +85,18 @@ class LangchainSqliteConversationRepository(ConversationRepository):
             is_interrupting=False,
             ui=None,
             role=isinstance(langchain_message, HumanMessage) and "user" or "assistant",
-            content=cast(str, langchain_message.content),
+            content=langchain_message.content
+            if isinstance(langchain_message.content, str)
+            else self._map_langchain_ai_message_content_to_content(
+                langchain_message.content
+            ),
             created_at=self.date_time.now_str(),
+        )
+
+    def _map_langchain_ai_message_content_to_content(
+        self, content: list[dict[Any, Any]]
+    ) -> str:
+        return cast(
+            str,
+            next((c["text"] for c in content if c["type"] == "text"), ""),
         )

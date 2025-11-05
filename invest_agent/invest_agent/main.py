@@ -348,7 +348,7 @@ async def get_all_available_baskets():
     res = await agent_to_agent_client.send_and_receive_message(
         GetAllBasketsQuery(agent_key=configuration.data_agent_key),
         GetAllBasketsResponse,
-        key="basket",
+        key="/basket",
     )
 
     if isinstance(res.baskets, str):
@@ -389,17 +389,17 @@ async def get_portfolio_summary(
 @tool(
     parse_docstring=True,
 )
-async def get_asset_holding_and_available_cash(asset: ToolAssetRequest):
+async def get_asset_holding_and_available_cash(request: ToolAssetRequest):
     """FAST. Retrieve ONLY the available cash and holding of a specific asset in the agent's wallet, including both held balance and available balance.
 
     Args:
-        asset: The token to retrieve the available cash and holding for.
+        request: An object containing a field token to retrieve the available cash and holding for.
 
     Returns:
         The the available cash and holding balances of the asset in the agent's wallet.
     """
     asset_balance = await get_portfolio_asset_balance_use_case.execute(
-        asset.asset.to_domain()
+        request.asset.to_domain()
     )
 
     return PortfolioAssetBalanceResponse.from_domain(asset_balance).json()
@@ -408,17 +408,17 @@ async def get_asset_holding_and_available_cash(asset: ToolAssetRequest):
 @tool(
     parse_docstring=True,
 )
-async def get_asset_holding(asset: ToolAssetRequest):
+async def get_asset_holding(request: ToolAssetRequest):
     """FAST. Retrieve ONLY the holding balance of a specific asset.
     Use this tool when the user asks for his asset holding.
 
     Args:
-        asset: The held asset to retrieve the balance for.
+        request: An object containing a field token to retrieve the available cash and holding for.
 
     Returns:
         The holding balance of the asset in the agent's wallet.
     """
-    asset_domain = asset.asset.to_domain()
+    asset_domain = request.asset.to_domain()
     decimals = await chain.get_token_decimals(asset_domain.get_pricing_token().address)
 
     holding = await posting_repository.get_holding_balance(
@@ -668,7 +668,7 @@ class IntentInvestmentPlanBalanceRequest(Model):
                     agent_key=configuration.data_agent_key, asset_id=self.asset_id
                 ),
                 GetAssetByIdResponse,
-                "asset",
+                "/asset",
             )
 
             if isinstance(res.data, str):
@@ -699,14 +699,26 @@ class IntentInvestmentPlanStepRequest(Model):
 
     @root_validator(pre=True)
     def at_least_one_asset(cls, values: dict[str, Any]):
-        """Ensure at least one of buy_asset_with_amount or sell_asset_with_amount is provided."""
+        """
+        Ensure at least one of buy_asset_with_amount or sell_asset_with_amount is provided.
+        If asset_id is '' or 'None', set the corresponding field to None.
+        """
+        for field in ["buy_asset_with_amount", "sell_asset_with_amount"]:
+            asset_req = values.get(field)
+            if asset_req is not None:
+                asset_id = getattr(asset_req, "asset_id", None)
+                # Handle both dict and object cases
+                if asset_id is None and isinstance(asset_req, dict):
+                    asset_id = asset_req.get("asset_id")
+                if asset_id == "" or asset_id == "None":
+                    values[field] = None
+
         if not (
             values.get("buy_asset_with_amount") or values.get("sell_asset_with_amount")
         ):
             raise ValueError(
                 "At least one of buy_asset_with_amount or sell_asset_with_amount must be provided."
             )
-
         return values
 
     async def to_domain(self):
@@ -752,7 +764,9 @@ async def execute_intent_investment_plan_use_case(
     intent_investment_plan: IntentInvestmentPlanRequest,
 ):
     """Executes the intent investment plan.
-    If no buy_asset, buy_asset_amount, sell_asset or sell_asset_amount set the field to None
+    If no buy_asset, buy_asset_amount, sell_asset or sell_asset_amount is provided set the field to None.
+    IMPORTANT: You can make a swap by providing both a buy_asset_with_amount and a sell_asset_with_amount in the same step.
+    IMPORTANT: You don't need to know the amount to buy or sell an asset in advance. You can leave the amount fields empty (set to None) and the agent will decide the amount to buy or sell based on the available cash and holdings.
     IMPORTANT: Do not call this tool more than once.
     IMPORTANT: Do not call another tool if this returns results.
 
@@ -766,46 +780,28 @@ async def execute_intent_investment_plan_use_case(
         IntentInvestmentPlanRequest(
             steps=[
                 IntentInvestmentPlanStepRequest(
-                    buy_asset=AssetRequest(
-                        id="bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
-                        name="Binance Pegged Ethereum",
-                        display_name="Ethereum",
-                        ticker="ETH",
-                        address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                    buy_asset_with_amount=IntentInvestmentPlanBalanceRequest(
+                        asset_id="bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                        amount="5.33",
                     ),
-                    buy_asset_amount="5.33",
-                    sell_asset=AssetRequest(
-                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                        name="Binance Coin",
-                        display_name="Binance Coin",
-                        ticker="BNB",
-                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeEEeE",
+                    sell_asset_with_amount=IntentInvestmentPlanBalanceRequest(
+                        asset_id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                        amount="10.95",
                     ),
-                    sell_asset_amount="10.95",
                 ),
                 IntentInvestmentPlanStepRequest(
-                    buy_asset=None,
-                    buy_asset_amount=None,
-                    sell_asset=AssetRequest(
-                        id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                        name="Binance Coin",
-                        display_name="Binance Coin",
-                        ticker="BNB",
-                        address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeEEeE",
+                    buy_asset_with_amount=None,
+                    sell_asset_with_amount=IntentInvestmentPlanBalanceRequest(
+                        asset_id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                        amount=None,
                     ),
-                    sell_asset_amount=None,
                 ),
                 IntentInvestmentPlanStepRequest(
-                    buy_asset=AssetRequest(
-                        id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-                        name="Dogecoin",
-                        display_name="Dogecoin",
-                        ticker="DOGE",
-                        address="0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+                    buy_asset_with_amount=IntentInvestmentPlanBalanceRequest(
+                        asset_id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+                        amount="1028983",
                     ),
-                    buy_asset_amount="1028983",
-                    sell_asset=None,
-                    sell_asset_amount=None,
+                    sell_asset_with_amount=None,
                 ),
             ],
         )
@@ -966,19 +962,26 @@ def __create_agent_executor(conn: aiosqlite.Connection):
             model=configuration.chat_model,
             model_provider=configuration.chat_provider,
             api_key=configuration.chat_provider_api_key,
+            reasoning={"effort": "minimal"},
         ),
         tools,
         checkpointer=sqlite_memory,
         prompt=SystemMessage(
-            "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket of tokens.  "
-            "Users can buy, sell, or swap assets in their portfolio.  "
-            "Before buying, selling or swapping assets, ALWAYS show the user the intent investment plan you are creating by showing the list of assets to buy, sell or swap.  "
-            "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't mention excluded assets.  Don't use a link when displaying a basket.  "
-            "ALWAYS display amount as you get them, don't use scientific notation.  "
-            "When asked for portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  "
-            "When an order has a status 'PENDING', it means the order is being processed.  "
-            "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  "
-            "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  "
+            "\n".join(
+                [
+                    "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket of tokens.  ",
+                    "Users can buy, sell, or swap assets in their portfolio.  ",
+                    "Before buying, selling or swapping assets, ALWAYS show the user the intent investment plan you are creating by showing the list of assets to buy, sell or swap.  ",
+                    "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't use a link when displaying a basket.  ",
+                    "ALWAYS use a tool to fetch a token address when you need it.  ",
+                    "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
+                    "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
+                    "When an order has a status 'PENDING', it means the order is being processed.  ",
+                    "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  ",
+                    "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
+                    "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  ",
+                ]
+            )
         ),
     )
 
