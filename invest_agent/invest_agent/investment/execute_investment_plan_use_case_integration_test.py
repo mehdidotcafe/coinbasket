@@ -365,22 +365,37 @@ async def test_integration_execute_investment_plan_use_case_only_basket(
         )
     )
 
-    assert len(postings) == 6
+    assert len(postings) == 5
 
-    assert all(
-        transaction.order_id in [order.id for order in orders]
-        for transaction in transactions
+    assert (
+        len(
+            [
+                posting
+                for posting in postings
+                if posting.asset_id == test_basket.id and posting.amount_atomic < 0
+            ]
+        )
+        == 1
     )
 
-    # Check if all buy balances are reflected in postings
-    assert all(
-        [
-            posting.id
-            in [
-                f"{transaction.id}-{suffix}"
-                for transaction in transactions
-                for suffix in ("IN", "OUT")
+    assert (
+        len(
+            [
+                posting
+                for posting in postings
+                if posting.asset_id == btc_token.id and posting.amount_atomic < 0
             ]
-            for posting in postings
-        ]
+        )
+        == 1
+    )
+
+    assert (
+        len(
+            [
+                posting
+                for posting in postings
+                if posting.asset_id == eth_token.id and posting.amount_atomic < 0
+            ]
+        )
+        == 1
     )

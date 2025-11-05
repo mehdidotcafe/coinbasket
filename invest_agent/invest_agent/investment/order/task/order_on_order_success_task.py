@@ -13,6 +13,7 @@ from invest_agent.investment.transaction.transaction import Transaction
 from invest_agent.portfolio.posting.posting import Posting
 from invest_agent.portfolio.posting.posting_repository import PostingRepository
 from invest_agent.investment.order.order import Order, Try
+from protocol.token import Token
 
 
 class OnOrderSuccessTask:
@@ -47,7 +48,10 @@ class OnOrderSuccessTask:
             await self.transaction_repository.create_transaction(
                 transaction, session=session
             )
-            if not self.chain.is_native_token(transaction.sell_balance.asset):
+            # In case of a buy basket order, we don't create the related OUT posting. Each basket child orders will create them.
+            if not self.chain.is_native_token(transaction.sell_balance.asset) and (
+                transaction.asset_type == "TOKEN" or not transaction.buy_basket_id
+            ):
                 await self.posting_repository.create_posting(
                     self.__map_transaction_to_posting(
                         transaction=transaction,
@@ -57,7 +61,10 @@ class OnOrderSuccessTask:
                     ),
                     session=session,
                 )
-            if not self.chain.is_native_token(transaction.buy_balance.asset):
+            # In case of a sell basket order, we don't create the related IN posting. Each basket child orders will create them.
+            if not self.chain.is_native_token(transaction.buy_balance.asset) and (
+                transaction.asset_type == "TOKEN" or not transaction.sell_basket_id
+            ):
                 await self.posting_repository.create_posting(
                     self.__map_transaction_to_posting(
                         transaction=transaction,
@@ -91,7 +98,7 @@ class OnOrderSuccessTask:
                 decimals=balance.decimals,
             ),
             type=transaction.type,
-            asset_type=transaction.asset_type,
+            asset_type="TOKEN" if isinstance(balance.asset, Token) else "BASKET",
             created_at=created_at,
             basket_id=transaction.sell_basket_id
             if kind == "OUT"
