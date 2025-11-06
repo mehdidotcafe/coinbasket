@@ -110,7 +110,7 @@ async def on_order_success(request: OnOrderSuccessRequest):
 
     transaction = await on_order_success_task.execute(
         order,
-        order.tries[-1],
+        order.tries[-1] if order.tries else None,
         ParsedReceipt(
             executed_sell_balance=BalanceAtomic(
                 asset=order.sell_balance.asset,

@@ -123,6 +123,7 @@ class ExecuteOrderTryTask:
             await self.order_repository.set_order_try_chain_transaction_hash(
                 chain_transaction.id, transaction_hash
             )
+        return True
 
 
 class WaitOrderTryTask:

@@ -20,6 +20,8 @@ from invest_agent.investment.order.infrastructure.temporal_execute_and_wait_orde
     execute_order_try,
     wait_order_try,
     fail_order_try,
+    is_internal_order,
+    get_order_balances_atomic,
 )
 from invest_agent.registry import (
     configuration,
@@ -46,6 +48,8 @@ async def main():
             execute_order_try,
             wait_order_try,
             fail_order_try,
+            is_internal_order,
+            get_order_balances_atomic,
         ],
     )
     print("Invest Agent Worker Ready.")

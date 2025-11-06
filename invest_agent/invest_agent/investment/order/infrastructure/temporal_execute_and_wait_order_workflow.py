@@ -45,67 +45,22 @@ class TemporalExecuteAndWaitOrderWorkflow:
         print("TemporalExecuteAndWaitOrderWorkflow > run", order_request)
 
         try:
-            order_try_id = await workflow.execute_activity(
-                "create_order_try",
+            is_internal_order = await workflow.execute_activity(
+                "is_internal_order",
                 order_request,
-                start_to_close_timeout=timedelta(minutes=5),
+                start_to_close_timeout=default_start_to_close_timeout,
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
 
-            outputs.append({"create_order_try": order_try_id})
-
-            print("TemporalExecuteAndWaitOrderWorkflow > create_order_try", outputs)
-
-            compensations.append(
-                plan_activity(
-                    "fail_order_try",
-                    OrderTryRequest(id=order_try_id),
-                    start_to_close_timeout=default_start_to_close_timeout,
-                    retry_policy=RetryPolicy(maximum_attempts=3),
-                )
+            (
+                transaction_id,
+                compensations,
+                outputs,
+            ) = await (
+                self._run_internal_order(order_request)
+                if is_internal_order
+                else self._run_external_order(order_request)
             )
-
-            parsed_receipt = await workflow.execute_activity(
-                "execute_order_try",
-                OrderTryRequest(id=order_try_id),
-                start_to_close_timeout=timedelta(minutes=5),
-                retry_policy=retry_policy,
-            )
-
-            outputs.append({"execute_order_try": parsed_receipt})
-
-            print("TemporalExecuteAndWaitOrderWorkflow > execute_order_try", outputs)
-
-            executed_atomic_amounts = await workflow.execute_activity(
-                "wait_order_try",
-                OrderTryRequest(id=order_try_id),
-                start_to_close_timeout=timedelta(minutes=5),
-                retry_policy=RetryPolicy(maximum_attempts=5),
-            )
-
-            outputs.append({"wait_order_try": executed_atomic_amounts})
-
-            print("TemporalExecuteAndWaitOrderWorkflow > wait_order_try", outputs)
-
-            transaction_id = await workflow.execute_activity(
-                "on_order_success",
-                OnOrderSuccessRequest(
-                    id=order_request.id,
-                    executed_sell_amount_atomic=executed_atomic_amounts[
-                        "executed_sell_amount_atomic"
-                    ],
-                    executed_buy_amount_atomic=executed_atomic_amounts[
-                        "executed_buy_amount_atomic"
-                    ],
-                    rate=executed_atomic_amounts["rate"],
-                ),
-                start_to_close_timeout=timedelta(minutes=5),
-                retry_policy=RetryPolicy(maximum_attempts=3),
-            )
-
-            outputs.append({"on_order_success": transaction_id})
-
-            print("TemporalExecuteAndWaitOrderWorkflow > on_order_success", outputs)
 
             return transaction_id
         except Exception as e:
@@ -120,3 +75,114 @@ class TemporalExecuteAndWaitOrderWorkflow:
                 {"compensation_results": [str(r) for r in compensation_results]}
             )
             raise e
+
+    async def _run_external_order(self, order_request: OrderRequest):
+        compensations: list[Callable[[], Awaitable[Any]]] = []
+        outputs: list[Any] = []
+
+        print("TemporalExecuteAndWaitOrderWorkflow > _run_external_order", outputs)
+
+        order_try_id = await workflow.execute_activity(
+            "create_order_try",
+            order_request,
+            start_to_close_timeout=timedelta(minutes=5),
+            retry_policy=RetryPolicy(maximum_attempts=3),
+        )
+
+        outputs.append({"create_order_try": order_try_id})
+
+        print("TemporalExecuteAndWaitOrderWorkflow > create_order_try", outputs)
+
+        compensations.append(
+            plan_activity(
+                "fail_order_try",
+                OrderTryRequest(id=order_try_id),
+                start_to_close_timeout=default_start_to_close_timeout,
+                retry_policy=RetryPolicy(maximum_attempts=3),
+            )
+        )
+
+        execute_order_try_result = await workflow.execute_activity(
+            "execute_order_try",
+            OrderTryRequest(id=order_try_id),
+            start_to_close_timeout=timedelta(minutes=5),
+            retry_policy=retry_policy,
+        )
+
+        outputs.append({"execute_order_try": execute_order_try_result})
+
+        print("TemporalExecuteAndWaitOrderWorkflow > execute_order_try", outputs)
+
+        executed_atomic_amounts = await workflow.execute_activity(
+            "wait_order_try",
+            OrderTryRequest(id=order_try_id),
+            start_to_close_timeout=timedelta(minutes=5),
+            retry_policy=RetryPolicy(maximum_attempts=1),
+        )
+
+        outputs.append({"wait_order_try": executed_atomic_amounts})
+
+        print("TemporalExecuteAndWaitOrderWorkflow > wait_order_try", outputs)
+
+        transaction_id = await workflow.execute_activity(
+            "on_order_success",
+            OnOrderSuccessRequest(
+                id=order_request.id,
+                executed_sell_amount_atomic=executed_atomic_amounts[
+                    "executed_sell_amount_atomic"
+                ],
+                executed_buy_amount_atomic=executed_atomic_amounts[
+                    "executed_buy_amount_atomic"
+                ],
+                rate=executed_atomic_amounts["rate"],
+            ),
+            start_to_close_timeout=timedelta(minutes=5),
+            retry_policy=RetryPolicy(maximum_attempts=3),
+        )
+
+        outputs.append({"on_order_success": transaction_id})
+
+        print("TemporalExecuteAndWaitOrderWorkflow > on_order_success", outputs)
+
+        return transaction_id, compensations, outputs
+
+    async def _run_internal_order(self, order_request: OrderRequest):
+        compensations: list[Callable[[], Awaitable[Any]]] = []
+        outputs: list[Any] = []
+
+        print("TemporalExecuteAndWaitOrderWorkflow > _run_internal_order", outputs)
+
+        balances_atomic = await workflow.execute_activity(
+            "get_order_balances_atomic",
+            order_request,
+            start_to_close_timeout=default_start_to_close_timeout,
+            retry_policy=RetryPolicy(maximum_attempts=3),
+        )
+
+        print(
+            "TemporalExecuteAndWaitOrderWorkflow > get_order_balances_atomic", outputs
+        )
+
+        outputs.append({"get_order_balances_atomic": balances_atomic})
+
+        transaction_id = await workflow.execute_activity(
+            "on_order_success",
+            OnOrderSuccessRequest(
+                id=order_request.id,
+                executed_sell_amount_atomic=balances_atomic[
+                    "executed_sell_amount_atomic"
+                ],
+                executed_buy_amount_atomic=balances_atomic[
+                    "executed_buy_amount_atomic"
+                ],
+                rate=balances_atomic["rate"],
+            ),
+            start_to_close_timeout=timedelta(minutes=5),
+            retry_policy=RetryPolicy(maximum_attempts=3),
+        )
+
+        outputs.append({"on_order_success": transaction_id})
+
+        print("TemporalExecuteAndWaitOrderWorkflow > on_order_success", outputs)
+
+        return transaction_id, compensations, outputs

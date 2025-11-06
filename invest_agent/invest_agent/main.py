@@ -765,6 +765,7 @@ async def execute_intent_investment_plan_use_case(
 ):
     """Executes the intent investment plan.
     If no buy_asset, buy_asset_amount, sell_asset or sell_asset_amount is provided set the field to None.
+    Pass asset_id as they are don't change them.
     IMPORTANT: You can make a swap by providing both a buy_asset_with_amount and a sell_asset_with_amount in the same step.
     IMPORTANT: You don't need to know the amount to buy or sell an asset in advance. You can leave the amount fields empty (set to None) and the agent will decide the amount to buy or sell based on the available cash and holdings.
     IMPORTANT: Do not call this tool more than once.
@@ -781,7 +782,7 @@ async def execute_intent_investment_plan_use_case(
             steps=[
                 IntentInvestmentPlanStepRequest(
                     buy_asset_with_amount=IntentInvestmentPlanBalanceRequest(
-                        asset_id="bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                        asset_id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
                         amount="5.33",
                     ),
                     sell_asset_with_amount=IntentInvestmentPlanBalanceRequest(

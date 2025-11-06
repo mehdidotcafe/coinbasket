@@ -75,10 +75,16 @@ class BscChain(Chain):
         )
 
     def is_native_token(self, asset: Asset) -> bool:
-        return isinstance(asset, Token) and asset.address.lower() == self.base_token.address.lower()
+        return (
+            isinstance(asset, Token)
+            and asset.address.lower() == self.base_token.address.lower()
+        )
 
     def is_wrapped_native_token(self, asset: Asset) -> bool:
-        return isinstance(asset, Token) and asset.address.lower() == self.wrapped_base_token.address.lower()
+        return (
+            isinstance(asset, Token)
+            and asset.address.lower() == self.wrapped_base_token.address.lower()
+        )
 
     def __is_native_token_address(self, token_address: str) -> bool:
         return token_address.lower() == self.base_token.address.lower()
@@ -277,20 +283,23 @@ class BscChain(Chain):
         self,
         transaction_hash: str,
     ) -> bool:
-        # TODO: See what to do if the transaction is not on chain after timeout
-        receipt = await self.w3.eth.wait_for_transaction_receipt(
-            HexBytes(transaction_hash),
-            timeout=1200,
-        )
-
-        if receipt["status"] == 0:
-            print(
-                f"Transaction failed: {transaction_hash} {await self.__simulate_transaction(transaction_hash, receipt['blockNumber'])}"
+        try:
+            receipt = await self.w3.eth.wait_for_transaction_receipt(
+                HexBytes(transaction_hash),
+                timeout=1200,
             )
 
-        print(f"Receipt: {receipt}")
+            if receipt["status"] == 0:
+                print(
+                    f"Transaction failed: {transaction_hash} {await self.__simulate_transaction(transaction_hash, receipt['blockNumber'])}"
+                )
 
-        return receipt["status"] == 1
+            print(f"Receipt: {receipt}")
+
+            return receipt["status"] == 1
+        except Exception as e:
+            print(f"Error waiting for transaction {transaction_hash}: {e}")
+            return False
 
     async def parse_transaction_receipt(
         self, sell_token: Token, buy_token: Token, transaction_hash: str
