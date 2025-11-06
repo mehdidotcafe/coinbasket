@@ -49,7 +49,7 @@ class TemporalOrderSubmitterWorkflow:
                     TemporalExecuteAndWaitOrderWorkflow.run,
                     order,
                     retry_policy=retry_policy,
-                    run_timeout=timedelta(minutes=10),
+                    run_timeout=timedelta(minutes=65),
                 )
                 for order in orders
             ]
@@ -152,6 +152,8 @@ class TemporalOrderSubmitterWorkflow:
             outputs.append(
                 {"compensation_results": [str(r) for r in compensation_results]}
             )
+
+            print("TemporalOrderSubmitterWorkflow > compensation_results", outputs)
 
         print("TemporalOrderSubmitterWorkflow > end", outputs)
 

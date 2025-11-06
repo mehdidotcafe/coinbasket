@@ -134,3 +134,31 @@ async def fail_order_try(order_try_request: OrderTryRequest):
         raise Exception(f"OrderTry {order_try_request.id} not found")
 
     return await fail_order_try_task.execute(order_try)
+
+
+@activity.defn(name="is_internal_order")
+async def is_internal_order(order_request: OrderRequest):
+    print("Activity: is_internal_order", order_request)
+
+    order = await order_repository.get_order(order_request.id)
+    if not order:
+        raise Exception(f"Order {order_request.id} not found")
+
+    return order.buy_balance.asset == order.sell_balance.asset
+
+
+@activity.defn(name="get_order_balances_atomic")
+async def get_order_balances_atomic(order_request: OrderRequest):
+    print("Activity: get_order_balances_atomic", order_request)
+
+    order = await order_repository.get_order(order_request.id)
+    if not order:
+        raise Exception(f"Order {order_request.id} not found")
+
+    return ExecutedAtomicAmounts(
+        executed_sell_amount_atomic=order.sell_balance.amount_atomic,
+        executed_buy_amount_atomic=order.buy_balance.amount_atomic,
+        rate=str(order.buy_balance.amount_atomic / order.sell_balance.amount_atomic)
+        if order.sell_balance.amount_atomic > 0
+        else "0",
+    )
