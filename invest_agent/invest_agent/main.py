@@ -389,8 +389,10 @@ async def get_portfolio_summary(
 @tool(
     parse_docstring=True,
 )
-async def get_asset_holding_and_available_cash(request: ToolAssetRequest):
-    """FAST. Retrieve ONLY the available cash and holding of a specific asset in the agent's wallet, including both held balance and available balance.
+async def get_token_or_basket_or_asset_holding_and_available_cash(
+    request: ToolAssetRequest,
+):
+    """FAST. Retrieve ONLY the available cash and holding of a specific asset (token or basket) in the agent's wallet, including both held balance and available balance.
 
     Args:
         request: An object containing a field token to retrieve the available cash and holding for.
@@ -408,8 +410,8 @@ async def get_asset_holding_and_available_cash(request: ToolAssetRequest):
 @tool(
     parse_docstring=True,
 )
-async def get_asset_holding(request: ToolAssetRequest):
-    """FAST. Retrieve ONLY the holding balance of a specific asset.
+async def get_token_or_basket_or_asset_holding(request: ToolAssetRequest):
+    """FAST. Retrieve ONLY the holding balance of a specific asset (token or basket).
     Use this tool when the user asks for his asset holding.
 
     Args:
@@ -649,6 +651,15 @@ class IntentInvestmentPlanBalanceRequest(Model):
     asset_id: str
     amount: str | None = None
 
+    @validator("asset_id", pre=True)
+    def normalize_asset_id(cls, v: Any):
+        if not isinstance(v, str):
+            return v
+        # Always return lowercased, and if not bsc: prefix, use last part
+        if v.startswith("bsc:"):
+            return v.lower()
+        return v.split(":")[-1].lower()
+
     async def to_domain(self):
         asset = None
 
@@ -656,11 +667,11 @@ class IntentInvestmentPlanBalanceRequest(Model):
         if configuration.agent_env == "test":
             asset = (
                 btc_token
-                if self.asset_id == "bsc:0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
+                if self.asset_id == "bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c"
                 else memecoinmania_basket
             )
 
-        elif self.asset_id.lower() == chain.base_token.id:
+        elif self.asset_id == chain.base_token.id:
             asset = chain.base_token
         else:
             res = await agent_to_agent_client.send_and_receive_message(
@@ -684,13 +695,6 @@ class IntentInvestmentPlanBalanceRequest(Model):
             if self.amount is not None and self.amount != ""
             else None,
         )
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert the IntentInvestmentPlanBalance to a dictionary."""
-        return {
-            "asset_id": self.asset_id,
-            "amount": format(self.amount, "f") if self.amount is not None else None,
-        }
 
 
 class IntentInvestmentPlanStepRequest(Model):
@@ -848,8 +852,8 @@ tools = [
     execute_intent_investment_plan_use_case,
     get_agent_address,
     get_available_cash,
-    get_asset_holding,
-    get_asset_holding_and_available_cash,
+    get_token_or_basket_or_asset_holding,
+    get_token_or_basket_or_asset_holding_and_available_cash,
     get_portfolio_summary,
     get_orders,
     get_order,
