@@ -70,7 +70,7 @@ class TemporalOrderSubmitterWorkflow:
             some_transactions_failed = False
             succeeded_orders: list[OrderRequest] = []
             for order, transaction_id in zip(orders, transaction_ids):
-                if isinstance(transaction_id, BaseException):
+                if isinstance(transaction_id, Exception):
                     some_transactions_failed = True
                     compensations.append(
                         plan_activity(

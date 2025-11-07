@@ -52,14 +52,10 @@ class TemporalExecuteAndWaitOrderWorkflow:
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
 
-            (
-                transaction_id,
-                compensations,
-                outputs,
-            ) = await (
-                self._run_internal_order(order_request)
+            transaction_id = await (
+                self._run_internal_order(compensations, outputs, order_request)
                 if is_internal_order
-                else self._run_external_order(order_request)
+                else self._run_external_order(compensations, outputs, order_request)
             )
 
             return transaction_id
@@ -76,10 +72,12 @@ class TemporalExecuteAndWaitOrderWorkflow:
             )
             raise e
 
-    async def _run_external_order(self, order_request: OrderRequest):
-        compensations: list[Callable[[], Awaitable[Any]]] = []
-        outputs: list[Any] = []
-
+    async def _run_external_order(
+        self,
+        compensations: list[Callable[[], Awaitable[Any]]],
+        outputs: list[Any],
+        order_request: OrderRequest,
+    ):
         print("TemporalExecuteAndWaitOrderWorkflow > _run_external_order", outputs)
 
         order_try_id = await workflow.execute_activity(
@@ -144,12 +142,14 @@ class TemporalExecuteAndWaitOrderWorkflow:
 
         print("TemporalExecuteAndWaitOrderWorkflow > on_order_success", outputs)
 
-        return transaction_id, compensations, outputs
+        return transaction_id
 
-    async def _run_internal_order(self, order_request: OrderRequest):
-        compensations: list[Callable[[], Awaitable[Any]]] = []
-        outputs: list[Any] = []
-
+    async def _run_internal_order(
+        self,
+        compensations: list[Callable[[], Awaitable[Any]]],
+        outputs: list[Any],
+        order_request: OrderRequest,
+    ):
         print("TemporalExecuteAndWaitOrderWorkflow > _run_internal_order", outputs)
 
         balances_atomic = await workflow.execute_activity(
@@ -185,4 +185,4 @@ class TemporalExecuteAndWaitOrderWorkflow:
 
         print("TemporalExecuteAndWaitOrderWorkflow > on_order_success", outputs)
 
-        return transaction_id, compensations, outputs
+        return transaction_id
