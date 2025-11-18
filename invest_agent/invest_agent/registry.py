@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import cast
 from invest_agent.investment.calculator.asset_balance_converter import (
     AssetBalanceConverter,
 )
@@ -47,16 +47,11 @@ from invest_agent.investment.infrastructure.zero_x.zero_x_api_client import (
 )
 from invest_agent.investment.infrastructure.zero_x.zero_x_swapper import ZeroXSwapper
 
-from uagents.storage import KeyValueStore
-
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
 from invest_agent.chain.infrastructure.bsc.bsc_chain import BscChain
 from invest_agent.chain.infrastructure.bsc.bsc_contract import BscContract
 from invest_agent.configuration import Configuration
-from invest_agent.infrastructure.fetch_ai.storage.fetch_ai_storage import (
-    FetchAiStorage,
-)
 
 date_time = PythonDateTime()
 
@@ -110,10 +105,7 @@ exchange = ZeroXSwapper(
         "private_key": configuration.bsc_private_key,
     },
 )
-storage = FetchAiStorage[Any](
-    configuration.langchain_thread_id,
-    store=KeyValueStore(configuration.agent_name, "./database"),
-)
+
 agent_to_agent_client = AiohttpAgentToAgentClient(
     configuration={"agent_url": configuration.data_agent_url},
     aiohttp_http_request=aiohttp_http_request,
