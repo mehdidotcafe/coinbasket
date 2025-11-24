@@ -75,7 +75,7 @@ def test_integration_conversation_buy_basket_and_token(
                     id="42",
                     is_resuming=False,
                     role="user",
-                    content="Please invest in your memecoin mania basket and in bitcoin.",
+                    content="Please invest in your memecoin mania basket and in bitcoin. Don't ask for fund allocation.",
                     created_at="2023-10-01",
                 )
             ),
@@ -109,6 +109,8 @@ def test_integration_conversation_buy_basket_and_token(
     )
 
     response_2_json = response_2.json()
+
+    print(f"response_2_json: {response_2_json}")
 
     assert response_2.status_code == 200
     assert response_2_json["is_interrupting"] is True

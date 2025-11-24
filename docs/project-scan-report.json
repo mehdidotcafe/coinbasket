@@ -1,0 +1,243 @@
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {
+    "started": "2025-11-23T20:05:00Z",
+    "last_updated": "2025-11-23T21:40:00Z"
+  },
+  "mode": "initial_scan",
+  "scan_level": "exhaustive",
+  "project_root": "/home/mehdi/projects/perso/coinbasket",
+  "output_folder": "/home/mehdi/projects/perso/coinbasket/docs",
+  "completed_steps": [
+    {
+      "step": "step_1",
+      "status": "completed",
+      "timestamp": "2025-11-23T20:10:00Z",
+      "summary": "Classified repository as monorepo with 4 parts"
+    },
+    {
+      "step": "step_2",
+      "status": "completed",
+      "timestamp": "2025-11-23T20:30:00Z",
+      "summary": "Catalogued 5 primary README docs and captured board exports for focus areas"
+    },
+    {
+      "step": "step_3",
+      "status": "completed",
+      "timestamp": "2025-11-23T20:45:00Z",
+      "summary": "Mapped tech stack for each part and documented cross-agent architecture patterns"
+    },
+    {
+      "step": "step_4",
+      "status": "completed",
+      "timestamp": "2025-11-23T21:05:00Z",
+      "summary": "Documented REST contracts for invest_agent, captured Postgres schema, and described Qdrant knowledge store"
+    },
+    {
+      "step": "step_5",
+      "status": "completed",
+      "timestamp": "2025-11-23T21:20:00Z",
+      "summary": "Source tree documented with annotated monorepo structure"
+    },
+    {
+      "step": "step_6",
+      "status": "completed",
+      "timestamp": "2025-11-23T21:40:00Z",
+      "summary": "Captured development workflows, CI automation, and deployment procedures"
+    }
+  ],
+  "current_step": "step_7",
+  "findings": {
+    "project_classification": {
+      "repository_type": "monorepo",
+      "parts_count": 4,
+      "summary": "Monorepo with dedicated Python agents for data ingestion and investment workflows plus shared protocol and utilities"
+    },
+    "existing_documentation": {
+      "count": 5,
+      "paths": [
+        "README.md",
+        "data_agent/README.md",
+        "invest_agent/README.md",
+        "protocol/README.md",
+        "shared/README.md"
+      ],
+      "notes": "Docs/sprint-artifacts directory exists but is empty; no architecture/API docs beyond readmes detected."
+    },
+    "user_context": {
+      "board_exports": [
+        {
+          "file": "attachement/Untitled 1cf23f03ab1a8086aca2edbb6278a9c2.csv",
+          "description": "Kanban snapshot summarizing Done through Draft work items"
+        },
+        {
+          "file": "attachement/Untitled 1cf23f03ab1a8086aca2edbb6278a9c2_all.csv",
+          "description": "Full backlog export with status lanes and story tags"
+        }
+      ]
+    },
+    "technology_stack": {
+      "data_agent": {
+        "language": "Python 3.10",
+          "last_updated": "2025-11-23T21:55:00Z"
+        "storage": ["Qdrant"],
+        "integrations": ["PancakeSwap token lists", "Curated basket feeds", "OpenAI embeddings"],
+        "notes": "Ingestion pipeline loads data into Qdrant on startup; exposes REST + agent messaging handlers"
+      },
+      "invest_agent": {
+        "language": "Python 3.10",
+          },
+          {
+            "step": "step_7",
+            "status": "completed",
+            "timestamp": "2025-11-23T21:55:00Z",
+            "summary": "Documented integration architecture across agents and infrastructure"
+        "frameworks": ["uAgents", "LangGraph", "LangChain"],
+        "infrastructure": ["Temporal", "Postgres (SQLAlchemy)", "ZeroX API", "Web3.py"],
+        "current_step": "step_8",
+      "development_instructions": {
+        "prerequisites": ["Node >=22", "Python >=3.10", "Docker", "Poetry via Nx"],
+        "env_setup": "Copy .env.example to environment-specific files per agent",
+        "commands": ["./nx install <project>", "./nx dev <project>", "./nx dev:all", "npx nx lint", "npx nx test", "./nx test:integration"],
+        "ci_mirroring": ".github/workflows/pr-checks.yml runs Nx lint/test/integration with generated secrets"
+      },
+          "integration_architecture": {
+            "communications": [
+              {
+                "from": "invest_agent",
+                "to": "data_agent",
+                "type": "HTTP",
+                "interfaces": ["/", "/basket", "/asset"],
+                "notes": "AioHTTP client with agent_key auth"
+              },
+              {
+                "from": "invest_agent",
+                "to": "data_agent",
+                "type": "Fetch.ai messaging",
+                "interfaces": ["SimilarAssetsQuery", "GetAllBasketsQuery"],
+                "notes": "Alternative send_message transport"
+              },
+              {
+                "from": "invest_agent",
+                "to": "Temporal/Postgres/ZeroX",
+                "type": "gRPC/SQL/HTTP",
+                "notes": "Order execution and persistence"
+              }
+            ],
+            "shared_dependencies": ["protocol/protocol", "shared/http_request"],
+            "notes": "Integration doc recorded in docs/document-project/integration-architecture.md"
+          },
+      "deployment_configuration": {
+        "nx_commands": ["./nx infra:production <project>", "./nx start <project>", "./nx start:worker invest_agent", "./nx start:all", "./nx migration:production:run invest_agent"],
+        "compose_files": ["data_agent/docker-compose*.yml", "invest_agent/docker-compose*.yml"],
+        "notes": "Worker must run for order execution; manage secrets via .env.production; CodeQL scheduled scans"
+      },
+            },
+            {
+              "path": "integration",
+              "files_scanned": 3,
+              "summary": "Inspected agent-to-agent clients, protocol contracts, and registry wiring for integration mapping"
+      "contribution_guidelines": "Not found",
+      },
+      "protocol": {
+          "docs/document-project/deployment-guide.md",
+          "docs/document-project/integration-architecture.md"
+        "frameworks": ["uAgents"],
+        "resume_instructions": "Resume at step 8 to generate per-part architecture docs"
+      },
+      "shared": {
+        "language": "Python 3.10",
+        "libraries": ["Pydantic", "aiohttp", "requests"],
+        "notes": "Utility layer centralizes infrastructure adapters reused by agents"
+      }
+    },
+    "architecture_patterns": "Data agent serves as ingestion and similarity microservice; invest agent orchestrates conversations and on-chain execution via LangGraph + Temporal; shared libraries enforce consistent contracts across services.",
+    "api_contracts": {
+      "invest_agent": {
+        "endpoints": [
+          "/conversation",
+          "/conversation/messages",
+          "/asset/swap/price",
+          "/portfolio",
+          "/auth",
+          "/health",
+          "/openapi"
+        ],
+        "auth": "agent_key header enforced via decorator",
+        "notes": "LangGraph tools fan out to data_agent; OpenAPI generated dynamically"
+      }
+    },
+    "data_models": {
+      "invest_agent": {
+        "tables": ["orders", "order_tries", "order_try_chain_transactions", "transactions", "postings"],
+        "storage": "PostgreSQL via SQLAlchemy async sessions",
+        "notes": "Token metadata stored as JSON; atomic amounts preserved in NUMERIC(78,0) columns"
+      },
+      "data_agent": {
+        "collection": "Qdrant 1536-dim cosine",
+        "documents": "SimilarityDocument with metadata.source/type/version",
+        "notes": "Startup ingestion hydrates token and curated basket vectors"
+      }
+    },
+    "batches_completed": [
+      {
+        "path": "invest_agent/invest_agent",
+        "files_scanned": 3,
+        "summary": "Reviewed REST endpoint definitions, LangGraph tool wiring, and authentication decorators"
+      },
+      {
+        "path": "invest_agent/invest_agent/investment",
+        "files_scanned": 2,
+        "summary": "Captured SQLAlchemy order/transaction/posting models for data model documentation"
+      },
+      {
+        "path": "data_agent/data_agent",
+        "files_scanned": 3,
+        "summary": "Analyzed Qdrant similarity storage implementation and ingestion data sources"
+      },
+      {
+        "path": "monorepo-root",
+        "files_scanned": 1,
+        "summary": "Constructed annotated source tree highlighting critical directories and shared tooling"
+      },
+      {
+        "path": "docs/ci-and-operations",
+        "files_scanned": 4,
+        "summary": "Reviewed README setup instructions, Nx scripts, and GitHub workflows for dev/deploy documentation"
+      }
+    ]
+  },
+  "project_types": [
+    {
+      "part_id": "data_agent",
+      "project_type_id": "data",
+      "display_name": "Data Platform"
+    },
+    {
+      "part_id": "invest_agent",
+      "project_type_id": "backend",
+      "display_name": "Backend Service"
+    },
+    {
+      "part_id": "protocol",
+      "project_type_id": "library",
+      "display_name": "Shared Protocol Library"
+    },
+    {
+      "part_id": "shared",
+      "project_type_id": "library",
+      "display_name": "Utility Library"
+    }
+  ],
+  "outputs_generated": [
+    "docs/project-scan-report.json",
+    "docs/document-project/project-scan.md",
+    "docs/document-project/api-contracts-invest_agent.md",
+    "docs/document-project/data-models-invest_agent.md",
+    "docs/document-project/data-models-data_agent.md",
+    "docs/document-project/source-tree-analysis.md",
+    "docs/document-project/development-guide.md",
+    "docs/document-project/deployment-guide.md"
+  ],
+  "resume_instructions": "Resume at step 7 to document integration architecture"
+}
