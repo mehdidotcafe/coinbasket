@@ -1,4 +1,7 @@
 from data_agent.asset.get_asset_by_id_use_case import GetAssetByIdUseCase
+from data_agent.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_data_source import (
+    CoingeckoLiveTokenListDataSource,
+)
 from data_agent.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from pydantic import SecretStr
 from data_agent.ingestion.id.id_generator import IdGenerator
@@ -21,16 +24,13 @@ from data_agent.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_d
 )
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
-from uagents import Agent, Context
+from uagents import Agent, Context, Model
 
 from langchain_openai import OpenAIEmbeddings
 
 from data_agent.configuration import Configuration
 from shared.http_request.infrastructure.requests_http_request import (
     RequestsHttpRequest,
-)
-from data_agent.ingestion.data_source.infrastructure.bsc.pancakeswap_tokens_data_source import (
-    PancakeswapTokenListDataSource,
 )
 from data_agent.ingestion.ingest_data_use_case import IngestDataUseCase
 from data_agent.similarity.get_similar_assets_use_case import (
@@ -91,7 +91,14 @@ get_asset_by_id_use_case = GetAssetByIdUseCase(similarity_storage)
 ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
     data_sources=[
-        PancakeswapTokenListDataSource(http_request, id_generator),
+        CoingeckoLiveTokenListDataSource(
+            http_request,
+            id_generator,
+            {
+                "coingecko_base_url": configuration.coingecko_base_url,
+                "coingecko_api_key": configuration.coingecko_api_key,
+            },
+        ),
         Big4BasketDataSource(),
         AiBasketDataSource(),
         CmcTop102025BasketDataSource(),
@@ -103,10 +110,11 @@ ingest_data_use_case = IngestDataUseCase(
 
 @data_agent.on_event("startup")
 async def on_startup(ctx: Context):
-    ctx.logger.info("Data Agent Ready.")
     ctx.logger.info(f"Data Agent address: {ctx.agent.address}.")
 
     await ingest_data_use_case.execute()
+
+    ctx.logger.info("Data Agent Ready.")
 
 
 @data_agent.on_rest_post("/", SimilarAssetsQuery, SimilarAssetsResponse)
@@ -196,6 +204,16 @@ async def get_asset_by_id(
             else BasketResponse.from_domain(asset)
         )
     )
+
+
+class HealthResponse(Model):
+    status: str
+
+
+@data_agent.on_rest_get("/health", HealthResponse)
+async def health_check(_ctx: Context) -> HealthResponse:
+    """Health check endpoint."""
+    return HealthResponse(status="OK")
 
 
 def main():

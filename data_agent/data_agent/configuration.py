@@ -18,3 +18,6 @@ class Configuration:
 
         self.embedding_provider_api_key = env.str("EMBEDDING_PROVIDER_API_KEY")
         self.embedding_provider_model = env.str("EMBEDDING_PROVIDER_MODEL")
+
+        self.coingecko_base_url = env.str("COINGECKO_BASE_URL")
+        self.coingecko_api_key = env.str("COINGECKO_API_KEY")
