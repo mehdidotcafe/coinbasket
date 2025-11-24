@@ -49,6 +49,7 @@ readme = "README.md"
   temporalio = "^1.18.1"
 
   langchain = "^1.0.2"
+  langchain-mcp-adapters = "^0.1.13"
     [tool.poetry.dependencies.protocol]
     path = "../protocol"
     develop = true
