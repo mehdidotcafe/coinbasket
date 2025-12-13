@@ -180,6 +180,10 @@ class TokenRequest(Model):
     display_name: str
     ticker: str
     address: str
+    decimals: int
+    categories: list[str]
+    description: str
+    logo_uri: str | None = None
 
     @staticmethod
     def from_domain(token: Token) -> "TokenRequest":
@@ -190,6 +194,10 @@ class TokenRequest(Model):
             display_name=token.display_name,
             ticker=token.ticker,
             address=token.address,
+            decimals=token.decimals,
+            categories=token.categories,
+            description=token.description,
+            logo_uri=token.logo_uri,
         )
 
     def to_domain(self) -> Token:
@@ -200,6 +208,10 @@ class TokenRequest(Model):
             display_name=self.display_name,
             ticker=self.ticker,
             address=self.address,
+            description=self.description,
+            decimals=self.decimals,
+            categories=self.categories,
+            logo_uri=self.logo_uri,
         )
 
 
@@ -845,7 +857,7 @@ async def execute_intent_investment_plan_use_case(
     ).json()
 
 
-tools = [
+coinbasket_tools = [
     get_baskets_from_query,
     get_tokens_from_query,
     get_all_available_baskets,
@@ -943,7 +955,7 @@ class MessageResponse(Model):
 @authentication(configuration.agent_key)
 async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
     async with aiosqlite.connect(langgraph_db_path) as conn:
-        agent_executor = __create_agent_executor(conn)
+        agent_executor = await __create_agent_executor(conn)
 
         message = await conversation_use_case.execute(
             agent_executor=agent_executor,
@@ -959,8 +971,11 @@ async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
     return MessageResponse.from_domain(message)
 
 
-def __create_agent_executor(conn: aiosqlite.Connection):
+async def __create_agent_executor(conn: aiosqlite.Connection):
     sqlite_memory = AsyncSqliteSaver(conn)
+
+    mcp_clients_tools = []
+    # mcp_clients_tools = await mcp_clients.get_tools()
 
     agent_executor = create_react_agent(
         init_chat_model(
@@ -969,7 +984,7 @@ def __create_agent_executor(conn: aiosqlite.Connection):
             api_key=configuration.chat_provider_api_key,
             reasoning={"effort": "minimal"},
         ),
-        tools,
+        tools=coinbasket_tools + mcp_clients_tools,
         checkpointer=sqlite_memory,
         prompt=SystemMessage(
             "\n".join(
@@ -984,6 +999,7 @@ def __create_agent_executor(conn: aiosqlite.Connection):
                     "When an order has a status 'PENDING', it means the order is being processed.  ",
                     "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  ",
                     "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
+                    "Consider all tool parameters optional unless explicitly stated otherwise.",
                     "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  ",
                 ]
             )
@@ -1051,7 +1067,7 @@ async def get_conversation_messages(
 ) -> MessagesResponse:
     """Retrieve the conversation messages."""
     async with aiosqlite.connect(langgraph_db_path) as conn:
-        agent_executor = __create_agent_executor(conn)
+        agent_executor = await __create_agent_executor(conn)
 
         messages = await get_conversation_messages_use_case.execute(
             thread_id=configuration.langchain_thread_id, agent_executor=agent_executor
@@ -1244,6 +1260,9 @@ class PortfolioRequest(Model):
             display_name=self.token.display_name,
             ticker=self.token.ticker,
             address=self.token.address,
+            decimals=self.token.decimals,
+            categories=self.token.categories,
+            description=self.token.description,
         )
 
 

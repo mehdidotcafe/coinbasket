@@ -191,6 +191,10 @@ async def test_bsc_chain_get_token_balance(bsc_chain: BscChain, w3: AsyncWeb3):
         display_name="Fake token",
         ticker="FTK",
         address="0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+        description="Fake token for testing",
+        decimals=18,
+        categories=[],
+        logo_uri=None,
     )
 
     token_contract = mock.Mock()
@@ -243,6 +247,10 @@ async def test_bsc_chain_get_address_token_balance(bsc_chain: BscChain, w3: Asyn
         display_name="Fake token",
         ticker="FTK",
         address="0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+        description="Fake token for testing",
+        decimals=18,
+        categories=[],
+        logo_uri=None,
     )
 
     token_contract = mock.Mock()

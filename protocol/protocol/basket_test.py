@@ -18,6 +18,10 @@ def test_basket__str__():
                 display_name="Bitcoin",
                 ticker="BTC",
                 address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+                decimals=18,
+                description="Binance Pegged Bitcoin is a BEP-20 token that represents Bitcoin on the Binance Smart Chain.",
+                categories=["pegged", "bitcoin"],
+                logo_uri="https://example.com/btc-logo.png",
             ),
             Token(
                 id="789",
@@ -25,6 +29,10 @@ def test_basket__str__():
                 display_name="Ethereum",
                 ticker="ETH",
                 address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                decimals=18,
+                description="Binance Pegged Ethereum is a BEP-20 token that represents Ethereum on the Binance Smart Chain.",
+                categories=["pegged", "ethereum"],
+                logo_uri="https://example.com/eth-logo.png",
             ),
         ],
     )
@@ -42,11 +50,19 @@ denomination: 1.0
  display_name: Bitcoin
  ticker: BTC
  address: 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c
+ decimals: 18
+ description: Binance Pegged Bitcoin is a BEP-20 token that represents Bitcoin on the Binance Smart Chain.
+ categories: ['pegged', 'bitcoin']
+ logo_uri: https://example.com/btc-logo.png
 
 2. name: Binance Pegged Ethereum
  display_name: Ethereum
  ticker: ETH
  address: 0x2170Ed0880ac9A755fd29B2688956BD959F933F8
+ decimals: 18
+ description: Binance Pegged Ethereum is a BEP-20 token that represents Ethereum on the Binance Smart Chain.
+ categories: ['pegged', 'ethereum']
+ logo_uri: https://example.com/eth-logo.png
 
 """
     )

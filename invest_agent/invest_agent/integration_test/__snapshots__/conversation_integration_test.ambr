@@ -16,22 +16,71 @@
                 'tokens': list([
                   dict({
                     'address': '0xbA2aE424d960c26247Dd6c32edC70B295c744C43',
+                    'categories': list([
+                      'BNB Chain Ecosystem',
+                      'Avalanche Ecosystem',
+                      'Meme',
+                      'Binance-Peg Tokens',
+                    ]),
+                    'decimals': 8,
+                    'description': 'Tokens that are wrapped and pegged by Binance on a 1:1 ratio to the corresponding native token. Also supports BEP20 token deposits and withdrawals at Binance.com',
                     'display_name': 'Dogecoin',
                     'id': 'bsc:0xba2ae424d960c26247dd6c32edc70b295c744c43',
+                    'logo_uri': 'https://coin-images.coingecko.com/coins/images/15768/thumb/dogecoin.png',
                     'name': 'Dogecoin',
                     'ticker': 'DOGE',
                   }),
                   dict({
-                    'address': '0x2859e4544C4bB03966803b044A93563Bd2D0DD4D',
+                    'address': '0x2859e4544c4bb03966803b044a93563bd2d0dd4d',
+                    'categories': list([
+                      'BNB Chain Ecosystem',
+                      'Meme',
+                      'Dog-Themed',
+                      'Binance-Peg Tokens',
+                    ]),
+                    'decimals': 18,
+                    'description': 'Shiba Inu meme token',
                     'display_name': 'Shiba Inu',
                     'id': 'bsc:0x2859e4544c4bb03966803b044a93563bd2d0dd4d',
-                    'name': 'SHIBA INU',
+                    'logo_uri': 'https://coin-images.coingecko.com/coins/images/50193/thumb/shib.png',
+                    'name': 'Shiba Inu',
                     'ticker': 'SHIB',
                   }),
                   dict({
                     'address': '0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00',
+                    'categories': list([
+                      'BNB Chain Ecosystem',
+                      'Avalanche Ecosystem',
+                      'Meme',
+                      'Arbitrum Ecosystem',
+                      'Ethereum Ecosystem',
+                      'Frog-Themed',
+                      'GMCI Meme Index',
+                      'GMCI Index',
+                      'The Boy’s Club',
+                      '4chan-Themed',
+                    ]),
+                    'decimals': 18,
+                    'description': '''
+                      What is the project about?
+                      Pepe is a community based meme token surround the iconic meme Pepe the frog. Pepe aims to leverage the power of such an iconic meme to become the most memeable memecoin in existence. 
+                      
+                      What makes your project unique?
+                      Pepe is here to make memecoins great again. Ushering in a new paradigm for memecoins, Pepe represents the memecoin in it's purest simplicity. With zero taxes, liquidity locked forever, and contract immutable, Pepe is for the people, forever. Pepe is about culture, rallying together a community to have fun and enjoy memes, fueled purely by memetic power. 
+                      
+                      History of your project.
+                      Pepe was stealth launched on Friday, April 14th, 2023. 
+                      
+                      What’s next for your project?
+                      Pepe will focus on developing a tight-knit community around the token and building resources to enrich the communities knowledge and success in crypto through a token gated group, newsletter, and more tools. 
+                      
+                      What can your token be used for?
+                      Pepe can be used to speculate on the power of memes, and does not pretend to be anything more. 
+  
+                    ''',
                     'display_name': 'Pepe',
                     'id': 'bsc:0x25d887ce7a35172c62febfd67a1856f20faebb00',
+                    'logo_uri': None,
                     'name': 'Pepe',
                     'ticker': 'PEPE',
                   }),
@@ -42,8 +91,16 @@
             'sell_asset_with_amount': dict({
               'asset': dict({
                 'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                'categories': list([
+                  'Crypto-Backed Tokens',
+                  'BNB Chain Ecosystem',
+                  'Wrapped-Tokens',
+                ]),
+                'decimals': 18,
+                'description': 'Binance native token',
                 'display_name': 'Binance Coin',
                 'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+                'logo_uri': 'https://coin-images.coingecko.com/coins/images/12591/thumb/binance-coin-logo.png',
                 'name': 'Binance Coin',
                 'ticker': 'BNB',
               }),
@@ -54,9 +111,17 @@
             'buy_asset_with_amount': dict({
               'asset': dict({
                 'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+                'categories': list([
+                  'Crypto-Backed Tokens',
+                  'BNB Chain Ecosystem',
+                  'Harmony Ecosystem',
+                ]),
+                'decimals': 18,
+                'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",
                 'display_name': 'Bitcoin',
                 'id': 'bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c',
-                'name': 'Binance Pegged Bitcoin',
+                'logo_uri': 'https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png',
+                'name': 'Binance Bitcoin',
                 'ticker': 'BTC',
               }),
               'available_amount': '0',
@@ -64,8 +129,16 @@
             'sell_asset_with_amount': dict({
               'asset': dict({
                 'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+                'categories': list([
+                  'Crypto-Backed Tokens',
+                  'BNB Chain Ecosystem',
+                  'Wrapped-Tokens',
+                ]),
+                'decimals': 18,
+                'description': 'Binance native token',
                 'display_name': 'Binance Coin',
                 'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+                'logo_uri': 'https://coin-images.coingecko.com/coins/images/12591/thumb/binance-coin-logo.png',
                 'name': 'Binance Coin',
                 'ticker': 'BNB',
               }),

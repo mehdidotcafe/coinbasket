@@ -23,6 +23,9 @@ class AiBasketDataSource(DataSource):
                     display_name="NEAR Protocol",
                     ticker="NEAR",
                     address="0x1Fa4a73a3F0133f0025378af00236f3aBDEE5D63",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0x0D8Ce2A99Bb6e3B7Db580eD848240e4a0F9aE153",
@@ -30,6 +33,9 @@ class AiBasketDataSource(DataSource):
                     display_name="Filecoin",
                     ticker="FIL",
                     address="0x0D8Ce2A99Bb6e3B7Db580eD848240e4a0F9aE153",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0x031b41e504677879370e9DBcF937283A8691Fa7f",
@@ -37,6 +43,9 @@ class AiBasketDataSource(DataSource):
                     display_name="Fetch.ai",
                     ticker="FET",
                     address="0x031b41e504677879370e9DBcF937283A8691Fa7f",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0xa2b726b1145a4773f68593cf171187d8ebe4d495",
@@ -44,6 +53,9 @@ class AiBasketDataSource(DataSource):
                     display_name="Injective",
                     ticker="INJ",
                     address="0xa2b726b1145a4773f68593cf171187d8ebe4d495",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
             ],
         )

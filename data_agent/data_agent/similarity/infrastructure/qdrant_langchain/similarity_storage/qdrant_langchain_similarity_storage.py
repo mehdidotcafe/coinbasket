@@ -75,6 +75,7 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
                     match=MatchValue(value=value),
                 )
                 for key, value in (filters or {}).items()
+                if value is not None
             ]
         )
 

@@ -23,6 +23,9 @@ class MemecoinManiaBasketDataSource(DataSource):
                     display_name="Dogecoin",
                     ticker="DOGE",
                     address="0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+                    categories=[],
+                    description="",
+                    decimals=8,
                 ),
                 Token(
                     id="bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
@@ -30,6 +33,9 @@ class MemecoinManiaBasketDataSource(DataSource):
                     display_name="Shiba Inu",
                     ticker="SHIB",
                     address="0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
@@ -37,6 +43,9 @@ class MemecoinManiaBasketDataSource(DataSource):
                     display_name="Pepe",
                     ticker="PEPE",
                     address="0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0xfb5b838b6cfeedc2873ab27866079ac55363d37e",
@@ -44,6 +53,9 @@ class MemecoinManiaBasketDataSource(DataSource):
                     display_name="FLOKI",
                     ticker="FLOKI",
                     address="0xfb5b838b6cfeedc2873ab27866079ac55363d37e",
+                    categories=[],
+                    description="",
+                    decimals=9,
                 ),
                 Token(
                     id="bsc:0xA697e272a73744b343528C3Bc4702F2565b2F422",
@@ -51,6 +63,9 @@ class MemecoinManiaBasketDataSource(DataSource):
                     display_name="Bonk",
                     ticker="BONK",
                     address="0xA697e272a73744b343528C3Bc4702F2565b2F422",
+                    categories=[],
+                    description="",
+                    decimals=5,
                 ),
                 Token(
                     id="bsc:0x86Bb94DdD16Efc8bc58e6b056e8df71D9e666429",
@@ -58,6 +73,9 @@ class MemecoinManiaBasketDataSource(DataSource):
                     display_name="Test",
                     ticker="TST",
                     address="0x86Bb94DdD16Efc8bc58e6b056e8df71D9e666429",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6",
@@ -65,6 +83,9 @@ class MemecoinManiaBasketDataSource(DataSource):
                     display_name="mubarak",
                     ticker="MUBARAK",
                     address="0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
             ],
         )

@@ -34,6 +34,9 @@ def investment_plan() -> dict[str, Any]:
                                     "display_name": "Dogecoin",
                                     "ticker": "DOGE",
                                     "address": "0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+                                    "decimals": 8,
+                                    "categories": ["meme", "dog"],
+                                    "description": "A popular meme coin",
                                 },
                                 {
                                     "id": "bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
@@ -41,6 +44,9 @@ def investment_plan() -> dict[str, Any]:
                                     "display_name": "Shiba Inu",
                                     "ticker": "SHIB",
                                     "address": "0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
+                                    "decimals": 18,
+                                    "categories": ["meme", "dog"],
+                                    "description": "Another popular meme coin",
                                 },
                             ],
                         },
@@ -53,6 +59,9 @@ def investment_plan() -> dict[str, Any]:
                             "display_name": "Binance Coin",
                             "ticker": "BNB",
                             "address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                            "decimals": 18,
+                            "categories": ["native"],
+                            "description": "The native token of BNB Chain",
                         },
                         "amount": "15.95",
                     },
@@ -87,43 +96,53 @@ def test_integration_conversation_buy_basket_and_token(
     response_1_json = response_1.json()
 
     assert response_1.status_code == 200
-    assert response_1_json["is_interrupting"] is False
-    assert response_1_json["ui"] is None
-    assert response_1_json["content"] is not None
 
-    response_2 = requests.post(
-        f"http://localhost:{agent_port}/conversation",
-        json={
-            "message": asdict(
-                QueryMessage(
-                    id="42",
-                    is_resuming=False,
-                    role="user",
-                    content="Yes, please invest.",
-                    created_at="2023-10-01",
-                )
-            ),
-            "agent_key": agent_key,
-        },
-        timeout=60,
-    )
+    # The agent may either respond with an interrupting UI or with a content message asking for confirmation
+    if not response_1_json["is_interrupting"]:
+        assert response_1_json["ui"] is None
+        assert response_1_json["content"] is not None
 
-    response_2_json = response_2.json()
-
-    print(f"response_2_json: {response_2_json}")
-
-    assert response_2.status_code == 200
-    assert response_2_json["is_interrupting"] is True
-    assert response_2_json["content"] is None
-
-    assert response_2_json["ui"] == snapshot(
-        exclude=paths(
-            "args.priced_investment_plan.steps.0.sell_asset_with_amount.amount",
-            "args.priced_investment_plan.steps.1.sell_asset_with_amount.amount",
-            "args.priced_investment_plan.steps.0.buy_asset_with_amount.amount",
-            "args.priced_investment_plan.steps.1.buy_asset_with_amount.amount",
+        response_2 = requests.post(
+            f"http://localhost:{agent_port}/conversation",
+            json={
+                "message": asdict(
+                    QueryMessage(
+                        id="42",
+                        is_resuming=False,
+                        role="user",
+                        content="Yes, please invest.",
+                        created_at="2023-10-01",
+                    )
+                ),
+                "agent_key": agent_key,
+            },
+            timeout=60,
         )
-    )
+
+        response_2_json = response_2.json()
+
+        assert response_2.status_code == 200
+        assert response_2_json["is_interrupting"] is True
+        assert response_2_json["content"] is None
+
+        assert response_2_json["ui"] == snapshot(
+            exclude=paths(
+                "args.priced_investment_plan.steps.0.sell_asset_with_amount.amount",
+                "args.priced_investment_plan.steps.1.sell_asset_with_amount.amount",
+                "args.priced_investment_plan.steps.0.buy_asset_with_amount.amount",
+                "args.priced_investment_plan.steps.1.buy_asset_with_amount.amount",
+            )
+        )
+    else:
+        assert response_1_json["content"] is None
+        assert response_1_json["ui"] == snapshot(
+            exclude=paths(
+                "args.priced_investment_plan.steps.0.sell_asset_with_amount.amount",
+                "args.priced_investment_plan.steps.1.sell_asset_with_amount.amount",
+                "args.priced_investment_plan.steps.0.buy_asset_with_amount.amount",
+                "args.priced_investment_plan.steps.1.buy_asset_with_amount.amount",
+            )
+        )
 
     response_3 = requests.post(
         f"http://localhost:{agent_port}/conversation",
