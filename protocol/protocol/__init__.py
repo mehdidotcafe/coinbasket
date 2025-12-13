@@ -11,6 +11,10 @@ class TokenResponse(Model):
     display_name: str
     ticker: str
     address: str
+    description: str
+    decimals: int
+    categories: list[str]
+    logo_uri: str | None = None
 
     @staticmethod
     def from_domain(token: Token) -> "TokenResponse":
@@ -21,6 +25,10 @@ class TokenResponse(Model):
             display_name=token.display_name,
             ticker=token.ticker,
             address=token.address,
+            categories=token.categories,
+            description=token.description,
+            decimals=token.decimals,
+            logo_uri=token.logo_uri,
         )
 
     def to_domain(self) -> Token:
@@ -31,6 +39,10 @@ class TokenResponse(Model):
             display_name=self.display_name,
             ticker=self.ticker,
             address=self.address,
+            description=self.description,
+            decimals=self.decimals,
+            categories=self.categories,
+            logo_uri=self.logo_uri,
         )
 
 

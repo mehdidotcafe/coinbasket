@@ -4,8 +4,13 @@
     'data': dict({
       'asset': dict({
         'address': '0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c',
+        'categories': list([
+        ]),
+        'decimals': 18,
+        'description': '',
         'display_name': 'Binance Bitcoin',
         'id': 'bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c',
+        'logo_uri': 'https://assets.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png?1696513829',
         'name': 'Binance Bitcoin',
         'ticker': 'BTCB',
       }),

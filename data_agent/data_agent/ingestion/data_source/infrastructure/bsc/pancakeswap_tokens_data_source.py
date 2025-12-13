@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 import re
-from data_agent.ingestion.id.id_generator import IdGenerator
+from shared.id_generator.id_generator import IdGenerator
 from data_agent.similarity.similarity_document import SimilarityDocument
 from data_agent.ingestion.data_source.data_source import DataSource
 from shared.http_request.http_request import HttpRequest
@@ -70,6 +70,9 @@ class PancakeswapTokenListDataSource(DataSource):
             display_name=self.__clean_display_name(pancakeswap_token.name),
             ticker=pancakeswap_token.symbol,
             address=pancakeswap_token.address,
+            categories=[],
+            description="",
+            decimals=pancakeswap_token.decimals,
         )
 
         return SimilarityDocument(

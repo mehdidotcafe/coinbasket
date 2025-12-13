@@ -1,6 +1,6 @@
 from unittest import mock
 from pytest import fixture, mark
-from data_agent.ingestion.id.id_generator import IdGenerator
+from shared.id_generator.id_generator import IdGenerator
 from shared.http_request.http_request import HttpRequest
 from data_agent.ingestion.data_source.infrastructure.bsc.pancakeswap_tokens_data_source import (
     PancakeswapToken,

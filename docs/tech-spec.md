@@ -1,9 +1,9 @@
 # coinbasket - Technical Specification
 
 **Author:** coinbasket
-**Date:** 2025-11-23
+**Date:** November 24, 2025
 **Project Level:** Quick Flow (Brownfield)
-**Change Type:** TBD — capture in Step 2 discovery
+**Change Type:** Data Source Migration — CoinGecko API Integration
 **Development Context:** Brownfield Nx-managed Python agent monorepo (data_agent, invest_agent, protocol, shared)
 
 ---
@@ -36,21 +36,45 @@
 
 ### Problem Statement
 
-_To be captured in Step 2._
+The current CoinGecko token data source (`CoingeckoLiveTokenListDataSource`) provides basic token information (name, symbol, address) but lacks rich metadata that would improve user experience and investment decision-making. Users need additional context about tokens including descriptions, categories, decimal precision, and project links.
+
+**Current Limitations:**
+- Token model only captures basic fields (id, name, display_name, ticker, address)
+- CoinGecko API provides much richer metadata that isn't being utilized
+- Missing decimal precision leads to potential calculation issues
+- No project descriptions or categorization for better asset discovery
 
 ### Proposed Solution
 
-_To be captured in Step 2._
+Enhance the CoinGecko integration to fetch comprehensive token metadata using the CoinGecko contract detail endpoint and extend the Token domain model to store this additional information.
+
+**Technical Approach:**
+1. **Extend Token Model**: Add description, decimals, categories, and links fields
+2. **Enhance CoinGecko Data Source**: Use `/v3/coins/{id}/contract/{contract_address}` endpoint for detailed token data
+3. **Update Vector Storage**: Persist additional metadata in Qdrant for enhanced search capabilities
+4. **Maintain Compatibility**: Ensure backward compatibility with existing agent communications
 
 ### Scope
 
 **In Scope:**
 
-_To be captured in Step 2._
+- Add new fields to `protocol/token.py`: `description`, `decimals`, `categories`, `links`
+- Update `CoingeckoLiveTokenListDataSource` to call contract detail endpoint
+- Extract and map the following CoinGecko API fields:
+  - `$.detail_platforms.binance-smart-chain.decimal_place` → Token.decimals
+  - `$.categories` → Token.categories  
+  - `$.description.en` → Token.description
+  - `$.links.homepage` → Token.links
+- Update Qdrant similarity documents to include new metadata
+- Update existing tests to handle extended Token model
+- Ensure data_agent and invest_agent can handle enhanced Token objects
 
 **Out of Scope:**
 
-_To be captured in Step 2._
+- Modifying basket data sources or domain models
+- Changing existing API contracts between agents
+- UI/frontend changes to display new metadata
+- Integration with other CoinGecko endpoints beyond contract details
 
 ---
 
@@ -58,19 +82,71 @@ _To be captured in Step 2._
 
 ### Source Tree Changes
 
-_Pending Step 3 outputs._
+**Modified Files:**
+- `protocol/protocol/token.py` — Add description, decimals, categories, links fields
+- `data_agent/data_agent/ingestion/data_source/infrastructure/bsc/coingecko_live_tokens_data_source.py` — Enhanced API integration
+- Test files for Token model and CoinGecko data source
 
 ### Technical Approach
 
-_Pending Step 3 outputs._
+**1. Token Model Enhancement**
+```python
+# protocol/protocol/token.py additions
+class Token:
+    # ... existing fields ...
+    description: str | None = None
+    categories: list[str] = field(default_factory=list)  
+    links: list[str] = field(default_factory=list)
+    # Note: decimals field already exists
+```
+
+**2. CoinGecko API Integration**
+- Current: Uses token list endpoint for basic token data
+- Enhancement: Call contract detail endpoint `GET /v3/coins/binance-smart-chain/contract/{contract_address}`
+- Extract metadata from response and populate new Token fields
+- Handle API rate limiting and error cases gracefully
+
+**3. Data Mapping**
+```
+CoinGecko API → Token Model
+$.detail_platforms.binance-smart-chain.decimal_place → decimals (int)
+$.categories → categories (list[str])
+$.description.en → description (str)
+$.links.homepage → links (list[str])
+```
 
 ### Existing Patterns to Follow
 
-_Pending Step 3 outputs._
+**Domain Model Patterns:**
+- Follow existing Token field initialization in `__init__`
+- Update `to_dict()` method to include new fields
+- Maintain backward compatibility in serialization
+
+**Data Source Patterns:**
+- Follow existing async HTTP request patterns in `CoingeckoLiveTokenListDataSource`
+- Use existing error handling and authentication mechanisms
+- Maintain version() increment for cache invalidation
+
+**Testing Patterns:**
+- Add test fixtures for enhanced Token objects
+- Mock CoinGecko API responses with actual response structure
+- Test backward compatibility with existing Token usages
 
 ### Integration Points
 
-_Pending Step 3 outputs._
+**Data Agent:**
+- Enhanced tokens stored in Qdrant with richer metadata
+- Similarity search can leverage categories and descriptions
+- API responses include additional token context
+
+**Invest Agent:** 
+- Receives enhanced Token objects via agent communication
+- Can display richer token information to users
+- Improved investment decision support with metadata
+
+**Protocol:**
+- Shared Token model ensures consistency across agents
+- Backward compatible serialization maintains existing integrations
 
 ---
 
@@ -78,25 +154,131 @@ _Pending Step 3 outputs._
 
 ### Relevant Existing Code
 
-_Pending Step 3 outputs._
+**Current Token Model (`protocol/protocol/token.py`):**
+```python
+class Token:
+    id: str
+    name: str
+    display_name: str
+    description: str  # Exists but unused
+    ticker: str
+    decimals: int  # Exists but not populated from CoinGecko
+    address: str
+    logo_uri: str | None = None
+```
+
+**Current CoinGecko Integration (`data_agent/.../coingecko_live_tokens_data_source.py`):**
+- Uses token list endpoint for basic token discovery
+- Implements proper authentication with API keys
+- Has `_fetch_detail()` method that calls contract endpoint but only extracts decimal_place
+- Version 4 indicates recent changes
 
 ### Dependencies
 
 **Framework/Libraries:**
-
-_Pending Step 3 outputs._
+- `pydantic` — For enhanced Token model validation
+- `aiohttp` / `requests` — HTTP client for CoinGecko API calls (already integrated)
+- `typing` — For type hints on new list/optional fields
 
 **Internal Modules:**
-
-_Pending Step 3 outputs._
+- `protocol.token` — Core Token domain model (needs enhancement)
+- `data_agent.ingestion.data_source` — Base DataSource interface
+- `shared.http_request` — HTTP client abstraction
 
 ### Configuration Changes
 
-_Pending Step 3 outputs._
+**Environment Variables (already configured):**
+- `COINGECKO_BASE_URL` — API base URL
+- `COINGECKO_API_KEY` — Authentication key
+
+**No additional configuration required** — leverages existing CoinGecko API setup
 
 ### Existing Conventions (Brownfield)
 
-_Pending confirmation._
+**Token Field Conventions:**
+- Use `str | None` for optional string fields
+- Use `list[str]` for string arrays
+- Initialize collections with `field(default_factory=list)` if using dataclasses
+- Maintain `id`, `name`, `display_name`, `ticker`, `address` as required fields
+
+**Data Source Conventions:**
+- Implement `async get() -> list[SimilarityDocument]`
+- Increment `version()` return value when data structure changes
+- Use `_generate_id()` for consistent document ID generation
+- Follow existing error handling patterns with try/catch
+
+### Existing Conventions (Brownfield)
+
+**Code Style & Standards:**
+- Python 3.10+ with type hints throughout
+- `snake_case` naming for functions, variables, and modules
+- `PascalCase` for class names
+- Poetry for dependency management with pyproject.toml
+- Ruff for linting and code formatting
+- Black-compatible code style (88 character line limit)
+
+**Token Field Conventions:**
+- Use `str | None` for optional string fields
+- Use `list[str]` for string arrays
+- Initialize collections with `field(default_factory=list)` if using dataclasses
+- Maintain `id`, `name`, `display_name`, `ticker`, `address` as required fields
+
+**Data Source Conventions:**
+- Implement `async get() -> list[SimilarityDocument]`
+- Increment `version()` return value when data structure changes
+- Use `_generate_id()` for consistent document ID generation
+- Follow existing error handling patterns with try/catch
+- Use `Configuration` TypedDict for typed config parameters
+
+**Testing Conventions:**
+- Test files named `*_test.py`
+- Use `pytest` fixtures for mock dependencies  
+- `@mark.asyncio` for async tests
+- Snapshot testing for complex data transformations
+- Test both success and error scenarios
+- Mock external HTTP requests using `unittest.mock.AsyncMock`
+
+**Import Organization:**
+- Standard library imports first
+- Third-party imports second
+- Local imports last
+- Use relative imports within packages
+
+---
+
+## Task Breakdown & Implementation Order
+
+### Story 1: Enhanced Token Domain Model
+**File:** `protocol/protocol/token.py`
+
+**Changes Required:**
+1. Add new fields to Token class with proper typing
+2. Update `__init__` method to handle new optional parameters
+3. Update `to_dict()` method to include new fields
+4. Update `__str__` method for better representation
+5. Ensure backward compatibility for existing Token usage
+
+### Story 2: CoinGecko Data Source Enhancement  
+**File:** `data_agent/data_agent/ingestion/data_source/infrastructure/bsc/coingecko_live_tokens_data_source.py`
+
+**Changes Required:**
+1. Enhance `CoinDetailResponse` model to include new fields
+2. Update `_fetch_detail()` to extract additional metadata
+3. Modify token mapping to populate new Token fields
+4. Add error handling for missing optional fields
+5. Update `version()` to reflect data structure changes
+6. Update test files and fixtures
+
+### Implementation Dependencies:
+- Story 1 must be completed before Story 2
+- Story 2 depends on enhanced Token model
+- Both stories should include corresponding test updates
+
+### Deployment Considerations:
+- Changes are backward compatible (new fields are optional)
+- Qdrant will automatically handle enhanced similarity documents
+- No agent API contract changes required
+- No database migrations needed
 
 ### Test Framework & Standards
 

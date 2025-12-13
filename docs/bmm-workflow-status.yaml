@@ -23,5 +23,5 @@ workflow_status:
   document-project: "docs/document-project/project-scan.md"
   brainstorm-project: skipped
   research: skipped
-  tech-spec: required
+  tech-spec: "docs/tech-spec.md"
   sprint-planning: required

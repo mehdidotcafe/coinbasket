@@ -3,8 +3,11 @@ from data_agent.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_d
     CoingeckoLiveTokenListDataSource,
 )
 from data_agent.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
+from data_agent.token.infrastructure.coingecko.coingecko_token_repository import (
+    CoingeckoTokenRepository,
+)
 from pydantic import SecretStr
-from data_agent.ingestion.id.id_generator import IdGenerator
+from shared.id_generator.id_generator import IdGenerator
 from data_agent.authentication.exception.invalid_agent_key import InvalidAgentKey
 
 from data_agent.ingestion.data_source.infrastructure.bsc.ai_basket_data_source import (
@@ -82,6 +85,14 @@ similarity_storage = QdrantLangChainSimilarityStorage(
     ),
 )
 
+token_repository = CoingeckoTokenRepository(
+    http_request,
+    {
+        "coingecko_base_url": configuration.coingecko_base_url,
+        "coingecko_api_key": configuration.coingecko_api_key,
+    },
+)
+
 get_similar_assets_use_case = GetSimilarAssetsUseCase(similarity_storage)
 
 get_all_baskets_use_case = GetAllBasketsUseCase(similarity_storage)
@@ -92,12 +103,8 @@ ingest_data_use_case = IngestDataUseCase(
     similarity_storage,
     data_sources=[
         CoingeckoLiveTokenListDataSource(
-            http_request,
             id_generator,
-            {
-                "coingecko_base_url": configuration.coingecko_base_url,
-                "coingecko_api_key": configuration.coingecko_api_key,
-            },
+            token_repository,
         ),
         Big4BasketDataSource(),
         AiBasketDataSource(),

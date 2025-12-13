@@ -14,6 +14,10 @@ def token():
         display_name="Test Token",
         ticker="TTK",
         address="0x123",
+        description="Test token for testing",
+        decimals=18,
+        logo_uri=None,
+        categories=["test", "token"],
     )
 
 

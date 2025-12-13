@@ -16,6 +16,7 @@ from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddl
 from web3.types import TxParams, Wei
 
 from protocol.token import Token
+from protocol.fixture.token import bnb_token, wbnb_token
 from invest_agent.chain.balance import (
     AmountAtomic,
     AmountReadable,
@@ -44,21 +45,8 @@ class BscChain(Chain):
         self.nonce_manager = nonce_manager
         self.transaction_receipt_parser = transaction_receipt_parser
         self.private_key = private_key
-        self.base_token = Token(
-            id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-            name="Binance Coin",
-            display_name="Binance Coin",
-            ticker="BNB",
-            address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-        )
-        self.wrapped_base_token = Token(
-            id="bsc:0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-            name="WBNB Token",
-            display_name="Binance Coin",
-            ticker="WBNB",
-            address="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-        )
-
+        self.base_token = bnb_token
+        self.wrapped_base_token = wbnb_token
         with open(
             "./invest_agent/chain/infrastructure/bsc/erc20_token_abi.json",
             "r",

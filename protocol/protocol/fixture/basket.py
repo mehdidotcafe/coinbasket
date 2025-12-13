@@ -1,7 +1,14 @@
 from decimal import Decimal
 from protocol.basket import Basket
-from protocol.fixture.token import btc_token, wbnb_token, eth_token, sol_token
-from protocol.token import Token
+from protocol.fixture.token import (
+    btc_token,
+    wbnb_token,
+    eth_token,
+    sol_token,
+    doge_token,
+    shib_token,
+    pepe_token,
+)
 
 test_basket = Basket(
     id="0d83917d-a2bd-4482-83e6-68d52c8f293a",
@@ -39,26 +46,8 @@ memecoinmania_basket = Basket(
     description="A basket of popular memecoins",
     denomination=Decimal("1"),
     tokens=[
-        Token(
-            id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-            name="Dogecoin",
-            display_name="Dogecoin",
-            ticker="DOGE",
-            address="0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-        ),
-        Token(
-            id="bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
-            name="SHIBA INU",
-            display_name="Shiba Inu",
-            ticker="SHIB",
-            address="0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
-        ),
-        Token(
-            id="bsc:0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
-            name="Pepe",
-            display_name="Pepe",
-            ticker="PEPE",
-            address="0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
-        ),
+        doge_token,
+        shib_token,
+        pepe_token,
     ],
 )

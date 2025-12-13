@@ -39,6 +39,9 @@ class Balance(Generic[T]):
                 display_name=token["display_name"],
                 ticker=token["ticker"],
                 address=token["address"],
+                decimals=token["decimals"],
+                categories=token["categories"],
+                description=token["description"],
             )
 
         asset = (
@@ -103,6 +106,9 @@ class BalanceAtomic(Balance, Generic[T]):
                 display_name=token["display_name"],
                 ticker=token["ticker"],
                 address=token["address"],
+                decimals=token["decimals"],
+                categories=token["categories"],
+                description=token["description"],
             )
 
         asset = (
@@ -141,6 +147,9 @@ class BalanceAtomic(Balance, Generic[T]):
                 display_name=token["display_name"],
                 ticker=token["ticker"],
                 address=token["address"],
+                decimals=token["decimals"],
+                categories=token["categories"],
+                description=token["description"],
             )
 
         if "tokens" in asset_as_json:

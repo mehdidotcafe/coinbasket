@@ -56,4 +56,8 @@ class GetSimilarAssetsUseCase:
             name=metadata["name"],
             display_name=metadata["display_name"],
             ticker=metadata["ticker"],
+            description=metadata["description"],
+            decimals=int(metadata["decimals"]),
+            categories=metadata["categories"],
+            logo_uri=metadata.get("logo_uri"),
         )

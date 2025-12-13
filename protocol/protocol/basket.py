@@ -48,6 +48,10 @@ denomination: {str(self.denomination)}
  display_name: {token.display_name}
  ticker: {token.ticker}
  address: {token.address}
+ decimals: {token.decimals}
+ description: {token.description}
+ categories: {token.categories}
+ logo_uri: {token.logo_uri}
 """
 
     def to_dict(self) -> dict[str, Any]:
@@ -69,6 +73,15 @@ denomination: {str(self.denomination)}
             display_name="Tether USD",
             ticker="USDT",
             address="0x55d398326f99059ff775485246999027b3197955",
+            description="Tether USD is a stablecoin pegged to the US Dollar.",
+            categories=[
+                "BNB Chain Ecosystem",
+                "Bridged USDT",
+                "Bridged-Tokens",
+                "Bridged Stablecoin",
+            ],
+            decimals=18,
+            logo_uri="https://coin-images.coingecko.com/coins/images/35021/thumb/USDT.png",
         )
 
     def get_denomination(self):

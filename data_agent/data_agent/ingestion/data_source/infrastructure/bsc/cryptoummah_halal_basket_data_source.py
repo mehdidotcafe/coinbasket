@@ -23,6 +23,9 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
                     display_name="Bitcoin",
                     ticker="BTC",
                     address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
@@ -30,6 +33,9 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
                     display_name="Ethereum",
                     ticker="ETH",
                     address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE",
@@ -37,6 +43,9 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
                     display_name="XRP",
                     ticker="XRP",
                     address="0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
@@ -44,6 +53,9 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
                     display_name="Binance Coin",
                     ticker="BNB",
                     address="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
@@ -51,6 +63,9 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
                     display_name="Solana",
                     ticker="SOL",
                     address="0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
                 Token(
                     id="bsc:0xce7de646e7208a4ef112cb6ed5038fa6cc6b12e3",
@@ -58,6 +73,9 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
                     display_name="Tron",
                     ticker="TRX",
                     address="0xce7de646e7208a4ef112cb6ed5038fa6cc6b12e3",
+                    categories=[],
+                    description="",
+                    decimals=6,
                 ),
                 Token(
                     id="bsc:0x3ee2200efb3400fabb9aacf31297cbdd1d435d47",
@@ -65,6 +83,9 @@ class CryptoUmmahHalalBasketDataSource(DataSource):
                     display_name="Cardano",
                     ticker="ADA",
                     address="0x3ee2200efb3400fabb9aacf31297cbdd1d435d47",
+                    categories=[],
+                    description="",
+                    decimals=18,
                 ),
             ],
         )
