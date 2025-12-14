@@ -1,9 +1,0 @@
-installation:
-  version: 6.0.0-alpha.12
-  installDate: '2025-11-23T19:42:38.271Z'
-  lastUpdated: '2025-11-23T19:42:38.271Z'
-modules:
-  - core
-  - bmm
-ides:
-  - github-copilot
