@@ -5,7 +5,7 @@ This mono-repository contains the code for the coinbasket open source offering, 
 
 Please refer to the individual directories for more information on each agent:
 - [data_agent](./data_agent/README.md): The data agent is responsible for retrieving relevant information based on user queries and broadcasting basket rebalancing events to the invest agent.
-- [invest_agent](./invest_agent/README.md): The invest agent is responsible for managing and executing investment strategies based on data retrieved from the coinbasket data agent. It uses the Fetch.ai framework to interact with other agents and perform trades on the BNB Chain.
+- [api](./api/README.md): The invest agent is responsible for managing and executing investment strategies based on data retrieved from the coinbasket data agent. It uses the Fetch.ai framework to interact with other agents and perform trades on the BNB Chain.
 
 ## Running the entire stack
 Once the environment variables are set up for both agents, you can choose to run the entire stack in either development or production mode.
@@ -23,8 +23,8 @@ Otherwise, you can choose to start each component separately using the following
 
 ```bash
 ./nx dev data_agent
-./nx dev invest_agent
-./nx dev:worker invest_agent
+./nx dev api
+./nx dev:worker api
 ```
 
 ⚠️ Note: If you don't start the worker, Orders won't be executed.
@@ -44,8 +44,8 @@ Otherwise, you can choose to start each component separately using the following
 
 ```bash
 ./nx start data_agent
-./nx start invest_agent
-./nx start:worker invest_agent
+./nx start api
+./nx start:worker api
 ```
 
 ⚠️ Note: If you don't start the worker, Orders won't be executed.

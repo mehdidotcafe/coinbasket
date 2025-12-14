@@ -1,0 +1,232 @@
+{
+  "name": "api",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "api/api",
+  "targets": {
+    "lock": {
+      "executor": "@nxlv/python:lock",
+      "options": {
+        "update": false
+      }
+    },
+    "sync": {
+      "executor": "@nxlv/python:sync",
+      "options": {}
+    },
+    "add": {
+      "executor": "@nxlv/python:add",
+      "options": {}
+    },
+    "update": {
+      "executor": "@nxlv/python:update",
+      "options": {}
+    },
+    "remove": {
+      "executor": "@nxlv/python:remove",
+      "options": {}
+    },
+    "build": {
+      "executor": "@nxlv/python:build",
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
+      "options": {
+        "outputPath": "{projectRoot}/dist",
+        "publish": false,
+        "lockedVersions": true,
+        "bundleLocalDependencies": true
+      },
+      "cache": true
+    },
+    "lint:fix": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "poetry run ruff check --fix",
+        "cwd": "{projectRoot}"
+      },
+      "cache": true
+    },
+    "lint": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "poetry run ruff check",
+        "cwd": "{projectRoot}"
+      },
+      "cache": true
+    },
+    "start": {
+      "executor": "@nxlv/python:run-commands",
+      "dependsOn": ["infra:production"],
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.main'",
+        "cwd": "{projectRoot}"
+      },
+      "configurations": {
+        "production": {}
+      },
+      "cache": false
+    },
+    "dev": {
+      "executor": "@nxlv/python:run-commands",
+      "dependsOn": ["infra"],
+      "options": {
+        "command": "poetry run python -m api.main",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "dev:worker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run python -m api.worker",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "start:worker": {
+      "executor": "@nxlv/python:run-commands",
+      "dependsOn": ["infra:production"],
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.worker'",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "cli": {
+      "executor": "@nxlv/python:run-commands",
+      "dependsOn": ["infra"],
+      "options": {
+        "command": "poetry run python -m api.cli",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "test": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "poetry run pytest -k \"not test_integration\"",
+        "cwd": "{projectRoot}"
+      },
+      "cache": true
+    },
+    "test:integration": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "../script/run_integration_tests.sh",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "install": {
+      "executor": "@nxlv/python:install",
+      "options": {
+        "silent": false,
+        "args": "",
+        "cacheDir": ".cache/pypoetry",
+        "verbose": false,
+        "debug": false
+      }
+    },
+    "infra": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose up -d --force-recreate",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test --use-shell 'docker compose -f docker-compose-test.yml down -v && echo '' > ./database/$AGENT_ENV/$AGENT_NAME.langgraph.db && docker compose -f docker-compose-test.yml up -d --force-recreate'",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "infra:production": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell 'docker compose -f docker-compose-production.yml up -d'",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose down",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "infra:test:down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test docker compose -f docker-compose-test.yml down",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "infra:production:down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production docker compose -f docker-compose-production.yml down",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:init": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "./.venv/bin/alembic init alembic",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:gen": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" revision --autogenerate",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:run": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" upgrade head",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:test:run": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" upgrade head'",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "migration:production:run": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" upgrade head'",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:rollback": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" downgrade -1",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:list": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" history",
+        "cwd": "{projectRoot}"
+      }
+    }
+  },
+  "tags": [],
+  "release": {
+    "version": {
+      "generator": "@nxlv/python:release-version"
+    }
+  }
+}
