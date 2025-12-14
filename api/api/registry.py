@@ -1,4 +1,10 @@
 from typing import cast
+from pydantic import SecretStr
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
+
+from langchain_openai import OpenAIEmbeddings
+
 from api.investment.calculator.asset_balance_converter import (
     AssetBalanceConverter,
 )
@@ -31,9 +37,6 @@ from api.conversation.repository.infrastructure.langchain_sqlite_conversation_re
     LangchainSqliteConversationRepository,
 )
 from api.datetime.infrastructure.python_date_time import PythonDateTime
-from api.http.agent_to_agent.infrastructure.aiohttp_agent_to_agent_client import (
-    AiohttpAgentToAgentClient,
-)
 from api.chain.infrastructure.bsc.nonce_manager import NonceManager
 from api.investment.order.infrastructure.temporal_order_submitter import (
     TemporalOrderSubmitter,
@@ -52,6 +55,13 @@ from web3 import AsyncWeb3, AsyncHTTPProvider
 from api.chain.infrastructure.bsc.bsc_chain import BscChain
 from api.chain.infrastructure.bsc.bsc_contract import BscContract
 from api.configuration import Configuration
+
+from api.similarity.infrastructure.qdrant_langchain.similarity_storage.qdrant_langchain_similarity_storage import (
+    QdrantLangChainSimilarityStorage,
+)
+from api.token.infrastructure.coingecko.coingecko_token_repository import (
+    CoingeckoTokenRepository,
+)
 
 date_time = PythonDateTime()
 
@@ -106,11 +116,6 @@ exchange = ZeroXSwapper(
     },
 )
 
-agent_to_agent_client = AiohttpAgentToAgentClient(
-    configuration={"agent_url": configuration.data_agent_url},
-    aiohttp_http_request=aiohttp_http_request,
-)
-
 langgraph_db_path = (
     f"./database/{configuration.agent_env}/{configuration.agent_name}.langgraph.db"
 )
@@ -158,4 +163,28 @@ asset_balance_converter = AssetBalanceConverter(exchange=exchange, chain=chain)
 
 small_balance_policy = AbsoluteSmallBalancePolicy(
     {"threshold": configuration.small_balance_threshold}
+)
+
+similarity_storage = QdrantLangChainSimilarityStorage(
+    {
+        "qdrant_url": configuration.qdrant_url,
+        "qdrant_port": configuration.qdrant_port,
+        "qdrant_grpc_port": configuration.qdrant_grpc_port,
+        "qdrant_collection": configuration.qdrant_collection,
+        "qdrant_api_key": configuration.qdrant_api_key,
+    },
+    QdrantClient,
+    QdrantVectorStore,
+    OpenAIEmbeddings(
+        model=configuration.embedding_provider_model,
+        api_key=SecretStr(configuration.embedding_provider_api_key),
+    ),
+)
+
+token_repository = CoingeckoTokenRepository(
+    requests_http_request,
+    {
+        "coingecko_base_url": configuration.coingecko_base_url,
+        "coingecko_api_key": configuration.coingecko_api_key,
+    },
 )

@@ -47,9 +47,12 @@ readme = "README.md"
   asyncpg = "^0.30.0"
   psycopg2-binary = "^2.9.10"
   temporalio = "^1.18.1"
-
-  langchain = "^1.0.2"
+  langchain-qdrant = "^1.1.0"
+  qdrant-client = "^1.14.2"
   langchain-mcp-adapters = "^0.1.13"
+    [tool.poetry.dependencies.langchain]
+    extras = [ "openai" ]
+    version = "^1.0.2"
     [tool.poetry.dependencies.protocol]
     path = "../protocol"
     develop = true

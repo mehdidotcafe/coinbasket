@@ -29,6 +29,28 @@ services:
       - "8889:8233"
     volumes:
       - temporal-data:/tmp/temporal
+  qdrant_production:
+    image: qdrant/qdrant:latest
+    restart: always
+    container_name: qdrant_production
+    ports:
+      - ${QDRANT_PORT}:6333
+      - ${QDRANT_GRPC_PORT}:6334
+    expose:
+      - 6333
+      - 6334
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
+    configs:
+      - source: qdrant_config
+        target: /qdrant/config/production.yaml
+    volumes:
+      - qdrant-data:/qdrant/storage
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO
 volumes:
   postgres-data:
   temporal-data:
+  qdrant-data:

@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Any, Dict, Literal, Optional, cast
 
 import aiosqlite
+from api.asset.get_asset_by_id_use_case import GetAssetByIdUseCase
 from api.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
     ConvertedBalance,
@@ -11,6 +12,25 @@ from api.conversation.conversation_use_case import ConversationUseCase
 from api.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
+from api.ingestion.data_source.infrastructure.bsc.ai_basket_data_source import (
+    AiBasketDataSource,
+)
+from api.ingestion.data_source.infrastructure.bsc.big4_basket_data_source import (
+    Big4BasketDataSource,
+)
+from api.ingestion.data_source.infrastructure.bsc.cmc_top_10_2025 import (
+    CmcTop102025BasketDataSource,
+)
+from api.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_data_source import (
+    CoingeckoLiveTokenListDataSource,
+)
+from api.ingestion.data_source.infrastructure.bsc.cryptoummah_halal_basket_data_source import (
+    CryptoUmmahHalalBasketDataSource,
+)
+from api.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_data_source import (
+    MemecoinManiaBasketDataSource,
+)
+from api.ingestion.ingest_data_use_case import IngestDataUseCase
 from api.investment.build_priced_investment_plan_use_case import (
     BuildPricedInvestmentPlanUseCase,
 )
@@ -46,6 +66,8 @@ from api.portfolio.get_portfolio_use_case import (
     Portfolio,
     PortfolioBalance,
 )
+from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
+from api.similarity.get_similar_assets_use_case import GetSimilarAssetsUseCase
 from protocol.basket import Basket
 from protocol.fixture.basket import big4_basket, memecoinmania_basket
 from protocol.fixture.token import (
@@ -67,11 +89,12 @@ from api.registry import (
     order_repository,
     posting_repository,
     order_submitter,
-    agent_to_agent_client,
     langgraph_db_path,
     nonce_manager,
     asset_balance_converter,
     small_balance_policy,
+    similarity_storage,
+    token_repository,
 )
 from api.authentication.authentication import authentication
 from api.chain.balance import Balance, BalanceAtomic
@@ -158,6 +181,28 @@ get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
     chain=chain,
     posting_repository=posting_repository,
     asset_balance_converter=asset_balance_converter,
+)
+
+
+get_similar_assets_use_case = GetSimilarAssetsUseCase(similarity_storage)
+
+get_all_baskets_use_case = GetAllBasketsUseCase(similarity_storage)
+
+get_asset_by_id_use_case = GetAssetByIdUseCase(similarity_storage)
+
+ingest_data_use_case = IngestDataUseCase(
+    similarity_storage,
+    data_sources=[
+        CoingeckoLiveTokenListDataSource(
+            id_generator,
+            token_repository,
+        ),
+        Big4BasketDataSource(),
+        AiBasketDataSource(),
+        CmcTop102025BasketDataSource(),
+        CryptoUmmahHalalBasketDataSource(),
+        MemecoinManiaBasketDataSource(),
+    ],
 )
 
 spec = APISpec(
@@ -276,26 +321,15 @@ async def get_tokens_from_query(query: str) -> list[TokenResponse | BasketRespon
             TokenResponse.from_domain(cake_token),
         ]
 
-    # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
-    res = await agent_to_agent_client.send_and_receive_message(
-        SimilarAssetsQuery(
-            query=f"{query}",
-            agent_key=configuration.data_agent_key,
-            type="TOKEN",
-        ),
-        SimilarAssetsResponse,
-    )
-
-    if isinstance(res.data, str):
-        raise ValueError(f"Response is not a valid response: {res.data}")
+    assets = await get_similar_assets_use_case.execute(query, "TOKEN")
 
     return [
         (
-            TokenResponse.from_domain(asset.to_domain())
-            if isinstance(asset, TokenResponse)
-            else BasketResponse.from_domain(asset.to_domain())
+            TokenResponse.from_domain(asset)
+            if isinstance(asset, Token)
+            else BasketResponse.from_domain(asset)
         )
-        for asset in res.data.assets
+        for asset in assets
     ]
 
 
@@ -320,24 +354,15 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
             BasketResponse.from_domain(memecoinmania_basket),
         ]
 
-    # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
-    res = await agent_to_agent_client.send_and_receive_message(
-        SimilarAssetsQuery(
-            query=f"{query}", agent_key=configuration.data_agent_key, type="BASKET"
-        ),
-        SimilarAssetsResponse,
-    )
-
-    if isinstance(res.data, str):
-        raise ValueError(f"Response is not a valid response: {res.data}")
+    assets = await get_similar_assets_use_case.execute(query, "BASKET")
 
     return [
         (
-            TokenResponse.from_domain(asset.to_domain())
-            if isinstance(asset, TokenResponse)
-            else BasketResponse.from_domain(asset.to_domain())
+            TokenResponse.from_domain(asset)
+            if isinstance(asset, Token)
+            else BasketResponse.from_domain(asset)
         )
-        for asset in res.data.assets
+        for asset in assets
     ]
 
 
@@ -356,17 +381,9 @@ async def get_all_available_baskets():
     if configuration.agent_env == "test":
         return [big4_basket, memecoinmania_basket]
 
-    # TODO: Use fetch ai send_and_receive when fixed with multiple concurrent requests
-    res = await agent_to_agent_client.send_and_receive_message(
-        GetAllBasketsQuery(agent_key=configuration.data_agent_key),
-        GetAllBasketsResponse,
-        key="/basket",
-    )
+    baskets = await get_all_baskets_use_case.execute()
 
-    if isinstance(res.baskets, str):
-        raise ValueError(f"Response is not a valid response: {res.baskets}")
-
-    return res.baskets
+    return [BasketResponse.from_domain(basket) for basket in baskets]
 
 
 @tool()
@@ -686,18 +703,10 @@ class IntentInvestmentPlanBalanceRequest(Model):
         elif self.asset_id == chain.base_token.id:
             asset = chain.base_token
         else:
-            res = await agent_to_agent_client.send_and_receive_message(
-                GetAssetByIdQuery(
-                    agent_key=configuration.data_agent_key, asset_id=self.asset_id
-                ),
-                GetAssetByIdResponse,
-                "/asset",
-            )
+            asset = await get_asset_by_id_use_case.execute(self.asset_id)
 
-            if isinstance(res.data, str):
-                raise ValueError(f"Response is not a valid response: {res.data}")
-
-            asset = res.data.asset.to_domain()
+            if not asset:
+                raise ValueError(f"Asset id {self.asset_id} not found")
 
         return IntentInvestmentPlanBalance(
             asset=asset,
@@ -877,6 +886,11 @@ coinbasket_tools = [
 @api.on_event("startup")
 async def on_startup(_ctx: Context):
     await nonce_manager.resync()
+    await similarity_storage.start()
+
+    if configuration.agent_env != "test":
+        await ingest_data_use_case.execute()
+
     _ctx.logger.info("Invest Agent Ready.")
 
 
