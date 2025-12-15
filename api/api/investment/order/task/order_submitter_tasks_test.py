@@ -11,8 +11,8 @@ from api.investment.order.task.order_submitter_tasks import (
 from api.investment.order.order import Order
 from api.investment.transaction.transaction import Transaction
 from api.chain.chain import BalanceAtomic
-from protocol.fixture.basket import big4_basket
-from protocol.fixture.token import bnb_token, sol_token, eth_token
+from api.protocol.fixture.basket import big4_basket
+from api.protocol.fixture.token import bnb_token, sol_token, eth_token
 from api.chain.chain import ParsedReceipt
 
 

@@ -17,8 +17,8 @@ from api.investment.investment_planner.priced_investment_plan import (
 )
 from api.portfolio.holding.holding import Holding
 from api.portfolio.posting.posting_repository import PostingRepository
-from protocol.asset import Asset
-from protocol.token import Token
+from api.protocol.asset import Asset
+from api.protocol.token import Token
 
 
 class BuildPricedInvestmentPlanUseCase:

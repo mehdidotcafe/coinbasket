@@ -23,8 +23,8 @@ from api.investment.investment_planner.priced_investment_plan import (
 from api.portfolio.holding.holding import Holding
 from api.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, mark
-from protocol.fixture.token import eth_token, bnb_token, usdt_token, btc_token
-from protocol.fixture.basket import big4_basket, test_basket
+from api.protocol.fixture.token import eth_token, bnb_token, usdt_token, btc_token
+from api.protocol.fixture.basket import big4_basket, test_basket
 from decimal import ROUND_DOWN, Decimal
 
 

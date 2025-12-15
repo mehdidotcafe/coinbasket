@@ -7,7 +7,7 @@ from api.investment.calculator.asset_balance_converter import (
     ConvertedBalance,
 )
 from api.portfolio.posting.posting_repository import PostingRepository
-from protocol.asset import Asset
+from api.protocol.asset import Asset
 
 
 @dataclass

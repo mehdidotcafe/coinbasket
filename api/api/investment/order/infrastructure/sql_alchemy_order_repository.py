@@ -10,7 +10,7 @@ from api.database.infrastructure.sql_alchemy_base_repository import (
     SqlAlchemyBaseRepository,
 )
 from api.investment.fees import Fees
-from protocol.token import Token
+from api.protocol.token import Token
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.future import select

@@ -41,10 +41,14 @@ from api.chain.infrastructure.bsc.nonce_manager import NonceManager
 from api.investment.order.infrastructure.temporal_order_submitter import (
     TemporalOrderSubmitter,
 )
-from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
-from shared.http_request.infrastructure.requests_http_request import RequestsHttpRequest
-from shared.id_generator.id_generator import IdGenerator
-from shared.random_generator.random_generator import RandomGenerator
+from api.shared.http_request.infrastructure.aiohttp_http_request import (
+    AiohttpHttpRequest,
+)
+from api.shared.http_request.infrastructure.requests_http_request import (
+    RequestsHttpRequest,
+)
+from api.shared.id_generator.id_generator import IdGenerator
+from api.shared.random_generator.random_generator import RandomGenerator
 from api.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )

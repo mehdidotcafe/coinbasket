@@ -7,8 +7,8 @@ from api.similarity.similarity_document import SimilarityDocument
 from api.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
 )
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 
 
 class GetAllBasketsUseCase:

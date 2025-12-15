@@ -11,7 +11,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langchain_core.messages import HumanMessage, AIMessage
 from api.conversation.interrupt import Interrupt
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 
 
 class LangchainSqliteConversationRepository(ConversationRepository):

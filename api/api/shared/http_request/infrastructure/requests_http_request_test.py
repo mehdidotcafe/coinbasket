@@ -1,5 +1,7 @@
 from pytest import fixture
-from shared.http_request.infrastructure.requests_http_request import RequestsHttpRequest
+from api.shared.http_request.infrastructure.requests_http_request import (
+    RequestsHttpRequest,
+)
 
 
 @fixture

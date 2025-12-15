@@ -5,11 +5,11 @@ from api.chain.chain import Chain, ParsedReceipt
 from api.datetime.date_time import DateTime
 from api.investment.investment_parameters import InvestmentParameters
 from api.investment.order.order_repository import OrderRepository
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 from api.investment.order.order import ChainTransaction, Try, Order
 from api.investment.exchange.exchange import Exchange, TransactionData
-from protocol.token import Token
-from shared.random_generator.random_generator import RandomGenerator
+from api.protocol.token import Token
+from api.shared.random_generator.random_generator import RandomGenerator
 from api.investment.order.exception.order_without_send_transaction import (
     OrderWithoutSendTransaction,
 )

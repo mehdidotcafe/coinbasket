@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
-from protocol.asset import Asset
+from api.protocol.asset import Asset
 
 
 @dataclass

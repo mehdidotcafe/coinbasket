@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 import re
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 from api.similarity.similarity_document import SimilarityDocument
 from api.ingestion.data_source.data_source import DataSource
-from shared.http_request.http_request import HttpRequest
+from api.shared.http_request.http_request import HttpRequest
 
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 class PancakeswapToken(BaseModel):

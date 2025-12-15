@@ -10,7 +10,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt as LanggraphInterrupt
 
 from api.conversation.message import Message, QueryMessage
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 from api.conversation.interrupt import Interrupt
 
 

@@ -3,8 +3,8 @@ from typing import TypedDict
 from api.investment.infrastructure.zero_x.exception.swap_validation_failed import (
     SwapValidationFailed,
 )
-from shared.http_request.exception.failed_request import FailedRequest
-from shared.http_request.http_request import HttpRequest
+from api.shared.http_request.exception.failed_request import FailedRequest
+from api.shared.http_request.http_request import HttpRequest
 from api.investment.infrastructure.zero_x.price import Price
 from api.investment.infrastructure.zero_x.quote import QuoteResult
 from api.investment.investment_parameters import InvestmentParameters

@@ -15,8 +15,8 @@ from api.investment.calculator.asset_balance_converter import (
 from pytest import fixture, mark
 from api.portfolio.holding.holding import Holding
 from api.portfolio.posting.posting_repository import PostingRepository
-from protocol.fixture.token import wbnb_token
-from protocol.fixture.basket import test_basket
+from api.protocol.fixture.token import wbnb_token
+from api.protocol.fixture.basket import test_basket
 
 
 def to_atomic(amount: Decimal) -> int:

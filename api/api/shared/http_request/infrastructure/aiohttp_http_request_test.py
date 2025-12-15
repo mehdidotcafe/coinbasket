@@ -1,6 +1,8 @@
 from pytest import fixture
 
-from shared.http_request.infrastructure.aiohttp_http_request import AiohttpHttpRequest
+from api.shared.http_request.infrastructure.aiohttp_http_request import (
+    AiohttpHttpRequest,
+)
 
 
 @fixture

@@ -24,10 +24,10 @@ from api.investment.order.order import Order, OrderAssetType
 from api.investment.order.order_submitter import OrderSubmitter
 from api.portfolio.holding.holding import Holding
 from api.portfolio.posting.posting_repository import PostingRepository
-from protocol.asset import Asset
-from protocol.basket import Basket
-from protocol.token import Token
-from shared.id_generator.id_generator import IdGenerator
+from api.protocol.asset import Asset
+from api.protocol.basket import Basket
+from api.protocol.token import Token
+from api.shared.id_generator.id_generator import IdGenerator
 
 
 @dataclass

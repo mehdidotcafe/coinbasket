@@ -14,8 +14,8 @@ from api.portfolio.posting.posting import (
     PostingType,
 )
 from api.portfolio.posting.posting_repository import PostingRepository
-from protocol.asset import Asset
-from protocol.token import Token
+from api.protocol.asset import Asset
+from api.protocol.token import Token
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy import ForeignKey, Row, String, or_, select, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship

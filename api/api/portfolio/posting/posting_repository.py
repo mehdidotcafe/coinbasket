@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from api.portfolio.holding.holding import Holding
 from api.portfolio.posting.posting import Posting
-from protocol.asset import Asset
+from api.protocol.asset import Asset
 from api.database.session import NullableSession
 
 

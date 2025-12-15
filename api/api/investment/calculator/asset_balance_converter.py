@@ -10,9 +10,9 @@ from api.investment.exception.cannot_swap_basket_for_another_exception import (
 from api.investment.exchange.exchange import Exchange
 from api.investment.investment_parameters import InvestmentParameters
 from api.portfolio.holding.holding import Holding
-from protocol.asset import Asset
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.asset import Asset
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 from functools import reduce
 
 

@@ -33,7 +33,7 @@ from api.investment.infrastructure.zero_x.exception.swap_validation_failed impor
 
 from api.investment.order.order import Order
 from pytest import fixture, mark, raises
-from protocol.fixture.token import bnb_token, eth_token
+from api.protocol.fixture.token import bnb_token, eth_token
 
 from web3 import AsyncWeb3
 from web3.eth import Eth

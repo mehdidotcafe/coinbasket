@@ -3,7 +3,7 @@ import json
 
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import ParsedReceipt
-from protocol.token import Token
+from api.protocol.token import Token
 from web3 import AsyncWeb3
 from typing import Optional
 

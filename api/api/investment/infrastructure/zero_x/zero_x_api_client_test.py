@@ -3,8 +3,8 @@ from unittest import mock
 from api.investment.infrastructure.zero_x.exception.swap_validation_failed import (
     SwapValidationFailed,
 )
-from shared.http_request.exception.failed_request import FailedRequest
-from shared.http_request.http_request import HttpRequest
+from api.shared.http_request.exception.failed_request import FailedRequest
+from api.shared.http_request.http_request import HttpRequest
 from api.investment.infrastructure.zero_x.fee import Fee, Fees
 from api.investment.infrastructure.zero_x.quote import (
     Quote,
@@ -24,7 +24,7 @@ from api.investment.investment_parameters import (
     InvestmentParameters,
 )
 from pytest import fixture, mark, raises
-from protocol.fixture.token import bnb_token
+from api.protocol.fixture.token import bnb_token
 
 
 @fixture

@@ -9,7 +9,7 @@ from api.chain.infrastructure.bsc.transaction_receipt_parser import (
 from pytest import fixture, mark
 from web3 import AsyncHTTPProvider, AsyncWeb3
 from web3.types import TxReceipt
-from protocol.fixture.token import bnb_token, cake_token, wbnb_token
+from api.protocol.fixture.token import bnb_token, cake_token, wbnb_token
 
 
 # 0.032540290120408155 BNB -> 10 CAKE

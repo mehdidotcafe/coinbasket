@@ -20,8 +20,8 @@ from api.database.infrastructure.sql_alchemy_session_manager import (
 )
 from pytest import fixture, mark
 
-from protocol.fixture.token import wbnb_token, sol_token, bnb_token
-from protocol.fixture.basket import test_basket
+from api.protocol.fixture.token import wbnb_token, sol_token, bnb_token
+from api.protocol.fixture.basket import test_basket
 
 
 @fixture

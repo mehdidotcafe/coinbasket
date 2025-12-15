@@ -1,7 +1,7 @@
 import requests
 from environs import env
-from protocol.fixture.token import btc_token, eth_token
-from protocol.fixture.basket import big4_basket, memecoinmania_basket
+from api.protocol.fixture.token import btc_token, eth_token
+from api.protocol.fixture.basket import big4_basket, memecoinmania_basket
 from syrupy.filters import paths
 
 app_port = env.int("APP_PORT")

@@ -27,7 +27,7 @@ from api.investment.infrastructure.zero_x.zero_x_api_client import (
 from api.investment.investment_parameters import InvestmentParameters
 
 from api.investment.order.order import Order
-from protocol.token import Token
+from api.protocol.token import Token
 from web3 import AsyncWeb3
 
 from eth_account.signers.local import LocalAccount

@@ -2,10 +2,10 @@ from api.token.infrastructure.coingecko.coingecko_token_repository import (
     CoingeckoTokenRepository,
 )
 
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 from api.similarity.similarity_document import SimilarityDocument
 from api.ingestion.data_source.data_source import DataSource
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 class CoingeckoLiveTokenListDataSource(DataSource):

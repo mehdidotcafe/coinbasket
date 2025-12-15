@@ -1,4 +1,4 @@
-from protocol.asset import Asset
+from api.protocol.asset import Asset
 
 
 class InsufficientAssetBalance(Exception):

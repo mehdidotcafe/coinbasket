@@ -11,12 +11,12 @@ from api.investment.exception.cannot_swap_basket_for_another_exception import (
 )
 from api.investment.exchange.exchange import Exchange, ExchangeConvertedBalance
 from api.portfolio.holding.holding import Holding
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 from pytest import fixture, raises, mark
 
-from protocol.fixture.basket import test_basket, big4_basket
-from protocol.fixture.token import btc_token, eth_token, sol_token
+from api.protocol.fixture.basket import test_basket, big4_basket
+from api.protocol.fixture.token import btc_token, eth_token, sol_token
 
 
 @fixture

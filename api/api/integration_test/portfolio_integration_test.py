@@ -4,7 +4,7 @@ from api.investment.order.order import Order
 from api.investment.transaction.transaction import Transaction
 from api.portfolio.posting.posting import Posting
 from pytest import fixture
-from protocol.fixture.token import (
+from api.protocol.fixture.token import (
     sol_token,
     eth_token,
     usdt_token,

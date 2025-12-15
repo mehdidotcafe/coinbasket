@@ -1,6 +1,6 @@
 from decimal import Decimal
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 
 
 def test_basket__str__():

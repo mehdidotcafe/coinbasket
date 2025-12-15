@@ -68,9 +68,9 @@ from api.portfolio.get_portfolio_use_case import (
 )
 from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from api.similarity.get_similar_assets_use_case import GetSimilarAssetsUseCase
-from protocol.basket import Basket
-from protocol.fixture.basket import big4_basket, memecoinmania_basket
-from protocol.fixture.token import (
+from api.protocol.basket import Basket
+from api.protocol.fixture.basket import big4_basket, memecoinmania_basket
+from api.protocol.fixture.token import (
     wbnb_token,
     eth_token,
     btc_token,
@@ -104,7 +104,7 @@ from api.documentation.response.invalid_authentication_key import (
 )
 
 from api.documentation.openapi import openapi
-from protocol.token import Token
+from api.protocol.token import Token
 from pydantic import RootModel
 from pydantic.v1 import root_validator, validator
 from uagents import Agent, Context, Model
@@ -112,12 +112,12 @@ from uagents import Agent, Context, Model
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage
 
-from protocol import (
+from api.protocol import (
     AssetResponse,
     BasketResponse,
     TokenResponse,
 )
-from protocol.fixture.token import usdt_token
+from api.protocol.fixture.token import usdt_token
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langchain.chat_models import init_chat_model

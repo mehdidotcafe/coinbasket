@@ -7,7 +7,7 @@ from api.portfolio.small_balance.absolute_small_balance_policy import (
     AbsoluteSmallBalancePolicy,
     Configuration,
 )
-from protocol.fixture.token import usdt_token
+from api.protocol.fixture.token import usdt_token
 
 
 @pytest.fixture

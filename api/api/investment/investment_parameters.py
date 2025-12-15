@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 @dataclass

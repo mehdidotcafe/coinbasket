@@ -5,11 +5,11 @@ from api.token.infrastructure.coingecko.coingecko_token_repository import (
 from pytest import fixture, mark
 from typing import Any
 
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 from api.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_data_source import (
     CoingeckoLiveTokenListDataSource,
 )
-from protocol.fixture.token import sol_token, usdt_token, eth_token
+from api.protocol.fixture.token import sol_token, usdt_token, eth_token
 
 
 @fixture

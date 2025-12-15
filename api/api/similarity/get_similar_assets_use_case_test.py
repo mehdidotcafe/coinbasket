@@ -1,7 +1,7 @@
 from decimal import Decimal
 from unittest import mock
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 from pytest import fixture, mark, raises
 from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,

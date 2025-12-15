@@ -8,7 +8,7 @@ from api.chain.chain import Gas
 from api.investment.investment_parameters import InvestmentParameters
 
 from api.investment.order.order import Order
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 @dataclass

@@ -1,8 +1,8 @@
 import pytest
 from decimal import Decimal
-from protocol.token import Token
-from protocol.asset import Asset
-from protocol.basket import Basket
+from api.protocol.token import Token
+from api.protocol.asset import Asset
+from api.protocol.basket import Basket
 from api.chain.balance import BalanceAtomic
 
 

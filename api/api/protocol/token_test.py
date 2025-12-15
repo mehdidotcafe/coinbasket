@@ -1,4 +1,4 @@
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 def test_token_eq_true() -> None:

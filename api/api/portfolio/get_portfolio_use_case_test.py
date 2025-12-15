@@ -22,7 +22,7 @@ from api.portfolio.get_portfolio_use_case import (
 from api.portfolio.small_balance.small_balance_policy import SmallBalancePolicy
 from pytest import fixture, mark
 
-from protocol.fixture.token import (
+from api.protocol.fixture.token import (
     bnb_token,
     eth_token,
     sol_token,
@@ -30,7 +30,7 @@ from protocol.fixture.token import (
     usdt_token,
     btc_token,
 )
-from protocol.fixture.basket import big4_basket
+from api.protocol.fixture.basket import big4_basket
 
 
 @fixture

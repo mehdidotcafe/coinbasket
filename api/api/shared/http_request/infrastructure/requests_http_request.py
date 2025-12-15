@@ -2,10 +2,10 @@ from typing import Type, TypeVar
 from pydantic import BaseModel
 import requests
 
-from shared.http_request.exception.failed_request import (
+from api.shared.http_request.exception.failed_request import (
     FailedRequest,
 )
-from shared.http_request.http_request import GetParams, HttpRequest, PostParams
+from api.shared.http_request.http_request import GetParams, HttpRequest, PostParams
 
 
 T = TypeVar("T", bound=BaseModel)

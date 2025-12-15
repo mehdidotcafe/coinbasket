@@ -9,8 +9,8 @@ from api.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
 )
 from pytest import fixture, mark, raises
-from protocol.token import Token
-from protocol.basket import Basket
+from api.protocol.token import Token
+from api.protocol.basket import Basket
 
 
 @fixture

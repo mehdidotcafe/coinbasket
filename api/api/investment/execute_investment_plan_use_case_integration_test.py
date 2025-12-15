@@ -24,13 +24,13 @@ from api.investment.investment_planner.investment_plan import (
     InvestmentPlanStep,
 )
 
-from protocol.fixture.token import (
+from api.protocol.fixture.token import (
     btc_token,
     sol_token,
     usdt_token,
     eth_token,
 )
-from protocol.fixture.basket import test_basket
+from api.protocol.fixture.basket import test_basket
 
 from sqlalchemy import select
 

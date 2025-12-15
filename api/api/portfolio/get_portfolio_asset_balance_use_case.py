@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
 from api.portfolio.posting.posting_repository import PostingRepository
-from protocol.asset import Asset
+from api.protocol.asset import Asset
 
 
 @dataclass

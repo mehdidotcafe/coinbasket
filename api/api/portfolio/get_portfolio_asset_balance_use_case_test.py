@@ -10,7 +10,7 @@ from api.portfolio.holding.holding import Holding
 from api.portfolio.posting.posting_repository import PostingRepository
 from pytest import fixture, mark
 
-from protocol.fixture.token import bnb_token, eth_token, wbnb_token
+from api.protocol.fixture.token import bnb_token, eth_token, wbnb_token
 
 
 @fixture

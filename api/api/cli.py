@@ -8,7 +8,7 @@ from api.chain.infrastructure.bsc.nonce_manager import (
 from api.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
-from protocol.token import Token
+from api.protocol.token import Token
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
 from api.configuration import Configuration

@@ -8,8 +8,8 @@ from api.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
 )
 from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 from pytest import fixture, mark, raises
 
 

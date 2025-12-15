@@ -8,7 +8,7 @@ from api.investment.order.infrastructure.temporal_order_submitter import (
 )
 from api.investment.order.order import Order
 from api.investment.order.order_repository import OrderRepository
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 from temporalio.client import Client
 
 

@@ -1,9 +1,9 @@
 from typing import TypedDict
 from api.token.token_repository import TokenRepository
-from protocol.token import Token
+from api.protocol.token import Token
 from pydantic import BaseModel, Field
-from shared.http_request.exception.failed_request import FailedRequest
-from shared.http_request.http_request import HttpRequest
+from api.shared.http_request.exception.failed_request import FailedRequest
+from api.shared.http_request.http_request import HttpRequest
 
 
 class Configuration(TypedDict):

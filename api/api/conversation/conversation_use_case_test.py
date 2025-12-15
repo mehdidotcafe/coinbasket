@@ -8,7 +8,7 @@ from api.conversation.conversation_use_case import (
 from api.datetime.date_time import DateTime
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 
 
 @fixture

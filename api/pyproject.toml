@@ -53,13 +53,6 @@ readme = "README.md"
     [tool.poetry.dependencies.langchain]
     extras = [ "openai" ]
     version = "^1.0.2"
-    [tool.poetry.dependencies.protocol]
-    path = "../protocol"
-    develop = true
-
-    [tool.poetry.dependencies.shared]
-    path = "../shared"
-    develop = true
 
 [tool.poetry.group.dev.dependencies]
 eth-typing = "^5.2.1"

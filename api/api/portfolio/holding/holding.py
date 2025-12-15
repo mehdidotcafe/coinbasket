@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from api.chain.balance import BalanceAtomic
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 @dataclass

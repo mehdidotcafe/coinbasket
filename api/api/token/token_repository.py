@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 class TokenRepository(ABC):

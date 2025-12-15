@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Literal
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 from uagents import Model
 
 

@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Any, Literal
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
@@ -9,7 +9,7 @@ from api.similarity.similarity_document import SimilarityDocument
 from api.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
 )
-from protocol.asset import Asset
+from api.protocol.asset import Asset
 
 
 class GetSimilarAssetsUseCase:

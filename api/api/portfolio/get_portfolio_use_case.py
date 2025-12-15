@@ -19,8 +19,8 @@ from api.portfolio.posting.posting_repository import (
     PostingRepository,
 )
 from api.portfolio.small_balance.small_balance_policy import SmallBalancePolicy
-from protocol.token import Token
-from protocol.fixture.token import usdt_token
+from api.protocol.token import Token
+from api.protocol.fixture.token import usdt_token
 
 
 @dataclass

@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Any
 
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 class Basket:

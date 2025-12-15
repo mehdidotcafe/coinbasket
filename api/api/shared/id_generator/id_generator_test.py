@@ -1,4 +1,4 @@
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 
 
 def test_id_generator_different_seed():

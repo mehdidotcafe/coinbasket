@@ -16,13 +16,13 @@ from web3.types import Wei
 from web3.eth import AsyncEth
 
 
-from protocol.token import Token
-from protocol.fixture.token import eth_token, usdt_token
+from api.protocol.token import Token
+from api.protocol.fixture.token import eth_token, usdt_token
 from api.chain.infrastructure.bsc.bsc_chain import BscChain
 
 from eth_account.signers.local import LocalAccount
 
-from protocol.fixture.token import bnb_token, wbnb_token
+from api.protocol.fixture.token import bnb_token, wbnb_token
 
 
 @fixture

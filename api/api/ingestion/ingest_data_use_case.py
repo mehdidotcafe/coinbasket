@@ -5,8 +5,8 @@ from api.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
 )
 from api.ingestion.data_source.data_source import DataSource
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 
 type Data = Union[list[Token], list[Basket]]
 

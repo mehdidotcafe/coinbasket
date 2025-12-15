@@ -4,7 +4,7 @@ from typing import TypedDict
 from api.investment.order.order import Order
 from api.investment.order.order_repository import OrderRepository
 from api.investment.order.order_submitter import OrderSubmitter
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 from temporalio.client import Client
 from itertools import chain
 

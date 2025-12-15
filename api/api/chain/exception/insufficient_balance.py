@@ -1,5 +1,5 @@
 from api.chain.balance import BalanceAtomic
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 class InsufficientBalance(Exception):

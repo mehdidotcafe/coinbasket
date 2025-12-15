@@ -13,7 +13,7 @@ from api.investment.transaction.transaction import Transaction
 from api.portfolio.posting.posting import Posting
 from api.portfolio.posting.posting_repository import PostingRepository
 from api.investment.order.order import Order, Try
-from protocol.token import Token
+from api.protocol.token import Token
 
 
 class OnOrderSuccessTask:

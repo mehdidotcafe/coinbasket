@@ -9,14 +9,14 @@ from api.chain.infrastructure.bsc.nonce_manager import NonceManager
 from api.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
-from protocol.asset import Asset
+from api.protocol.asset import Asset
 from tenacity import retry, stop_after_attempt, wait_fixed
 from web3 import AsyncWeb3
 from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
 from web3.types import TxParams, Wei
 
-from protocol.token import Token
-from protocol.fixture.token import bnb_token, wbnb_token
+from api.protocol.token import Token
+from api.protocol.fixture.token import bnb_token, wbnb_token
 from api.chain.balance import (
     AmountAtomic,
     AmountReadable,

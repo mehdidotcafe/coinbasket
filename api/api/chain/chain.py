@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
-from protocol.asset import Asset
-from protocol.token import Token
+from api.protocol.asset import Asset
+from api.protocol.token import Token
 
 from api.chain.balance import (
     AmountAtomic,

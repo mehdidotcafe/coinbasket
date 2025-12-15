@@ -1,8 +1,8 @@
 from unittest import mock
-from protocol.token import Token
+from api.protocol.token import Token
 from pytest import fixture, mark, raises
-from shared.http_request.exception.failed_request import FailedRequest
-from shared.http_request.http_request import HttpRequest
+from api.shared.http_request.exception.failed_request import FailedRequest
+from api.shared.http_request.http_request import HttpRequest
 from api.token.infrastructure.coingecko.coingecko_token_repository import (
     CoingeckoTokenRepository,
     Configuration,

@@ -1,4 +1,4 @@
-from protocol.token import Token
+from api.protocol.token import Token
 
 bnb_token = Token(
     id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",

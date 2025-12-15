@@ -1,6 +1,6 @@
 from decimal import Decimal
-from protocol.basket import Basket
-from protocol.fixture.token import (
+from api.protocol.basket import Basket
+from api.protocol.fixture.token import (
     btc_token,
     wbnb_token,
     eth_token,

@@ -3,9 +3,9 @@ from decimal import Decimal
 import json
 from typing import Any, Generic, TypeVar
 
-from protocol.asset import Asset
-from protocol.basket import Basket
-from protocol.token import Token
+from api.protocol.asset import Asset
+from api.protocol.basket import Basket
+from api.protocol.token import Token
 
 T = TypeVar("T", bound=Asset, default=Asset, covariant=True)
 

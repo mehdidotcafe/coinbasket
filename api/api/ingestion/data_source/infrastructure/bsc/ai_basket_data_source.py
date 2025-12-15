@@ -2,8 +2,8 @@ from decimal import Decimal
 from api.ingestion.data_source.data_source import DataSource
 from api.similarity.similarity_document import SimilarityDocument
 
-from protocol.token import Token
-from protocol.basket import Basket
+from api.protocol.token import Token
+from api.protocol.basket import Basket
 
 
 class AiBasketDataSource(DataSource):

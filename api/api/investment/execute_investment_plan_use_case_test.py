@@ -26,15 +26,15 @@ from api.investment.investment_planner.investment_plan import (
 )
 from api.investment.order.order import Order
 from api.investment.order.order_submitter import OrderSubmitter
-from protocol.basket import Basket
-from protocol.fixture.token import (
+from api.protocol.basket import Basket
+from api.protocol.fixture.token import (
     bnb_token,
     wbnb_token,
     eth_token,
     sol_token,
     usdt_token,
 )
-from shared.id_generator.id_generator import IdGenerator
+from api.shared.id_generator.id_generator import IdGenerator
 from api.portfolio.holding.holding import Holding
 
 
