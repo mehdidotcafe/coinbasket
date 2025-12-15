@@ -1,0 +1,68 @@
+name: coinbasket_api
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:v1.2.3
+    container_name: anvil
+    environment:
+      ANVIL_IP_ADDR: "0.0.0.0"
+    working_dir: /anvil
+    ports:
+      - "8545:8545"
+    entrypoint: ["anvil"]
+    command: [ "--balance", "10", "--chain-id", "${ANVIL_CHAIN_ID}", "--fork-url", "${ANVIL_FORK_URL}", "--mnemonic", "${ANVIL_MNEMONIC}" ]
+    volumes:
+      - anvil-data:/anvil/state
+  postgres:
+    image: postgres:17.5
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${APP_NAME}
+    ports:
+      - "${DATABASE_PORT}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  redoc:
+    container_name: redoc
+    image: redocly/redoc
+    ports:
+      - "${REDOC_PORT}:80"
+    environment:
+      SPEC_URL: "http://127.0.0.1:${APP_PORT}/openapi"
+  temporal:
+    container_name: temporal
+    image: temporalio/temporal:1.5.0
+    command: ["server", "start-dev", "--ip", "0.0.0.0"]
+    ports:
+      - "${TEMPORAL_PORT}:7233"
+      - "${TEMPORAL_WEB_PORT}:8233"
+    volumes:
+      - temporal-data:/tmp/temporal
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    container_name: qdrant
+    ports:
+      - ${QDRANT_PORT}:6333
+      - ${QDRANT_GRPC_PORT}:6334
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
+    configs:
+      - source: qdrant_config
+        target: /qdrant/config/production.yaml
+    volumes:
+      - qdrant-data:/qdrant/storage
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO
+volumes:
+  postgres-data:
+  anvil-data:
+  temporal-data:
+  qdrant-data:

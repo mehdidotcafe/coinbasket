@@ -1,0 +1,54 @@
+from typing import Type, TypeVar
+from pydantic import BaseModel
+import aiohttp
+
+from api.shared.http_request.exception.failed_request import (
+    FailedRequest,
+)
+from api.shared.http_request.http_request import GetParams, HttpRequest, PostParams
+
+
+T = TypeVar("T", bound=BaseModel)
+
+
+class AiohttpHttpRequest(HttpRequest):
+    TIMEOUT = 20  # seconds
+
+    async def get(self, params: GetParams, schema: Type[T]) -> T:
+        """
+        Fetches data from a given URL using the aiohttp library.
+        """
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                params.get("url"),
+                params=params.get("params"),
+                headers=params.get("headers"),
+                timeout=aiohttp.ClientTimeout(total=self.TIMEOUT),
+            ) as response:
+                if response.status >= 200 and response.status < 400:
+                    return schema.model_validate(await response.json())
+
+                print(f"Failed request: {response.status} {await response.text()}")
+
+                raise FailedRequest(
+                    status_code=response.status,
+                    response=await response.text(),
+                )
+
+    async def post(self, params: PostParams, schema: Type[T]) -> T:
+        """
+        Sends a POST request to a given URL using the aiohttp library.
+        """
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                params.get("url"),
+                json=params.get("body"),
+                headers=params.get("headers"),
+                timeout=aiohttp.ClientTimeout(total=self.TIMEOUT),
+            ) as response:
+                if response.status >= 200 and response.status < 400:
+                    return schema.model_validate(await response.json())
+                raise FailedRequest(
+                    status_code=response.status,
+                    response=await response.text(),
+                )

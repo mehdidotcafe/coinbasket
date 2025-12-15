@@ -37,7 +37,7 @@ jobs:
         id: set-application
         run: |
           AFFECTED=$(npx nx show projects --exclude=*-root --affected --base=origin/main --head=HEAD |
-            jq -R -s -c 'split("\n") | map(select(. != "" and test("_agent$")))')
+            jq -R -s -c 'split("\n") | map(select(. != "" and test("api$")))')
 
           echo "affected_application={\"project\": $AFFECTED}" >> $GITHUB_OUTPUT
 
