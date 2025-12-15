@@ -115,13 +115,7 @@ from langchain_core.messages import SystemMessage
 from protocol import (
     AssetResponse,
     BasketResponse,
-    SimilarAssetsQuery,
-    SimilarAssetsResponse,
-    GetAllBasketsQuery,
-    GetAllBasketsResponse,
     TokenResponse,
-    GetAssetByIdQuery,
-    GetAssetByIdResponse,
 )
 from protocol.fixture.token import usdt_token
 
@@ -891,7 +885,7 @@ async def on_startup(_ctx: Context):
     if configuration.agent_env != "test":
         await ingest_data_use_case.execute()
 
-    _ctx.logger.info("Invest Agent Ready.")
+    _ctx.logger.info("API Ready.")
 
 
 class QueryMessageRequest(Model):

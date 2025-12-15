@@ -4,13 +4,13 @@ import os
 from environs import env
 from marshmallow.validate import OneOf
 
-AgentEnv = Literal["development", "test", "production"]
+Env = Literal["development", "test", "production"]
 
 
 class Configuration:
     def __init__(self):
-        self.agent_env: AgentEnv = cast(
-            AgentEnv,
+        self.agent_env: Env = cast(
+            Env,
             env.str(
                 "AGENT_ENV",
                 validate=OneOf(

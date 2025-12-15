@@ -18,7 +18,7 @@ package-lock.json
 .venv
 __pycache__
 
-# Invest Agent database. Keep the structure but ignore contents.
+# API database. Keep the structure but ignore contents.
 api/database/*
 
 !api/database/production/

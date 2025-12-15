@@ -18,7 +18,7 @@ fi
 env-cmd -f .env.test poetry run python -m $PROJECT.main &
 API_PID=$!
 
-../script/wait_agent_start.sh
+../script/wait_api_start.sh
 
 env-cmd -f .env.test poetry run pytest -k "test_integration" "$@"
 TEST_RESULT=$?

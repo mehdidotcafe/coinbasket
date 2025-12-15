@@ -1,10 +1,8 @@
 [<img src="../assets/coinbasket_banner_thin.png"/>](../assets/coinbasket_banner_thin.png)
 
-# coinbasket invest agent ![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3) ![tag:ASI](https://img.shields.io/badge/asi-3D8BD3)
+# coinbasket API
 
-The coinbasket invest agent is a Fetch.ai agent designed to manage and execute investment strategies based on data retrieved from the coinbasket data agent. It uses the Fetch.ai framework to interact with other agents and perform trades on the BNB Chain.
-
-Currently, the invest agent relies on the data agent to retrieve relevant information based on user queries. Soon, it will also subscribe to basket rebalancing events broadcasted by the data agent and automatically execute trades accordingly.
+The coinbasket API is designed to manage and execute investment strategies based on data retrieved from different data sources. It uses the FastAPI framework to interact with the Frontend and perform trades on the BNB Chain using 0x Protocol API and Web3.py.
 
 ## Installation
 ### Prerequisites
@@ -21,18 +19,19 @@ This installs Python and Javascript dependencies (if needed).
 
 ### Environment variables
 #### Development mode
-In the `api` directory, copy `.env.example` to `.env.local` and fill in the required environment variables. Once configured, the agent is ready to run in development mode.
+In the `api` directory, copy `.env.example` to `.env.local` and fill in the required environment variables. Once configured, the API is ready to run in development mode.
 
 #### Production mode
-In the `api` directory, copy `.env.example` to `.env.production` and fill in the required environment variables. Once configured, the agent is ready to run in production mode.
-
+In the `api` directory, copy `.env.example` to `.env.production` and fill in the required environment variables. Once configured, the API is ready to run in production mode.
 
 ## Development Mode
-In development mode, the agent will launch:
+In development mode, the commands will launch:
 - an anvil container (a local BNB Chain clone)
 - a redoc container (for API documentation)
 - a postgresql container (for storing portfolio and orders)
-- the invest agent itself
+- a qdrant vector database container (for storing tokens and baskets)
+
+- the API itself
 
 This setup enables easy local development and testing, without needing to connect to a real blockchain.
 
@@ -49,12 +48,13 @@ From the root of the repository, run:
 ./nx dev api
 ./nx dev:worker api
 ```
-This will install any required Python dependencies, start the necessary dev containers, run the migrations and launch the invest agent.
+This will install any required Python dependencies, start the necessary dev containers, run the migrations and launch the API.
 
 ⚠️ Note: If you don't start the worker, Orders won't be executed.
+⚠️ Note: For quota reasons from 0x Protocol, the orders won't be actually executed on Anvil. Orders are nonetheless created and stored in the database.
 
 ## Production Mode
-Use this mode to connect the agent to a live blockchain for deployment.
+Use this mode to connect the API to a live blockchain for deployment.
 
 ### Running in Production
 
@@ -66,8 +66,8 @@ From the root of the repository, run:
 ./nx start api
 ./nx start:worker api
 ```
-This will install Python dependencies, start the necessary production containers, run the migrations and start the invest agent.
+This will install Python dependencies, start the necessary production containers, run the migrations and start the API.
 
 ⚠️ Note: If you don't start the worker, Orders won't be executed.
 
-Note that by updating the database variables of the `.env.production` file, you are able to connect the agent to any postgresql database.
+Note: By updating the database variables of the `.env.production` file, you are able to connect the API to any postgresql database / qdrant store of your choice.

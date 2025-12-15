@@ -2,19 +2,12 @@
   "name": "coinbasket-root",
   "version": "1.0.0",
   "targets": {
-    "dev:data_agent": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "./nx dev data_agent",
-        "stream": true
-      }
-    },
     "dev:api": {
       "executor": "nx:run-commands",
       "options": {
         "command": "./nx dev api",
         "stream": true,
-        "readyWhen": "Invest Agent Ready"
+        "readyWhen": "API Ready"
       }
     },
     "dev:worker:api": {
@@ -27,17 +20,10 @@
     },
     "dev:all": {
       "executor": "nx:run-commands",
-      "dependsOn": ["dev:data_agent", "dev:worker:api"],
+      "dependsOn": ["dev:worker:api"],
       "options": {
         "commands": ["echo coinbasket dev started."],
         "parallel": false,
-        "stream": true
-      }
-    },
-    "start:data_agent": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "./nx start data_agent",
         "stream": true
       }
     },
@@ -46,7 +32,7 @@
       "options": {
         "command": "./nx start api",
         "stream": true,
-        "readyWhen": "Invest Agent Ready"
+        "readyWhen": "API Ready"
       }
     },
     "start:worker:api": {
@@ -59,7 +45,7 @@
     },
     "start:all": {
       "executor": "nx:run-commands",
-      "dependsOn": ["start:data_agent", "start:worker:api"],
+      "dependsOn": ["start:worker:api"],
       "options": {
         "commands": ["echo coinbasket production started."],
         "parallel": false,

@@ -4,8 +4,6 @@ from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore
 from pytest import fixture, mark
 from qdrant_client.models import (
-    VectorParams,
-    Distance,
     Filter,
     FieldCondition,
     MatchValue,
@@ -41,61 +39,6 @@ def embeddings():
     return mock.Mock(spec=OpenAIEmbeddings)
 
 
-def test_qdrant_langchain_similarity_storage_init_without_collection(
-    qdrant_client: type[QdrantClient],
-    qdrant_vector_store: type[QdrantVectorStore],
-    embeddings: OpenAIEmbeddings,
-):
-    qdrant_client.return_value.collection_exists.return_value = False
-
-    QdrantLangChainSimilarityStorage(
-        {
-            "qdrant_url": "http://localhost",
-            "qdrant_port": 6333,
-            "qdrant_grpc_port": 6334,
-            "qdrant_collection": "datasets",
-            "qdrant_api_key": "d011246a-b8dd-4a8c-baf2-7ec12f2507db",
-        },
-        qdrant_client,
-        qdrant_vector_store,
-        embeddings,
-    )
-
-    qdrant_client.collection_exists.assert_called_once_with(
-        "datasets",
-    )
-    qdrant_client.create_collection.assert_called_once_with(
-        collection_name="datasets",
-        vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-    )
-
-
-def test_qdrant_langchain_similarity_storage_init_with_collection(
-    qdrant_client: type[QdrantClient],
-    qdrant_vector_store: type[QdrantVectorStore],
-    embeddings: OpenAIEmbeddings,
-):
-    qdrant_client.return_value.collection_exists.return_value = True
-
-    QdrantLangChainSimilarityStorage(
-        {
-            "qdrant_url": "http://localhost",
-            "qdrant_port": 6333,
-            "qdrant_grpc_port": 6334,
-            "qdrant_collection": "datasets",
-            "qdrant_api_key": "d011246a-b8dd-4a8c-baf2-7ec12f2507db",
-        },
-        qdrant_client,
-        qdrant_vector_store,
-        embeddings,
-    )
-
-    qdrant_client.collection_exists.assert_called_once_with(
-        "datasets",
-    )
-    qdrant_client.create_collection.assert_not_called()
-
-
 @mark.asyncio
 async def test_qdrant_langchain_similarity_storage_search(
     qdrant_client: type[QdrantClient],
@@ -116,6 +59,8 @@ async def test_qdrant_langchain_similarity_storage_search(
         qdrant_vector_store,
         embeddings,
     )
+
+    await similarity_storage.start()
 
     qdrant_vector_store.asimilarity_search.return_value = [
         Document(page_content="page content 1", metadata={"_id": "1"}),
@@ -180,6 +125,8 @@ async def test_qdrant_langchain_similarity_storage_get(
         embeddings,
     )
 
+    await similarity_storage.start()
+
     qdrant_vector_store.aget_by_ids.return_value = [
         Document(page_content="page content 1", metadata={"_id": "1"}),
         Document(page_content="page content 2", metadata={"_id": "2"}),
@@ -199,7 +146,8 @@ async def test_qdrant_langchain_similarity_storage_get(
     qdrant_vector_store.aget_by_ids.assert_called_once_with(ids)
 
 
-def test_qdrant_langchain_similarity_storage_set(
+@mark.asyncio
+async def test_qdrant_langchain_similarity_storage_set(
     qdrant_client: type[QdrantClient],
     qdrant_vector_store: type[QdrantVectorStore],
     embeddings: OpenAIEmbeddings,
@@ -221,6 +169,8 @@ def test_qdrant_langchain_similarity_storage_set(
         qdrant_vector_store,
         embeddings,
     )
+
+    await similarity_storage.start()
 
     similarity_storage.set(similarity_documents)
 
