@@ -3,7 +3,7 @@ from api.conversation.message import QueryMessage
 import requests
 from environs import env
 
-agent_port = env.int("AGENT_PORT")
+app_port = env.int("APP_PORT")
 agent_key = env.str("AGENT_KEY")
 
 
@@ -11,7 +11,7 @@ def test_integration_get_all_baskets(
     snapshot,
 ):
     response_1 = requests.post(
-        f"http://localhost:{agent_port}/conversation",
+        f"http://localhost:{app_port}/conversation",
         json={
             "message": asdict(
                 QueryMessage(

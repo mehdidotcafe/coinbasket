@@ -8,7 +8,7 @@ from environs import env
 from api.test.database.cleanup_all import cleanup_all  # noqa: F401
 from syrupy.filters import paths
 
-agent_port = env.int("AGENT_PORT")
+app_port = env.int("APP_PORT")
 agent_key = env.str("AGENT_KEY")
 
 
@@ -77,7 +77,7 @@ def test_integration_conversation_buy_basket_and_token(
     snapshot,
 ):
     response_1 = requests.post(
-        f"http://localhost:{agent_port}/conversation",
+        f"http://localhost:{app_port}/conversation",
         json={
             "message": asdict(
                 QueryMessage(
@@ -103,7 +103,7 @@ def test_integration_conversation_buy_basket_and_token(
         assert response_1_json["content"] is not None
 
         response_2 = requests.post(
-            f"http://localhost:{agent_port}/conversation",
+            f"http://localhost:{app_port}/conversation",
             json={
                 "message": asdict(
                     QueryMessage(
@@ -145,7 +145,7 @@ def test_integration_conversation_buy_basket_and_token(
         )
 
     response_3 = requests.post(
-        f"http://localhost:{agent_port}/conversation",
+        f"http://localhost:{app_port}/conversation",
         json={
             "message": asdict(
                 QueryMessage(

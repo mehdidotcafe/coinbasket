@@ -9,19 +9,19 @@ Env = Literal["development", "test", "production"]
 
 class Configuration:
     def __init__(self):
-        self.agent_env: Env = cast(
+        self.app_env: Env = cast(
             Env,
             env.str(
-                "AGENT_ENV",
+                "APP_ENV",
                 validate=OneOf(
                     ["development", "production", "test"],
-                    error="AGENT_ENV must be one of: {choices}",
+                    error="APP_ENV must be one of: {choices}",
                 ),
             ),
         )
-        self.agent_name = env.str("AGENT_NAME")
+        self.agent_name = env.str("APP_NAME")
         self.agent_seed = env.str("AGENT_SEED")
-        self.agent_port = env.int("AGENT_PORT")
+        self.app_port = env.int("APP_PORT")
         self.agent_key = env.str("AGENT_KEY")
 
         self.bsc_rpc_url = env.str("BSC_RPC_URL")

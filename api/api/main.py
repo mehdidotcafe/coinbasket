@@ -125,7 +125,7 @@ from langgraph.prebuilt import create_react_agent
 from langgraph.types import interrupt
 
 print(f"Thread ID: {configuration.langchain_thread_id}")
-print(f"Agent Env: {configuration.agent_env}")
+print(f"Agent Env: {configuration.app_env}")
 
 get_portfolio_use_case = GetPortfolioUseCase(
     order_repository=order_repository,
@@ -208,8 +208,8 @@ spec = APISpec(
 api = Agent(
     name=configuration.agent_name,
     seed=configuration.agent_seed,
-    port=configuration.agent_port,
-    endpoint=f"http://localhost:{configuration.agent_port}/submit",
+    port=configuration.app_port,
+    endpoint=f"http://localhost:{configuration.app_port}/submit",
 )
 
 
@@ -305,7 +305,7 @@ async def get_tokens_from_query(query: str) -> list[TokenResponse | BasketRespon
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == "test":
+    if configuration.app_env == "test":
         return [
             TokenResponse.from_domain(wbnb_token),
             TokenResponse.from_domain(eth_token),
@@ -342,7 +342,7 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == "test":
+    if configuration.app_env == "test":
         return [
             BasketResponse.from_domain(big4_basket),
             BasketResponse.from_domain(memecoinmania_basket),
@@ -372,7 +372,7 @@ async def get_all_available_baskets():
     """
 
     # TODO: Handle test case more elegantly
-    if configuration.agent_env == "test":
+    if configuration.app_env == "test":
         return [big4_basket, memecoinmania_basket]
 
     baskets = await get_all_baskets_use_case.execute()
@@ -687,7 +687,7 @@ class IntentInvestmentPlanBalanceRequest(Model):
         asset = None
 
         # TODO: Handle test case more elegantly
-        if configuration.agent_env == "test":
+        if configuration.app_env == "test":
             asset = (
                 btc_token
                 if self.asset_id == "bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c"
@@ -882,7 +882,7 @@ async def on_startup(_ctx: Context):
     await nonce_manager.resync()
     await similarity_storage.start()
 
-    if configuration.agent_env != "test":
+    if configuration.app_env != "test":
         await ingest_data_use_case.execute()
 
     _ctx.logger.info("API Ready.")

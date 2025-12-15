@@ -7,7 +7,7 @@ database_user = env.str("DATABASE_USER")
 database_password = env.str("DATABASE_PASSWORD")
 database_host = env.str("DATABASE_HOST")
 database_port = env.int("DATABASE_PORT")
-agent_name = env.str("AGENT_NAME")
+agent_name = env.str("APP_NAME")
 
 engine = create_async_engine(
     f"postgresql+asyncpg://{database_user}:{database_password}@{database_host}:{database_port}/{agent_name}",

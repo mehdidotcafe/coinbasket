@@ -138,7 +138,7 @@
     "infra:test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "env-cmd -f .env.test --use-shell 'docker compose -f docker-compose-test.yml down -v && echo '' > ./database/$AGENT_ENV/$AGENT_NAME.langgraph.db && docker compose -f docker-compose-test.yml up -d --force-recreate'",
+        "command": "env-cmd -f .env.test --use-shell 'docker compose -f docker-compose-test.yml down -v && echo '' > ./database/$APP_ENV/$APP_NAME.langgraph.db && docker compose -f docker-compose-test.yml up -d --force-recreate'",
         "cwd": "{projectRoot}"
       },
       "cache": false
@@ -182,21 +182,21 @@
     "migration:gen": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" revision --autogenerate",
+        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" revision --autogenerate",
         "cwd": "{projectRoot}"
       }
     },
     "migration:run": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" upgrade head",
+        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" upgrade head",
         "cwd": "{projectRoot}"
       }
     },
     "migration:test:run": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.test --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" upgrade head'",
+        "command": "env-cmd -f .env.test --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" upgrade head'",
         "cwd": "{projectRoot}"
       },
       "cache": false
@@ -204,21 +204,21 @@
     "migration:production:run": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.production --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" upgrade head'",
+        "command": "env-cmd -f .env.production --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" upgrade head'",
         "cwd": "{projectRoot}"
       }
     },
     "migration:rollback": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" downgrade -1",
+        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" downgrade -1",
         "cwd": "{projectRoot}"
       }
     },
     "migration:list": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$AGENT_NAME\" history",
+        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" history",
         "cwd": "{projectRoot}"
       }
     }

@@ -18,7 +18,7 @@ services:
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${AGENT_NAME}
+      POSTGRES_DB: ${APP_NAME}
     ports:
       - "${DATABASE_PORT}:5432"
     volumes:
@@ -29,7 +29,7 @@ services:
     ports:
       - "${REDOC_PORT}:80"
     environment:
-      SPEC_URL: "http://127.0.0.1:${AGENT_PORT}/openapi"
+      SPEC_URL: "http://127.0.0.1:${APP_PORT}/openapi"
   temporal:
     container_name: temporal
     image: temporalio/temporal:1.5.0

@@ -18,7 +18,7 @@ from api.test.database.seed_fixtures import seed_fixtures  # noqa: F401
 from syrupy.filters import paths
 
 
-agent_port = env.int("AGENT_PORT")
+app_port = env.int("APP_PORT")
 agent_key = env.str("AGENT_KEY")
 
 
@@ -222,7 +222,7 @@ def postings():
 # TODO: Enhance this test once zero_x API is mocked in integration tests
 def test_integration_get_portfolio(seed_fixtures, cleanup_all, snapshot):  # noqa: F811
     response = requests.post(
-        f"http://localhost:{agent_port}/portfolio",
+        f"http://localhost:{app_port}/portfolio",
         json={"agent_key": agent_key, "token": usdt_token.to_dict()},
         timeout=60,
     )

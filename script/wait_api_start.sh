@@ -4,7 +4,7 @@ export $(grep -v '^#' .env.test | xargs)
 echo "Waiting for API to be ready ..."
 ready=0
 for i in {1..120}; do
-  status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:$AGENT_PORT/health || true)
+  status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:$APP_PORT/health || true)
   if [ "$status" = "200" ]; then
     echo "API is up."
     ready=1

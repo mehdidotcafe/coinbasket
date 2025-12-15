@@ -16,7 +16,7 @@ services:
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${AGENT_NAME}
+      POSTGRES_DB: ${APP_NAME}
     ports:
       - "${DATABASE_PORT}:5432"
     volumes:

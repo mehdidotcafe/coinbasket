@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${AGENT_NAME}
+      POSTGRES_DB: ${APP_NAME}
     ports:
       - "${DATABASE_PORT}:5432"
     volumes:
@@ -22,8 +22,8 @@ services:
       - POSTGRES_SEEDS=postgres_production
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_PWD=${DATABASE_PASSWORD}
-      - DBNAME=${AGENT_NAME}-temporal
-      - VISIBILITY_DBNAME=${AGENT_NAME}-temporal-visibility
+      - DBNAME=${APP_NAME}-temporal
+      - VISIBILITY_DBNAME=${APP_NAME}-temporal-visibility
     ports:
       - "${TEMPORAL_PORT}:7233"
       - "8889:8233"

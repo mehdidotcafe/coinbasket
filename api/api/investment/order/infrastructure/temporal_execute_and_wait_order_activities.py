@@ -54,7 +54,7 @@ create_order_try_task = CreateOrderTryTask(
     chain,
     id_generator,
     date_time,
-    configuration={"environment": configuration.agent_env},
+    configuration={"environment": configuration.app_env},
 )
 execute_order_try_task = ExecuteOrderTryTask(
     order_repository,
@@ -63,7 +63,7 @@ execute_order_try_task = ExecuteOrderTryTask(
     id_generator,
     date_time,
     random_generator,
-    configuration={"environment": configuration.agent_env},
+    configuration={"environment": configuration.app_env},
 )
 wait_order_try_task = WaitOrderTryTask(
     order_repository,
@@ -72,7 +72,7 @@ wait_order_try_task = WaitOrderTryTask(
     id_generator,
     date_time,
     random_generator,
-    configuration={"environment": configuration.agent_env},
+    configuration={"environment": configuration.app_env},
 )
 fail_order_try_task = FailOrderTryTask(order_repository, date_time)
 

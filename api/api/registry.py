@@ -117,7 +117,7 @@ exchange = ZeroXSwapper(
 )
 
 langgraph_db_path = (
-    f"./database/{configuration.agent_env}/{configuration.agent_name}.langgraph.db"
+    f"./database/{configuration.app_env}/{configuration.agent_name}.langgraph.db"
 )
 
 engine = create_async_engine(
