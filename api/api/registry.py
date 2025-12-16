@@ -1,4 +1,7 @@
 from typing import cast
+from api.authentication.siwe.infrastructure.siwe_py_siwe_manager import (
+    SiwePySiweManager,
+)
 from pydantic import SecretStr
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
@@ -192,3 +195,5 @@ token_repository = CoingeckoTokenRepository(
         "coingecko_api_key": configuration.coingecko_api_key,
     },
 )
+
+siwe_manager = SiwePySiweManager()

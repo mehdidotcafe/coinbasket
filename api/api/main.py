@@ -9,6 +9,7 @@ from api.asset.get_asset_swap_price_use_case import (
     ConvertedBalance,
     GetAssetSwapPriceUseCase,
 )
+from api.authentication.generate_auth_nonce_use_case import GenerateAuthNonceUseCase
 from api.conversation.conversation_use_case import ConversationUseCase
 from api.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
@@ -96,6 +97,7 @@ from api.registry import (
     small_balance_policy,
     similarity_storage,
     token_repository,
+    siwe_manager,
 )
 from api.authentication.authentication import authentication
 from api.chain.balance import Balance, BalanceAtomic
@@ -107,6 +109,7 @@ from api.documentation.response.invalid_authentication_key import (
 from api.documentation.openapi import openapi
 from api.protocol.token import Token
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, RootModel
 from pydantic.v1 import root_validator, validator
@@ -201,6 +204,10 @@ ingest_data_use_case = IngestDataUseCase(
     ],
 )
 
+generate_auth_nonce_use_case = GenerateAuthNonceUseCase(
+    siwe_manager=siwe_manager,
+)
+
 spec = APISpec(
     title=configuration.app_name,
     version="0.0.1",
@@ -221,10 +228,13 @@ async def lifespan(_app: FastAPI):
     yield
 
 
+print(f"TOTO: {configuration.frontend_url.split(',')}")
+
+
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[configuration.frontend_url],
+    allow_origins=configuration.frontend_url.split(","),
     allow_credentials=True,
     allow_methods=["OPTIONS", "GET", "POST"],
     allow_headers=["*"],
@@ -1221,6 +1231,48 @@ class AuthResponse(BaseModel):
 @authentication(configuration.app_key)
 async def auth_request(_req: AuthRequest) -> AuthResponse:
     return AuthResponse(status="OK")
+
+
+class AuthNonceResponse(BaseModel):
+    nonce: str
+
+
+@openapi(
+    spec=spec,
+    schemas=[AuthNonceResponse],
+    path="/auth/nonce",
+    operations={
+        "get": {
+            "summary": "Return a nonce for authentication",
+            "tags": ["Authentication"],
+            "responses": {
+                "200": {
+                    "description": "Nonce for authentication",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/AuthNonceResponse"}
+                        }
+                    },
+                    "headers": {
+                        "Set-Cookie": {
+                            "description": "Nonce cookie for authentication",
+                            "schema": {"type": "string"},
+                            "example": "nonce=abc123; Path=/; HttpOnly",
+                        }
+                    },
+                }
+            },
+        }
+    },
+)
+@app.get("/auth/nonce")
+async def generate_auth_nonce() -> AuthNonceResponse:
+    nonce = generate_auth_nonce_use_case.execute()
+
+    response = JSONResponse(content=AuthNonceResponse(nonce=nonce).model_dump())
+    response.set_cookie(key="nonce", value=nonce)
+
+    return response
 
 
 class HealthResponse(BaseModel):
