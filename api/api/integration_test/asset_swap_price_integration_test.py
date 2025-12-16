@@ -5,7 +5,7 @@ from api.protocol.fixture.basket import big4_basket, memecoinmania_basket
 from syrupy.filters import paths
 
 app_port = env.int("APP_PORT")
-agent_key = env.str("AGENT_KEY")
+app_key = env.str("APP_KEY")
 
 
 def test_integration_asset_swap_price_sell_token_buy_token(snapshot):
@@ -15,7 +15,7 @@ def test_integration_asset_swap_price_sell_token_buy_token(snapshot):
             "sell_asset": btc_token.to_dict(),
             "sell_asset_amount": "1",
             "buy_asset": eth_token.to_dict(),
-            "agent_key": agent_key,
+            "app_key": app_key,
         },
         timeout=60,
     )
@@ -33,7 +33,7 @@ def test_integration_asset_swap_price_sell_token_buy_basket(snapshot):
             "sell_asset": btc_token.to_dict(),
             "sell_asset_amount": "1",
             "buy_asset": big4_basket.to_dict(),
-            "agent_key": agent_key,
+            "app_key": app_key,
         },
         timeout=60,
     )
@@ -51,7 +51,7 @@ def test_integration_asset_swap_price_sell_basket_buy_token(snapshot):
             "sell_asset": big4_basket.to_dict(),
             "sell_asset_amount": "1",
             "buy_asset": eth_token.to_dict(),
-            "agent_key": agent_key,
+            "app_key": app_key,
         },
         timeout=60,
     )
@@ -69,7 +69,7 @@ def test_integration_asset_swap_price_sell_basket_buy_basket():
             "sell_asset": big4_basket.to_dict(),
             "sell_asset_amount": "1",
             "buy_asset": memecoinmania_basket.to_dict(),
-            "agent_key": agent_key,
+            "app_key": app_key,
         },
         timeout=60,
     )

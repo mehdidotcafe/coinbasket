@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from decimal import Decimal
 from typing import Any, Dict, Literal, Optional, cast
 
@@ -105,9 +106,10 @@ from api.documentation.response.invalid_authentication_key import (
 
 from api.documentation.openapi import openapi
 from api.protocol.token import Token
-from pydantic import RootModel
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, RootModel
 from pydantic.v1 import root_validator, validator
-from uagents import Agent, Context, Model
 
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage
@@ -200,20 +202,36 @@ ingest_data_use_case = IngestDataUseCase(
 )
 
 spec = APISpec(
-    title=configuration.agent_name,
+    title=configuration.app_name,
     version="0.0.1",
     openapi_version="3.0.2",
 )
 
-api = Agent(
-    name=configuration.agent_name,
-    seed=configuration.agent_seed,
-    port=configuration.app_port,
-    endpoint=f"http://localhost:{configuration.app_port}/submit",
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await nonce_manager.resync()
+    await similarity_storage.start()
+
+    if configuration.app_env != "test":
+        await ingest_data_use_case.execute()
+
+    print("API Ready.")
+
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[configuration.frontend_url],
+    allow_credentials=True,
+    allow_methods=["OPTIONS", "GET", "POST"],
+    allow_headers=["*"],
 )
 
 
-class TokenRequest(Model):
+class TokenRequest(BaseModel):
     id: str
     name: str
     display_name: str
@@ -254,7 +272,7 @@ class TokenRequest(Model):
         )
 
 
-class BasketRequest(Model):
+class BasketRequest(BaseModel):
     id: str
     name: str
     display_name: str
@@ -287,7 +305,7 @@ class BasketRequest(Model):
 AssetRequest = BasketRequest | TokenRequest
 
 
-class ToolAssetRequest(Model):
+class ToolAssetRequest(BaseModel):
     asset: AssetRequest
 
 
@@ -406,7 +424,7 @@ async def get_portfolio_summary(
 
     return PortfolioResponse.from_domain(
         await get_portfolio_use_case.execute(conversion_token.to_domain())
-    ).json()
+    ).model_dump_json()
 
 
 @tool(
@@ -427,7 +445,7 @@ async def get_token_or_basket_or_asset_holding_and_available_cash(
         request.asset.to_domain()
     )
 
-    return PortfolioAssetBalanceResponse.from_domain(asset_balance).json()
+    return PortfolioAssetBalanceResponse.from_domain(asset_balance).model_dump_json()
 
 
 @tool(
@@ -453,7 +471,7 @@ async def get_token_or_basket_or_asset_holding(request: ToolAssetRequest):
         decimals,
     )
 
-    return BalanceAtomicResponse.from_domain(holding.balance).json()
+    return BalanceAtomicResponse.from_domain(holding.balance).model_dump_json()
 
 
 @tool(
@@ -469,10 +487,10 @@ async def get_available_cash():
     """
     balance = await chain.get_native_token_balance()
 
-    return BalanceAtomicResponse.from_domain(balance).json()
+    return BalanceAtomicResponse.from_domain(balance).model_dump_json()
 
 
-class BalanceAtomicResponse(Model):
+class BalanceAtomicResponse(BaseModel):
     asset: AssetResponse
     amount: str
     amount_atomic: str
@@ -491,7 +509,7 @@ class BalanceAtomicResponse(Model):
         )
 
 
-class ChainTransactionResponse(Model):
+class ChainTransactionResponse(BaseModel):
     id: str
     try_id: str
     order_id: str
@@ -513,7 +531,7 @@ class ChainTransactionResponse(Model):
         )
 
 
-class FeesResponse(Model):
+class FeesResponse(BaseModel):
     chain_fee: int
     provider_fee: int | None = None
     service_fee: int | None = None
@@ -527,7 +545,7 @@ class FeesResponse(Model):
         )
 
 
-class TryResponse(Model):
+class TryResponse(BaseModel):
     id: str
     order_id: str
     created_at: int
@@ -552,7 +570,7 @@ class TryResponse(Model):
         )
 
 
-class OrderResponse(Model):
+class OrderResponse(BaseModel):
     id: str
     sell_balance: BalanceAtomicResponse
     buy_balance: BalanceAtomicResponse
@@ -577,7 +595,7 @@ class OrderResponse(Model):
         )
 
 
-class OrdersResponse(Model):
+class OrdersResponse(BaseModel):
     orders: list[OrderResponse]
 
     @classmethod
@@ -603,7 +621,7 @@ async def get_orders(
     """
     orders = await order_repository.get_orders(status, limit, offset)
 
-    return OrdersResponse.from_domain(orders).json()
+    return OrdersResponse.from_domain(orders).model_dump_json()
 
 
 @tool(
@@ -622,13 +640,7 @@ async def get_order(
     """
     order = await order_repository.get_order(order_id)
 
-    return OrderResponse.from_domain(order).json() if order else None
-
-
-@tool()
-def get_agent_name():
-    """Retrieve agent's name."""
-    return configuration.agent_name
+    return OrderResponse.from_domain(order).model_dump_json() if order else None
 
 
 @tool()
@@ -637,7 +649,7 @@ def get_current_datetime():
     return date_time.now_str()
 
 
-class BalanceRequest(Model):
+class BalanceRequest(BaseModel):
     asset: AssetRequest
     amount: str
 
@@ -649,7 +661,7 @@ class BalanceRequest(Model):
         )
 
 
-class InvestmentPlanStepRequest(Model):
+class InvestmentPlanStepRequest(BaseModel):
     buy_balance: BalanceRequest
     sell_balance: BalanceRequest
 
@@ -661,7 +673,7 @@ class InvestmentPlanStepRequest(Model):
         )
 
 
-class InvestmentPlanRequest(Model):
+class InvestmentPlanRequest(BaseModel):
     status: Literal["CONFIRM", "CANCEL"]
     steps: list[InvestmentPlanStepRequest]
 
@@ -670,7 +682,7 @@ class InvestmentPlanRequest(Model):
         return InvestmentPlan(steps=steps)
 
 
-class IntentInvestmentPlanBalanceRequest(Model):
+class IntentInvestmentPlanBalanceRequest(BaseModel):
     asset_id: str
     amount: str | None = None
 
@@ -712,7 +724,7 @@ class IntentInvestmentPlanBalanceRequest(Model):
         )
 
 
-class IntentInvestmentPlanStepRequest(Model):
+class IntentInvestmentPlanStepRequest(BaseModel):
     buy_asset_with_amount: IntentInvestmentPlanBalanceRequest | None = None
     sell_asset_with_amount: IntentInvestmentPlanBalanceRequest | None = None
 
@@ -751,7 +763,7 @@ class IntentInvestmentPlanStepRequest(Model):
         )
 
 
-class IntentInvestmentPlanRequest(Model):
+class IntentInvestmentPlanRequest(BaseModel):
     steps: list[IntentInvestmentPlanStepRequest]
 
     async def to_domain(self) -> IntentInvestmentPlan:
@@ -761,7 +773,7 @@ class IntentInvestmentPlanRequest(Model):
         )
 
 
-class InvestmentPlanResponse(Model):
+class InvestmentPlanResponse(BaseModel):
     message: str
     orders: list[list[OrderResponse]]
 
@@ -851,13 +863,13 @@ async def execute_intent_investment_plan_use_case(
         return InvestmentPlanResponse.from_domain(
             "Investment plan successfully cancelled by the user. Don't try to invest in the investment plan again.",
             [],
-        ).json()
+        ).model_dump_json()
 
     orders = await execute_investment_plan_use_case.execute(investment_plan.to_domain())
 
     return InvestmentPlanResponse.from_domain(
         "Investment plan and orders have been submitted successfully.", orders
-    ).json()
+    ).model_dump_json()
 
 
 coinbasket_tools = [
@@ -872,23 +884,11 @@ coinbasket_tools = [
     get_portfolio_summary,
     get_orders,
     get_order,
-    get_agent_name,
     get_current_datetime,
 ]
 
 
-@api.on_event("startup")
-async def on_startup(_ctx: Context):
-    await nonce_manager.resync()
-    await similarity_storage.start()
-
-    if configuration.app_env != "test":
-        await ingest_data_use_case.execute()
-
-    _ctx.logger.info("API Ready.")
-
-
-class QueryMessageRequest(Model):
+class QueryMessageRequest(BaseModel):
     id: str
     is_resuming: bool
     role: Literal["user"]
@@ -896,17 +896,17 @@ class QueryMessageRequest(Model):
     created_at: Optional[str]
 
 
-class PromptRequest(Model):
+class PromptRequest(BaseModel):
     message: QueryMessageRequest
-    agent_key: str
+    app_key: str
 
 
-class MessageUiResponse(Model):
+class MessageUiResponse(BaseModel):
     id: str
     args: Dict[str, Any]
 
 
-class MessageResponse(Model):
+class MessageResponse(BaseModel):
     id: str
     role: Literal["user", "assistant"]
     is_interrupting: bool
@@ -959,9 +959,9 @@ class MessageResponse(Model):
         }
     },
 )
-@api.on_rest_post("/conversation", PromptRequest, MessageResponse)
-@authentication(configuration.agent_key)
-async def conversation(_ctx: Context, req: PromptRequest) -> MessageResponse:
+@app.post("/conversation")
+@authentication(configuration.app_key)
+async def conversation(req: PromptRequest) -> MessageResponse:
     async with aiosqlite.connect(langgraph_db_path) as conn:
         agent_executor = await __create_agent_executor(conn)
 
@@ -1017,11 +1017,11 @@ async def __create_agent_executor(conn: aiosqlite.Connection):
     return agent_executor
 
 
-class MessagesRequest(Model):
-    agent_key: str
+class MessagesRequest(BaseModel):
+    app_key: str
 
 
-class MessagesResponse(Model):
+class MessagesResponse(BaseModel):
     messages: list[MessageResponse]
 
     @staticmethod
@@ -1067,10 +1067,9 @@ class MessagesResponse(Model):
         }
     },
 )
-@api.on_rest_post("/conversation/messages", MessagesRequest, MessagesResponse)
-@authentication(configuration.agent_key)
+@app.post("/conversation/messages")
+@authentication(configuration.app_key)
 async def get_conversation_messages(
-    _ctx: Context,
     _req: MessagesRequest,
 ) -> MessagesResponse:
     """Retrieve the conversation messages."""
@@ -1084,8 +1083,8 @@ async def get_conversation_messages(
         return MessagesResponse.from_domain(messages)
 
 
-class AssetSwapPriceInfoRequest(Model):
-    agent_key: str
+class AssetSwapPriceInfoRequest(BaseModel):
+    app_key: str
     sell_asset: TokenRequest | BasketRequest
     sell_asset_amount: str
     buy_asset: TokenRequest | BasketRequest
@@ -1099,7 +1098,7 @@ class AssetSwapPriceInfoRequest(Model):
         )
 
 
-class BalanceResponse(Model):
+class BalanceResponse(BaseModel):
     amount: str
     asset: AssetResponse
 
@@ -1114,7 +1113,7 @@ class BalanceResponse(Model):
         )
 
 
-class ConvertedBalanceResponse(Model):
+class ConvertedBalanceResponse(BaseModel):
     sell_balance: BalanceResponse
     buy_balance: BalanceResponse
 
@@ -1168,13 +1167,11 @@ class ConvertedBalanceResponse(Model):
         }
     },
 )
-@api.on_rest_post(
+@app.post(
     "/asset/swap/price",
-    AssetSwapPriceInfoRequest,
-    ConvertedBalanceResponse,
 )
-@authentication(configuration.agent_key)
-async def get_asset_swap_price(_ctx: Context, req: AssetSwapPriceInfoRequest):
+@authentication(configuration.app_key)
+async def get_asset_swap_price(req: AssetSwapPriceInfoRequest):
     """Test authentication to the Agent."""
 
     converted_balance = await get_asset_swap_price_use_case.execute(req.to_domain())
@@ -1182,11 +1179,11 @@ async def get_asset_swap_price(_ctx: Context, req: AssetSwapPriceInfoRequest):
     return ConvertedBalanceResponse.from_domain(converted_balance)
 
 
-class AuthRequest(Model):
-    agent_key: str
+class AuthRequest(BaseModel):
+    app_key: str
 
 
-class AuthResponse(Model):
+class AuthResponse(BaseModel):
     status: str
 
 
@@ -1220,13 +1217,13 @@ class AuthResponse(Model):
         }
     },
 )
-@api.on_rest_post("/auth", AuthRequest, AuthResponse)
-@authentication(configuration.agent_key)
-async def auth_request(_ctx: Context, _req: AuthRequest) -> AuthResponse:
+@app.post("/auth")
+@authentication(configuration.app_key)
+async def auth_request(_req: AuthRequest) -> AuthResponse:
     return AuthResponse(status="OK")
 
 
-class HealthResponse(Model):
+class HealthResponse(BaseModel):
     status: str
 
 
@@ -1251,14 +1248,14 @@ class HealthResponse(Model):
         }
     },
 )
-@api.on_rest_get("/health", HealthResponse)
-async def health_check(_ctx: Context) -> HealthResponse:
+@app.get("/health")
+async def health_check() -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse(status="OK")
 
 
-class PortfolioRequest(Model):
-    agent_key: str
+class PortfolioRequest(BaseModel):
+    app_key: str
     token: TokenRequest
 
     def to_domain(self):
@@ -1274,7 +1271,7 @@ class PortfolioRequest(Model):
         )
 
 
-class PortfolioBalanceResponse(Model):
+class PortfolioBalanceResponse(BaseModel):
     native_balance: BalanceAtomicResponse
     converted_balance: BalanceAtomicResponse
 
@@ -1288,7 +1285,7 @@ class PortfolioBalanceResponse(Model):
         )
 
 
-class PortfolioResponse(Model):
+class PortfolioResponse(BaseModel):
     available_balance: PortfolioBalanceResponse
     holding_balances: list[PortfolioBalanceResponse]
     total_balance: BalanceAtomicResponse
@@ -1311,7 +1308,7 @@ class PortfolioResponse(Model):
         )
 
 
-class PortfolioAssetBalanceResponse(Model):
+class PortfolioAssetBalanceResponse(BaseModel):
     holding_balance: BalanceAtomicResponse
     available_balance: BalanceAtomicResponse | None = None
 
@@ -1372,13 +1369,9 @@ class PortfolioAssetBalanceResponse(Model):
         }
     },
 )
-@api.on_rest_post(
-    "/portfolio",
-    PortfolioRequest,
-    PortfolioResponse,
-)
-@authentication(configuration.agent_key)
-async def get_converted_portfolio(_ctx: Context, req: PortfolioRequest):
+@app.post("/portfolio")
+@authentication(configuration.app_key)
+async def get_converted_portfolio(req: PortfolioRequest):
     converted_token_balances = await get_portfolio_use_case.execute(req.to_domain())
 
     return PortfolioResponse.from_domain(converted_token_balances)
@@ -1409,14 +1402,6 @@ class OpenApiResponse(RootModel[dict[str, Any]]):
         }
     },
 )
-@api.on_rest_get("/openapi", OpenApiResponse)
-async def generate_openapi_documentation(_ctx: Context):
+@app.get("/openapi")
+async def generate_openapi_documentation():
     return cast(OpenApiResponse, spec.to_dict())
-
-
-def main():
-    api.run()
-
-
-if __name__ == "__main__":
-    main()

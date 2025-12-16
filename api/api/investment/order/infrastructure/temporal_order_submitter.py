@@ -19,7 +19,7 @@ class OrderRequest:
 
 
 class Configuration(TypedDict):
-    agent_name: str
+    app_name: str
     temporal_port: int
     temporal_host: str
 
@@ -38,7 +38,7 @@ class TemporalOrderSubmitter(OrderSubmitter):
         self.TemporalClient = TemporalClient
         self.client: Client | None = None
 
-        self.task_queue = f"order-submitter-workflow-{self.configuration['agent_name']}"
+        self.task_queue = f"order-submitter-workflow-{self.configuration['app_name']}"
 
     async def submit_orders(
         self, orders_matrix: list[list[Order]]

@@ -5,11 +5,12 @@ from api.authentication.invalid_authentication_exception import (
 )
 
 
-def authentication(agent_key: str):
+def authentication(app_key: str):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            if len(args) >= 2 and args[1].agent_key == agent_key:
+            first_key = next(iter(kwargs))
+            if kwargs[first_key].app_key == app_key:
                 return func(*args, **kwargs)
             else:
                 raise InvalidAuthenticationException()

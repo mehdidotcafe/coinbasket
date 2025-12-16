@@ -19,7 +19,7 @@ from syrupy.filters import paths
 
 
 app_port = env.int("APP_PORT")
-agent_key = env.str("AGENT_KEY")
+app_key = env.str("APP_KEY")
 
 
 @fixture
@@ -223,7 +223,7 @@ def postings():
 def test_integration_get_portfolio(seed_fixtures, cleanup_all, snapshot):  # noqa: F811
     response = requests.post(
         f"http://localhost:{app_port}/portfolio",
-        json={"agent_key": agent_key, "token": usdt_token.to_dict()},
+        json={"app_key": app_key, "token": usdt_token.to_dict()},
         timeout=60,
     )
 

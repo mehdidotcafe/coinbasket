@@ -19,10 +19,10 @@ class Configuration:
                 ),
             ),
         )
-        self.agent_name = env.str("APP_NAME")
-        self.agent_seed = env.str("AGENT_SEED")
-        self.app_port = env.int("APP_PORT")
-        self.agent_key = env.str("AGENT_KEY")
+        self.app_name = env.str("APP_NAME")
+        self.app_key = env.str("APP_KEY")
+
+        self.frontend_url = env.str("FRONTEND_URL")
 
         self.bsc_rpc_url = env.str("BSC_RPC_URL")
         self.bsc_private_key = env.str("BSC_PRIVATE_KEY")

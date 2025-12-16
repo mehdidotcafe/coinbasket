@@ -9,7 +9,7 @@ from api.test.database.cleanup_all import cleanup_all  # noqa: F401
 from syrupy.filters import paths
 
 app_port = env.int("APP_PORT")
-agent_key = env.str("AGENT_KEY")
+app_key = env.str("APP_KEY")
 
 
 @fixture
@@ -88,7 +88,7 @@ def test_integration_conversation_buy_basket_and_token(
                     created_at="2023-10-01",
                 )
             ),
-            "agent_key": agent_key,
+            "app_key": app_key,
         },
         timeout=60,
     )
@@ -114,7 +114,7 @@ def test_integration_conversation_buy_basket_and_token(
                         created_at="2023-10-01",
                     )
                 ),
-                "agent_key": agent_key,
+                "app_key": app_key,
             },
             timeout=60,
         )
@@ -156,7 +156,7 @@ def test_integration_conversation_buy_basket_and_token(
                     created_at="2023-10-01",
                 )
             ),
-            "agent_key": agent_key,
+            "app_key": app_key,
         },
         timeout=60,
     )

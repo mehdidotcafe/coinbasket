@@ -28,7 +28,6 @@ readme = "README.md"
 
   [tool.poetry.dependencies]
   python = ">=3.10,<4.0"
-  uagents = ">=0.22.4,<0.23.0"
   python-dotenv = ">=1.1.0,<2.0.0"
   langchain-openai = "^1.0.1"
   langchain-core = "^1.0.1"
@@ -50,6 +49,7 @@ readme = "README.md"
   langchain-qdrant = "^1.1.0"
   qdrant-client = "^1.14.2"
   langchain-mcp-adapters = "^0.1.13"
+  fastapi = {extras = ["standard"], version = "^0.124.4"}
     [tool.poetry.dependencies.langchain]
     extras = [ "openai" ]
     version = "^1.0.2"
