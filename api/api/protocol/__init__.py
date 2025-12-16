@@ -2,10 +2,10 @@ from decimal import Decimal
 from typing import Literal
 from api.protocol.basket import Basket
 from api.protocol.token import Token
-from uagents import Model
+from pydantic import BaseModel
 
 
-class TokenResponse(Model):
+class TokenResponse(BaseModel):
     id: str
     name: str
     display_name: str
@@ -46,7 +46,7 @@ class TokenResponse(Model):
         )
 
 
-class BasketResponse(Model):
+class BasketResponse(BaseModel):
     id: str
     name: str
     display_name: str
@@ -84,37 +84,37 @@ class BasketResponse(Model):
 AssetResponse = TokenResponse | BasketResponse
 
 
-class SimilarAssetsQuery(Model):
+class SimilarAssetsQuery(BaseModel):
     query: str
-    agent_key: str
+    app_key: str
     type: Literal["TOKEN", "BASKET"] | None
 
 
-class SimilarAssetsValidResponse(Model):
+class SimilarAssetsValidResponse(BaseModel):
     assets: list[AssetResponse]
     query: str
 
 
-class SimilarAssetsResponse(Model):
+class SimilarAssetsResponse(BaseModel):
     data: SimilarAssetsValidResponse | str
 
 
-class GetAllBasketsQuery(Model):
-    agent_key: str
+class GetAllBasketsQuery(BaseModel):
+    app_key: str
 
 
-class GetAllBasketsResponse(Model):
+class GetAllBasketsResponse(BaseModel):
     baskets: list[BasketResponse]
 
 
-class GetAssetByIdQuery(Model):
-    agent_key: str
+class GetAssetByIdQuery(BaseModel):
+    app_key: str
     asset_id: str
 
 
-class GetAssetByIdValidResponse(Model):
+class GetAssetByIdValidResponse(BaseModel):
     asset: AssetResponse
 
 
-class GetAssetByIdResponse(Model):
+class GetAssetByIdResponse(BaseModel):
     data: GetAssetByIdValidResponse | str

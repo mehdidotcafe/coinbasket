@@ -1,12 +1,11 @@
 from typing import Any
 from apispec import APISpec
-from pydantic import RootModel
-from uagents import Model
+from pydantic import BaseModel, RootModel
 
 
 def openapi(
     spec: APISpec,
-    schemas: list[type[Model | RootModel[Any]]],
+    schemas: list[type[BaseModel | RootModel[Any]]],
     path: str,
     operations: dict[str, Any] | None,
 ):

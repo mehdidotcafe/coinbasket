@@ -121,11 +121,11 @@ exchange = ZeroXSwapper(
 )
 
 langgraph_db_path = (
-    f"./database/{configuration.app_env}/{configuration.agent_name}.langgraph.db"
+    f"./database/{configuration.app_env}/{configuration.app_name}.langgraph.db"
 )
 
 engine = create_async_engine(
-    f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.agent_name}",
+    f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}",
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
@@ -154,7 +154,7 @@ order_submitter = TemporalOrderSubmitter(
     configuration={
         "temporal_host": configuration.temporal_host,
         "temporal_port": configuration.temporal_port,
-        "agent_name": configuration.agent_name,
+        "app_name": configuration.app_name,
     },
     TemporalClient=TemporalClient,
 )

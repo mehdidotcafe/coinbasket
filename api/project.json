@@ -67,11 +67,22 @@
       },
       "cache": false
     },
+    "start:test": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test --use-shell 'poetry run fastapi run api/main.py --reload --port $APP_PORT'",
+        "cwd": "{projectRoot}"
+      },
+      "configurations": {
+        "production": {}
+      },
+      "cache": false
+    },
     "dev": {
       "executor": "@nxlv/python:run-commands",
       "dependsOn": ["infra"],
       "options": {
-        "command": "poetry run python -m api.main",
+        "command": "fastapi dev api/main.py --reload --port $APP_PORT --host 0.0.0.0",
         "cwd": "{projectRoot}"
       },
       "cache": false

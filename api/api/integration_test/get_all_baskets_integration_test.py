@@ -4,7 +4,7 @@ import requests
 from environs import env
 
 app_port = env.int("APP_PORT")
-agent_key = env.str("AGENT_KEY")
+app_key = env.str("APP_KEY")
 
 
 def test_integration_get_all_baskets(
@@ -22,7 +22,7 @@ def test_integration_get_all_baskets(
                     created_at="2023-10-01",
                 )
             ),
-            "agent_key": agent_key,
+            "app_key": app_key,
         },
         timeout=60,
     )

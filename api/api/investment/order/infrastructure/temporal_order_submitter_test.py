@@ -27,7 +27,7 @@ def id_generator():
 @fixture
 def configuration():
     return Configuration(
-        agent_name="test-agent", temporal_port=7233, temporal_host="localhost"
+        app_name="test-agent", temporal_port=7233, temporal_host="localhost"
     )
 
 

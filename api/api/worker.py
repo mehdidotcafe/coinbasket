@@ -29,13 +29,13 @@ from api.registry import (
 
 
 async def main():
-    agent_name = configuration.agent_name
+    app_name = configuration.app_name
     client = await Client.connect(
         f"{configuration.temporal_host}:{configuration.temporal_port}"
     )
     worker = Worker(
         client,
-        task_queue=f"order-submitter-workflow-{agent_name}",
+        task_queue=f"order-submitter-workflow-{app_name}",
         workflows=[TemporalExecuteAndWaitOrderWorkflow, TemporalOrderSubmitterWorkflow],
         activities=[
             fail_order,
