@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.production
+.env.integration_test
 
 # NX
 node_modules

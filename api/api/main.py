@@ -9,6 +9,8 @@ from api.asset.get_asset_swap_price_use_case import (
     ConvertedBalance,
     GetAssetSwapPriceUseCase,
 )
+from api.authentication.generate_auth_nonce_use_case import GenerateAuthNonceUseCase
+from api.authentication.verify_auth_use_case import VerifyAuthUseCase
 from api.conversation.conversation_use_case import ConversationUseCase
 from api.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
@@ -67,6 +69,7 @@ from api.portfolio.get_portfolio_use_case import (
     Portfolio,
     PortfolioBalance,
 )
+from api.shared.app_exception import AppException
 from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from api.similarity.get_similar_assets_use_case import GetSimilarAssetsUseCase
 from api.protocol.basket import Basket
@@ -96,6 +99,8 @@ from api.registry import (
     small_balance_policy,
     similarity_storage,
     token_repository,
+    siwe_manager,
+    credential_generator,
 )
 from api.authentication.authentication import authentication
 from api.chain.balance import Balance, BalanceAtomic
@@ -106,7 +111,8 @@ from api.documentation.response.invalid_authentication_key import (
 
 from api.documentation.openapi import openapi
 from api.protocol.token import Token
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, RootModel
 from pydantic.v1 import root_validator, validator
@@ -201,6 +207,16 @@ ingest_data_use_case = IngestDataUseCase(
     ],
 )
 
+generate_auth_nonce_use_case = GenerateAuthNonceUseCase(
+    siwe_manager=siwe_manager,
+)
+
+verify_auth_use_case = VerifyAuthUseCase(
+    siwe_manager=siwe_manager,
+    credential_generator=credential_generator,
+    date_time=date_time,
+)
+
 spec = APISpec(
     title=configuration.app_name,
     version="0.0.1",
@@ -224,11 +240,24 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[configuration.frontend_url],
+    allow_origins=configuration.frontend_url.split(","),
     allow_credentials=True,
     allow_methods=["OPTIONS", "GET", "POST"],
     allow_headers=["*"],
 )
+
+
+class ErrorResponse(BaseModel):
+    message: str
+    details: dict[str, Any] | None
+
+
+@app.exception_handler(AppException)
+async def app_exception_handler(_request: Request, exception: AppException):
+    return JSONResponse(
+        status_code=exception.status_code,
+        content={"message": exception.message, "details": exception.details},
+    )
 
 
 class TokenRequest(BaseModel):
@@ -1221,6 +1250,180 @@ class AuthResponse(BaseModel):
 @authentication(configuration.app_key)
 async def auth_request(_req: AuthRequest) -> AuthResponse:
     return AuthResponse(status="OK")
+
+
+class AuthVerifyRequest(BaseModel):
+    message: str
+    signature: str
+
+
+class AuthVerifyResponse(BaseModel):
+    credential: str
+
+
+@openapi(
+    spec=spec,
+    schemas=[AuthVerifyResponse, ErrorResponse],
+    path="/auth/verify",
+    operations={
+        "get": {
+            "summary": "Verify a signature of the nonce for authentication. Return a JWT token if successful.",
+            "tags": ["Authentication"],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {
+                        "schema": {"$ref": "#/components/schemas/AuthVerifyRequest"}
+                    }
+                },
+            },
+            "responses": {
+                "200": {
+                    "description": "Address Credential",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AuthVerifyResponse"
+                            }
+                        }
+                    },
+                    "headers": {
+                        "Set-Cookie": {
+                            "description": "Cookie of the address Credential",
+                            "schema": {"type": "string"},
+                            "example": "token=eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhmYWtlYWRkcmVzcyIsImV4cCI6IjE3MDAwMDAwMDAwIn0.d3XdcV86FrpkeHCI6yoFNg6LdRrsIIrUZqn48WHfEFw; Path=/; HttpOnly",
+                        }
+                    },
+                },
+                "401": {
+                    "description": "Invalid signature or message",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                        }
+                    },
+                },
+            },
+        }
+    },
+)
+@app.post("/auth/verify")
+async def auth_verify(request: Request, req: AuthVerifyRequest) -> AuthVerifyResponse:
+    nonce = request.cookies.get("nonce")
+
+    if not nonce:
+        raise HTTPException(
+            status_code=400,
+            detail="Nonce cookie is missing. Please obtain a nonce first.",
+        )
+
+    credential, claims = await verify_auth_use_case.execute(
+        nonce=nonce,
+        signature=req.signature,
+        message=req.message,
+        domain=configuration.frontend_url.split(",")[0]
+        .replace("https://", "")
+        .replace("http://", ""),
+    )
+
+    response = JSONResponse(
+        content=AuthVerifyResponse(credential=credential).model_dump()
+    )
+
+    response.delete_cookie(key="nonce")
+    response.set_cookie(
+        key="credential",
+        value=credential,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=int(claims["exp"]) - date_time.now(),
+    )
+
+    return response
+
+
+class AuthNonceResponse(BaseModel):
+    nonce: str
+
+
+@openapi(
+    spec=spec,
+    schemas=[AuthNonceResponse],
+    path="/auth/nonce",
+    operations={
+        "get": {
+            "summary": "Return a nonce for authentication",
+            "tags": ["Authentication"],
+            "responses": {
+                "200": {
+                    "description": "Nonce for authentication",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/AuthNonceResponse"}
+                        }
+                    },
+                    "headers": {
+                        "Set-Cookie": {
+                            "description": "Nonce cookie for authentication",
+                            "schema": {"type": "string"},
+                            "example": "nonce=abc123; Path=/; HttpOnly",
+                        }
+                    },
+                }
+            },
+        }
+    },
+)
+@app.get("/auth/nonce")
+async def generate_auth_nonce() -> AuthNonceResponse:
+    nonce = generate_auth_nonce_use_case.execute()
+
+    response = JSONResponse(content=AuthNonceResponse(nonce=nonce).model_dump())
+    response.set_cookie(
+        key="nonce",
+        value=nonce,
+        httponly=True,
+        secure=configuration.app_env != "development",
+        samesite="strict",
+        # 5 minutes validity
+        max_age=60 * 5,
+    )
+
+    return response
+
+
+@openapi(
+    spec=spec,
+    schemas=[],
+    path="/auth/signout",
+    operations={
+        "post": {
+            "summary": "Sign out the user by clearing authentication cookies",
+            "tags": ["Authentication"],
+            "responses": {
+                "204": {
+                    "description": "Successfully signed out, cookies cleared",
+                    "content": {},
+                    "headers": {
+                        "Set-Cookie": {
+                            "description": "Delete nonce cookie and credential cookies for authentication",
+                            "schema": {"type": "string"},
+                            "example": 'nonce=""; credential=""; Path=/; HttpOnly',
+                        }
+                    },
+                }
+            },
+        }
+    },
+)
+@app.post("/auth/signout")
+async def signout():
+    response = JSONResponse(content=None, status_code=204)
+    response.delete_cookie(key="nonce")
+    response.delete_cookie(key="credential")
+
+    return response
 
 
 class HealthResponse(BaseModel):
