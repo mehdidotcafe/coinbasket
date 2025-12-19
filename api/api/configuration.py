@@ -21,6 +21,8 @@ class Configuration:
         )
         self.app_name = env.str("APP_NAME")
         self.app_key = env.str("APP_KEY")
+        self.app_domain = env.str("APP_DOMAIN")
+        self.app_secret_key = env.str("APP_SECRET_KEY")
 
         self.frontend_url = env.str("FRONTEND_URL")
 

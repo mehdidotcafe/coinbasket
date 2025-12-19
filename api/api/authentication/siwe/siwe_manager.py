@@ -6,5 +6,8 @@ class SiweManager(ABC):
     def generate_nonce(self) -> str:
         raise NotImplementedError
 
-    # @abstractmethod
-    # def verify_message(self, message: str, signature: str) -> dict[str, Any] | None:
+    @abstractmethod
+    async def verify_signature(
+        self, signature: str, message: str, nonce: str, domain: str
+    ) -> dict[str, str | int] | None:
+        raise NotImplementedError

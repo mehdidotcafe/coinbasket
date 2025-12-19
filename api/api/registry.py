@@ -1,4 +1,7 @@
 from typing import cast
+from api.authentication.credential.infrastructure.py_jwt_credential_generator import (
+    PyJwtCredentialGenerator,
+)
 from api.authentication.siwe.infrastructure.siwe_py_siwe_manager import (
     SiwePySiweManager,
 )
@@ -197,3 +200,5 @@ token_repository = CoingeckoTokenRepository(
 )
 
 siwe_manager = SiwePySiweManager()
+
+credential_generator = PyJwtCredentialGenerator(secret_key=configuration.app_secret_key)
