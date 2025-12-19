@@ -86,7 +86,6 @@ AssetResponse = TokenResponse | BasketResponse
 
 class SimilarAssetsQuery(BaseModel):
     query: str
-    app_key: str
     type: Literal["TOKEN", "BASKET"] | None
 
 
@@ -99,16 +98,11 @@ class SimilarAssetsResponse(BaseModel):
     data: SimilarAssetsValidResponse | str
 
 
-class GetAllBasketsQuery(BaseModel):
-    app_key: str
-
-
 class GetAllBasketsResponse(BaseModel):
     baskets: list[BasketResponse]
 
 
 class GetAssetByIdQuery(BaseModel):
-    app_key: str
     asset_id: str
 
 

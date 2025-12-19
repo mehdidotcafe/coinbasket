@@ -9,7 +9,7 @@ from api.test.database.cleanup_all import cleanup_all  # noqa: F401
 from syrupy.filters import paths
 
 app_port = env.int("APP_PORT")
-app_key = env.str("APP_KEY")
+credential = env.str("TEST_CREDENTIAL")
 
 
 @fixture
@@ -78,6 +78,7 @@ def test_integration_conversation_buy_basket_and_token(
 ):
     response_1 = requests.post(
         f"http://localhost:{app_port}/conversation",
+        cookies={"credential": credential},
         json={
             "message": asdict(
                 QueryMessage(
@@ -88,7 +89,6 @@ def test_integration_conversation_buy_basket_and_token(
                     created_at="2023-10-01",
                 )
             ),
-            "app_key": app_key,
         },
         timeout=60,
     )
@@ -104,6 +104,7 @@ def test_integration_conversation_buy_basket_and_token(
 
         response_2 = requests.post(
             f"http://localhost:{app_port}/conversation",
+            cookies={"credential": credential},
             json={
                 "message": asdict(
                     QueryMessage(
@@ -114,7 +115,6 @@ def test_integration_conversation_buy_basket_and_token(
                         created_at="2023-10-01",
                     )
                 ),
-                "app_key": app_key,
             },
             timeout=60,
         )
@@ -146,6 +146,7 @@ def test_integration_conversation_buy_basket_and_token(
 
     response_3 = requests.post(
         f"http://localhost:{app_port}/conversation",
+        cookies={"credential": credential},
         json={
             "message": asdict(
                 QueryMessage(
@@ -156,7 +157,6 @@ def test_integration_conversation_buy_basket_and_token(
                     created_at="2023-10-01",
                 )
             ),
-            "app_key": app_key,
         },
         timeout=60,
     )

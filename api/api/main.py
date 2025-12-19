@@ -102,11 +102,10 @@ from api.registry import (
     siwe_manager,
     credential_generator,
 )
-from api.authentication.authentication import authentication
 from api.chain.balance import Balance, BalanceAtomic
 from api.conversation.message import Message, QueryMessage
-from api.documentation.response.invalid_authentication_key import (
-    invalid_authentication_key,
+from api.documentation.response.invalid_authentication_credential import (
+    invalid_authentication_credential,
 )
 
 from api.documentation.openapi import openapi
@@ -224,6 +223,11 @@ spec = APISpec(
 )
 
 
+class ErrorResponse(BaseModel):
+    message: str
+    details: dict[str, Any] | None
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await nonce_manager.resync()
@@ -247,9 +251,38 @@ app.add_middleware(
 )
 
 
-class ErrorResponse(BaseModel):
-    message: str
-    details: dict[str, Any] | None
+@app.middleware("http")
+async def credential_authentication_middleware(request: Request, call_next):
+    excluded_paths = [
+        "/auth/nonce",
+        "/auth/verify",
+        "/health",
+        "/docs",
+        "/openapi.json",
+    ]
+
+    if not any(request.url.path.startswith(path) for path in excluded_paths):
+        credential = request.cookies.get("credential")
+
+        if not credential:
+            return JSONResponse(
+                status_code=401,
+                content=ErrorResponse(
+                    message="Credential cookie missing", details=None
+                ).model_dump(),
+            )
+
+        claims = credential_generator.verify_credential(credential)
+
+        if not claims:
+            return JSONResponse(
+                status_code=401,
+                content=ErrorResponse(
+                    message="Invalid credential", details=None
+                ).model_dump(),
+            )
+
+    return await call_next(request)
 
 
 @app.exception_handler(AppException)
@@ -927,7 +960,6 @@ class QueryMessageRequest(BaseModel):
 
 class PromptRequest(BaseModel):
     message: QueryMessageRequest
-    app_key: str
 
 
 class MessageUiResponse(BaseModel):
@@ -983,13 +1015,12 @@ class MessageResponse(BaseModel):
                         }
                     },
                 },
-                "500": invalid_authentication_key,
+                "401": invalid_authentication_credential,
             },
         }
     },
 )
 @app.post("/conversation")
-@authentication(configuration.app_key)
 async def conversation(req: PromptRequest) -> MessageResponse:
     async with aiosqlite.connect(langgraph_db_path) as conn:
         agent_executor = await __create_agent_executor(conn)
@@ -1046,10 +1077,6 @@ async def __create_agent_executor(conn: aiosqlite.Connection):
     return agent_executor
 
 
-class MessagesRequest(BaseModel):
-    app_key: str
-
-
 class MessagesResponse(BaseModel):
     messages: list[MessageResponse]
 
@@ -1063,20 +1090,12 @@ class MessagesResponse(BaseModel):
 
 @openapi(
     spec=spec,
-    schemas=[MessagesRequest],
+    schemas=[],
     path="/conversation/messages",
     operations={
         "post": {
             "summary": "Get Agent messages history",
             "tags": ["Conversation"],
-            "requestBody": {
-                "required": True,
-                "content": {
-                    "application/json": {
-                        "schema": {"$ref": "#/components/schemas/MessagesRequest"}
-                    }
-                },
-            },
             "responses": {
                 "200": {
                     "description": "Agent message history",
@@ -1091,16 +1110,13 @@ class MessagesResponse(BaseModel):
                         }
                     },
                 },
-                "500": invalid_authentication_key,
+                "401": invalid_authentication_credential,
             },
         }
     },
 )
 @app.post("/conversation/messages")
-@authentication(configuration.app_key)
-async def get_conversation_messages(
-    _req: MessagesRequest,
-) -> MessagesResponse:
+async def get_conversation_messages() -> MessagesResponse:
     """Retrieve the conversation messages."""
     async with aiosqlite.connect(langgraph_db_path) as conn:
         agent_executor = await __create_agent_executor(conn)
@@ -1113,7 +1129,6 @@ async def get_conversation_messages(
 
 
 class AssetSwapPriceInfoRequest(BaseModel):
-    app_key: str
     sell_asset: TokenRequest | BasketRequest
     sell_asset_amount: str
     buy_asset: TokenRequest | BasketRequest
@@ -1191,7 +1206,7 @@ class ConvertedBalanceResponse(BaseModel):
                         }
                     },
                 },
-                "500": invalid_authentication_key,
+                "401": invalid_authentication_credential,
             },
         }
     },
@@ -1199,7 +1214,6 @@ class ConvertedBalanceResponse(BaseModel):
 @app.post(
     "/asset/swap/price",
 )
-@authentication(configuration.app_key)
 async def get_asset_swap_price(req: AssetSwapPriceInfoRequest):
     """Test authentication to the Agent."""
 
@@ -1208,30 +1222,18 @@ async def get_asset_swap_price(req: AssetSwapPriceInfoRequest):
     return ConvertedBalanceResponse.from_domain(converted_balance)
 
 
-class AuthRequest(BaseModel):
-    app_key: str
-
-
 class AuthResponse(BaseModel):
     status: str
 
 
 @openapi(
     spec=spec,
-    schemas=[AuthRequest, AuthResponse],
+    schemas=[AuthResponse],
     path="/auth",
     operations={
         "post": {
             "summary": "Test authentication to the Agent",
             "tags": ["Authentication"],
-            "requestBody": {
-                "required": True,
-                "content": {
-                    "application/json": {
-                        "schema": {"$ref": "#/components/schemas/AuthRequest"}
-                    }
-                },
-            },
             "responses": {
                 "200": {
                     "description": "Authentication status",
@@ -1241,14 +1243,13 @@ class AuthResponse(BaseModel):
                         }
                     },
                 },
-                "500": invalid_authentication_key,
+                "401": invalid_authentication_credential,
             },
         }
     },
 )
 @app.post("/auth")
-@authentication(configuration.app_key)
-async def auth_request(_req: AuthRequest) -> AuthResponse:
+async def auth_request() -> AuthResponse:
     return AuthResponse(status="OK")
 
 
@@ -1458,7 +1459,6 @@ async def health_check() -> HealthResponse:
 
 
 class PortfolioRequest(BaseModel):
-    app_key: str
     token: TokenRequest
 
     def to_domain(self):
@@ -1567,13 +1567,12 @@ class PortfolioAssetBalanceResponse(BaseModel):
                         }
                     },
                 },
-                "500": invalid_authentication_key,
+                "401": invalid_authentication_credential,
             },
         }
     },
 )
 @app.post("/portfolio")
-@authentication(configuration.app_key)
 async def get_converted_portfolio(req: PortfolioRequest):
     converted_token_balances = await get_portfolio_use_case.execute(req.to_domain())
 

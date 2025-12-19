@@ -3,11 +3,13 @@ import requests
 from environs import env
 
 app_port = env.int("APP_PORT")
+credential = env.str("TEST_CREDENTIAL")
 
 
 def test_integration_auth_signout():
     response_1 = requests.post(
         f"http://localhost:{app_port}/auth/signout",
+        cookies={"credential": credential},
         timeout=60,
     )
 
