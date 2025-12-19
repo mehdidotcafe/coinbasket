@@ -261,7 +261,9 @@ async def credential_authentication_middleware(request: Request, call_next):
         "/openapi.json",
     ]
 
-    if not any(request.url.path.startswith(path) for path in excluded_paths):
+    if not request.method == "OPTIONS" and not any(
+        request.url.path.startswith(path) for path in excluded_paths
+    ):
         credential = request.cookies.get("credential")
 
         if not credential:

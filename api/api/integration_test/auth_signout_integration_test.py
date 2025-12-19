@@ -6,6 +6,16 @@ app_port = env.int("APP_PORT")
 credential = env.str("TEST_CREDENTIAL")
 
 
+def test_integration_auth_signout_invalid_credential():
+    response = requests.post(
+        f"http://localhost:{app_port}/auth/signout",
+        cookies={"credential": f"{credential}_invalid"},
+        timeout=60,
+    )
+
+    assert response.status_code == 401
+
+
 def test_integration_auth_signout():
     response_1 = requests.post(
         f"http://localhost:{app_port}/auth/signout",

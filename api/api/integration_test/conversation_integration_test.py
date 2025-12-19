@@ -71,6 +71,27 @@ def investment_plan() -> dict[str, Any]:
     }
 
 
+def test_integration_conversation_buy_basket_and_token_invalid_credential():
+    response = requests.post(
+        f"http://localhost:{app_port}/conversation",
+        cookies={"credential": f"{credential}_invalid"},
+        json={
+            "message": asdict(
+                QueryMessage(
+                    id="42",
+                    is_resuming=False,
+                    role="user",
+                    content="Please invest in your memecoin mania basket and in bitcoin. Don't ask for fund allocation.",
+                    created_at="2023-10-01",
+                )
+            ),
+        },
+        timeout=60,
+    )
+
+    assert response.status_code == 401
+
+
 def test_integration_conversation_buy_basket_and_token(
     investment_plan: dict[str, Any],
     cleanup_all: Any,  # noqa: F811
