@@ -1329,6 +1329,8 @@ async def auth_verify(request: Request, req: AuthVerifyRequest) -> AuthVerifyRes
     response = JSONResponse(
         content=AuthVerifyResponse(credential=credential).model_dump()
     )
+
+    response.delete_cookie(key="nonce")
     response.set_cookie(
         key="credential",
         value=credential,
@@ -1387,6 +1389,39 @@ async def generate_auth_nonce() -> AuthNonceResponse:
         # 5 minutes validity
         max_age=60 * 5,
     )
+
+    return response
+
+
+@openapi(
+    spec=spec,
+    schemas=[],
+    path="/auth/signout",
+    operations={
+        "post": {
+            "summary": "Sign out the user by clearing authentication cookies",
+            "tags": ["Authentication"],
+            "responses": {
+                "204": {
+                    "description": "Successfully signed out, cookies cleared",
+                    "content": {},
+                    "headers": {
+                        "Set-Cookie": {
+                            "description": "Delete nonce cookie and credential cookies for authentication",
+                            "schema": {"type": "string"},
+                            "example": 'nonce=""; credential=""; Path=/; HttpOnly',
+                        }
+                    },
+                }
+            },
+        }
+    },
+)
+@app.post("/auth/signout")
+async def signout():
+    response = JSONResponse(content=None, status_code=204)
+    response.delete_cookie(key="nonce")
+    response.delete_cookie(key="credential")
 
     return response
 

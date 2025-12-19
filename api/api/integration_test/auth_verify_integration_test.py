@@ -86,6 +86,8 @@ def test_integration_auth_verify_success():
 
     assert response_1.status_code == 200
 
+    assert response_1.cookies.get("nonce") is None
+
     credential_payload = decode(
         response_1_json["credential"], options={"verify_signature": False}
     )

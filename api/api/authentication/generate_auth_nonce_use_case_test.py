@@ -18,10 +18,7 @@ def test_generate_auth_nonce_use_case(
     siwe_manager: SiweManager, use_case: GenerateAuthNonceUseCase
 ):
     siwe_manager.generate_nonce.return_value = "unique_nonce_123"
-    use_case = GenerateAuthNonceUseCase(siwe_manager)
 
-    # Act
     nonce = use_case.execute()
 
-    # Assert
     assert nonce == "unique_nonce_123"
