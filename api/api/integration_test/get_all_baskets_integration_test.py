@@ -4,14 +4,13 @@ import requests
 from environs import env
 
 app_port = env.int("APP_PORT")
-app_key = env.str("APP_KEY")
+credential = env.str("TEST_CREDENTIAL")
 
 
-def test_integration_get_all_baskets(
-    snapshot,
-):
-    response_1 = requests.post(
+def test_integration_get_all_baskets_invalid_credential():
+    response = requests.post(
         f"http://localhost:{app_port}/conversation",
+        cookies={"credential": f"{credential}_invalid"},
         json={
             "message": asdict(
                 QueryMessage(
@@ -22,13 +21,29 @@ def test_integration_get_all_baskets(
                     created_at="2023-10-01",
                 )
             ),
-            "app_key": app_key,
         },
         timeout=60,
     )
 
-    response_json = response_1.json()
+    assert response.status_code == 401
 
-    print(f"Response json: {response_json}")
+
+def test_integration_get_all_baskets():
+    response_1 = requests.post(
+        f"http://localhost:{app_port}/conversation",
+        cookies={"credential": credential},
+        json={
+            "message": asdict(
+                QueryMessage(
+                    id="42",
+                    is_resuming=False,
+                    role="user",
+                    content="What are your available baskets?",
+                    created_at="2023-10-01",
+                )
+            ),
+        },
+        timeout=60,
+    )
 
     assert response_1.status_code == 200

@@ -12,6 +12,7 @@ app_port = env.int("APP_PORT")
 frontend_url = (
     env.str("FRONTEND_URL").split(",")[0].replace("https://", "").replace("http://", "")
 )
+credential = env.str("TEST_CREDENTIAL")
 
 public_key = "0xb63b6f61569ebc3c08e7c235c355844da54d240e"
 private_key = "0xe6bf9b3ab47ce317433bd33c21d00c6d066fce707a2c2dd31217c253620bcafc"

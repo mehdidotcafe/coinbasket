@@ -19,7 +19,7 @@ from syrupy.filters import paths
 
 
 app_port = env.int("APP_PORT")
-app_key = env.str("APP_KEY")
+credential = env.str("TEST_CREDENTIAL")
 
 
 @fixture
@@ -219,11 +219,23 @@ def postings():
     ]
 
 
+def test_integration_get_portfolio_invalid_credential():
+    response = requests.post(
+        f"http://localhost:{app_port}/portfolio",
+        cookies={"credential": f"{credential}_invalid"},
+        json={"token": usdt_token.to_dict()},
+        timeout=60,
+    )
+
+    assert response.status_code == 401
+
+
 # TODO: Enhance this test once zero_x API is mocked in integration tests
 def test_integration_get_portfolio(seed_fixtures, cleanup_all, snapshot):  # noqa: F811
     response = requests.post(
         f"http://localhost:{app_port}/portfolio",
-        json={"app_key": app_key, "token": usdt_token.to_dict()},
+        cookies={"credential": credential},
+        json={"token": usdt_token.to_dict()},
         timeout=60,
     )
 
