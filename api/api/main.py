@@ -1311,7 +1311,7 @@ class AuthVerifyResponse(BaseModel):
     },
 )
 @app.post("/auth/verify")
-async def auth_verify(request: Request, req: AuthVerifyRequest) -> AuthVerifyResponse:
+async def auth_verify(request: Request, req: AuthVerifyRequest):
     nonce = request.cookies.get("nonce")
 
     if not nonce:
