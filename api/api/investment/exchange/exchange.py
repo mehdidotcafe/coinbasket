@@ -7,7 +7,7 @@ from api.chain.balance import BalanceAtomic
 from api.chain.chain import Gas
 from api.investment.investment_parameters import InvestmentParameters
 
-from api.investment.order.order import Order
+from api.chain.balance import Balance
 from api.protocol.token import Token
 
 
@@ -18,21 +18,40 @@ class ExchangeConvertedBalance:
 
 
 @dataclass
-class TransactionData:
+class SignableTransaction:
     type: Literal["SIGN", "SEND"]
     amount: int
-    encoded_input: Any
+    data: Any
     gas: Gas | None = None
     to_address: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the TransactionData to a dictionary."""
+        return {
+            "type": self.type,
+            "amount": self.amount,
+            "data": self.data,
+            "gas": self.gas.to_dict() if self.gas else None,
+            "to_address": self.to_address,
+        }
+
+
+@dataclass
+class ExchangeSignableSwap:
+    sell_balance: BalanceAtomic[Token]
+    buy_balance: BalanceAtomic[Token]
+    signature_payload: dict[str, Any] | None
+    transaction: SignableTransaction
 
 
 class Exchange(ABC):
     @abstractmethod
-    async def build_transactions(
+    async def get_signable_swap(
         self,
-        order: Order,
+        sell_balance: Balance[Token],
+        buy_balance: Balance[Token],
         investment_parameters: InvestmentParameters,
-    ) -> list[TransactionData]:
+    ) -> ExchangeSignableSwap:
         """Creates transaction data to be sent on-chain for the given order."""
         raise NotImplementedError
 

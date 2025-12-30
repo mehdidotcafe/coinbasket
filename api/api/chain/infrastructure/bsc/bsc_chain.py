@@ -197,7 +197,7 @@ class BscChain(Chain):
         amount: int,
         # address checksum
         to_address: str,
-        encoded_input: HexStr | None = None,
+        data: HexStr | None = None,
     ) -> int:
         transaction_params: TxParams = {
             "from": self.account.address,
@@ -205,8 +205,8 @@ class BscChain(Chain):
             "value": Wei(amount),
         }
 
-        if encoded_input is not None:
-            transaction_params["data"] = encoded_input
+        if data is not None:
+            transaction_params["data"] = data
 
         gas_estimate = int(await self.w3.eth.estimate_gas(transaction_params) * 1.1)
 
@@ -222,7 +222,7 @@ class BscChain(Chain):
         amount: int,
         gas: Gas | None = None,
         to_address: str | None = None,
-        encoded_input: HexStr | None = None,
+        data: HexStr | None = None,
     ) -> str:
         nonce = await self.nonce_manager.get_and_increment()
 
@@ -234,8 +234,8 @@ class BscChain(Chain):
             "value": Wei(amount),
             "nonce": nonce,
         }
-        if encoded_input is not None:
-            transaction_params["data"] = encoded_input
+        if data is not None:
+            transaction_params["data"] = data
 
         if to_address is not None:
             transaction_params["to"] = self.w3.to_checksum_address(to_address)

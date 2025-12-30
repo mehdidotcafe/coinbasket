@@ -7,7 +7,7 @@ from api.investment.investment_parameters import InvestmentParameters
 from api.investment.order.order_repository import OrderRepository
 from api.shared.id_generator.id_generator import IdGenerator
 from api.investment.order.order import ChainTransaction, Try, Order
-from api.investment.exchange.exchange import Exchange, TransactionData
+from api.investment.exchange.exchange import Exchange, SignableTransaction
 from api.protocol.token import Token
 from api.shared.random_generator.random_generator import RandomGenerator
 from api.investment.order.exception.order_without_send_transaction import (
@@ -42,21 +42,21 @@ class CreateOrderTryTask:
 
     async def execute(self, order: Order):
         if is_production(self.configuration):
-            transactions_data = await self.exchange.build_transactions(
-                order,
-                InvestmentParameters(
+            signable_swap = await self.exchange.get_signable_swap(
+                sell_balance=order.sell_balance,
+                buy_balance=order.buy_balance,
+                investment_parameters=InvestmentParameters(
                     slippage_tolerance_in_percentage=Decimal("1"),
                 ),
             )
+            transaction_data = signable_swap.transaction
         else:
-            transactions_data = [
-                # Dummy TransactionData
-                TransactionData(
-                    type="SEND",
-                    amount=order.sell_balance.amount_atomic,
-                    encoded_input="DUMMY_ENCODED_INPUT",
-                )
-            ]
+            # Dummy TransactionData
+            transaction_data = SignableTransaction(
+                type="SEND",
+                amount=order.sell_balance.amount_atomic,
+                data="DUMMY_ENCODED_INPUT",
+            )
 
         try_id = self.id_generator.generate_random_id()
 
@@ -72,13 +72,12 @@ class CreateOrderTryTask:
                     order_id=order.id,
                     type=transaction_data.type,
                     amount=transaction_data.amount,
-                    data=transaction_data.encoded_input,
+                    data=transaction_data.data,
                     status="PENDING",
                     to_address=transaction_data.to_address,
                     gas=transaction_data.gas,
                     hash=None,
                 )
-                for transaction_data in transactions_data
             ],
             provider=self.exchange.get_name(),
             buy_balance=cast(BalanceAtomic[Token], order.buy_balance),
@@ -115,7 +114,7 @@ class ExecuteOrderTryTask:
                     amount=chain_transaction.amount,
                     gas=chain_transaction.gas,
                     to_address=chain_transaction.to_address,
-                    encoded_input=chain_transaction.data,
+                    data=chain_transaction.data,
                 )
             else:
                 transaction_hash = "DUMMY_TRANSACTION_HASH"

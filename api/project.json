@@ -59,7 +59,7 @@
       "executor": "@nxlv/python:run-commands",
       "dependsOn": ["infra:production"],
       "options": {
-        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.main'",
+        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.main --port $APP_PORT --host 0.0.0.0'",
         "cwd": "{projectRoot}"
       },
       "configurations": {

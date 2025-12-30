@@ -289,14 +289,12 @@ def test_bsc_chain_get_wrapped_base_token(bsc_chain: BscChain):
 async def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: AsyncWeb3):
     amount = 1000
     to_address = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef"
-    encoded_input = HexStr("0x1234567890abcdef")
+    data = HexStr("0x1234567890abcdef")
     gas = int(21000 * 1.1)
 
     w3.eth.estimate_gas.return_value = 21000
 
-    gas_estimate = await bsc_chain.compute_gas_estimate(
-        amount, to_address, encoded_input
-    )
+    gas_estimate = await bsc_chain.compute_gas_estimate(amount, to_address, data)
 
     assert gas_estimate == gas
 
@@ -305,13 +303,13 @@ async def test_bsc_chain_compute_gas_estimate(bsc_chain: BscChain, w3: AsyncWeb3
             "from": "0x1234567890abcdef1234567890abcdef12345678",
             "to": to_address,
             "value": amount,
-            "data": encoded_input,
+            "data": data,
         }
     )
 
 
 @mark.asyncio
-async def test_bsc_chain_compute_gas_estimate_without_encoded_input(
+async def test_bsc_chain_compute_gas_estimate_without_data(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount = 1000
@@ -335,7 +333,7 @@ async def test_bsc_chain_sign_send_transaction_without_gas_params(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount = 1000
-    encoded_input = HexStr("0xbadf00d")
+    data = HexStr("0xbadf00d")
 
     w3.eth.send_transaction = mock.AsyncMock(return_value=HexBytes("0x128938348"))
     block_data = mock.Mock()
@@ -346,7 +344,7 @@ async def test_bsc_chain_sign_send_transaction_without_gas_params(
 
     await bsc_chain.sign_send_transaction(
         amount=amount,
-        encoded_input=encoded_input,
+        data=data,
         to_address="0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
     )
 
@@ -371,14 +369,14 @@ async def test_bsc_chain_sign_send_transaction_success(
 ):
     amount = 1000
     gas = Gas(gas=21000, gas_price=1_000_000_000)
-    encoded_input = HexStr("0xbadf00d")
+    data = HexStr("0xbadf00d")
 
     w3.eth.send_transaction = mock.AsyncMock(return_value=HexBytes("0x0128938348"))
 
     transaction_hash = await bsc_chain.sign_send_transaction(
         amount=amount,
         gas=gas,
-        encoded_input=encoded_input,
+        data=data,
         to_address="0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
     )
 
