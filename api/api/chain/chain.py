@@ -24,6 +24,13 @@ class Gas:
     gas: int | None
     gas_price: int | None
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the Gas to a dictionary."""
+        return {
+            "gas": self.gas,
+            "gas_price": self.gas_price,
+        }
+
 
 @dataclass
 class ParsedReceipt:
@@ -93,7 +100,7 @@ class Chain(ABC):
         amount: int,
         gas: Gas | None = None,
         to_address: str | None = None,
-        encoded_input: Any | None = None,
+        data: Any | None = None,
     ) -> str:
         raise NotImplementedError
 
@@ -106,7 +113,7 @@ class Chain(ABC):
 
     @abstractmethod
     async def compute_gas_estimate(
-        self, amount: int, to_address: str, encoded_input: Any | None = None
+        self, amount: int, to_address: str, data: Any | None = None
     ) -> int:
         raise NotImplementedError
 

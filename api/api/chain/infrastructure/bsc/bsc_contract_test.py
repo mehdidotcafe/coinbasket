@@ -59,11 +59,11 @@ async def test_bsc_contract_make_approve_transaction_input(w3: AsyncWeb3):
     )
     w3.eth.contract.return_value = token_contract
 
-    encoded_input = contract.make_approve_transaction_input(
+    data = contract.make_approve_transaction_input(
         token_address, spender_address, amount
     )
 
-    assert encoded_input == "encoded_transaction_data"
+    assert data == "encoded_transaction_data"
 
     w3.eth.contract.assert_called_once_with(
         address="0x1234567890abcdef1234567890abcdef12345678_checksum", abi=mock.ANY

@@ -20,12 +20,7 @@ class Balance(Generic[T]):
 
     def serialize(self):
         """Serialize a balance to JSON."""
-        return json.dumps(
-            {
-                "asset": self.asset.to_dict(),
-                "amount": format(self.amount, "f"),
-            }
-        )
+        return json.dumps(self.to_dict())
 
     @staticmethod
     def deserialize(balance_as_str: str):
@@ -66,6 +61,13 @@ class Balance(Generic[T]):
             amount=Decimal(balance_as_json["amount"]),
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the Balance to a dictionary."""
+        return {
+            "asset": self.asset.to_dict(),
+            "amount": format(self.amount, "f"),
+        }
+
 
 @dataclass
 class BalanceAtomic(Balance, Generic[T]):
@@ -85,14 +87,16 @@ class BalanceAtomic(Balance, Generic[T]):
 
     def serialize(self):
         """Serialize a balance to JSON."""
-        return json.dumps(
-            {
-                "asset": self.asset.to_dict(),
-                "amount": format(self.amount, "f"),
-                "amount_atomic": self.amount_atomic,
-                "decimals": self.decimals,
-            }
-        )
+        return json.dumps(self.to_dict())
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the Balance to a dictionary."""
+        return {
+            "asset": self.asset.to_dict(),
+            "amount": format(self.amount, "f"),
+            "amount_atomic": self.amount_atomic,
+            "decimals": self.decimals,
+        }
 
     @staticmethod
     def deserialize(balance_as_str: str):

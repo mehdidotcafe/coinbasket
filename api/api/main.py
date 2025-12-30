@@ -11,6 +11,7 @@ from api.asset.get_asset_swap_price_use_case import (
 )
 from api.authentication.generate_auth_nonce_use_case import GenerateAuthNonceUseCase
 from api.authentication.verify_auth_use_case import VerifyAuthUseCase
+from api.chain.chain import Gas
 from api.conversation.conversation_use_case import ConversationUseCase
 from api.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
@@ -37,6 +38,9 @@ from api.ingestion.ingest_data_use_case import IngestDataUseCase
 from api.investment.build_priced_investment_plan_use_case import (
     BuildPricedInvestmentPlanUseCase,
 )
+from api.investment.build_quoted_investment_plan_step_use_case import (
+    BuildQuotedInvestmentPlanStepUseCase,
+)
 from api.investment.execute_investment_plan_use_case import (
     ExecuteInvestmentPlanUseCase,
 )
@@ -50,6 +54,10 @@ from api.investment.investment_planner.investment_plan import (
     InvestmentPlan,
     InvestmentPlanStep,
 )
+from api.investment.investment_planner.quoted_investment_plan_step import (
+    QuotedInvestmentPlanStep,
+)
+
 from api.investment.order.order import (
     ChainTransaction,
     ChainTransactionStatus,
@@ -165,6 +173,10 @@ build_priced_investment_plan_use_case = BuildPricedInvestmentPlanUseCase(
     chain=chain,
     posting_repository=posting_repository,
     asset_balance_converter=asset_balance_converter,
+)
+
+build_quoted_investment_plan_step_use_case = BuildQuotedInvestmentPlanStepUseCase(
+    exchange=exchange
 )
 
 execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
@@ -746,6 +758,11 @@ class InvestmentPlanRequest(BaseModel):
         return InvestmentPlan(steps=steps)
 
 
+class QuoteConfirmationRequest(BaseModel):
+    status: Literal["CONFIRM", "CANCEL"]
+    transaction_hashes: list[str]
+
+
 class IntentInvestmentPlanBalanceRequest(BaseModel):
     asset_id: str
     amount: str | None = None
@@ -854,6 +871,52 @@ class InvestmentPlanResponse(BaseModel):
         )
 
 
+class GasResponse(BaseModel):
+    gas: str | None
+    gas_price: str | None
+
+    @staticmethod
+    def from_domain(domain: Gas) -> "GasResponse":
+        return GasResponse(
+            gas=str(domain.gas) if domain.gas is not None else None,
+            gas_price=str(domain.gas_price) if domain.gas_price is not None else None,
+        )
+
+
+class SignableTransactionResponse(BaseModel):
+    type: Literal["SIGN", "SEND"]
+    amount: str
+    data: Any
+    gas: GasResponse | None = None
+    to_address: str | None = None
+
+
+class InvestmentPlanQuotedStepResponse(BaseModel):
+    buy_balance: BalanceAtomicResponse
+    sell_balance: BalanceAtomicResponse
+    transaction: SignableTransactionResponse
+    signature_payload: Dict[str, Any] | None = None
+
+    @staticmethod
+    def from_domain(
+        domain: QuotedInvestmentPlanStep,
+    ) -> "InvestmentPlanQuotedStepResponse":
+        return InvestmentPlanQuotedStepResponse(
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
+            signature_payload=domain.signature_payload,
+            transaction=SignableTransactionResponse(
+                type=domain.transaction.type,
+                amount=str(domain.transaction.amount),
+                data=domain.transaction.data,
+                gas=GasResponse.from_domain(domain.transaction.gas)
+                if domain.transaction.gas
+                else None,
+                to_address=domain.transaction.to_address,
+            ),
+        )
+
+
 @tool(parse_docstring=True)
 async def execute_intent_investment_plan_use_case(
     intent_investment_plan: IntentInvestmentPlanRequest,
@@ -919,20 +982,39 @@ async def execute_intent_investment_plan_use_case(
         }
     )
 
-    investment_plan = InvestmentPlanRequest.model_validate(
+    investment_plan_request = InvestmentPlanRequest.model_validate(
         investment_plan_as_dict["investment_plan"]
     )
 
-    if investment_plan.status == "CANCEL":
+    if investment_plan_request.status == "CANCEL":
         return InvestmentPlanResponse.from_domain(
             "Investment plan successfully cancelled by the user. Don't try to invest in the investment plan again.",
             [],
         ).model_dump_json()
 
-    orders = await execute_investment_plan_use_case.execute(investment_plan.to_domain())
+    investment_plan = investment_plan_request.to_domain()
+
+    for step in investment_plan.steps:
+        quoted_step = await build_quoted_investment_plan_step_use_case.execute(step)
+
+        _quote_confirmation_request = QuoteConfirmationRequest.model_validate(
+            interrupt(
+                {
+                    "ui": {
+                        "id": "sign_investment_plan_step",
+                        "args": {
+                            "quoted_investment_plan_step": InvestmentPlanQuotedStepResponse.from_domain(
+                                quoted_step
+                            ),
+                        },
+                    },
+                    "content": None,
+                }
+            )
+        )
 
     return InvestmentPlanResponse.from_domain(
-        "Investment plan and orders have been submitted successfully.", orders
+        "Investment plan and orders have been submitted successfully.", []
     ).model_dump_json()
 
 
