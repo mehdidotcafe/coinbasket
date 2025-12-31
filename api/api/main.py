@@ -725,7 +725,7 @@ class ConfirmedOrderRequest(BaseModel):
 
 class SignedOrderRequest(BaseModel):
     status: Literal["CONFIRM", "CANCEL"]
-    transaction_hash: list[str]
+    transaction_hash: str
 
 
 class IntentOrderBalanceRequest(BaseModel):
@@ -972,7 +972,7 @@ async def plan_and_execute_swap_order(
 
         return PlanAndExecuteOrderResponse.from_domain(
             "Order planned and executed successfully.",
-            order_hash=order_hash_request.transaction_hash[0]
+            order_hash=order_hash_request.transaction_hash
             if order_hash_request.transaction_hash
             else None,
         ).model_dump_json()
@@ -1101,15 +1101,12 @@ async def __create_agent_executor(conn: aiosqlite.Connection):
         prompt=SystemMessage(
             "\n".join(
                 [
-                    "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket of tokens.  ",
+                    "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket.  ",
                     "Users can buy, sell, or swap assets in their portfolio.  ",
-                    "Before buying, selling or swapping assets, ALWAYS show the user the intent investment plan you are creating by showing the list of assets to buy, sell or swap.  ",
-                    "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'. Don't use a link when displaying a basket.  ",
-                    "ALWAYS use a tool to fetch a token address when you need it.  ",
+                    "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'.  ",
+                    "ALWAYS use a tool to fetch an asset address when you need it.  ",
                     "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
                     "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
-                    "When an order has a status 'PENDING', it means the order is being processed.  ",
-                    "After each answer, ask the user if he wants to add or remove any asset from the portfolio or if he wants to proceed.  ",
                     "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
                     "Consider all tool parameters optional unless explicitly stated otherwise.",
                     "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  ",
