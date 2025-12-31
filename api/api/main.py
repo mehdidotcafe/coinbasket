@@ -725,7 +725,7 @@ class ConfirmedOrderRequest(BaseModel):
 
 class SignedOrderRequest(BaseModel):
     status: Literal["CONFIRM", "CANCEL"]
-    transaction_hash: str
+    transaction_hash: str | None = None
 
 
 class IntentOrderBalanceRequest(BaseModel):
@@ -898,54 +898,6 @@ async def plan_and_execute_swap_order(
             )
         )
     """
-
-    # planned_order = await plan_order_use_case.execute(await intended_order.to_domain())
-
-    # if planned_order:
-    #     confirmed_order_request = ConfirmedOrderRequest.model_validate(
-    #         interrupt(
-    #             {
-    #                 "ui": {
-    #                     "id": "confirm_planned_order",
-    #                     "args": {
-    #                         "planned_order": planned_order.to_dict(),
-    #                     },
-    #                 },
-    #                 "content": None,
-    #             }
-    #         )
-    #     )
-    #     if confirmed_order_request.status == "CANCEL":
-    #         return PlanAndExecuteOrderResponse.from_domain(
-    #             "Order cancelled by user.",
-    #         ).model_dump_json()
-
-    #     signable_order = await build_signable_order_use_case.execute(
-    #         confirmed_order_request.to_domain()
-    #     )
-
-    #     order_hash_request = SignedOrderRequest.model_validate(
-    #         interrupt(
-    #             {
-    #                 "ui": {
-    #                     "id": "sign_signable_order",
-    #                     "args": {
-    #                         "signable_order": SignableOrderResponse.from_domain(
-    #                             signable_order
-    #                         ),
-    #                     },
-    #                 },
-    #                 "content": None,
-    #             }
-    #         )
-    #     )
-
-    #     if order_hash_request.status == "CANCEL":
-    #         return PlanAndExecuteOrderResponse.from_domain(
-    #             "Order cancelled by user.",
-    #         ).model_dump_json()
-
-    #     print(f"Resulting order hash request: {order_hash_request}")
     planned_order = await plan_order_use_case.execute(await intended_order.to_domain())
 
     if planned_order:
@@ -968,10 +920,8 @@ async def plan_and_execute_swap_order(
                 "Order cancelled by user.",
             ).model_dump_json()
 
-        print(f"Resulting order hash request: {order_hash_request}")
-
         return PlanAndExecuteOrderResponse.from_domain(
-            "Order planned and executed successfully.",
+            "Order executed successfully.",
             order_hash=order_hash_request.transaction_hash
             if order_hash_request.transaction_hash
             else None,
