@@ -4,11 +4,6 @@ from api.chain.balance import Balance
 
 
 @dataclass
-class InvestmentPlanStep:
+class ConfirmedOrder:
     buy_balance: Balance
     sell_balance: Balance
-
-
-@dataclass
-class InvestmentPlan:
-    steps: list[InvestmentPlanStep]

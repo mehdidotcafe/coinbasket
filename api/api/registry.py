@@ -5,6 +5,7 @@ from api.authentication.credential.infrastructure.py_jwt_credential_generator im
 from api.authentication.siwe.infrastructure.siwe_py_siwe_manager import (
     SiwePySiweManager,
 )
+from api.investment.infrastructure.test_exchange import TestExchange
 from pydantic import SecretStr
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
@@ -115,15 +116,19 @@ api_client = ZeroXApiClient(
     http_request=requests_http_request,
 )
 
-exchange = ZeroXSwapper(
-    api_client=api_client,
-    chain=chain,
-    contract=contract,
-    w3=w3,
-    configuration={
-        "bsc_rpc_url": configuration.bsc_rpc_url,
-        "private_key": configuration.bsc_private_key,
-    },
+exchange = (
+    ZeroXSwapper(
+        api_client=api_client,
+        chain=chain,
+        contract=contract,
+        w3=w3,
+        configuration={
+            "bsc_rpc_url": configuration.bsc_rpc_url,
+            "private_key": configuration.bsc_private_key,
+        },
+    )
+    if configuration.app_env != "test"
+    else TestExchange()
 )
 
 langgraph_db_path = (

@@ -6,14 +6,14 @@ from api.investment.exchange.exchange import SignableTransaction
 
 
 @dataclass
-class QuotedInvestmentPlanStep:
+class SignableOrder:
     buy_balance: BalanceAtomic
     sell_balance: BalanceAtomic
     signature_payload: dict[str, Any] | None
     transaction: SignableTransaction
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the QuotedInvestmentPlanStep to a dictionary."""
+        """Convert the SignableOrder to a dictionary."""
         return {
             "buy_balance": self.buy_balance.to_dict(),
             "sell_balance": self.sell_balance.to_dict(),

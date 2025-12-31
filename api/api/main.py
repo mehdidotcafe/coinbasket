@@ -35,28 +35,16 @@ from api.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_data_sou
     MemecoinManiaBasketDataSource,
 )
 from api.ingestion.ingest_data_use_case import IngestDataUseCase
-from api.investment.build_priced_investment_plan_use_case import (
-    BuildPricedInvestmentPlanUseCase,
+from api.investment.confirmed_order import ConfirmedOrder
+from api.investment.intended_order import IntendedOrder, IntendedOrderBalance
+from api.investment.plan_order_use_case import (
+    PlanOrderUseCase,
 )
-from api.investment.build_quoted_investment_plan_step_use_case import (
-    BuildQuotedInvestmentPlanStepUseCase,
+from api.investment.build_signable_order_use_case import (
+    BuildSignableOrderUseCase,
 )
-from api.investment.execute_investment_plan_use_case import (
-    ExecuteInvestmentPlanUseCase,
-)
+
 from api.investment.fees import Fees
-from api.investment.investment_planner.intent_investment_plan import (
-    IntentInvestmentPlan,
-    IntentInvestmentPlanStep,
-    IntentInvestmentPlanBalance,
-)
-from api.investment.investment_planner.investment_plan import (
-    InvestmentPlan,
-    InvestmentPlanStep,
-)
-from api.investment.investment_planner.quoted_investment_plan_step import (
-    QuotedInvestmentPlanStep,
-)
 
 from api.investment.order.order import (
     ChainTransaction,
@@ -68,6 +56,7 @@ from api.investment.order.order import (
     OrderType,
     Try,
 )
+from api.investment.signable_order import SignableOrder
 from api.portfolio.get_portfolio_asset_balance_use_case import (
     GetPortfolioAssetBalanceUseCase,
     PortfolioAssetBalance,
@@ -100,7 +89,6 @@ from api.registry import (
     id_generator,
     order_repository,
     posting_repository,
-    order_submitter,
     langgraph_db_path,
     nonce_manager,
     asset_balance_converter,
@@ -168,27 +156,14 @@ get_conversation_messages_use_case = GetConversationMessagesUseCase(
 )
 
 
-build_priced_investment_plan_use_case = BuildPricedInvestmentPlanUseCase(
+plan_order_use_case = PlanOrderUseCase(
     exchange=exchange,
     chain=chain,
     posting_repository=posting_repository,
     asset_balance_converter=asset_balance_converter,
 )
 
-build_quoted_investment_plan_step_use_case = BuildQuotedInvestmentPlanStepUseCase(
-    exchange=exchange
-)
-
-execute_investment_plan_use_case = ExecuteInvestmentPlanUseCase(
-    id_generator=id_generator,
-    date_time=date_time,
-    chain=chain,
-    order_submitter=order_submitter,
-    exchange=exchange,
-    posting_repository=posting_repository,
-    asset_balance_converter=asset_balance_converter,
-)
-
+build_signable_order_use_case = BuildSignableOrderUseCase(exchange=exchange)
 
 get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
     chain=chain,
@@ -270,7 +245,7 @@ async def credential_authentication_middleware(request: Request, call_next):
         "/auth/verify",
         "/health",
         "/docs",
-        "/openapi.json",
+        "/openapi",
     ]
 
     if not request.method == "OPTIONS" and not any(
@@ -737,33 +712,23 @@ class BalanceRequest(BaseModel):
         )
 
 
-class InvestmentPlanStepRequest(BaseModel):
+class ConfirmedOrderRequest(BaseModel):
     buy_balance: BalanceRequest
     sell_balance: BalanceRequest
 
-    def to_domain(self) -> InvestmentPlanStep:
-        """Convert the request to an InvestmentPlanStep."""
-        return InvestmentPlanStep(
+    def to_domain(self) -> ConfirmedOrder:
+        return ConfirmedOrder(
             buy_balance=self.buy_balance.to_domain(),
             sell_balance=self.sell_balance.to_domain(),
         )
 
 
-class InvestmentPlanRequest(BaseModel):
+class SignedOrderRequest(BaseModel):
     status: Literal["CONFIRM", "CANCEL"]
-    steps: list[InvestmentPlanStepRequest]
-
-    def to_domain(self) -> InvestmentPlan:
-        steps = [step.to_domain() for step in self.steps]
-        return InvestmentPlan(steps=steps)
+    transaction_hash: list[str]
 
 
-class QuoteConfirmationRequest(BaseModel):
-    status: Literal["CONFIRM", "CANCEL"]
-    transaction_hashes: list[str]
-
-
-class IntentInvestmentPlanBalanceRequest(BaseModel):
+class IntentOrderBalanceRequest(BaseModel):
     asset_id: str
     amount: str | None = None
 
@@ -795,7 +760,7 @@ class IntentInvestmentPlanBalanceRequest(BaseModel):
             if not asset:
                 raise ValueError(f"Asset id {self.asset_id} not found")
 
-        return IntentInvestmentPlanBalance(
+        return IntendedOrderBalance(
             asset=asset,
             amount=Decimal(self.amount)
             if self.amount
@@ -805,9 +770,9 @@ class IntentInvestmentPlanBalanceRequest(BaseModel):
         )
 
 
-class IntentInvestmentPlanStepRequest(BaseModel):
-    buy_asset_with_amount: IntentInvestmentPlanBalanceRequest | None = None
-    sell_asset_with_amount: IntentInvestmentPlanBalanceRequest | None = None
+class IntentOrderRequest(BaseModel):
+    buy_asset_with_amount: IntentOrderBalanceRequest | None = None
+    sell_asset_with_amount: IntentOrderBalanceRequest | None = None
 
     @root_validator(pre=True)
     def at_least_one_asset(cls, values: dict[str, Any]):
@@ -834,7 +799,7 @@ class IntentInvestmentPlanStepRequest(BaseModel):
         return values
 
     async def to_domain(self):
-        return IntentInvestmentPlanStep(
+        return IntendedOrder(
             buy_asset_with_amount=await self.buy_asset_with_amount.to_domain()
             if self.buy_asset_with_amount
             else None,
@@ -844,30 +809,17 @@ class IntentInvestmentPlanStepRequest(BaseModel):
         )
 
 
-class IntentInvestmentPlanRequest(BaseModel):
-    steps: list[IntentInvestmentPlanStepRequest]
-
-    async def to_domain(self) -> IntentInvestmentPlan:
-        """Convert the IntentInvestmentPlan to a dictionary."""
-        return IntentInvestmentPlan(
-            steps=[await step.to_domain() for step in self.steps]
-        )
-
-
-class InvestmentPlanResponse(BaseModel):
+class PlanAndExecuteOrderResponse(BaseModel):
     message: str
-    orders: list[list[OrderResponse]]
+    order_hash: str | None = None
 
     @staticmethod
     def from_domain(
-        message: str, orders: list[list[Order]]
-    ) -> "InvestmentPlanResponse":
-        return InvestmentPlanResponse(
+        message: str, order_hash: str | None = None
+    ) -> "PlanAndExecuteOrderResponse":
+        return PlanAndExecuteOrderResponse(
             message=message,
-            orders=[
-                [OrderResponse.from_domain(order) for order in order_group]
-                for order_group in orders
-            ],
+            order_hash=order_hash,
         )
 
 
@@ -891,7 +843,7 @@ class SignableTransactionResponse(BaseModel):
     to_address: str | None = None
 
 
-class InvestmentPlanQuotedStepResponse(BaseModel):
+class SignableOrderResponse(BaseModel):
     buy_balance: BalanceAtomicResponse
     sell_balance: BalanceAtomicResponse
     transaction: SignableTransactionResponse
@@ -899,9 +851,9 @@ class InvestmentPlanQuotedStepResponse(BaseModel):
 
     @staticmethod
     def from_domain(
-        domain: QuotedInvestmentPlanStep,
-    ) -> "InvestmentPlanQuotedStepResponse":
-        return InvestmentPlanQuotedStepResponse(
+        domain: SignableOrder,
+    ) -> "SignableOrderResponse":
+        return SignableOrderResponse(
             buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
             sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
             signature_payload=domain.signature_payload,
@@ -918,94 +870,92 @@ class InvestmentPlanQuotedStepResponse(BaseModel):
 
 
 @tool(parse_docstring=True)
-async def execute_intent_investment_plan_use_case(
-    intent_investment_plan: IntentInvestmentPlanRequest,
+async def plan_and_execute_swap_order(
+    intended_order: IntentOrderRequest,
 ):
-    """Executes the intent investment plan.
+    """Executes the intent order.
     If no buy_asset, buy_asset_amount, sell_asset or sell_asset_amount is provided set the field to None.
     Pass asset_id as they are don't change them.
     IMPORTANT: You can make a swap by providing both a buy_asset_with_amount and a sell_asset_with_amount in the same step.
     IMPORTANT: You don't need to know the amount to buy or sell an asset in advance. You can leave the amount fields empty (set to None) and the agent will decide the amount to buy or sell based on the available cash and holdings.
-    IMPORTANT: Do not call this tool more than once.
     IMPORTANT: Do not call another tool if this returns results.
 
     Args:
-        intent_investment_plan (IntentInvestmentPlanRequest): The intent investment plan containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided. A step can have an asset without an amount defined. A step can have a buy and sell asset defined.
+        intended_order (IntentOrderRequest): The intent order containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided.
 
     Returns:
-        list[InvestmentPlanResponse]: A list of submitted orders for the assets in the investment plan. The list will be empty is user cancels the investment plan.
+        PlanAndExecuteOrderResponse: The response containing the message and order hash.
 
     Example:
-        IntentInvestmentPlanRequest(
-            steps=[
-                IntentInvestmentPlanStepRequest(
-                    buy_asset_with_amount=IntentInvestmentPlanBalanceRequest(
-                        asset_id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
-                        amount="5.33",
-                    ),
-                    sell_asset_with_amount=IntentInvestmentPlanBalanceRequest(
-                        asset_id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                        amount="10.95",
-                    ),
-                ),
-                IntentInvestmentPlanStepRequest(
-                    buy_asset_with_amount=None,
-                    sell_asset_with_amount=IntentInvestmentPlanBalanceRequest(
-                        asset_id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                        amount=None,
-                    ),
-                ),
-                IntentInvestmentPlanStepRequest(
-                    buy_asset_with_amount=IntentInvestmentPlanBalanceRequest(
-                        asset_id="bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-                        amount="1028983",
-                    ),
-                    sell_asset_with_amount=None,
-                ),
-            ],
+        IntentOrderRequest(
+            buy_asset_with_amount=IntentOrderBalanceRequest(
+                asset_id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
+                amount="5.33",
+            ),
+            sell_asset_with_amount=IntentOrderBalanceRequest(
+                asset_id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                amount="10.95",
+            )
         )
     """
 
-    priced_investment_plan = await build_priced_investment_plan_use_case.execute(
-        await intent_investment_plan.to_domain()
-    )
+    # planned_order = await plan_order_use_case.execute(await intended_order.to_domain())
 
-    investment_plan_as_dict = interrupt(
-        {
-            "ui": {
-                "id": "prepare_investment_plan",
-                "args": {
-                    "priced_investment_plan": priced_investment_plan.to_dict(),
-                },
-            },
-            "content": None,
-        }
-    )
+    # if planned_order:
+    #     confirmed_order_request = ConfirmedOrderRequest.model_validate(
+    #         interrupt(
+    #             {
+    #                 "ui": {
+    #                     "id": "confirm_planned_order",
+    #                     "args": {
+    #                         "planned_order": planned_order.to_dict(),
+    #                     },
+    #                 },
+    #                 "content": None,
+    #             }
+    #         )
+    #     )
+    #     if confirmed_order_request.status == "CANCEL":
+    #         return PlanAndExecuteOrderResponse.from_domain(
+    #             "Order cancelled by user.",
+    #         ).model_dump_json()
 
-    investment_plan_request = InvestmentPlanRequest.model_validate(
-        investment_plan_as_dict["investment_plan"]
-    )
+    #     signable_order = await build_signable_order_use_case.execute(
+    #         confirmed_order_request.to_domain()
+    #     )
 
-    if investment_plan_request.status == "CANCEL":
-        return InvestmentPlanResponse.from_domain(
-            "Investment plan successfully cancelled by the user. Don't try to invest in the investment plan again.",
-            [],
-        ).model_dump_json()
+    #     order_hash_request = SignedOrderRequest.model_validate(
+    #         interrupt(
+    #             {
+    #                 "ui": {
+    #                     "id": "sign_signable_order",
+    #                     "args": {
+    #                         "signable_order": SignableOrderResponse.from_domain(
+    #                             signable_order
+    #                         ),
+    #                     },
+    #                 },
+    #                 "content": None,
+    #             }
+    #         )
+    #     )
 
-    investment_plan = investment_plan_request.to_domain()
+    #     if order_hash_request.status == "CANCEL":
+    #         return PlanAndExecuteOrderResponse.from_domain(
+    #             "Order cancelled by user.",
+    #         ).model_dump_json()
 
-    for step in investment_plan.steps:
-        quoted_step = await build_quoted_investment_plan_step_use_case.execute(step)
+    #     print(f"Resulting order hash request: {order_hash_request}")
+    planned_order = await plan_order_use_case.execute(await intended_order.to_domain())
 
-        _quote_confirmation_request = QuoteConfirmationRequest.model_validate(
+    if planned_order:
+        order_hash_request = SignedOrderRequest.model_validate(
             interrupt(
                 {
                     "ui": {
-                        "id": "sign_investment_plan_step",
+                        "id": "confirm_planned_order",
                         "args": {
-                            "quoted_investment_plan_step": InvestmentPlanQuotedStepResponse.from_domain(
-                                quoted_step
-                            ),
+                            "planned_order": planned_order.to_dict(),
                         },
                     },
                     "content": None,
@@ -1013,16 +963,26 @@ async def execute_intent_investment_plan_use_case(
             )
         )
 
-    return InvestmentPlanResponse.from_domain(
-        "Investment plan and orders have been submitted successfully.", []
-    ).model_dump_json()
+        if order_hash_request.status == "CANCEL":
+            return PlanAndExecuteOrderResponse.from_domain(
+                "Order cancelled by user.",
+            ).model_dump_json()
+
+        print(f"Resulting order hash request: {order_hash_request}")
+
+        return PlanAndExecuteOrderResponse.from_domain(
+            "Order planned and executed successfully.",
+            order_hash=order_hash_request.transaction_hash[0]
+            if order_hash_request.transaction_hash
+            else None,
+        ).model_dump_json()
 
 
 coinbasket_tools = [
     get_baskets_from_query,
     get_tokens_from_query,
     get_all_available_baskets,
-    execute_intent_investment_plan_use_case,
+    plan_and_execute_swap_order,
     get_agent_address,
     get_available_cash,
     get_token_or_basket_or_asset_holding,
@@ -1306,6 +1266,52 @@ async def get_asset_swap_price(req: AssetSwapPriceInfoRequest):
     return ConvertedBalanceResponse.from_domain(converted_balance)
 
 
+@openapi(
+    spec=spec,
+    schemas=[
+        BasketRequest,
+        BalanceRequest,
+        ConfirmedOrderRequest,
+        SignableTransactionResponse,
+        SignableOrderResponse,
+    ],
+    path="/order/signable",
+    operations={
+        "post": {
+            "summary": "Build a signable order from a confirmed order",
+            "tags": ["Order"],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/json": {
+                        "schema": {"$ref": "#/components/schemas/ConfirmedOrderRequest"}
+                    }
+                },
+            },
+            "responses": {
+                "200": {
+                    "description": "Signable order ready for signing",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignableOrderResponse"
+                            }
+                        }
+                    },
+                },
+                "401": invalid_authentication_credential,
+            },
+        }
+    },
+)
+@app.post("/order/signable")
+async def build_signable_order(req: ConfirmedOrderRequest):
+    """Build a signable order from a confirmed order."""
+    signable_order = await build_signable_order_use_case.execute(req.to_domain())
+
+    return SignableOrderResponse.from_domain(signable_order)
+
+
 class AuthResponse(BaseModel):
     status: str
 
@@ -1348,7 +1354,7 @@ class AuthVerifyResponse(BaseModel):
 
 @openapi(
     spec=spec,
-    schemas=[AuthVerifyResponse, ErrorResponse],
+    schemas=[AuthVerifyRequest, AuthVerifyResponse, ErrorResponse],
     path="/auth/verify",
     operations={
         "get": {
@@ -1461,7 +1467,7 @@ class AuthNonceResponse(BaseModel):
     },
 )
 @app.get("/auth/nonce")
-async def generate_auth_nonce() -> AuthNonceResponse:
+async def generate_auth_nonce():
     nonce = generate_auth_nonce_use_case.execute()
 
     response = JSONResponse(content=AuthNonceResponse(nonce=nonce).model_dump())
