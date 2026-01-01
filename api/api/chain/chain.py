@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from api.address.address import Address
 from api.protocol.asset import Asset
 from api.protocol.token import Token
 
@@ -61,17 +62,20 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_native_token_balance(self) -> BalanceAtomic[Token]:
+    async def get_native_token_balance(self, address: Address) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod
     async def get_native_token_available_balance(
         self,
+        address: Address,
     ) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_token_balance(self, token: Token) -> BalanceAtomic[Token]:
+    async def get_token_balance(
+        self, address: Address, token: Token
+    ) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
     @abstractmethod

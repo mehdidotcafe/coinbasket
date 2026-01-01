@@ -1,11 +1,11 @@
 from decimal import Decimal
 from api.investment.exchange.exchange import Exchange
-from api.investment.investment_planner.investment_plan import (
-    InvestmentPlanStep,
+from api.investment.confirmed_order import (
+    ConfirmedOrder,
 )
 from api.investment.investment_parameters import InvestmentParameters
-from api.investment.investment_planner.quoted_investment_plan_step import (
-    QuotedInvestmentPlanStep,
+from api.investment.signable_order import (
+    SignableOrder,
 )
 
 
@@ -14,18 +14,18 @@ investment_parameters = InvestmentParameters(
 )
 
 
-class BuildQuotedInvestmentPlanStepUseCase:
+class BuildSignableOrderUseCase:
     def __init__(self, exchange: Exchange):
         self.exchange = exchange
 
-    async def execute(self, step: InvestmentPlanStep):
+    async def execute(self, confirmed_order: ConfirmedOrder):
         signed_swap = await self.exchange.get_signable_swap(
-            sell_balance=step.sell_balance,
-            buy_balance=step.buy_balance,
+            sell_balance=confirmed_order.sell_balance,
+            buy_balance=confirmed_order.buy_balance,
             investment_parameters=investment_parameters,
         )
 
-        return QuotedInvestmentPlanStep(
+        return SignableOrder(
             buy_balance=signed_swap.buy_balance,
             sell_balance=signed_swap.sell_balance,
             signature_payload=signed_swap.signature_payload,

@@ -1,0 +1,56 @@
+# serializer version: 1
+# name: test_integration_order_signable_success
+  dict({
+    'buy_balance': dict({
+      'amount': '1.0',
+      'amount_atomic': '1000000000000000000.0',
+      'asset': dict({
+        'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+        'categories': list([
+          'BNB Chain Ecosystem',
+          'Binance-Peg Tokens',
+        ]),
+        'decimals': 18,
+        'description': 'Binance pegged Ethereum token',
+        'display_name': 'Ethereum',
+        'id': 'bsc:0x2170ed0880ac9a755fd29b2688956bd959f933f8',
+        'logo_uri': 'https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
+        'name': 'Binance Ethereum',
+        'ticker': 'ETH',
+      }),
+      'decimals': 18,
+    }),
+    'sell_balance': dict({
+      'amount': '0.5',
+      'amount_atomic': '500000000000000000.0',
+      'asset': dict({
+        'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+        'categories': list([
+          'Crypto-Backed Tokens',
+          'BNB Chain Ecosystem',
+          'Harmony Ecosystem',
+        ]),
+        'decimals': 18,
+        'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",
+        'display_name': 'Bitcoin',
+        'id': 'bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c',
+        'logo_uri': 'https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png',
+        'name': 'Binance Bitcoin',
+        'ticker': 'BTC',
+      }),
+      'decimals': 18,
+    }),
+    'signature_payload': dict({
+      'example_signature_field': 'example_signature_value',
+    }),
+    'transaction': dict({
+      'amount': '1000000',
+      'data': dict({
+        'example_field': 'example_value',
+      }),
+      'gas': None,
+      'to_address': None,
+      'type': 'SIGN',
+    }),
+  })
+# ---

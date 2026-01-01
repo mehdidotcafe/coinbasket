@@ -56,7 +56,9 @@ class CoinGeckoToken(BaseModel):
             description="",
             decimals=self.decimals,
             categories=[],
-            logo_uri=self.logoURI,
+            logo_uri=self.logoURI.replace("/thumb/", "/small/")
+            if self.logoURI
+            else None,
         )
 
 

@@ -6,12 +6,12 @@ from api.protocol.asset import Asset
 
 
 @dataclass
-class IntentInvestmentPlanBalance:
+class IntendedOrderBalance:
     asset: Asset
     amount: Decimal | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the IntentInvestmentPlanBalance to a dictionary."""
+        """Convert the IntendedOrderBalance to a dictionary."""
         return {
             "asset": self.asset.to_dict(),
             "amount": format(self.amount, "f") if self.amount is not None else None,
@@ -19,12 +19,12 @@ class IntentInvestmentPlanBalance:
 
 
 @dataclass
-class IntentInvestmentPlanStep:
-    buy_asset_with_amount: IntentInvestmentPlanBalance | None = None
-    sell_asset_with_amount: IntentInvestmentPlanBalance | None = None
+class IntendedOrder:
+    buy_asset_with_amount: IntendedOrderBalance | None = None
+    sell_asset_with_amount: IntendedOrderBalance | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the IntentInvestmentPlanStep to a dictionary."""
+        """Convert the IntentOrder to a dictionary."""
         return {
             "buy_asset_with_amount": self.buy_asset_with_amount.to_dict()
             if self.buy_asset_with_amount
@@ -33,12 +33,3 @@ class IntentInvestmentPlanStep:
             if self.sell_asset_with_amount
             else None,
         }
-
-
-@dataclass
-class IntentInvestmentPlan:
-    steps: list[IntentInvestmentPlanStep]
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert the IntentInvestmentPlan to a dictionary."""
-        return {"steps": [step.to_dict() for step in self.steps]}

@@ -13,65 +13,14 @@ credential = env.str("TEST_CREDENTIAL")
 
 
 @fixture
-def investment_plan() -> dict[str, Any]:
+def signed_order_request() -> dict[str, Any]:
     return {
-        "investment_plan": {
-            "status": "CONFIRM",
-            "steps": [
-                {
-                    "buy_balance": {
-                        "asset": {
-                            "id": "c0e724d3-c4d0-4bd0-973d-edd3907ecf51",
-                            "description": "A basket of memecoins",
-                            "name": "Memecoin Mania",
-                            "display_name": "Memecoin Mania",
-                            "ticker": "MEME",
-                            "denomination": "0.1",
-                            "tokens": [
-                                {
-                                    "id": "bsc:0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-                                    "name": "Dogecoin",
-                                    "display_name": "Dogecoin",
-                                    "ticker": "DOGE",
-                                    "address": "0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
-                                    "decimals": 8,
-                                    "categories": ["meme", "dog"],
-                                    "description": "A popular meme coin",
-                                },
-                                {
-                                    "id": "bsc:0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
-                                    "name": "Shiba Inu",
-                                    "display_name": "Shiba Inu",
-                                    "ticker": "SHIB",
-                                    "address": "0x2859e4544C4bB03966803b044A93563Bd2D0DD4D",
-                                    "decimals": 18,
-                                    "categories": ["meme", "dog"],
-                                    "description": "Another popular meme coin",
-                                },
-                            ],
-                        },
-                        "amount": "10.95",
-                    },
-                    "sell_balance": {
-                        "asset": {
-                            "id": "bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                            "name": "Binance Coin",
-                            "display_name": "Binance Coin",
-                            "ticker": "BNB",
-                            "address": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                            "decimals": 18,
-                            "categories": ["native"],
-                            "description": "The native token of BNB Chain",
-                        },
-                        "amount": "15.95",
-                    },
-                }
-            ],
-        }
+        "status": "CONFIRM",
+        "transaction_hash": "0x123456789abcdef",
     }
 
 
-def test_integration_conversation_buy_basket_and_token_invalid_credential():
+def test_integration_conversation_invalid_credential():
     response = requests.post(
         f"http://localhost:{app_port}/conversation",
         cookies={"credential": f"{credential}_invalid"},
@@ -81,7 +30,7 @@ def test_integration_conversation_buy_basket_and_token_invalid_credential():
                     id="42",
                     is_resuming=False,
                     role="user",
-                    content="Please invest in your memecoin mania basket and in bitcoin. Don't ask for fund allocation.",
+                    content="Please invest in bitcoin. Don't ask for fund allocation.",
                     created_at="2023-10-01",
                 )
             ),
@@ -92,8 +41,8 @@ def test_integration_conversation_buy_basket_and_token_invalid_credential():
     assert response.status_code == 401
 
 
-def test_integration_conversation_buy_basket_and_token(
-    investment_plan: dict[str, Any],
+def test_integration_conversation(
+    signed_order_request: dict[str, Any],
     cleanup_all: Any,  # noqa: F811
     snapshot,
 ):
@@ -106,7 +55,7 @@ def test_integration_conversation_buy_basket_and_token(
                     id="42",
                     is_resuming=False,
                     role="user",
-                    content="Please invest in your memecoin mania basket and in bitcoin. Don't ask for fund allocation.",
+                    content="Please invest in bitcoin. Don't ask for fund allocation.",
                     created_at="2023-10-01",
                 )
             ),
@@ -147,22 +96,28 @@ def test_integration_conversation_buy_basket_and_token(
         assert response_2_json["content"] is None
 
         assert response_2_json["ui"] == snapshot(
+            name="ethereum",
             exclude=paths(
-                "args.priced_investment_plan.steps.0.sell_asset_with_amount.amount",
-                "args.priced_investment_plan.steps.1.sell_asset_with_amount.amount",
-                "args.priced_investment_plan.steps.0.buy_asset_with_amount.amount",
-                "args.priced_investment_plan.steps.1.buy_asset_with_amount.amount",
-            )
+                "args.planned_order.sell_asset_with_amount.amount",
+                "args.planned_order.sell_asset_with_amount.amount",
+                "args.planned_order.sell_asset_with_amount.available_amount",
+                "args.planned_order.buy_asset_with_amount.amount",
+                "args.planned_order.buy_asset_with_amount.amount",
+                "args.planned_order.buy_asset_with_amount.available_amount",
+            ),
         )
     else:
         assert response_1_json["content"] is None
         assert response_1_json["ui"] == snapshot(
+            name="ethereum",
             exclude=paths(
-                "args.priced_investment_plan.steps.0.sell_asset_with_amount.amount",
-                "args.priced_investment_plan.steps.1.sell_asset_with_amount.amount",
-                "args.priced_investment_plan.steps.0.buy_asset_with_amount.amount",
-                "args.priced_investment_plan.steps.1.buy_asset_with_amount.amount",
-            )
+                "args.planned_order.sell_asset_with_amount.amount",
+                "args.planned_order.sell_asset_with_amount.amount"
+                "args.planned_order.sell_asset_with_amount.available_amount",
+                "args.planned_order.buy_asset_with_amount.amount",
+                "args.planned_order.buy_asset_with_amount.amount",
+                "args.planned_order.buy_asset_with_amount.available_amount",
+            ),
         )
 
     response_3 = requests.post(
@@ -174,7 +129,7 @@ def test_integration_conversation_buy_basket_and_token(
                     id="42",
                     is_resuming=True,
                     role="user",
-                    content=json.dumps(investment_plan),
+                    content=json.dumps(signed_order_request),
                     created_at="2023-10-01",
                 )
             ),
