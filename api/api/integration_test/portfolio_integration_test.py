@@ -3,7 +3,7 @@ from api.chain.balance import BalanceAtomic
 from api.investment.order.order import Order
 from api.investment.transaction.transaction import Transaction
 from api.portfolio.posting.posting import Posting
-from pytest import fixture
+from pytest import fixture, mark
 from api.protocol.fixture.token import (
     sol_token,
     eth_token,
@@ -231,6 +231,7 @@ def test_integration_get_portfolio_invalid_credential():
 
 
 # TODO: Enhance this test once zero_x API is mocked in integration tests
+@mark.skip(reason="Portfolio management is currently disabled")
 def test_integration_get_portfolio(seed_fixtures, cleanup_all, snapshot):  # noqa: F811
     response = requests.post(
         f"http://localhost:{app_port}/portfolio",

@@ -746,7 +746,7 @@ class IntentOrderBalanceRequest(BaseModel):
     async def to_domain(self):
         asset = None
 
-        # TODO: Handle test case more elegantly
+        # TODO: BIG SMELL. Handle test case more elegantly
         if configuration.app_env == "test":
             asset = (
                 btc_token

@@ -87,7 +87,9 @@ class QdrantLangChainSimilarityStorage(SimilarityStorage):
         return [
             self.__map_document_to_similarity_document(doc)
             for doc in await self.qdrant.asimilarity_search(
-                query, 10, filter=qdrant_filters
+                query,
+                10,
+                filter=qdrant_filters,
             )
         ]
 
