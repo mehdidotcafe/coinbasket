@@ -6,6 +6,9 @@ from api.authentication.siwe.infrastructure.siwe_py_siwe_manager import (
     SiwePySiweManager,
 )
 from api.investment.infrastructure.test_exchange import TestExchange
+from api.portfolio.holding.infrastructure.bsc_chain_holding_repository import (
+    BscChainHoldingRepository,
+)
 from pydantic import SecretStr
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
@@ -153,6 +156,9 @@ transaction_repository = SqlAlchemyTransactionRepository(
 )
 posting_repository = SqlAlchemyPostingRepository(
     AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+holding_repository = BscChainHoldingRepository(
+    chain=chain,
 )
 
 conversation_repository = LangchainSqliteConversationRepository(

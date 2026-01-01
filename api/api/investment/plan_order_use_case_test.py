@@ -1,4 +1,5 @@
 from unittest import mock
+from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
 from api.investment.plan_order_use_case import (
@@ -19,7 +20,7 @@ from api.investment.planned_order import (
     PlannedOrderBalance,
 )
 from api.portfolio.holding.holding import Holding
-from api.portfolio.posting.posting_repository import PostingRepository
+from api.portfolio.holding.holding_repository import HoldingRepository
 from pytest import fixture, mark
 from api.protocol.fixture.token import eth_token, bnb_token, usdt_token, btc_token
 from api.protocol.fixture.basket import big4_basket, test_basket
@@ -51,8 +52,8 @@ def chain():
 
 
 @fixture
-def posting_repository():
-    return mock.Mock(spec=PostingRepository)
+def holding_repository():
+    return mock.Mock(spec=HoldingRepository)
 
 
 @fixture
@@ -61,24 +62,30 @@ def asset_balance_converter():
 
 
 @fixture
+def address():
+    return Address("0x1234567890abcdef1234567890abcdef12345678")
+
+
+@fixture
 def use_case(
     exchange: Exchange,
     chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     asset_balance_converter: AssetBalanceConverter,
 ):
     return PlanOrderUseCase(
         exchange=exchange,
         chain=chain,
-        posting_repository=posting_repository,
+        holding_repository=holding_repository,
         asset_balance_converter=asset_balance_converter,
     )
 
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_defined_sell_token_amount(
+    address: Address,
     asset_balance_converter: AssetBalanceConverter,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -92,7 +99,7 @@ async def test_plan_order_use_case_execute_defined_sell_token_amount(
         ),
     )
 
-    posting_repository.get_holding_balances.return_value = []
+    holding_repository.get_holding_balances.return_value = []
 
     asset_balance_converter.convert.return_value = ConvertedAssetBalance(
         total_balance=ConvertedBalance(
@@ -112,7 +119,7 @@ async def test_plan_order_use_case_execute_defined_sell_token_amount(
         balances=[],
     )
 
-    planned_order = await use_case.execute(intended_order)
+    planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order == PlannedOrder(
         buy_asset_with_amount=PlannedOrderBalance(
@@ -128,8 +135,9 @@ async def test_plan_order_use_case_execute_defined_sell_token_amount(
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_defined_buy_token_amount(
+    address: Address,
     exchange: Exchange,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -144,7 +152,7 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
         ),
     )
 
-    posting_repository.get_holding_balances.return_value = []
+    holding_repository.get_holding_balances.return_value = []
     exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
         buy_balance=BalanceAtomic(
             asset=eth_token,
@@ -160,7 +168,7 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
         ),
     )
 
-    planned_order = await use_case.execute(intended_order)
+    planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order == PlannedOrder(
         buy_asset_with_amount=PlannedOrderBalance(
@@ -176,7 +184,8 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_same_sell_and_buy_asset(
-    posting_repository: PostingRepository,
+    address: Address,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -190,18 +199,19 @@ async def test_plan_order_use_case_execute_same_sell_and_buy_asset(
         ),
     )
 
-    posting_repository.get_holding_balances.return_value = []
+    holding_repository.get_holding_balances.return_value = []
 
-    planned_order = await use_case.execute(intended_order)
+    planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order is None
 
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_not_defined_tokens(
+    address: Address,
     exchange: Exchange,
     chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -209,10 +219,10 @@ async def test_plan_order_use_case_execute_not_defined_tokens(
         sell_asset_with_amount=None,
     )
 
-    posting_repository.get_holding_balances.return_value = []
+    holding_repository.get_holding_balances.return_value = []
     chain.get_base_token.return_value = bnb_token
 
-    planned_order = await use_case.execute(intended_order)
+    planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order is None
 
@@ -221,9 +231,10 @@ async def test_plan_order_use_case_execute_not_defined_tokens(
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_not_defined_sell_token(
+    address: Address,
     exchange: Exchange,
     chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -234,10 +245,10 @@ async def test_plan_order_use_case_execute_not_defined_sell_token(
         sell_asset_with_amount=None,
     )
 
-    posting_repository.get_holding_balances.return_value = []
+    holding_repository.get_holding_balances.return_value = []
     chain.get_base_token.return_value = bnb_token
 
-    planned_order = await use_case.execute(intended_order)
+    planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order == PlannedOrder(
         buy_asset_with_amount=PlannedOrderBalance(
@@ -255,9 +266,10 @@ async def test_plan_order_use_case_execute_not_defined_sell_token(
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_not_defined_buy_token(
+    address: Address,
     exchange: Exchange,
     chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -268,10 +280,10 @@ async def test_plan_order_use_case_execute_not_defined_buy_token(
         ),
     )
 
-    posting_repository.get_holding_balances.return_value = []
+    holding_repository.get_holding_balances.return_value = []
     chain.get_base_token.return_value = bnb_token
 
-    planned_order = await use_case.execute(intended_order)
+    planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order == PlannedOrder(
         buy_asset_with_amount=PlannedOrderBalance(
@@ -289,8 +301,9 @@ async def test_plan_order_use_case_execute_not_defined_buy_token(
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_defined_buy_basket_amount(
+    address: Address,
     exchange: Exchange,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -304,7 +317,7 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
         ),
     )
 
-    posting_repository.get_holding_balances.return_value = []
+    holding_repository.get_holding_balances.return_value = []
     exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
             asset=usdt_token,
@@ -321,7 +334,7 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
     )
 
     try:
-        await use_case.execute(intended_order)
+        await use_case.execute(address, intended_order)
         assert False, "Expected exception for basket not supported"
     except Exception as e:
         assert str(e) == "Baskets are not supported in investment plans."
@@ -329,8 +342,9 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_defined_sell_basket_amount(
+    address: Address,
     asset_balance_converter: AssetBalanceConverter,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -344,7 +358,7 @@ async def test_plan_order_use_case_execute_defined_sell_basket_amount(
         ),
     )
 
-    posting_repository.get_holding_balances.return_value = [
+    holding_repository.get_holding_balances.return_value = [
         Holding(
             balance=BalanceAtomic(
                 asset=test_basket,
@@ -388,7 +402,7 @@ async def test_plan_order_use_case_execute_defined_sell_basket_amount(
     )
 
     try:
-        await use_case.execute(intended_order)
+        await use_case.execute(address, intended_order)
         assert False, "Expected exception for basket not supported"
     except Exception as e:
         assert str(e) == "Baskets are not supported in investment plans."
@@ -396,9 +410,9 @@ async def test_plan_order_use_case_execute_defined_sell_basket_amount(
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_available_amount_defined(
+    address: Address,
     exchange: Exchange,
-    chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
@@ -412,13 +426,7 @@ async def test_plan_order_use_case_execute_available_amount_defined(
         ),
     )
 
-    chain.get_native_token_balance.return_value = BalanceAtomic(
-        asset=bnb_token,
-        amount=Decimal("5000"),
-        amount_atomic=5000 * 10**18,
-        decimals=18,
-    )
-    posting_repository.get_holding_balances.return_value = [
+    holding_repository.get_holding_balances.return_value = [
         Holding(
             balance=BalanceAtomic(
                 asset=usdt_token,
@@ -427,7 +435,16 @@ async def test_plan_order_use_case_execute_available_amount_defined(
                 decimals=18,
             ),
             children=None,
-        )
+        ),
+        Holding(
+            balance=BalanceAtomic(
+                asset=bnb_token,
+                amount=Decimal("5000"),
+                amount_atomic=5000 * 10**18,
+                decimals=18,
+            ),
+            children=None,
+        ),
     ]
     exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
@@ -444,7 +461,7 @@ async def test_plan_order_use_case_execute_available_amount_defined(
         ),
     )
 
-    planned_order = await use_case.execute(intended_order)
+    planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order is not None
 
@@ -454,4 +471,4 @@ async def test_plan_order_use_case_execute_available_amount_defined(
     assert planned_order.sell_asset_with_amount is not None
     assert planned_order.sell_asset_with_amount.available_amount == Decimal("80000")
 
-    posting_repository.get_holding_balances.assert_called_once()
+    holding_repository.get_holding_balances.assert_called_once()

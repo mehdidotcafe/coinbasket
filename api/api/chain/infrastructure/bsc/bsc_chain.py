@@ -1,6 +1,7 @@
 from decimal import ROUND_DOWN, Decimal
 import json
 from typing import TypedDict, cast
+from api.address.address import Address
 from eth_typing import HexStr
 from eth_account.signers.local import LocalAccount
 from hexbytes import HexBytes
@@ -102,9 +103,11 @@ class BscChain(Chain):
             decimals=18,
         )
 
-    async def get_native_token_balance(self) -> BalanceAtomic[Token]:
+    async def get_native_token_balance(self, address: Address) -> BalanceAtomic[Token]:
         """Get the native token balance of the agent address."""
-        amount_atomic = await self.w3.eth.get_balance(self.account.address)
+        amount_atomic = await self.w3.eth.get_balance(
+            self.w3.to_checksum_address(address)
+        )
         amount = Decimal(self.w3.from_wei(amount_atomic, "ether"))
 
         return BalanceAtomic[Token](
@@ -114,9 +117,11 @@ class BscChain(Chain):
             decimals=18,
         )
 
-    async def get_native_token_available_balance(self) -> BalanceAtomic[Token]:
+    async def get_native_token_available_balance(
+        self, address: Address
+    ) -> BalanceAtomic[Token]:
         """Get the native token available balance of the agent address."""
-        balance = await self.get_native_token_balance()
+        balance = await self.get_native_token_balance(address)
         min_balance = await self.get_min_balance()
 
         if balance.amount < min_balance.amount:
@@ -131,17 +136,19 @@ class BscChain(Chain):
             decimals=18,
         )
 
-    async def get_token_balance(self, token: Token) -> BalanceAtomic[Token]:
+    async def get_token_balance(
+        self, address: Address, token: Token
+    ) -> BalanceAtomic[Token]:
         """Get the balance of a specific token."""
         if self.is_native_token(token):
-            return await self.get_native_token_balance()
+            return await self.get_native_token_balance(address)
 
         token_contract = self.w3.eth.contract(
             address=self.w3.to_checksum_address(token.address),
             abi=self.erc20_token_abi,
         )
         amount_atomic = await token_contract.functions.balanceOf(
-            self.account.address
+            self.w3.to_checksum_address(address)
         ).call()
 
         amount, decimals = await self.convert_amount_atomic_to_amount(

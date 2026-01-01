@@ -12,8 +12,8 @@ from api.investment.investment_parameters import InvestmentParameters
 from api.investment.order.order import Order
 from api.investment.order.order_repository import OrderRepository
 from api.portfolio.holding.holding import Holding
-from api.portfolio.posting.posting_repository import (
-    PostingRepository,
+from api.portfolio.holding.holding_repository import (
+    HoldingRepository,
 )
 from api.portfolio.get_portfolio_use_case import (
     GetPortfolioUseCase,
@@ -39,8 +39,8 @@ def order_repository():
 
 
 @fixture
-def posting_repository():
-    return mock.Mock(spec=PostingRepository)
+def holding_repository():
+    return mock.Mock(spec=HoldingRepository)
 
 
 @fixture
@@ -73,7 +73,7 @@ def investment_parameters():
 @fixture
 def use_case(
     order_repository: OrderRepository,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     exchange: Exchange,
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
@@ -81,7 +81,7 @@ def use_case(
 ):
     return GetPortfolioUseCase(
         order_repository,
-        posting_repository,
+        holding_repository,
         exchange,
         chain,
         asset_balance_converter,
@@ -211,7 +211,7 @@ async def test_get_portfolio_use_case_only_pending_orders(
 @mark.asyncio
 async def test_get_portfolio_use_case_holding_balances(
     use_case: GetPortfolioUseCase,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     exchange: Exchange,
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
@@ -282,7 +282,7 @@ async def test_get_portfolio_use_case_holding_balances(
     ]
 
     chain.get_token_decimals.return_value = 18
-    posting_repository.get_holding_balances.return_value = holding_balances
+    holding_repository.get_holding_balances.return_value = holding_balances
 
     asset_balance_converter.convert.side_effect = [
         ConvertedAssetBalance(
@@ -370,7 +370,7 @@ async def test_get_portfolio_use_case_holding_balances(
 
     portfolio = await use_case.execute(usdt_token)
 
-    posting_repository.get_holding_balances.assert_called_once()
+    holding_repository.get_holding_balances.assert_called_once()
     asset_balance_converter.assert_has_calls(
         [
             mock.call.convert(
@@ -466,7 +466,7 @@ async def test_get_portfolio_use_case_holding_balances(
 @mark.asyncio
 async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
     use_case: GetPortfolioUseCase,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     exchange: Exchange,
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
@@ -485,7 +485,7 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
     ]
 
     chain.get_token_decimals.return_value = 18
-    posting_repository.get_holding_balances.return_value = holding_balances
+    holding_repository.get_holding_balances.return_value = holding_balances
 
     asset_balance_converter.convert.side_effect = [
         ConvertedAssetBalance(
@@ -558,7 +558,7 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
 @mark.asyncio
 async def test_get_portfolio_use_case_total_balance(
     use_case: GetPortfolioUseCase,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     exchange: Exchange,
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
@@ -583,7 +583,7 @@ async def test_get_portfolio_use_case_total_balance(
         decimals=18,
     )
     chain.get_token_decimals.return_value = 18
-    posting_repository.get_holding_balances.return_value = holding_balances
+    holding_repository.get_holding_balances.return_value = holding_balances
     asset_balance_converter.convert.side_effect = [
         ConvertedAssetBalance(
             total_balance=ConvertedBalance(

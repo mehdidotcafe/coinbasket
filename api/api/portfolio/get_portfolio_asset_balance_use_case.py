@@ -1,7 +1,8 @@
 from dataclasses import dataclass
+from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
-from api.portfolio.posting.posting_repository import PostingRepository
+from api.portfolio.holding.holding_repository import HoldingRepository
 from api.protocol.asset import Asset
 
 
@@ -15,29 +16,23 @@ class GetPortfolioAssetBalanceUseCase:
     def __init__(
         self,
         chain: Chain,
-        posting_repository: PostingRepository,
+        holding_repository: HoldingRepository,
     ):
         self.chain = chain
-        self.posting_repository = posting_repository
+        self.holding_repository = holding_repository
 
-    async def execute(self, asset: Asset) -> PortfolioAssetBalance:
-        asset_decimals = await self.chain.get_token_decimals(
-            asset.get_pricing_token().address
-        )
-
+    async def execute(self, address: Address, asset: Asset) -> PortfolioAssetBalance:
         if self.chain.is_native_token(asset) or self.chain.is_wrapped_native_token(
             asset
         ):
-            holding = await self.posting_repository.get_holding_balance(
-                self.chain.get_wrapped_base_token(), asset_decimals
+            holding = await self.holding_repository.get_holding_balance(
+                address, self.chain.get_wrapped_base_token()
             )
             return PortfolioAssetBalance(
-                available_balance=await self.chain.get_native_token_balance(),
+                available_balance=await self.chain.get_native_token_balance(address),
                 holding_balance=holding.balance,
             )
 
-        holding = await self.posting_repository.get_holding_balance(
-            asset, asset_decimals
-        )
+        holding = await self.holding_repository.get_holding_balance(address, asset)
 
         return PortfolioAssetBalance(holding_balance=holding.balance)

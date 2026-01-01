@@ -1,5 +1,6 @@
 from decimal import Decimal
 from unittest import mock
+from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
 from api.portfolio.get_portfolio_asset_balance_use_case import (
@@ -7,7 +8,7 @@ from api.portfolio.get_portfolio_asset_balance_use_case import (
     PortfolioAssetBalance,
 )
 from api.portfolio.holding.holding import Holding
-from api.portfolio.posting.posting_repository import PostingRepository
+from api.portfolio.holding.holding_repository import HoldingRepository
 from pytest import fixture, mark
 
 from api.protocol.fixture.token import bnb_token, eth_token, wbnb_token
@@ -23,19 +24,25 @@ def chain():
 
 
 @fixture
-def posting_repository():
-    return mock.Mock(spec=PostingRepository)
+def holding_repository():
+    return mock.Mock(spec=HoldingRepository)
 
 
 @fixture
-def use_case(chain: Chain, posting_repository: PostingRepository):
-    return GetPortfolioAssetBalanceUseCase(chain, posting_repository)
+def address():
+    return Address("0x1234567890abcdef1234567890abcdef12345678")
+
+
+@fixture
+def use_case(chain: Chain, holding_repository: HoldingRepository):
+    return GetPortfolioAssetBalanceUseCase(chain, holding_repository)
 
 
 @mark.asyncio
 async def test_get_portfolio_asset_balance_use_case_with_native_token(
+    address: Address,
     chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: GetPortfolioAssetBalanceUseCase,
 ):
     chain.is_native_token.return_value = True
@@ -43,18 +50,18 @@ async def test_get_portfolio_asset_balance_use_case_with_native_token(
     chain.get_native_token_balance.return_value = BalanceAtomic(
         asset=bnb_token, amount=Decimal("10"), amount_atomic=10 * 10**18, decimals=18
     )
-    posting_repository.get_holding_balance.return_value = Holding(
+    holding_repository.get_holding_balance.return_value = Holding(
         balance=BalanceAtomic(
             asset=wbnb_token, amount=Decimal("5"), amount_atomic=5 * 10**18, decimals=18
         ),
         children=[],
     )
 
-    portfolio_asset_balance = await use_case.execute(bnb_token)
+    portfolio_asset_balance = await use_case.execute(address, bnb_token)
 
     chain.is_native_token.assert_called_once_with(bnb_token)
     chain.get_native_token_balance.assert_called_once()
-    posting_repository.get_holding_balance.assert_called_once_with(wbnb_token, 10)
+    holding_repository.get_holding_balance.assert_called_once_with(address, wbnb_token)
 
     assert portfolio_asset_balance == PortfolioAssetBalance(
         holding_balance=BalanceAtomic(
@@ -71,8 +78,9 @@ async def test_get_portfolio_asset_balance_use_case_with_native_token(
 
 @mark.asyncio
 async def test_get_portfolio_asset_balance_use_case_with_wrapped_native_token(
+    address: Address,
     chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: GetPortfolioAssetBalanceUseCase,
 ):
     chain.is_native_token.return_value = False
@@ -81,13 +89,13 @@ async def test_get_portfolio_asset_balance_use_case_with_wrapped_native_token(
     chain.get_native_token_balance.return_value = BalanceAtomic(
         asset=bnb_token, amount=Decimal("10"), amount_atomic=10 * 10**18, decimals=18
     )
-    posting_repository.get_holding_balance.return_value = Holding(
+    holding_repository.get_holding_balance.return_value = Holding(
         balance=BalanceAtomic(
             asset=wbnb_token, amount=Decimal("5"), amount_atomic=5 * 10**18, decimals=18
         ),
         children=[],
     )
-    portfolio_asset_balance = await use_case.execute(wbnb_token)
+    portfolio_asset_balance = await use_case.execute(address, wbnb_token)
 
     chain.is_wrapped_native_token.assert_called_once_with(wbnb_token)
 
@@ -106,13 +114,14 @@ async def test_get_portfolio_asset_balance_use_case_with_wrapped_native_token(
 
 @mark.asyncio
 async def test_get_portfolio_asset_balance_use_case_with_token(
+    address: Address,
     chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     use_case: GetPortfolioAssetBalanceUseCase,
 ):
     chain.is_native_token.return_value = False
     chain.is_wrapped_native_token.return_value = False
-    posting_repository.get_holding_balance.return_value = Holding(
+    holding_repository.get_holding_balance.return_value = Holding(
         balance=BalanceAtomic(
             asset=eth_token,
             amount=Decimal("42"),
@@ -122,10 +131,10 @@ async def test_get_portfolio_asset_balance_use_case_with_token(
         children=[],
     )
 
-    asset_balance = await use_case.execute(eth_token)
+    asset_balance = await use_case.execute(address, eth_token)
 
     chain.is_native_token.assert_called_once_with(eth_token)
-    posting_repository.get_holding_balance.assert_called_once_with(eth_token, 10)
+    holding_repository.get_holding_balance.assert_called_once_with(address, eth_token)
 
     assert asset_balance == PortfolioAssetBalance(
         holding_balance=BalanceAtomic(

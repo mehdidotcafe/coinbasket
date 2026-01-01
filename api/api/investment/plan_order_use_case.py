@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import cast
+from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
 from api.investment.calculator.asset_balance_converter import (
@@ -11,7 +11,7 @@ from api.investment.investment_parameters import InvestmentParameters
 
 from api.investment.planned_order import PlannedOrder, PlannedOrderBalance
 from api.portfolio.holding.holding import Holding
-from api.portfolio.posting.posting_repository import PostingRepository
+from api.portfolio.holding.holding_repository import HoldingRepository
 from api.protocol.asset import Asset
 from api.protocol.basket import Basket
 
@@ -21,15 +21,17 @@ class PlanOrderUseCase:
         self,
         exchange: Exchange,
         chain: Chain,
-        posting_repository: PostingRepository,
+        holding_repository: HoldingRepository,
         asset_balance_converter: AssetBalanceConverter,
     ):
         self.exchange = exchange
         self.chain = chain
-        self.posting_repository = posting_repository
+        self.holding_repository = holding_repository
         self.asset_balance_converter = asset_balance_converter
 
-    async def execute(self, intended_order: IntendedOrder) -> PlannedOrder | None:
+    async def execute(
+        self, address: Address, intended_order: IntendedOrder
+    ) -> PlannedOrder | None:
         if (
             intended_order.sell_asset_with_amount is not None
             and isinstance(intended_order.sell_asset_with_amount.asset, Basket)
@@ -39,17 +41,10 @@ class PlanOrderUseCase:
         ):
             raise Exception("Baskets are not supported in investment plans.")
 
-        holdings = await self.posting_repository.get_holding_balances()
-        holding_balances = await self._get_all_holding_balances(holdings)
-
         sell_asset = (
             intended_order.sell_asset_with_amount.asset
             if intended_order.sell_asset_with_amount
             else self.chain.get_base_token()
-        )
-
-        sell_asset_available_amount = self._get_available_amount(
-            holding_balances, sell_asset
         )
 
         buy_asset = (
@@ -58,12 +53,25 @@ class PlanOrderUseCase:
             else self.chain.get_base_token()
         )
 
+        if sell_asset.address == buy_asset.address:
+            return None
+
+        holdings = await self.holding_repository.get_holding_balances(
+            address,
+            [
+                sell_asset,
+                buy_asset,
+            ],
+        )
+        holding_balances = self._convert_holding_to_dict(holdings)
+
+        sell_asset_available_amount = self._get_available_amount(
+            holding_balances, sell_asset
+        )
+
         buy_asset_available_amount = self._get_available_amount(
             holding_balances, buy_asset
         )
-
-        if sell_asset.address == buy_asset.address:
-            return None
 
         if (
             intended_order.sell_asset_with_amount
@@ -182,17 +190,11 @@ class PlanOrderUseCase:
 
         return holding_balance.amount if holding_balance else Decimal("0")
 
-    async def _get_all_holding_balances(
+    def _convert_holding_to_dict(
         self, holdings: list[Holding]
     ) -> dict[str, BalanceAtomic]:
-        available_balance = await self.chain.get_native_token_balance()
-
         holding_balances_per_token = {
-            balance.asset.id: balance
-            for balance in cast(
-                list[BalanceAtomic],
-                [*[holding.balance for holding in holdings], available_balance],
-            )
+            holding.balance.asset.id: holding.balance for holding in holdings
         }
 
         return holding_balances_per_token

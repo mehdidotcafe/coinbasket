@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from decimal import Decimal
 from typing import Any, Dict, Literal, Optional, cast
 
@@ -43,6 +44,7 @@ from api.investment.plan_order_use_case import (
 from api.investment.build_signable_order_use_case import (
     BuildSignableOrderUseCase,
 )
+from api.address.address import Address
 
 from api.investment.fees import Fees
 
@@ -97,6 +99,7 @@ from api.registry import (
     token_repository,
     siwe_manager,
     credential_generator,
+    holding_repository,
 )
 from api.chain.balance import Balance, BalanceAtomic
 from api.conversation.message import Message, QueryMessage
@@ -130,6 +133,11 @@ from langgraph.types import interrupt
 print(f"Thread ID: {configuration.langchain_thread_id}")
 print(f"Agent Env: {configuration.app_env}")
 
+# Context variable to store the authenticated user's address
+request_address_context: ContextVar[str | None] = ContextVar(
+    "request_address", default=None
+)
+
 get_portfolio_use_case = GetPortfolioUseCase(
     order_repository=order_repository,
     posting_repository=posting_repository,
@@ -140,7 +148,7 @@ get_portfolio_use_case = GetPortfolioUseCase(
 )
 
 get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
-    chain=chain, posting_repository=posting_repository
+    chain=chain, holding_repository=holding_repository
 )
 
 conversation_use_case = ConversationUseCase(
@@ -159,7 +167,7 @@ get_conversation_messages_use_case = GetConversationMessagesUseCase(
 plan_order_use_case = PlanOrderUseCase(
     exchange=exchange,
     chain=chain,
-    posting_repository=posting_repository,
+    holding_repository=holding_repository,
     asset_balance_converter=asset_balance_converter,
 )
 
@@ -270,6 +278,9 @@ async def credential_authentication_middleware(request: Request, call_next):
                     message="Invalid credential", details=None
                 ).model_dump(),
             )
+
+        # Store the address from claims in request state
+        request.state.address = claims.get("address")
 
     return await call_next(request)
 
@@ -449,12 +460,6 @@ async def get_all_available_baskets():
     return [BasketResponse.from_domain(basket) for basket in baskets]
 
 
-@tool()
-def get_agent_address():
-    """Retrieve agent's current wallet address."""
-    return chain.get_address()
-
-
 @tool(
     parse_docstring=True,
 )
@@ -492,8 +497,10 @@ async def get_token_or_basket_or_asset_holding_and_available_cash(
     Returns:
         The the available cash and holding balances of the asset in the agent's wallet.
     """
+    address = cast(Address, request_address_context.get())
+
     asset_balance = await get_portfolio_asset_balance_use_case.execute(
-        request.asset.to_domain()
+        address, request.asset.to_domain()
     )
 
     return PortfolioAssetBalanceResponse.from_domain(asset_balance).model_dump_json()
@@ -512,14 +519,12 @@ async def get_token_or_basket_or_asset_holding(request: ToolAssetRequest):
     Returns:
         The holding balance of the asset in the agent's wallet.
     """
-    asset_domain = request.asset.to_domain()
-    decimals = await chain.get_token_decimals(asset_domain.get_pricing_token().address)
+    address = cast(Address, request_address_context.get())
+    asset = request.asset.to_domain()
 
-    holding = await posting_repository.get_holding_balance(
-        asset_domain
-        if not chain.is_native_token(asset_domain)
-        else chain.get_wrapped_base_token(),
-        decimals,
+    holding = await holding_repository.get_holding_balance(
+        address,
+        asset if not chain.is_native_token(asset) else chain.get_wrapped_base_token(),
     )
 
     return BalanceAtomicResponse.from_domain(holding.balance).model_dump_json()
@@ -536,7 +541,9 @@ async def get_available_cash():
     Returns:
         The balance of the available cash (in BNB) in the agent's wallet.
     """
-    balance = await chain.get_native_token_balance()
+    address = cast(Address, request_address_context.get())
+
+    balance = await chain.get_native_token_balance(address)
 
     return BalanceAtomicResponse.from_domain(balance).model_dump_json()
 
@@ -692,12 +699,6 @@ async def get_order(
     order = await order_repository.get_order(order_id)
 
     return OrderResponse.from_domain(order).model_dump_json() if order else None
-
-
-@tool()
-def get_current_datetime():
-    """Retrieve current datetime."""
-    return date_time.now_str()
 
 
 class BalanceRequest(BaseModel):
@@ -898,7 +899,11 @@ async def plan_and_execute_swap_order(
             )
         )
     """
-    planned_order = await plan_order_use_case.execute(await intended_order.to_domain())
+    address = cast(Address, request_address_context.get())
+
+    planned_order = await plan_order_use_case.execute(
+        address=address, intended_order=await intended_order.to_domain()
+    )
 
     if planned_order:
         order_hash_request = SignedOrderRequest.model_validate(
@@ -933,14 +938,12 @@ coinbasket_tools = [
     get_tokens_from_query,
     get_all_available_baskets,
     plan_and_execute_swap_order,
-    get_agent_address,
     get_available_cash,
     get_token_or_basket_or_asset_holding,
     get_token_or_basket_or_asset_holding_and_available_cash,
-    get_portfolio_summary,
-    get_orders,
-    get_order,
-    get_current_datetime,
+    # get_portfolio_summary,
+    # get_orders,
+    # get_order,
 ]
 
 
@@ -1015,7 +1018,10 @@ class MessageResponse(BaseModel):
     },
 )
 @app.post("/conversation")
-async def conversation(req: PromptRequest) -> MessageResponse:
+async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
+    address = getattr(request.state, "address", None)
+    request_address_context.set(address)
+
     async with aiosqlite.connect(langgraph_db_path) as conn:
         agent_executor = await __create_agent_executor(conn)
 

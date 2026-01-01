@@ -1,5 +1,6 @@
 from typing import Any
 from unittest import mock
+from api.address.address import Address
 from eth_typing import HexStr
 from hexbytes import HexBytes
 from api.chain.balance import AmountReadable, BalanceAtomic
@@ -136,16 +137,17 @@ async def test_bsc_chain_get_min_balance(
 async def test_bsc_chain_get_balance(
     bsc_chain: BscChain, w3: AsyncWeb3, base_token: Token
 ):
+    address = Address("0x1234567890abcdef1234567890abcdef12345678")
     w3.eth.get_balance.return_value = Wei(1000000000000000000)
     w3.from_wei.return_value = Decimal("1")
 
-    balance = await bsc_chain.get_native_token_balance()
+    balance = await bsc_chain.get_native_token_balance(address)
 
     assert balance.amount == Decimal("1")
     assert balance.asset == base_token
 
     w3.eth.get_balance.assert_called_once_with(
-        "0x1234567890abcdef1234567890abcdef12345678",
+        "0x1234567890abcdef1234567890abcdef12345678_checksum",
     )
     w3.from_wei.assert_called_once_with(
         Wei(1000000000000000000),
@@ -157,21 +159,24 @@ async def test_bsc_chain_get_balance(
 async def test_bsc_chain_get_available_balance_insufficient_balance(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
+    address = Address("0x1234567890abcdef1234567890abcdef12345678")
+
     w3.eth.get_balance.return_value = Wei(100)
     w3.from_wei.side_effect = lambda x, _unit: x
 
     with raises(InsufficientBalance):
-        await bsc_chain.get_native_token_available_balance()
+        await bsc_chain.get_native_token_available_balance(address)
 
 
 @mark.asyncio
 async def test_bsc_chain_get_available_balance(
     bsc_chain: BscChain, w3: AsyncWeb3, base_token: Token
 ):
+    address = Address("0x1234567890abcdef1234567890abcdef12345678")
     w3.eth.get_balance.return_value = Wei(1000000000000000000)
     w3.from_wei.side_effect = lambda x, _unit: x
 
-    balance = await bsc_chain.get_native_token_available_balance()
+    balance = await bsc_chain.get_native_token_available_balance(address)
 
     assert balance.amount == Decimal(
         1000000000000000000 - (1_000_000_000 * 200_000 * 20)
@@ -179,12 +184,13 @@ async def test_bsc_chain_get_available_balance(
     assert balance.asset == base_token
 
     w3.eth.get_balance.assert_called_once_with(
-        "0x1234567890abcdef1234567890abcdef12345678",
+        "0x1234567890abcdef1234567890abcdef12345678_checksum",
     )
 
 
 @mark.asyncio
 async def test_bsc_chain_get_token_balance(bsc_chain: BscChain, w3: AsyncWeb3):
+    address = Address("0x1234567890abcdef1234567890abcdef12345678")
     token = Token(
         id="bsc:0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
         name="Fake token",
@@ -206,7 +212,7 @@ async def test_bsc_chain_get_token_balance(bsc_chain: BscChain, w3: AsyncWeb3):
 
     w3.from_wei.return_value = Decimal("1")
 
-    balance = await bsc_chain.get_token_balance(token)
+    balance = await bsc_chain.get_token_balance(address, token)
 
     assert balance == BalanceAtomic[Token](
         asset=token, amount=Decimal("1"), amount_atomic=1000, decimals=3
