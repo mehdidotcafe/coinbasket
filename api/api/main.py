@@ -254,6 +254,7 @@ async def credential_authentication_middleware(request: Request, call_next):
         "/health",
         "/docs",
         "/openapi",
+        "/openapi.json",
     ]
 
     if not request.method == "OPTIONS" and not any(
@@ -1352,7 +1353,7 @@ class AuthVerifyResponse(BaseModel):
     },
 )
 @app.post("/auth/verify")
-async def auth_verify(request: Request, req: AuthVerifyRequest):
+async def auth_verify(request: Request, req: AuthVerifyRequest) -> JSONResponse:
     nonce = request.cookies.get("nonce")
 
     if not nonce:
@@ -1420,7 +1421,7 @@ class AuthNonceResponse(BaseModel):
     },
 )
 @app.get("/auth/nonce")
-async def generate_auth_nonce():
+async def generate_auth_nonce() -> JSONResponse:
     nonce = generate_auth_nonce_use_case.execute()
 
     response = JSONResponse(content=AuthNonceResponse(nonce=nonce).model_dump())
@@ -1462,7 +1463,7 @@ async def generate_auth_nonce():
     },
 )
 @app.post("/auth/signout")
-async def signout():
+async def signout() -> JSONResponse:
     response = JSONResponse(content=None, status_code=204)
     response.delete_cookie(key="nonce")
     response.delete_cookie(key="credential")

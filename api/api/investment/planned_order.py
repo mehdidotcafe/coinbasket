@@ -28,10 +28,6 @@ class PlannedOrder:
     def to_dict(self) -> dict[str, Any]:
         """Convert the PlannedOrder to a dictionary."""
         return {
-            "buy_asset_with_amount": self.buy_asset_with_amount.to_dict()
-            if self.buy_asset_with_amount
-            else None,
-            "sell_asset_with_amount": self.sell_asset_with_amount.to_dict()
-            if self.sell_asset_with_amount
-            else None,
+            "buy_asset_with_amount": self.buy_asset_with_amount.to_dict(),
+            "sell_asset_with_amount": self.sell_asset_with_amount.to_dict(),
         }
