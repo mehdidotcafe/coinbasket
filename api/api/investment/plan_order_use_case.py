@@ -97,6 +97,8 @@ class PlanOrderUseCase:
             )
 
             return PlannedOrder(
+                id=intended_order.id,
+                address=intended_order.address,
                 sell_asset_with_amount=PlannedOrderBalance(
                     asset=sell_asset,
                     amount=converted_asset_balance.total_balance.sell_balance.amount,
@@ -139,6 +141,8 @@ class PlanOrderUseCase:
             )
 
             return PlannedOrder(
+                id=intended_order.id,
+                address=intended_order.address,
                 sell_asset_with_amount=PlannedOrderBalance(
                     asset=sell_asset,
                     amount=converted_balance.sell_balance.amount,
@@ -153,6 +157,8 @@ class PlanOrderUseCase:
 
         if intended_order.sell_asset_with_amount:
             return PlannedOrder(
+                id=intended_order.id,
+                address=intended_order.address,
                 sell_asset_with_amount=PlannedOrderBalance(
                     asset=sell_asset,
                     amount=intended_order.sell_asset_with_amount.amount
@@ -169,6 +175,8 @@ class PlanOrderUseCase:
 
         if intended_order.buy_asset_with_amount:
             return PlannedOrder(
+                id=intended_order.id,
+                address=intended_order.address,
                 sell_asset_with_amount=PlannedOrderBalance(
                     asset=sell_asset,
                     amount=None,

@@ -89,6 +89,8 @@ async def test_plan_order_use_case_execute_defined_sell_token_amount(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=IntendedOrderBalance(
             # amount should be override in PlannedOrder
             asset=eth_token,
@@ -122,6 +124,8 @@ async def test_plan_order_use_case_execute_defined_sell_token_amount(
     planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order == PlannedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=PlannedOrderBalance(
             asset=eth_token, amount=Decimal("42"), available_amount=Decimal("0")
         ),
@@ -141,6 +145,8 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=IntendedOrderBalance(
             asset=eth_token,
             amount=Decimal("1"),
@@ -171,6 +177,8 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
     planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order == PlannedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=PlannedOrderBalance(
             asset=eth_token, amount=Decimal("1"), available_amount=Decimal("0")
         ),
@@ -189,6 +197,8 @@ async def test_plan_order_use_case_execute_same_sell_and_buy_asset(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=IntendedOrderBalance(
             asset=eth_token,
             amount=Decimal("1"),
@@ -215,6 +225,8 @@ async def test_plan_order_use_case_execute_not_defined_tokens(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=None,
         sell_asset_with_amount=None,
     )
@@ -238,6 +250,8 @@ async def test_plan_order_use_case_execute_not_defined_sell_token(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=IntendedOrderBalance(
             asset=eth_token,
             amount=None,
@@ -251,6 +265,8 @@ async def test_plan_order_use_case_execute_not_defined_sell_token(
     planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order == PlannedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=PlannedOrderBalance(
             asset=eth_token, amount=None, available_amount=Decimal("0")
         ),
@@ -273,6 +289,8 @@ async def test_plan_order_use_case_execute_not_defined_buy_token(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=None,
         sell_asset_with_amount=IntendedOrderBalance(
             asset=eth_token,
@@ -286,6 +304,8 @@ async def test_plan_order_use_case_execute_not_defined_buy_token(
     planned_order = await use_case.execute(address, intended_order)
 
     assert planned_order == PlannedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=PlannedOrderBalance(
             asset=bnb_token, amount=None, available_amount=Decimal("0")
         ),
@@ -307,6 +327,8 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=IntendedOrderBalance(
             asset=big4_basket,
             amount=Decimal("50.0"),
@@ -348,6 +370,8 @@ async def test_plan_order_use_case_execute_defined_sell_basket_amount(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=IntendedOrderBalance(
             asset=bnb_token,
             amount=None,
@@ -416,6 +440,8 @@ async def test_plan_order_use_case_execute_available_amount_defined(
     use_case: PlanOrderUseCase,
 ):
     intended_order = IntendedOrder(
+        id="order-123",
+        address=address,
         buy_asset_with_amount=IntendedOrderBalance(
             asset=bnb_token,
             amount=None,

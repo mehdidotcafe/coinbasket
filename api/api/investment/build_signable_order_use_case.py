@@ -26,6 +26,8 @@ class BuildSignableOrderUseCase:
         )
 
         return SignableOrder(
+            # id=confirmed_order.id,
+            # address=confirmed_order.address,
             buy_balance=signed_swap.buy_balance,
             sell_balance=signed_swap.sell_balance,
             signature_payload=signed_swap.signature_payload,

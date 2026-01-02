@@ -1,12 +1,17 @@
 from dataclasses import dataclass
 from typing import Any
 
+# from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.investment.exchange.exchange import SignableTransaction
+
+SignableOrderId = str
 
 
 @dataclass
 class SignableOrder:
+    # id: SignableOrderId
+    # address: Address
     buy_balance: BalanceAtomic
     sell_balance: BalanceAtomic
     signature_payload: dict[str, Any] | None
@@ -15,6 +20,8 @@ class SignableOrder:
     def to_dict(self) -> dict[str, Any]:
         """Convert the SignableOrder to a dictionary."""
         return {
+            # "id": self.id,
+            # "address": str(self.address),
             "buy_balance": self.buy_balance.to_dict(),
             "sell_balance": self.sell_balance.to_dict(),
             "signature_payload": self.signature_payload,

@@ -1,8 +1,14 @@
 from api.database.infrastructure.sql_alchemy_base import Base
+from api.investment.order.infrastructure.sql_alchemy_intended_order_repository import (
+    IntendedOrderModel,
+)
 from api.investment.order.infrastructure.sql_alchemy_order_repository import (
     OrderTryChainTransactionModel,
     OrderTryModel,
     OrderModel,
+)
+from api.investment.order.infrastructure.sql_alchemy_planned_order_repository import (
+    PlannedOrderModel,
 )
 from api.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
     TransactionModel,
@@ -17,4 +23,6 @@ models: list[type[Base]] = [
     OrderModel,
     TransactionModel,
     PostingModel,
+    IntendedOrderModel,
+    PlannedOrderModel,
 ]

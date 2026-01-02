@@ -37,7 +37,11 @@ from api.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_data_sou
 )
 from api.ingestion.ingest_data_use_case import IngestDataUseCase
 from api.investment.confirmed_order import ConfirmedOrder
-from api.investment.intended_order import IntendedOrder, IntendedOrderBalance
+from api.investment.intended_order import (
+    IntendedOrder,
+    IntendedOrderBalance,
+    IntendedOrderId,
+)
 from api.investment.plan_order_use_case import (
     PlanOrderUseCase,
 )
@@ -100,6 +104,8 @@ from api.registry import (
     siwe_manager,
     credential_generator,
     holding_repository,
+    intended_order_repository,
+    planned_order_repository,
 )
 from api.chain.balance import Balance, BalanceAtomic
 from api.conversation.message import Message, QueryMessage
@@ -140,7 +146,7 @@ request_address_context: ContextVar[str | None] = ContextVar(
 
 get_portfolio_use_case = GetPortfolioUseCase(
     order_repository=order_repository,
-    posting_repository=posting_repository,
+    holding_repository=holding_repository,
     exchange=exchange,
     chain=chain,
     asset_balance_converter=asset_balance_converter,
@@ -478,9 +484,10 @@ async def get_portfolio_summary(
     Returns:
         The portfolio of the agent.
     """
+    address = cast(Address, request_address_context.get())
 
     return PortfolioResponse.from_domain(
-        await get_portfolio_use_case.execute(conversion_token.to_domain())
+        await get_portfolio_use_case.execute(address, conversion_token.to_domain())
     ).model_dump_json()
 
 
@@ -800,8 +807,10 @@ class IntentOrderRequest(BaseModel):
             )
         return values
 
-    async def to_domain(self):
+    async def to_domain(self, id: IntendedOrderId, address: Address):
         return IntendedOrder(
+            id=id,
+            address=address,
             buy_asset_with_amount=await self.buy_asset_with_amount.to_domain()
             if self.buy_asset_with_amount
             else None,
@@ -873,7 +882,7 @@ class SignableOrderResponse(BaseModel):
 
 @tool(parse_docstring=True)
 async def plan_and_execute_swap_order(
-    intended_order: IntentOrderRequest,
+    intended_order_request: IntentOrderRequest,
 ):
     """Executes the intent order.
     If no buy_asset, buy_asset_amount, sell_asset or sell_asset_amount is provided set the field to None.
@@ -883,7 +892,7 @@ async def plan_and_execute_swap_order(
     IMPORTANT: Do not call another tool if this returns results.
 
     Args:
-        intended_order (IntentOrderRequest): The intent order containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided.
+        intended_order_request (IntentOrderRequest): The intent order containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided.
 
     Returns:
         PlanAndExecuteOrderResponse: The response containing the message and order hash.
@@ -902,11 +911,20 @@ async def plan_and_execute_swap_order(
     """
     address = cast(Address, request_address_context.get())
 
+    intended_order = await intended_order_request.to_domain(
+        id_generator.generate_random_id(), address
+    )
+
+    await intended_order_repository.save(intended_order)
+
     planned_order = await plan_order_use_case.execute(
-        address=address, intended_order=await intended_order.to_domain()
+        address=address,
+        intended_order=intended_order,
     )
 
     if planned_order:
+        await planned_order_repository.save(planned_order)
+
         order_hash_request = SignedOrderRequest.model_validate(
             interrupt(
                 {
@@ -1617,8 +1635,11 @@ class PortfolioAssetBalanceResponse(BaseModel):
     },
 )
 @app.post("/portfolio")
-async def get_converted_portfolio(req: PortfolioRequest):
-    converted_token_balances = await get_portfolio_use_case.execute(req.to_domain())
+async def get_converted_portfolio(request: Request, req: PortfolioRequest):
+    address = Address(getattr(request.state, "address"))
+    converted_token_balances = await get_portfolio_use_case.execute(
+        address, req.to_domain()
+    )
 
     return PortfolioResponse.from_domain(converted_token_balances)
 
