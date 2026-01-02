@@ -226,6 +226,13 @@
         "cwd": "{projectRoot}"
       }
     },
+    "migration:production:rollback": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" downgrade -1'",
+        "cwd": "{projectRoot}"
+      }
+    },
     "migration:list": {
       "executor": "@nxlv/python:run-commands",
       "options": {

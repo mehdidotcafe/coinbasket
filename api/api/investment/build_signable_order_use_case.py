@@ -7,6 +7,7 @@ from api.investment.investment_parameters import InvestmentParameters
 from api.investment.signable_order import (
     SignableOrder,
 )
+from api.shared.id_generator.id_generator import IdGenerator
 
 
 investment_parameters = InvestmentParameters(
@@ -15,8 +16,9 @@ investment_parameters = InvestmentParameters(
 
 
 class BuildSignableOrderUseCase:
-    def __init__(self, exchange: Exchange):
+    def __init__(self, exchange: Exchange, id_generator: IdGenerator):
         self.exchange = exchange
+        self.id_generator = id_generator
 
     async def execute(self, confirmed_order: ConfirmedOrder):
         signed_swap = await self.exchange.get_signable_swap(
@@ -26,8 +28,10 @@ class BuildSignableOrderUseCase:
         )
 
         return SignableOrder(
-            # id=confirmed_order.id,
-            # address=confirmed_order.address,
+            id=self.id_generator.generate_random_id(),
+            # TODO: Check if passing address from confirmed_order is not a smell
+            address=confirmed_order.address,
+            confirmed_order_id=confirmed_order.id,
             buy_balance=signed_swap.buy_balance,
             sell_balance=signed_swap.sell_balance,
             signature_payload=signed_swap.signature_payload,

@@ -36,7 +36,7 @@ from api.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_data_sou
     MemecoinManiaBasketDataSource,
 )
 from api.ingestion.ingest_data_use_case import IngestDataUseCase
-from api.investment.confirmed_order import ConfirmedOrder
+from api.investment.confirmed_order import ConfirmedOrder, ConfirmedOrderId
 from api.investment.intended_order import (
     IntendedOrder,
     IntendedOrderBalance,
@@ -106,6 +106,8 @@ from api.registry import (
     holding_repository,
     intended_order_repository,
     planned_order_repository,
+    confirmed_order_repository,
+    signable_order_repository,
 )
 from api.chain.balance import Balance, BalanceAtomic
 from api.conversation.message import Message, QueryMessage
@@ -177,7 +179,9 @@ plan_order_use_case = PlanOrderUseCase(
     asset_balance_converter=asset_balance_converter,
 )
 
-build_signable_order_use_case = BuildSignableOrderUseCase(exchange=exchange)
+build_signable_order_use_case = BuildSignableOrderUseCase(
+    exchange=exchange, id_generator=id_generator
+)
 
 get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
     chain=chain,
@@ -722,11 +726,15 @@ class BalanceRequest(BaseModel):
 
 
 class ConfirmedOrderRequest(BaseModel):
+    planned_order_id: str
     buy_balance: BalanceRequest
     sell_balance: BalanceRequest
 
-    def to_domain(self) -> ConfirmedOrder:
+    def to_domain(self, id: ConfirmedOrderId, address: Address) -> ConfirmedOrder:
         return ConfirmedOrder(
+            id=id,
+            planned_order_id=self.planned_order_id,
+            address=address,
             buy_balance=self.buy_balance.to_domain(),
             sell_balance=self.sell_balance.to_domain(),
         )
@@ -1277,9 +1285,17 @@ async def get_asset_swap_price(req: AssetSwapPriceInfoRequest):
     },
 )
 @app.post("/order/signable")
-async def build_signable_order(req: ConfirmedOrderRequest):
+async def build_signable_order(request: Request, req: ConfirmedOrderRequest):
     """Build a signable order from a confirmed order."""
-    signable_order = await build_signable_order_use_case.execute(req.to_domain())
+    confirmed_order = req.to_domain(
+        id_generator.generate_random_id(), request.state.address
+    )
+
+    await confirmed_order_repository.save(confirmed_order)
+
+    signable_order = await build_signable_order_use_case.execute(confirmed_order)
+
+    await signable_order_repository.save(signable_order)
 
     return SignableOrderResponse.from_domain(signable_order)
 
