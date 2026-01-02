@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_integration_conversation[ethereum]
+# name: test_integration_conversation_success[ethereum]
   dict({
     'args': dict({
       'planned_order': dict({
@@ -21,7 +21,6 @@
             'ticker': 'BTC',
           }),
         }),
-        'id': '5bdd1bb9-8717-4259-8c8c-6a71128a8928',
         'sell_asset_with_amount': dict({
           'asset': dict({
             'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',

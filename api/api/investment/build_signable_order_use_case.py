@@ -29,7 +29,6 @@ class BuildSignableOrderUseCase:
 
         return SignableOrder(
             id=self.id_generator.generate_random_id(),
-            # TODO: Check if passing address from confirmed_order is not a smell
             address=confirmed_order.address,
             confirmed_order_id=confirmed_order.id,
             buy_balance=signed_swap.buy_balance,

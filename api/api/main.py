@@ -37,6 +37,7 @@ from api.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_data_sou
 )
 from api.ingestion.ingest_data_use_case import IngestDataUseCase
 from api.investment.confirmed_order import ConfirmedOrder, ConfirmedOrderId
+from api.investment.executed_order import ExecutedOrder
 from api.investment.intended_order import (
     IntendedOrder,
     IntendedOrderBalance,
@@ -108,6 +109,7 @@ from api.registry import (
     planned_order_repository,
     confirmed_order_repository,
     signable_order_repository,
+    executed_order_repository,
 )
 from api.chain.balance import Balance, BalanceAtomic
 from api.conversation.message import Message, QueryMessage
@@ -742,6 +744,7 @@ class ConfirmedOrderRequest(BaseModel):
 
 class SignedOrderRequest(BaseModel):
     status: Literal["CONFIRM", "CANCEL"]
+    signable_order_id: str | None = None
     transaction_hash: str | None = None
 
 
@@ -828,17 +831,37 @@ class IntentOrderRequest(BaseModel):
         )
 
 
+class ExecutedOrderResponse(BaseModel):
+    id: str
+    transaction_hash: str
+    buy_balance: BalanceAtomicResponse
+    sell_balance: BalanceAtomicResponse
+    rate: str | None = None
+
+    @staticmethod
+    def from_domain(domain: ExecutedOrder) -> "ExecutedOrderResponse":
+        return ExecutedOrderResponse(
+            id=domain.id,
+            transaction_hash=domain.transaction_hash,
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
+            rate=str(domain.rate) if domain.rate else None,
+        )
+
+
 class PlanAndExecuteOrderResponse(BaseModel):
     message: str
-    order_hash: str | None = None
+    executed_order: ExecutedOrderResponse | None = None
 
     @staticmethod
     def from_domain(
-        message: str, order_hash: str | None = None
+        message: str, executed_order: ExecutedOrder | None
     ) -> "PlanAndExecuteOrderResponse":
         return PlanAndExecuteOrderResponse(
             message=message,
-            order_hash=order_hash,
+            executed_order=ExecutedOrderResponse.from_domain(executed_order)
+            if executed_order
+            else None,
         )
 
 
@@ -863,6 +886,7 @@ class SignableTransactionResponse(BaseModel):
 
 
 class SignableOrderResponse(BaseModel):
+    id: str
     buy_balance: BalanceAtomicResponse
     sell_balance: BalanceAtomicResponse
     transaction: SignableTransactionResponse
@@ -873,6 +897,7 @@ class SignableOrderResponse(BaseModel):
         domain: SignableOrder,
     ) -> "SignableOrderResponse":
         return SignableOrderResponse(
+            id=domain.id,
             buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
             sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
             signature_payload=domain.signature_payload,
@@ -933,7 +958,7 @@ async def plan_and_execute_swap_order(
     if planned_order:
         await planned_order_repository.save(planned_order)
 
-        order_hash_request = SignedOrderRequest.model_validate(
+        signed_order_request = SignedOrderRequest.model_validate(
             interrupt(
                 {
                     "ui": {
@@ -947,16 +972,33 @@ async def plan_and_execute_swap_order(
             )
         )
 
-        if order_hash_request.status == "CANCEL":
+        if signed_order_request.status == "CANCEL":
             return PlanAndExecuteOrderResponse.from_domain(
                 "Order cancelled by user.",
+                None,
             ).model_dump_json()
+
+        order_receipt = await chain.parse_transaction_receipt(
+            sell_token=planned_order.sell_asset_with_amount.asset,
+            buy_token=planned_order.buy_asset_with_amount.asset,
+            transaction_hash=cast(str, signed_order_request.transaction_hash),
+        )
+
+        executed_order = ExecutedOrder(
+            id=id_generator.generate_random_id(),
+            signable_order_id=cast(str, signed_order_request.signable_order_id),
+            transaction_hash=cast(str, signed_order_request.transaction_hash),
+            address=address,
+            sell_balance=order_receipt.executed_sell_balance,
+            buy_balance=order_receipt.executed_buy_balance,
+            rate=order_receipt.rate,
+        )
+
+        await executed_order_repository.save(executed_order)
 
         return PlanAndExecuteOrderResponse.from_domain(
             "Order executed successfully.",
-            order_hash=order_hash_request.transaction_hash
-            if order_hash_request.transaction_hash
-            else None,
+            executed_order,
         ).model_dump_json()
 
 
@@ -1287,9 +1329,8 @@ async def get_asset_swap_price(req: AssetSwapPriceInfoRequest):
 @app.post("/order/signable")
 async def build_signable_order(request: Request, req: ConfirmedOrderRequest):
     """Build a signable order from a confirmed order."""
-    confirmed_order = req.to_domain(
-        id_generator.generate_random_id(), request.state.address
-    )
+    address = cast(Address, request.state.address)
+    confirmed_order = req.to_domain(id_generator.generate_random_id(), address)
 
     await confirmed_order_repository.save(confirmed_order)
 

@@ -18,6 +18,9 @@ from api.investment.order.infrastructure.sql_alchemy_planned_order_repository im
 from api.investment.order.infrastructure.sql_alchemy_signable_order_repository import (
     SqlAlchemySignableOrderRepository,
 )
+from api.investment.order.infrastructure.sql_alchemy_executed_order_repository import (
+    SqlAlchemyExecutedOrderRepository,
+)
 from api.portfolio.holding.infrastructure.bsc_chain_holding_repository import (
     BscChainHoldingRepository,
 )
@@ -183,6 +186,9 @@ confirmed_order_repository = SqlAlchemyConfirmedOrderRepository(
     AsyncSessionLocal=AsyncSessionLocal, engine=engine
 )
 signable_order_repository = SqlAlchemySignableOrderRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+executed_order_repository = SqlAlchemyExecutedOrderRepository(
     AsyncSessionLocal=AsyncSessionLocal, engine=engine
 )
 

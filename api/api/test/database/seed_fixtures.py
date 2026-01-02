@@ -1,34 +1,33 @@
+from api.investment.order.infrastructure.sql_alchemy_confirmed_order_repository import (
+    ConfirmedOrderModel,
+)
+from api.investment.order.infrastructure.sql_alchemy_planned_order_repository import (
+    PlannedOrderModel,
+)
+from api.investment.order.infrastructure.sql_alchemy_signable_order_repository import (
+    SignableOrderModel,
+)
+from api.investment.planned_order import PlannedOrder
+from api.investment.signable_order import SignableOrder
+from api.investment.confirmed_order import ConfirmedOrder
+
 from pytest_asyncio import fixture
-from api.investment.order.infrastructure.sql_alchemy_order_repository import (
-    OrderModel,
-)
-from api.investment.order.order import Order
-from api.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
-    TransactionModel,
-)
-from api.investment.transaction.transaction import Transaction
-from api.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
-    PostingModel,
-)
-from api.portfolio.posting.posting import Posting
 from api.test.database.make_session import make_session
 
 
 @fixture(scope="function")
 async def seed_fixtures(
-    orders: list[Order], transactions: list[Transaction], postings: list[Posting]
+    planned_orders: list[PlannedOrder],
+    confirmed_orders: list[ConfirmedOrder],
+    signable_orders: list[SignableOrder],
 ):
-    print("Seeding fixtures...")
-    print(orders)
-    print(transactions)
-    print(postings)
     async with make_session() as session:
         async with session.begin():
-            for order in orders:
-                session.add(OrderModel.from_domain(order))
-            for transaction in transactions:
-                session.add(TransactionModel.from_domain(transaction))
-            for posting in postings:
-                session.add(PostingModel.from_domain(posting))
+            for planned_order in planned_orders:
+                session.add(PlannedOrderModel.from_domain(planned_order))
+            for confirmed_order in confirmed_orders:
+                session.add(ConfirmedOrderModel.from_domain(confirmed_order))
+            for signable_order in signable_orders:
+                session.add(SignableOrderModel.from_domain(signable_order))
 
-    yield postings
+    yield planned_orders

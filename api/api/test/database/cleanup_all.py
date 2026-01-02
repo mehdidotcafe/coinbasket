@@ -1,3 +1,18 @@
+from api.investment.order.infrastructure.sql_alchemy_confirmed_order_repository import (
+    ConfirmedOrderModel,
+)
+from api.investment.order.infrastructure.sql_alchemy_executed_order_repository import (
+    ExecutedOrderModel,
+)
+from api.investment.order.infrastructure.sql_alchemy_intended_order_repository import (
+    IntendedOrderModel,
+)
+from api.investment.order.infrastructure.sql_alchemy_planned_order_repository import (
+    PlannedOrderModel,
+)
+from api.investment.order.infrastructure.sql_alchemy_signable_order_repository import (
+    SignableOrderModel,
+)
 from api.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
     PostingModel,
 )
@@ -25,3 +40,8 @@ async def cleanup_all():
             await session.execute(delete(OrderTryChainTransactionModel))
             await session.execute(delete(OrderTryModel))
             await session.execute(delete(OrderModel))
+            await session.execute(delete(ExecutedOrderModel))
+            await session.execute(delete(SignableOrderModel))
+            await session.execute(delete(ConfirmedOrderModel))
+            await session.execute(delete(PlannedOrderModel))
+            await session.execute(delete(IntendedOrderModel))

@@ -8,5 +8,5 @@ class PlannedOrderRepository(ABC):
     async def save(
         self, planned_order: PlannedOrder, session: NullableSession = None
     ) -> PlannedOrder:
-        """Save an planned order to the repository."""
+        """Save a planned order to the repository."""
         raise NotImplementedError
