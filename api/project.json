@@ -59,7 +59,7 @@
       "executor": "@nxlv/python:run-commands",
       "dependsOn": ["infra:production"],
       "options": {
-        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.main --port $APP_PORT --host 0.0.0.0'",
+        "command": "env-cmd -f .env.production --use-shell 'poetry run fastapi run api/main.py --port $APP_PORT'",
         "cwd": "{projectRoot}"
       },
       "configurations": {
@@ -223,6 +223,13 @@
       "executor": "@nxlv/python:run-commands",
       "options": {
         "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" downgrade -1",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "migration:production:rollback": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$APP_NAME\" downgrade -1'",
         "cwd": "{projectRoot}"
       }
     },

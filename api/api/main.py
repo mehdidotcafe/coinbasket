@@ -36,8 +36,13 @@ from api.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_data_sou
     MemecoinManiaBasketDataSource,
 )
 from api.ingestion.ingest_data_use_case import IngestDataUseCase
-from api.investment.confirmed_order import ConfirmedOrder
-from api.investment.intended_order import IntendedOrder, IntendedOrderBalance
+from api.investment.confirmed_order import ConfirmedOrder, ConfirmedOrderId
+from api.investment.executed_order import ExecutedOrder
+from api.investment.intended_order import (
+    IntendedOrder,
+    IntendedOrderBalance,
+    IntendedOrderId,
+)
 from api.investment.plan_order_use_case import (
     PlanOrderUseCase,
 )
@@ -100,6 +105,11 @@ from api.registry import (
     siwe_manager,
     credential_generator,
     holding_repository,
+    intended_order_repository,
+    planned_order_repository,
+    confirmed_order_repository,
+    signable_order_repository,
+    executed_order_repository,
 )
 from api.chain.balance import Balance, BalanceAtomic
 from api.conversation.message import Message, QueryMessage
@@ -140,7 +150,7 @@ request_address_context: ContextVar[str | None] = ContextVar(
 
 get_portfolio_use_case = GetPortfolioUseCase(
     order_repository=order_repository,
-    posting_repository=posting_repository,
+    holding_repository=holding_repository,
     exchange=exchange,
     chain=chain,
     asset_balance_converter=asset_balance_converter,
@@ -171,7 +181,9 @@ plan_order_use_case = PlanOrderUseCase(
     asset_balance_converter=asset_balance_converter,
 )
 
-build_signable_order_use_case = BuildSignableOrderUseCase(exchange=exchange)
+build_signable_order_use_case = BuildSignableOrderUseCase(
+    exchange=exchange, id_generator=id_generator
+)
 
 get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
     chain=chain,
@@ -478,9 +490,10 @@ async def get_portfolio_summary(
     Returns:
         The portfolio of the agent.
     """
+    address = cast(Address, request_address_context.get())
 
     return PortfolioResponse.from_domain(
-        await get_portfolio_use_case.execute(conversion_token.to_domain())
+        await get_portfolio_use_case.execute(address, conversion_token.to_domain())
     ).model_dump_json()
 
 
@@ -715,11 +728,15 @@ class BalanceRequest(BaseModel):
 
 
 class ConfirmedOrderRequest(BaseModel):
+    planned_order_id: str
     buy_balance: BalanceRequest
     sell_balance: BalanceRequest
 
-    def to_domain(self) -> ConfirmedOrder:
+    def to_domain(self, id: ConfirmedOrderId, address: Address) -> ConfirmedOrder:
         return ConfirmedOrder(
+            id=id,
+            planned_order_id=self.planned_order_id,
+            address=address,
             buy_balance=self.buy_balance.to_domain(),
             sell_balance=self.sell_balance.to_domain(),
         )
@@ -727,6 +744,7 @@ class ConfirmedOrderRequest(BaseModel):
 
 class SignedOrderRequest(BaseModel):
     status: Literal["CONFIRM", "CANCEL"]
+    signable_order_id: str | None = None
     transaction_hash: str | None = None
 
 
@@ -800,8 +818,10 @@ class IntentOrderRequest(BaseModel):
             )
         return values
 
-    async def to_domain(self):
+    async def to_domain(self, id: IntendedOrderId, address: Address):
         return IntendedOrder(
+            id=id,
+            address=address,
             buy_asset_with_amount=await self.buy_asset_with_amount.to_domain()
             if self.buy_asset_with_amount
             else None,
@@ -811,17 +831,37 @@ class IntentOrderRequest(BaseModel):
         )
 
 
+class ExecutedOrderResponse(BaseModel):
+    id: str
+    transaction_hash: str
+    buy_balance: BalanceAtomicResponse
+    sell_balance: BalanceAtomicResponse
+    rate: str | None = None
+
+    @staticmethod
+    def from_domain(domain: ExecutedOrder) -> "ExecutedOrderResponse":
+        return ExecutedOrderResponse(
+            id=domain.id,
+            transaction_hash=domain.transaction_hash,
+            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
+            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
+            rate=str(domain.rate) if domain.rate else None,
+        )
+
+
 class PlanAndExecuteOrderResponse(BaseModel):
     message: str
-    order_hash: str | None = None
+    executed_order: ExecutedOrderResponse | None = None
 
     @staticmethod
     def from_domain(
-        message: str, order_hash: str | None = None
+        message: str, executed_order: ExecutedOrder | None
     ) -> "PlanAndExecuteOrderResponse":
         return PlanAndExecuteOrderResponse(
             message=message,
-            order_hash=order_hash,
+            executed_order=ExecutedOrderResponse.from_domain(executed_order)
+            if executed_order
+            else None,
         )
 
 
@@ -846,6 +886,7 @@ class SignableTransactionResponse(BaseModel):
 
 
 class SignableOrderResponse(BaseModel):
+    id: str
     buy_balance: BalanceAtomicResponse
     sell_balance: BalanceAtomicResponse
     transaction: SignableTransactionResponse
@@ -856,6 +897,7 @@ class SignableOrderResponse(BaseModel):
         domain: SignableOrder,
     ) -> "SignableOrderResponse":
         return SignableOrderResponse(
+            id=domain.id,
             buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
             sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
             signature_payload=domain.signature_payload,
@@ -873,7 +915,7 @@ class SignableOrderResponse(BaseModel):
 
 @tool(parse_docstring=True)
 async def plan_and_execute_swap_order(
-    intended_order: IntentOrderRequest,
+    intended_order_request: IntentOrderRequest,
 ):
     """Executes the intent order.
     If no buy_asset, buy_asset_amount, sell_asset or sell_asset_amount is provided set the field to None.
@@ -883,7 +925,7 @@ async def plan_and_execute_swap_order(
     IMPORTANT: Do not call another tool if this returns results.
 
     Args:
-        intended_order (IntentOrderRequest): The intent order containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided.
+        intended_order_request (IntentOrderRequest): The intent order containing the assets to buy and/or sell eventually with their amounts for each step. A step can't have an amount defined if the related asset is not provided.
 
     Returns:
         PlanAndExecuteOrderResponse: The response containing the message and order hash.
@@ -902,12 +944,21 @@ async def plan_and_execute_swap_order(
     """
     address = cast(Address, request_address_context.get())
 
+    intended_order = await intended_order_request.to_domain(
+        id_generator.generate_random_id(), address
+    )
+
+    await intended_order_repository.save(intended_order)
+
     planned_order = await plan_order_use_case.execute(
-        address=address, intended_order=await intended_order.to_domain()
+        address=address,
+        intended_order=intended_order,
     )
 
     if planned_order:
-        order_hash_request = SignedOrderRequest.model_validate(
+        await planned_order_repository.save(planned_order)
+
+        signed_order_request = SignedOrderRequest.model_validate(
             interrupt(
                 {
                     "ui": {
@@ -921,16 +972,33 @@ async def plan_and_execute_swap_order(
             )
         )
 
-        if order_hash_request.status == "CANCEL":
+        if signed_order_request.status == "CANCEL":
             return PlanAndExecuteOrderResponse.from_domain(
                 "Order cancelled by user.",
+                None,
             ).model_dump_json()
+
+        order_receipt = await chain.parse_transaction_receipt(
+            sell_token=planned_order.sell_asset_with_amount.asset,
+            buy_token=planned_order.buy_asset_with_amount.asset,
+            transaction_hash=cast(str, signed_order_request.transaction_hash),
+        )
+
+        executed_order = ExecutedOrder(
+            id=id_generator.generate_random_id(),
+            signable_order_id=cast(str, signed_order_request.signable_order_id),
+            transaction_hash=cast(str, signed_order_request.transaction_hash),
+            address=address,
+            sell_balance=order_receipt.executed_sell_balance,
+            buy_balance=order_receipt.executed_buy_balance,
+            rate=order_receipt.rate,
+        )
+
+        await executed_order_repository.save(executed_order)
 
         return PlanAndExecuteOrderResponse.from_domain(
             "Order executed successfully.",
-            order_hash=order_hash_request.transaction_hash
-            if order_hash_request.transaction_hash
-            else None,
+            executed_order,
         ).model_dump_json()
 
 
@@ -1259,9 +1327,16 @@ async def get_asset_swap_price(req: AssetSwapPriceInfoRequest):
     },
 )
 @app.post("/order/signable")
-async def build_signable_order(req: ConfirmedOrderRequest):
+async def build_signable_order(request: Request, req: ConfirmedOrderRequest):
     """Build a signable order from a confirmed order."""
-    signable_order = await build_signable_order_use_case.execute(req.to_domain())
+    address = cast(Address, request.state.address)
+    confirmed_order = req.to_domain(id_generator.generate_random_id(), address)
+
+    await confirmed_order_repository.save(confirmed_order)
+
+    signable_order = await build_signable_order_use_case.execute(confirmed_order)
+
+    await signable_order_repository.save(signable_order)
 
     return SignableOrderResponse.from_domain(signable_order)
 
@@ -1617,8 +1692,11 @@ class PortfolioAssetBalanceResponse(BaseModel):
     },
 )
 @app.post("/portfolio")
-async def get_converted_portfolio(req: PortfolioRequest):
-    converted_token_balances = await get_portfolio_use_case.execute(req.to_domain())
+async def get_converted_portfolio(request: Request, req: PortfolioRequest):
+    address = Address(getattr(request.state, "address"))
+    converted_token_balances = await get_portfolio_use_case.execute(
+        address, req.to_domain()
+    )
 
     return PortfolioResponse.from_domain(converted_token_balances)
 

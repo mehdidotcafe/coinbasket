@@ -8,6 +8,7 @@ from api.investment.exchange.exchange import (
 )
 
 from api.investment.signable_order import SignableOrder
+from api.shared.id_generator.id_generator import IdGenerator
 from pytest import fixture
 
 from api.chain.balance import Balance, BalanceAtomic
@@ -24,8 +25,15 @@ def exchange():
 
 
 @fixture
-def use_case(exchange: Exchange):
-    return BuildSignableOrderUseCase(exchange=exchange)
+def id_generator():
+    id_gen = mock.Mock()
+    id_gen.generate_random_id.return_value = "signable_order_789"
+    return id_gen
+
+
+@fixture
+def use_case(exchange: Exchange, id_generator: IdGenerator):
+    return BuildSignableOrderUseCase(exchange=exchange, id_generator=id_generator)
 
 
 async def test_build_signable_order_use_case_execute_success(
@@ -54,12 +62,18 @@ async def test_build_signable_order_use_case_execute_success(
     exchange.get_signable_swap.return_value = signed_swap
 
     order = ConfirmedOrder(
+        id="order_123",
+        planned_order_id="planned_order_456",
+        address="0xABCDEF",
         buy_balance=Balance(asset=wbnb_token, amount=Decimal(1)),
         sell_balance=Balance(asset=usdt_token, amount=Decimal(300)),
     )
 
     result = await use_case.execute(order)
     assert result == SignableOrder(
+        id="signable_order_789",
+        confirmed_order_id=order.id,
+        address=order.address,
         buy_balance=signed_swap.buy_balance,
         sell_balance=signed_swap.sell_balance,
         signature_payload=signed_swap.signature_payload,

@@ -1,8 +1,9 @@
 # serializer version: 1
-# name: test_integration_conversation[ethereum]
+# name: test_integration_conversation_success[ethereum]
   dict({
     'args': dict({
       'planned_order': dict({
+        'address': '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
         'buy_asset_with_amount': dict({
           'asset': dict({
             'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',

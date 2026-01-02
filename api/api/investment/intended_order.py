@@ -2,7 +2,10 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from api.address.address import Address
 from api.protocol.asset import Asset
+
+IntendedOrderId = str
 
 
 @dataclass
@@ -20,12 +23,16 @@ class IntendedOrderBalance:
 
 @dataclass
 class IntendedOrder:
+    id: IntendedOrderId
+    address: Address
     buy_asset_with_amount: IntendedOrderBalance | None = None
     sell_asset_with_amount: IntendedOrderBalance | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the IntentOrder to a dictionary."""
         return {
+            "id": self.id,
+            "address": str(self.address),
             "buy_asset_with_amount": self.buy_asset_with_amount.to_dict()
             if self.buy_asset_with_amount
             else None,

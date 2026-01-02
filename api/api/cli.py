@@ -33,28 +33,9 @@ chain = BscChain(
 )
 
 
-async def get_balances():
-    balance = await chain.get_native_token_balance()
-
-    print(f"Address: {chain.get_address()}")
-    print(f"Native token ({chain.base_token.ticker}) Balance: {balance.amount}")
-
-    for arg in sys.argv[2:]:
-        balance_amount = await chain.get_token_balance(
-            Token(
-                id="bsc:" + arg,
-                name="Token",
-                display_name="Token",
-                ticker="Token",
-                address=arg,
-            )
-        )
-        print(f"{arg} Balance: {balance_amount}")
-
-
 async def get_address_balances():
     address = sys.argv[2]
-    balance = await chain.get_address_native_token_balance(address=sys.argv[2])
+    balance = await chain.get_address_native_token_balance(address=address)
 
     print(f"Native token ({chain.base_token.ticker}) Balance: {balance.amount}")
 
@@ -67,16 +48,16 @@ async def get_address_balances():
                 display_name="Token",
                 ticker="Token",
                 address=arg,
+                description="",
+                decimals=0,
+                categories=[],
             ),
         )
         print(f"{arg} Balance: {balance_amount}")
 
 
 async def main():
-    if sys.argv[1] == "get_balances":
-        await get_balances()
-
-    elif sys.argv[1] == "get_address_balances":
+    if sys.argv[1] == "get_address_balances":
         await get_address_balances()
 
     else:

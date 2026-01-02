@@ -2,7 +2,10 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
+from api.address.address import Address
 from api.protocol.asset import Asset
+
+PlannedOrderId = str
 
 
 @dataclass
@@ -22,12 +25,16 @@ class PlannedOrderBalance:
 
 @dataclass
 class PlannedOrder:
+    id: PlannedOrderId
+    address: Address
     sell_asset_with_amount: PlannedOrderBalance
     buy_asset_with_amount: PlannedOrderBalance
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the PlannedOrder to a dictionary."""
         return {
+            "id": self.id,
+            "address": str(self.address),
             "buy_asset_with_amount": self.buy_asset_with_amount.to_dict(),
             "sell_asset_with_amount": self.sell_asset_with_amount.to_dict(),
         }

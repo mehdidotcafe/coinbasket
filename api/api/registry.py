@@ -6,6 +6,21 @@ from api.authentication.siwe.infrastructure.siwe_py_siwe_manager import (
     SiwePySiweManager,
 )
 from api.investment.infrastructure.test_exchange import TestExchange
+from api.investment.order.infrastructure.sql_alchemy_confirmed_order_repository import (
+    SqlAlchemyConfirmedOrderRepository,
+)
+from api.investment.order.infrastructure.sql_alchemy_intended_order_repository import (
+    SqlAlchemyIntendedOrderRepository,
+)
+from api.investment.order.infrastructure.sql_alchemy_planned_order_repository import (
+    SqlAlchemyPlannedOrderRepository,
+)
+from api.investment.order.infrastructure.sql_alchemy_signable_order_repository import (
+    SqlAlchemySignableOrderRepository,
+)
+from api.investment.order.infrastructure.sql_alchemy_executed_order_repository import (
+    SqlAlchemyExecutedOrderRepository,
+)
 from api.portfolio.holding.infrastructure.bsc_chain_holding_repository import (
     BscChainHoldingRepository,
 )
@@ -159,6 +174,22 @@ posting_repository = SqlAlchemyPostingRepository(
 )
 holding_repository = BscChainHoldingRepository(
     chain=chain,
+)
+
+intended_order_repository = SqlAlchemyIntendedOrderRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+planned_order_repository = SqlAlchemyPlannedOrderRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+confirmed_order_repository = SqlAlchemyConfirmedOrderRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+signable_order_repository = SqlAlchemySignableOrderRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
+)
+executed_order_repository = SqlAlchemyExecutedOrderRepository(
+    AsyncSessionLocal=AsyncSessionLocal, engine=engine
 )
 
 conversation_repository = LangchainSqliteConversationRepository(

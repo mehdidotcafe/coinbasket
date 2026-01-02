@@ -20,6 +20,7 @@ from api.portfolio.get_portfolio_use_case import (
     PortfolioBalance,
 )
 from api.portfolio.small_balance.small_balance_policy import SmallBalancePolicy
+from api.address.address import Address
 from pytest import fixture, mark
 
 from api.protocol.fixture.token import (
@@ -71,6 +72,11 @@ def investment_parameters():
 
 
 @fixture
+def address():
+    return Address("0x1234567890abcdef1234567890abcdef12345678")
+
+
+@fixture
 def use_case(
     order_repository: OrderRepository,
     holding_repository: HoldingRepository,
@@ -95,6 +101,7 @@ async def test_get_portfolio_use_case_only_available_balance(
     chain: Chain,
     exchange: Exchange,
     investment_parameters: InvestmentParameters,
+    address: Address,
 ):
     chain.get_native_token_balance.return_value = BalanceAtomic(
         asset=bnb_token,
@@ -120,7 +127,7 @@ async def test_get_portfolio_use_case_only_available_balance(
         ),
     ]
 
-    portfolio = await use_case.execute(usdt_token)
+    portfolio = await use_case.execute(address, usdt_token)
 
     chain.get_native_token_balance.assert_called_once()
     exchange.convert_balance_to_token.assert_called_once_with(
@@ -152,7 +159,7 @@ async def test_get_portfolio_use_case_only_available_balance(
 
 @mark.asyncio
 async def test_get_portfolio_use_case_only_pending_orders(
-    use_case: GetPortfolioUseCase, order_repository: OrderRepository
+    use_case: GetPortfolioUseCase, order_repository: OrderRepository, address: Address
 ):
     orders = [
         Order(
@@ -201,7 +208,7 @@ async def test_get_portfolio_use_case_only_pending_orders(
 
     order_repository.get_pending_orders.return_value = orders
 
-    portfolio = await use_case.execute(usdt_token)
+    portfolio = await use_case.execute(address, usdt_token)
 
     order_repository.get_pending_orders.assert_called_once()
 
@@ -216,6 +223,7 @@ async def test_get_portfolio_use_case_holding_balances(
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
     small_balance_policy: SmallBalancePolicy,
+    address: Address,
 ):
     holding_balances: list[Holding] = [
         Holding(
@@ -368,7 +376,7 @@ async def test_get_portfolio_use_case_holding_balances(
     ]
     small_balance_policy.is_small_balance.side_effect = [False, False, True, False]
 
-    portfolio = await use_case.execute(usdt_token)
+    portfolio = await use_case.execute(address, usdt_token)
 
     holding_repository.get_holding_balances.assert_called_once()
     asset_balance_converter.assert_has_calls(
@@ -471,6 +479,7 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
     small_balance_policy: SmallBalancePolicy,
+    address: Address,
 ):
     holding_balances: list[Holding] = [
         Holding(
@@ -537,7 +546,7 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
     ]
     small_balance_policy.is_small_balance.return_value = True
 
-    await use_case.execute(eth_token)
+    await use_case.execute(address, eth_token)
 
     small_balance_policy.is_small_balance.assert_called_once_with(
         BalanceAtomic(
@@ -563,6 +572,7 @@ async def test_get_portfolio_use_case_total_balance(
     chain: Chain,
     asset_balance_converter: AssetBalanceConverter,
     small_balance_policy: SmallBalancePolicy,
+    address: Address,
 ):
     holding_balances = [
         Holding(
@@ -623,7 +633,7 @@ async def test_get_portfolio_use_case_total_balance(
 
     small_balance_policy.is_small_balance.return_value = False
 
-    portfolio = await use_case.execute(usdt_token)
+    portfolio = await use_case.execute(address, usdt_token)
 
     assert portfolio.total_balance == BalanceAtomic(
         asset=usdt_token,
