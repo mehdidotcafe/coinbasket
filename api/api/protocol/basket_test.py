@@ -1,6 +1,4 @@
-from decimal import Decimal
 from api.protocol.basket import Basket
-from api.protocol.token import Token
 
 
 def test_basket__str__():
@@ -10,31 +8,10 @@ def test_basket__str__():
         display_name="Big2 Display",
         ticker="B2",
         description="Big2 Description",
-        denomination=Decimal("1.0"),
-        tokens=[
-            Token(
-                id="456",
-                name="Binance Pegged Bitcoin",
-                display_name="Bitcoin",
-                ticker="BTC",
-                address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-                decimals=18,
-                description="Binance Pegged Bitcoin is a BEP-20 token that represents Bitcoin on the Binance Smart Chain.",
-                categories=["pegged", "bitcoin"],
-                logo_uri="https://example.com/btc-logo.png",
-            ),
-            Token(
-                id="789",
-                name="Binance Pegged Ethereum",
-                display_name="Ethereum",
-                ticker="ETH",
-                address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
-                decimals=18,
-                description="Binance Pegged Ethereum is a BEP-20 token that represents Ethereum on the Binance Smart Chain.",
-                categories=["pegged", "ethereum"],
-                logo_uri="https://example.com/eth-logo.png",
-            ),
-        ],
+        address="0xbasketaddress1234",
+        decimals=18,
+        categories=["category1", "category2"],
+        logo_uri=None,
     )
 
     assert (
@@ -42,27 +19,12 @@ def test_basket__str__():
         == """
 name: Big2
 display_name: Big2 Display
-ticker: B2
 description: Big2 Description
+ticker: B2
+decimals: 18
+address: 0xbasketaddress1234
+logo_uri: 
+categories: category1, category2
 type: basket
-denomination: 1.0
-1. name: Binance Pegged Bitcoin
- display_name: Bitcoin
- ticker: BTC
- address: 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c
- decimals: 18
- description: Binance Pegged Bitcoin is a BEP-20 token that represents Bitcoin on the Binance Smart Chain.
- categories: ['pegged', 'bitcoin']
- logo_uri: https://example.com/btc-logo.png
-
-2. name: Binance Pegged Ethereum
- display_name: Ethereum
- ticker: ETH
- address: 0x2170Ed0880ac9A755fd29B2688956BD959F933F8
- decimals: 18
- description: Binance Pegged Ethereum is a BEP-20 token that represents Ethereum on the Binance Smart Chain.
- categories: ['pegged', 'ethereum']
- logo_uri: https://example.com/eth-logo.png
-
 """
     )

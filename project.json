@@ -10,17 +10,8 @@
         "readyWhen": "API Ready"
       }
     },
-    "dev:worker:api": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["dev:api"],
-      "options": {
-        "command": "./nx dev:worker api",
-        "stream": true
-      }
-    },
     "dev:all": {
       "executor": "nx:run-commands",
-      "dependsOn": ["dev:worker:api"],
       "options": {
         "commands": ["echo coinbasket dev started."],
         "parallel": false,
@@ -35,17 +26,8 @@
         "readyWhen": "API Ready"
       }
     },
-    "start:worker:api": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["start:api"],
-      "options": {
-        "command": "./nx start:worker api",
-        "stream": true
-      }
-    },
     "start:all": {
       "executor": "nx:run-commands",
-      "dependsOn": ["start:worker:api"],
       "options": {
         "commands": ["echo coinbasket production started."],
         "parallel": false,

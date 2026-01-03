@@ -3,12 +3,14 @@ import json
 
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import ParsedReceipt
+from api.chain.transaction_receipt_parser import TransactionReceiptParser
 from api.protocol.token import Token
 from web3 import AsyncWeb3
 from typing import Optional
+from api.protocol.asset import Asset
 
 from hexbytes import HexBytes
-from web3.types import LogReceipt, TxReceipt
+from web3.types import LogReceipt
 
 WBNB_ADDRESS = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
 
@@ -22,7 +24,7 @@ DEPOSIT_TOPIC = keccak("Deposit(address,uint256)")  # WETH9/WBNB
 WITHDRAWAL_TOPIC = keccak("Withdrawal(address,uint256)")  # WETH9/WBNB
 
 
-class BscTransactionReceiptParser:
+class BscTransactionReceiptParser(TransactionReceiptParser):
     def __init__(self, w3: AsyncWeb3):
         self.w3 = w3
 
@@ -36,9 +38,9 @@ class BscTransactionReceiptParser:
     async def parse_receipt(
         self,
         address: str,
-        sell_token: Token,
-        buy_token: Token,
-        receipt: TxReceipt,
+        sell_asset: Asset,
+        buy_asset: Asset,
+        transaction_hash: str,
     ) -> ParsedReceipt:
         """
         Returns (sold_exact, bought_exact, rate).
@@ -47,13 +49,15 @@ class BscTransactionReceiptParser:
 
         Works correctly even with multiple txs in the same block because it uses *only this tx's logs*.
         """
+        receipt = await self.w3.eth.get_transaction_receipt(HexBytes(transaction_hash))
+
         logs: list[LogReceipt] = receipt.get("logs", [])
 
         user_lc = self._norm(address)
-        sold_is_native = self._is_native(sell_token.address)
-        bought_is_native = self._is_native(buy_token.address)
-        sold_token_lc = None if sold_is_native else self._norm(sell_token.address)  # type: ignore[arg-type]
-        bought_token_lc = None if bought_is_native else self._norm(buy_token.address)  # type: ignore[arg-type]
+        sold_is_native = self._is_native(sell_asset.address)
+        bought_is_native = self._is_native(buy_asset.address)
+        sold_token_lc = None if sold_is_native else self._norm(sell_asset.address)  # type: ignore[arg-type]
+        bought_token_lc = None if bought_is_native else self._norm(buy_asset.address)  # type: ignore[arg-type]
         wrapped_set = {self._norm(a) for a in [WBNB_ADDRESS]}
 
         # Accumulators
@@ -153,8 +157,8 @@ class BscTransactionReceiptParser:
 
         # --- Compute humanized rate (bought / sold) ---
         if sold_exact > 0 and bought_exact > 0:
-            s_dec = await self._decimals(sell_token.address)
-            b_dec = await self._decimals(buy_token.address)
+            s_dec = await self._decimals(sell_asset.address)
+            b_dec = await self._decimals(buy_asset.address)
             sold_h = Decimal(sold_exact) / (Decimal(10) ** s_dec)
             bought_h = Decimal(bought_exact) / (Decimal(10) ** b_dec)
             rate: Optional[Decimal] = (bought_h / sold_h) if sold_h != 0 else None
@@ -165,13 +169,13 @@ class BscTransactionReceiptParser:
             executed_sell_balance=BalanceAtomic[Token](
                 amount=sold_h,
                 amount_atomic=sold_exact,
-                asset=sell_token,
+                asset=sell_asset,
                 decimals=s_dec,
             ),
             executed_buy_balance=BalanceAtomic[Token](
                 amount=bought_h,
                 amount_atomic=bought_exact,
-                asset=buy_token,
+                asset=buy_asset,
                 decimals=b_dec,
             ),
             rate=rate,

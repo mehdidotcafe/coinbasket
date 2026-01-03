@@ -2,16 +2,14 @@ from decimal import ROUND_DOWN, Decimal
 import json
 from typing import TypedDict, cast
 from api.address.address import Address
+from api.chain.transaction_receipt_parser import TransactionReceiptParser
+from api.protocol.token import Token
 from hexbytes import HexBytes
 from api.chain.exception.insufficient_balance import InsufficientBalance
-from api.chain.infrastructure.bsc.transaction_receipt_parser import (
-    BscTransactionReceiptParser,
-)
 from api.protocol.asset import Asset
 from web3 import AsyncWeb3
 from web3.types import TxParams, Wei
 
-from api.protocol.token import Token
 from api.protocol.fixture.token import bnb_token, wbnb_token
 from api.chain.balance import (
     AmountAtomic,
@@ -33,7 +31,7 @@ class BscChain(Chain):
     def __init__(
         self,
         w3: AsyncWeb3,
-        transaction_receipt_parser: BscTransactionReceiptParser,
+        transaction_receipt_parser: TransactionReceiptParser,
     ):
         self.w3 = w3
         self.transaction_receipt_parser = transaction_receipt_parser
@@ -115,15 +113,15 @@ class BscChain(Chain):
             decimals=18,
         )
 
-    async def get_token_balance(
-        self, address: Address, token: Token
-    ) -> BalanceAtomic[Token]:
+    async def get_asset_balance(
+        self, address: Address, asset: Asset
+    ) -> BalanceAtomic[Asset]:
         """Get the balance of a specific token."""
-        if self.is_native_token(token):
+        if self.is_native_token(asset):
             return await self.get_native_token_balance(address)
 
         token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(token.address),
+            address=self.w3.to_checksum_address(asset.address),
             abi=self.erc20_token_abi,
         )
         amount_atomic = await token_contract.functions.balanceOf(
@@ -131,11 +129,11 @@ class BscChain(Chain):
         ).call()
 
         amount, decimals = await self.convert_amount_atomic_to_amount(
-            token=token, amount_atomic=amount_atomic
+            asset=asset, amount_atomic=amount_atomic
         )
 
-        return BalanceAtomic[Token](
-            asset=token, amount=amount, amount_atomic=amount_atomic, decimals=decimals
+        return BalanceAtomic[Asset](
+            asset=asset, amount=amount, amount_atomic=amount_atomic, decimals=decimals
         )
 
     async def get_address_native_token_balance(
@@ -153,23 +151,23 @@ class BscChain(Chain):
             decimals=18,
         )
 
-    async def get_address_token_balance(
-        self, address: str, token: Token
-    ) -> BalanceAtomic[Token]:
+    async def get_address_asset_balance(
+        self, address: str, asset: Asset
+    ) -> BalanceAtomic[Asset]:
         """Get the balance of a specific token."""
         token_contract = self.w3.eth.contract(
-            address=self.w3.to_checksum_address(token.address),
+            address=self.w3.to_checksum_address(asset.address),
             abi=self.erc20_token_abi,
         )
         amount_atomic = await token_contract.functions.balanceOf(
             self.w3.to_checksum_address(address)
         ).call()
         amount, decimals = await self.convert_amount_atomic_to_amount(
-            token=token, amount_atomic=amount_atomic
+            asset=asset, amount_atomic=amount_atomic
         )
 
-        return BalanceAtomic[Token](
-            asset=token, amount=amount, amount_atomic=amount_atomic, decimals=decimals
+        return BalanceAtomic[Asset](
+            asset=asset, amount=amount, amount_atomic=amount_atomic, decimals=decimals
         )
 
     def get_base_token(self):
@@ -203,23 +201,21 @@ class BscChain(Chain):
     async def parse_transaction_receipt(
         self,
         address: Address,
-        sell_token: Token,
-        buy_token: Token,
+        sell_asset: Asset,
+        buy_asset: Asset,
         transaction_hash: str,
     ) -> ParsedReceipt:
-        receipt = await self.w3.eth.get_transaction_receipt(HexBytes(transaction_hash))
-
         return await self.transaction_receipt_parser.parse_receipt(
             address=address,
-            sell_token=sell_token,
-            buy_token=buy_token,
-            receipt=receipt,
+            sell_asset=sell_asset,
+            buy_asset=buy_asset,
+            transaction_hash=transaction_hash,
         )
 
     async def convert_amount_to_amount_atomic(
-        self, token: Token, amount_readable: AmountReadable
+        self, asset: Asset, amount_readable: AmountReadable
     ) -> tuple[AmountAtomic, int]:
-        decimals = await self.get_token_decimals(token.address)
+        decimals = asset.decimals
 
         return int(
             (Decimal(amount_readable) * Decimal(10**decimals)).to_integral_exact(
@@ -228,9 +224,9 @@ class BscChain(Chain):
         ), decimals
 
     async def convert_amount_atomic_to_amount(
-        self, token: Token, amount_atomic: AmountAtomic
+        self, asset: Asset, amount_atomic: AmountAtomic
     ) -> tuple[AmountReadable, int]:
-        decimals = await self.get_token_decimals(token.address)
+        decimals = asset.decimals
 
         return amount_atomic / Decimal(10**decimals), decimals
 

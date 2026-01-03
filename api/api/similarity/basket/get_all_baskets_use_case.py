@@ -1,5 +1,3 @@
-from decimal import Decimal
-from typing import Any
 from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
@@ -8,7 +6,6 @@ from api.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
 )
 from api.protocol.basket import Basket
-from api.protocol.token import Token
 
 
 class GetAllBasketsUseCase:
@@ -41,22 +38,8 @@ class GetAllBasketsUseCase:
             name=metadata["source"]["name"],
             ticker=metadata["source"]["ticker"],
             description=metadata["source"]["description"],
-            denomination=Decimal(metadata["source"]["denomination"]),
-            tokens=[
-                self._map_similarity_document_metadata_to_token(token)
-                for token in metadata["source"]["tokens"]
-            ],
-        )
-
-    def _map_similarity_document_metadata_to_token(self, metadata: dict[str, Any]):
-        return Token(
-            address=metadata["address"],
-            id=metadata["id"],
-            name=metadata["name"],
-            display_name=metadata["display_name"],
-            ticker=metadata["ticker"],
-            description=metadata["description"],
-            decimals=int(metadata["decimals"]),
-            categories=metadata["categories"],
-            logo_uri=metadata.get("logo_uri"),
+            address=metadata["source"]["address"],
+            decimals=int(metadata["source"]["decimals"]),
+            categories=metadata["source"]["categories"],
+            logo_uri=metadata["source"].get("logo_uri"),
         )

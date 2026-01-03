@@ -1,18 +1,17 @@
-from decimal import Decimal
-from typing import Any
-
-from api.protocol.token import Token
+from typing import Literal
 
 
 class Basket:
     id: str
     name: str
     display_name: str
-    ticker: str
     description: str
-    denomination: Decimal
-    # TODO: Use weight
-    tokens: list[Token]
+    ticker: str
+    decimals: int
+    address: str
+    categories: list[str]
+    logo_uri: str | None = None
+    type: Literal["BASKET"]
 
     def __init__(
         self,
@@ -20,72 +19,49 @@ class Basket:
         name: str,
         display_name: str,
         ticker: str,
+        address: str,
         description: str,
-        denomination: Decimal,
-        tokens: list[Token],
+        decimals: int,
+        categories: list[str],
+        logo_uri: str | None = None,
     ):
         self.id = id.lower()
         self.name = name
         self.display_name = display_name
         self.ticker = ticker
+        self.address = address
         self.description = description
-        self.denomination = denomination
-        self.tokens = tokens
+        self.decimals = decimals
+        self.categories = categories
+        self.logo_uri = logo_uri
+        self.type = "BASKET"
 
     def __str__(self) -> str:
         return f"""
 name: {self.name}
 display_name: {self.display_name}
-ticker: {self.ticker}
 description: {self.description}
-type: basket
-denomination: {str(self.denomination)}
-{"\n".join([self.__flatten_token(token, index) for index, token in enumerate(self.tokens)])}
+ticker: {self.ticker}
+decimals: {self.decimals}
+address: {self.address}
+logo_uri: {self.logo_uri or ""}
+categories: {", ".join(self.categories)}
+type: {self.type.lower()}
 """
 
-    def __flatten_token(self, token: Token, index: int) -> str:
-        return f"""{index + 1}. name: {token.name}
- display_name: {token.display_name}
- ticker: {token.ticker}
- address: {token.address}
- decimals: {token.decimals}
- description: {token.description}
- categories: {token.categories}
- logo_uri: {token.logo_uri}
-"""
-
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, str | int | list[str] | None]:
         return {
             "id": self.id,
             "name": self.name,
             "display_name": self.display_name,
             "ticker": self.ticker,
+            "address": self.address,
             "description": self.description,
-            "denomination": str(self.denomination),
-            "tokens": [token.to_dict() for token in self.tokens],
+            "decimals": int(self.decimals),
+            "logo_uri": self.logo_uri,
+            "categories": self.categories,
+            "type": self.type,
         }
-
-    # Baskets use USDT as their pricing token
-    def get_pricing_token(self):
-        return Token(
-            id="bsc:0x55d398326f99059ff775485246999027b3197955",
-            name="Tether USD",
-            display_name="Tether USD",
-            ticker="USDT",
-            address="0x55d398326f99059ff775485246999027b3197955",
-            description="Tether USD is a stablecoin pegged to the US Dollar.",
-            categories=[
-                "BNB Chain Ecosystem",
-                "Bridged USDT",
-                "Bridged-Tokens",
-                "Bridged Stablecoin",
-            ],
-            decimals=18,
-            logo_uri="https://coin-images.coingecko.com/coins/images/35021/thumb/USDT.png",
-        )
-
-    def get_denomination(self):
-        return self.denomination
 
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, Basket):

@@ -1,9 +1,10 @@
 from decimal import Decimal
 from typing import Any
+from unittest.mock import AsyncMock
 from hexbytes import HexBytes
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import ParsedReceipt
-from api.chain.infrastructure.bsc.transaction_receipt_parser import (
+from api.chain.infrastructure.bsc.bsc_transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
 from pytest import fixture, mark
@@ -1537,13 +1538,18 @@ def w3():
 async def test_bsc_transaction_receipt_parser_sell_native_buy_token(
     w3: AsyncWeb3, receipt_bnb_cake: TxReceipt
 ):
+    transaction_hash = (
+        "0xd2d989ce5a1f43fd6e76778ae8de3e4043b0a8f424f9f624c9c55d6ed84d3f9a"
+    )
     parser = BscTransactionReceiptParser(w3=w3)
 
+    w3.eth.get_transaction_receipt = AsyncMock(return_value=receipt_bnb_cake)
+
     result = await parser.parse_receipt(
-        receipt=receipt_bnb_cake,
+        transaction_hash=transaction_hash,
         address="0xb404993a0129379D1D90e5A52d06652FFD0AE7c3",
-        sell_token=bnb_token,
-        buy_token=cake_token,
+        sell_asset=bnb_token,
+        buy_asset=cake_token,
     )
 
     assert result == ParsedReceipt(
@@ -1562,20 +1568,25 @@ async def test_bsc_transaction_receipt_parser_sell_native_buy_token(
         rate=Decimal("306.3940481597171398289795518"),
     )
 
-    print(f"result: {result}")
+    w3.eth.get_transaction_receipt.assert_awaited_once_with(HexBytes(transaction_hash))
 
 
 @mark.asyncio
 async def test_bsc_transaction_receipt_parser_sell_token_buy_native(
     w3: AsyncWeb3, receipt_cake_bnb: TxReceipt
 ):
+    transaction_hash = (
+        "0xd2d989ce5a1f43fd6e76778ae8de3e4043b0a8f424f9f624c9c55d6ed84d3f9a"
+    )
     parser = BscTransactionReceiptParser(w3=w3)
 
+    w3.eth.get_transaction_receipt = AsyncMock(return_value=receipt_cake_bnb)
+
     result = await parser.parse_receipt(
-        receipt=receipt_cake_bnb,
+        transaction_hash=transaction_hash,
         address="0xb404993a0129379D1D90e5A52d06652FFD0AE7c3",
-        sell_token=cake_token,
-        buy_token=bnb_token,
+        sell_asset=cake_token,
+        buy_asset=bnb_token,
     )
 
     assert result == ParsedReceipt(
@@ -1594,18 +1605,25 @@ async def test_bsc_transaction_receipt_parser_sell_token_buy_native(
         rate=Decimal("0.003255798222383928866666666667"),
     )
 
+    w3.eth.get_transaction_receipt.assert_awaited_once_with(HexBytes(transaction_hash))
+
 
 @mark.asyncio
 async def test_bsc_transaction_receipt_parser_wrap(
     w3: AsyncWeb3, receipt_bnb_wbnb: TxReceipt
 ):
+    transaction_hash = (
+        "0xd2d989ce5a1f43fd6e76778ae8de3e4043b0a8f424f9f624c9c55d6ed84d3f9a"
+    )
     parser = BscTransactionReceiptParser(w3=w3)
 
+    w3.eth.get_transaction_receipt = AsyncMock(return_value=receipt_bnb_wbnb)
+
     result = await parser.parse_receipt(
-        receipt=receipt_bnb_wbnb,
+        transaction_hash=transaction_hash,
         address="0xaF9e735b227ADFb08a3D45Ffc97D0bC60cd7Ed8e",
-        sell_token=bnb_token,
-        buy_token=wbnb_token,
+        sell_asset=bnb_token,
+        buy_asset=wbnb_token,
     )
 
     assert result == ParsedReceipt(
@@ -1623,19 +1641,26 @@ async def test_bsc_transaction_receipt_parser_wrap(
         ),
         rate=Decimal("1"),
     )
+
+    w3.eth.get_transaction_receipt.assert_awaited_once_with(HexBytes(transaction_hash))
 
 
 @mark.asyncio
 async def test_bsc_transaction_receipt_parser_unwrap(
     w3: AsyncWeb3, receipt_wbnb_bnb: TxReceipt
 ):
+    transaction_hash = (
+        "0xd2d989ce5a1f43fd6e76778ae8de3e4043b0a8f424f9f624c9c55d6ed84d3f9a"
+    )
     parser = BscTransactionReceiptParser(w3=w3)
 
+    w3.eth.get_transaction_receipt = AsyncMock(return_value=receipt_wbnb_bnb)
+
     result = await parser.parse_receipt(
-        receipt=receipt_wbnb_bnb,
+        transaction_hash=transaction_hash,
         address="0xaF9e735b227ADFb08a3D45Ffc97D0bC60cd7Ed8e",
-        sell_token=wbnb_token,
-        buy_token=bnb_token,
+        sell_asset=wbnb_token,
+        buy_asset=bnb_token,
     )
 
     assert result == ParsedReceipt(
@@ -1653,3 +1678,5 @@ async def test_bsc_transaction_receipt_parser_unwrap(
         ),
         rate=Decimal("1"),
     )
+
+    w3.eth.get_transaction_receipt.assert_awaited_once_with(HexBytes(transaction_hash))

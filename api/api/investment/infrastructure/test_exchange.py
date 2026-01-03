@@ -7,15 +7,15 @@ from api.investment.exchange.exchange import (
     SignableTransaction,
 )
 from api.investment.investment_parameters import InvestmentParameters
-from api.protocol.token import Token
+from api.protocol.asset import Asset
 
 
 class TestExchange(Exchange):
     async def get_signable_swap(
         self,
         taker: Address,
-        sell_balance: Balance[Token],
-        buy_balance: Balance[Token],
+        sell_balance: Balance[Asset],
+        buy_balance: Balance[Asset],
         investment_parameters: InvestmentParameters,
     ) -> ExchangeSignableSwap:
         return ExchangeSignableSwap(
@@ -41,20 +41,20 @@ class TestExchange(Exchange):
             ),
         )
 
-    async def convert_balance_to_token(
+    async def convert_balance_to_asset(
         self,
         taker: Address,
-        balance: BalanceAtomic[Token],
-        token: Token,
+        balance: BalanceAtomic[Asset],
+        asset: Asset,
         investment_parameters: InvestmentParameters,
     ) -> ExchangeConvertedBalance:
         return ExchangeConvertedBalance(
             sell_balance=balance,
             buy_balance=BalanceAtomic(
-                asset=token,
+                asset=asset,
                 amount=balance.amount * 2,
                 amount_atomic=balance.amount_atomic * 2,
-                decimals=token.decimals,
+                decimals=asset.decimals,
             ),
         )
 

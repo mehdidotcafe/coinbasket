@@ -1,4 +1,4 @@
-from decimal import Decimal
+from typing import Literal
 
 
 class Token:
@@ -11,6 +11,7 @@ class Token:
     address: str
     categories: list[str]
     logo_uri: str | None = None
+    type: Literal["TOKEN"]
 
     def __init__(
         self,
@@ -33,6 +34,7 @@ class Token:
         self.decimals = decimals
         self.categories = categories
         self.logo_uri = logo_uri
+        self.type = "TOKEN"
 
     def __str__(self) -> str:
         return f"""
@@ -44,7 +46,7 @@ decimals: {self.decimals}
 address: {self.address}
 logo_uri: {self.logo_uri or ""}
 categories: {", ".join(self.categories)}
-type: token
+type: {self.type.lower()}
 """
 
     def to_dict(self) -> dict[str, str | int | list[str] | None]:
@@ -58,13 +60,8 @@ type: token
             "decimals": int(self.decimals),
             "logo_uri": self.logo_uri,
             "categories": self.categories,
+            "type": self.type,
         }
-
-    def get_pricing_token(self) -> "Token":
-        return self
-
-    def get_denomination(self) -> Decimal:
-        return Decimal("1")
 
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, Token):

@@ -88,10 +88,10 @@ class GetPortfolioUseCase:
             address=address
         )
 
-        converted_balance = await self.exchange.convert_balance_to_token(
+        converted_balance = await self.exchange.convert_balance_to_asset(
             taker=address,
             balance=raw_available_balance,
-            token=conversion_token,
+            asset=conversion_token,
             investment_parameters=investment_parameters,
         )
 
@@ -141,7 +141,6 @@ class GetPortfolioUseCase:
             taker=address,
             sell_balance=holding.balance,
             buy_asset=conversion_token,
-            holdings=holdings,
         )
 
         return PortfolioBalance(
@@ -170,7 +169,6 @@ class GetPortfolioUseCase:
             taker=address,
             sell_balance=sell_balance,
             buy_asset=usdt_token,
-            holdings=holdings,
         )
 
         return converted_balance.total_balance.buy_balance

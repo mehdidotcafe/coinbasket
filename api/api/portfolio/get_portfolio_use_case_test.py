@@ -29,7 +29,7 @@ from api.protocol.fixture.token import (
     usdt_token,
     btc_token,
 )
-from api.protocol.fixture.basket import big4_basket
+from api.protocol.fixture.basket import test_basket
 
 
 @fixture
@@ -101,7 +101,7 @@ async def test_get_portfolio_use_case_only_available_balance(
         decimals=18,
     )
 
-    exchange.convert_balance_to_token.side_effect = [
+    exchange.convert_balance_to_asset.side_effect = [
         ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=bnb_token,
@@ -121,7 +121,7 @@ async def test_get_portfolio_use_case_only_available_balance(
     portfolio = await use_case.execute(address, usdt_token)
 
     chain.get_native_token_balance.assert_called_once()
-    exchange.convert_balance_to_token.assert_called_once_with(
+    exchange.convert_balance_to_asset.assert_called_once_with(
         taker=address,
         balance=BalanceAtomic(
             asset=bnb_token,
@@ -129,7 +129,7 @@ async def test_get_portfolio_use_case_only_available_balance(
             amount_atomic=1000 * 10**18,
             decimals=18,
         ),
-        token=usdt_token,
+        asset=usdt_token,
         investment_parameters=investment_parameters,
     )
 
@@ -198,7 +198,7 @@ async def test_get_portfolio_use_case_holding_balances(
         ),
         Holding(
             balance=BalanceAtomic(
-                asset=big4_basket,
+                asset=test_basket,
                 amount=Decimal("1000"),
                 amount_atomic=1000 * 10**18,
                 decimals=18,
@@ -290,7 +290,7 @@ async def test_get_portfolio_use_case_holding_balances(
         ConvertedAssetBalance(
             total_balance=ConvertedBalance(
                 sell_balance=BalanceAtomic(
-                    asset=big4_basket,
+                    asset=test_basket,
                     amount=Decimal("1000"),
                     amount_atomic=1000 * 10**18,
                     decimals=18,
@@ -306,7 +306,7 @@ async def test_get_portfolio_use_case_holding_balances(
         ),
     ]
 
-    exchange.convert_balance_to_token.side_effect = [
+    exchange.convert_balance_to_asset.side_effect = [
         # Get available_balance mock
         ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
@@ -333,7 +333,6 @@ async def test_get_portfolio_use_case_holding_balances(
                     decimals=18,
                 ),
                 buy_asset=usdt_token,
-                holdings=holding_balances,
             ),
             mock.call.convert(
                 taker=address,
@@ -344,7 +343,6 @@ async def test_get_portfolio_use_case_holding_balances(
                     decimals=18,
                 ),
                 buy_asset=usdt_token,
-                holdings=holding_balances,
             ),
             mock.call.convert(
                 taker=address,
@@ -355,18 +353,16 @@ async def test_get_portfolio_use_case_holding_balances(
                     decimals=18,
                 ),
                 buy_asset=usdt_token,
-                holdings=holding_balances,
             ),
             mock.call.convert(
                 taker=address,
                 sell_balance=BalanceAtomic(
-                    asset=big4_basket,
+                    asset=test_basket,
                     amount=Decimal("1000"),
                     amount_atomic=1000 * 10**18,
                     decimals=18,
                 ),
                 buy_asset=usdt_token,
-                holdings=holding_balances,
             ),
         ]
     )
@@ -403,7 +399,7 @@ async def test_get_portfolio_use_case_holding_balances(
         # ETH should be excluded as small balance
         PortfolioBalance(
             native_balance=BalanceAtomic(
-                asset=big4_basket,
+                asset=test_basket,
                 amount=Decimal("1000"),
                 amount_atomic=1000 * 10**18,
                 decimals=18,
@@ -480,7 +476,7 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
         ),
     ]
 
-    exchange.convert_balance_to_token.side_effect = [
+    exchange.convert_balance_to_asset.side_effect = [
         # Get available_balance mock
         ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
@@ -561,7 +557,7 @@ async def test_get_portfolio_use_case_total_balance(
         ),
     ]
 
-    exchange.convert_balance_to_token.side_effect = [
+    exchange.convert_balance_to_asset.side_effect = [
         ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=bnb_token,

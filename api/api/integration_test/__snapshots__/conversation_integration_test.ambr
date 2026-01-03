@@ -19,6 +19,7 @@
             'logo_uri': 'https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png',
             'name': 'Binance Bitcoin',
             'ticker': 'BTC',
+            'type': 'TOKEN',
           }),
         }),
         'sell_asset_with_amount': dict({
@@ -36,6 +37,7 @@
             'logo_uri': 'https://coin-images.coingecko.com/coins/images/12591/thumb/binance-coin-logo.png',
             'name': 'Binance Coin',
             'ticker': 'BNB',
+            'type': 'TOKEN',
           }),
           'available_amount': '0.00001',
         }),

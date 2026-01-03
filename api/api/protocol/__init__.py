@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import Literal
 from api.protocol.basket import Basket
 from api.protocol.token import Token
@@ -14,6 +13,7 @@ class TokenResponse(BaseModel):
     description: str
     decimals: int
     categories: list[str]
+    type: Literal["TOKEN"]
     logo_uri: str | None = None
 
     @staticmethod
@@ -28,6 +28,7 @@ class TokenResponse(BaseModel):
             categories=token.categories,
             description=token.description,
             decimals=token.decimals,
+            type="TOKEN",
             logo_uri=token.logo_uri,
         )
 
@@ -52,8 +53,11 @@ class BasketResponse(BaseModel):
     display_name: str
     ticker: str
     description: str
-    denomination: str
-    tokens: list[TokenResponse]
+    decimals: int
+    address: str
+    categories: list[str]
+    type: Literal["BASKET"]
+    logo_uri: str | None = None
 
     @staticmethod
     def from_domain(basket: Basket) -> "BasketResponse":
@@ -63,9 +67,12 @@ class BasketResponse(BaseModel):
             name=basket.name,
             display_name=basket.display_name,
             ticker=basket.ticker,
+            address=basket.address,
             description=basket.description,
-            denomination=str(basket.denomination),
-            tokens=[TokenResponse.from_domain(token) for token in basket.tokens],
+            decimals=basket.decimals,
+            categories=basket.categories,
+            logo_uri=basket.logo_uri,
+            type="BASKET",
         )
 
     def to_domain(self) -> Basket:
@@ -76,8 +83,10 @@ class BasketResponse(BaseModel):
             display_name=self.display_name,
             ticker=self.ticker,
             description=self.description,
-            denomination=Decimal(self.denomination),
-            tokens=[token.to_domain() for token in self.tokens],
+            decimals=self.decimals,
+            categories=self.categories,
+            logo_uri=self.logo_uri,
+            address=self.address,
         )
 
 

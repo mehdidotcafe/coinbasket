@@ -25,8 +25,10 @@ async def seed_fixtures(
         async with session.begin():
             for planned_order in planned_orders:
                 session.add(PlannedOrderModel.from_domain(planned_order))
+        async with session.begin():
             for confirmed_order in confirmed_orders:
                 session.add(ConfirmedOrderModel.from_domain(confirmed_order))
+        async with session.begin():
             for signable_order in signable_orders:
                 session.add(SignableOrderModel.from_domain(signable_order))
 

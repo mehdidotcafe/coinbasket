@@ -9,13 +9,13 @@ from api.chain.chain import Gas
 from api.investment.investment_parameters import InvestmentParameters
 
 from api.chain.balance import Balance
-from api.protocol.token import Token
+from api.protocol.asset import Asset
 
 
 @dataclass
 class ExchangeConvertedBalance:
-    sell_balance: BalanceAtomic[Token]
-    buy_balance: BalanceAtomic[Token]
+    sell_balance: BalanceAtomic[Asset]
+    buy_balance: BalanceAtomic[Asset]
 
 
 @dataclass
@@ -39,8 +39,8 @@ class SignableTransaction:
 
 @dataclass
 class ExchangeSignableSwap:
-    sell_balance: BalanceAtomic[Token]
-    buy_balance: BalanceAtomic[Token]
+    sell_balance: BalanceAtomic[Asset]
+    buy_balance: BalanceAtomic[Asset]
     signature_payload: dict[str, Any] | None
     transaction: SignableTransaction
 
@@ -50,19 +50,19 @@ class Exchange(ABC):
     async def get_signable_swap(
         self,
         taker: Address,
-        sell_balance: Balance[Token],
-        buy_balance: Balance[Token],
+        sell_balance: Balance[Asset],
+        buy_balance: Balance[Asset],
         investment_parameters: InvestmentParameters,
     ) -> ExchangeSignableSwap:
         """Creates transaction data to be sent on-chain for the given order."""
         raise NotImplementedError
 
     @abstractmethod
-    async def convert_balance_to_token(
+    async def convert_balance_to_asset(
         self,
         taker: Address,
-        balance: BalanceAtomic[Token],
-        token: Token,
+        balance: BalanceAtomic[Asset],
+        asset: Asset,
         investment_parameters: InvestmentParameters,
     ) -> ExchangeConvertedBalance:
         """Converts an asset balance to an asset."""

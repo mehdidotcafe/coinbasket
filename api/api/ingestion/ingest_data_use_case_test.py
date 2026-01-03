@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest import mock
 
 from api.protocol.basket import Basket
@@ -68,25 +67,14 @@ async def test_ingest_data_use_case(
             metadata={
                 "type": "basket",
                 "source": Basket(
-                    id="9760131e-8ca8-4d36-a636-2720e1d21bc7",
+                    id="bsc:0x12345567890abcdef1234567890abcdef1234567",
                     name="Wrapped BNB",
                     display_name="Wrapped BNB",
                     ticker="WBNB",
                     description="Just BNB",
-                    denomination=Decimal("1.0"),
-                    tokens=[
-                        Token(
-                            id="bsc:0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
-                            name="Wrapped BNB",
-                            display_name="Wrapped BNB",
-                            ticker="WBNB",
-                            address="0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
-                            description="Wrapped BNB is a wrapped version of Binance Coin (BNB) on the Binance Smart Chain.",
-                            categories=["wrapped", "bnb"],
-                            decimals=18,
-                            logo_uri="https://example.com/wbnb-logo.png",
-                        )
-                    ],
+                    categories=["basket"],
+                    decimals=18,
+                    address="0x12345567890abcdef1234567890abcdef1234567",
                 ),
             },
             page_content="""

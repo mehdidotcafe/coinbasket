@@ -27,6 +27,6 @@ class BscChainHoldingRepository(HoldingRepository):
         asset: Asset,
     ) -> Holding:
         return Holding(
-            balance=await self.chain.get_token_balance(address, asset),
+            balance=await self.chain.get_asset_balance(address, asset),
             children=None,
         )

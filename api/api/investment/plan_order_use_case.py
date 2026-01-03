@@ -81,7 +81,7 @@ class PlanOrderUseCase:
                 sell_balance_amount_atomic,
                 sell_balance_decimals,
             ) = await self.chain.convert_amount_to_amount_atomic(
-                token=sell_asset,
+                asset=sell_asset,
                 amount_readable=intended_order.sell_asset_with_amount.amount,
             )
 
@@ -94,7 +94,6 @@ class PlanOrderUseCase:
                     decimals=sell_balance_decimals,
                 ),
                 buy_asset=buy_asset,
-                holdings=holdings,
             )
 
             return PlannedOrder(
@@ -122,7 +121,7 @@ class PlanOrderUseCase:
                 buy_balance_amount_atomic,
                 buy_balance_decimals,
             ) = await self.chain.convert_amount_to_amount_atomic(
-                token=buy_asset,
+                asset=buy_asset,
                 amount_readable=buy_asset_amount,
             )
             buy_balance = BalanceAtomic[Asset](
@@ -133,10 +132,10 @@ class PlanOrderUseCase:
             )
 
             # TODO: Flipping sell and buy token is inaccurate
-            converted_balance = await self.exchange.convert_balance_to_token(
+            converted_balance = await self.exchange.convert_balance_to_asset(
                 taker=address,
                 balance=buy_balance,
-                token=sell_asset,
+                asset=sell_asset,
                 investment_parameters=InvestmentParameters(
                     slippage_tolerance_in_percentage=Decimal(1)
                 ),

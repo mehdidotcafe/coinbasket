@@ -70,11 +70,11 @@ def zero_x_api_client():
 def chain():
     chain = mock.Mock(spec=Chain)
 
-    chain.convert_amount_to_amount_atomic.side_effect = lambda token, amount_readable: (
+    chain.convert_amount_to_amount_atomic.side_effect = lambda asset, amount_readable: (
         amount_readable * (10**18),
         18,
     )
-    chain.convert_amount_atomic_to_amount.side_effect = lambda token, amount_atomic: (
+    chain.convert_amount_atomic_to_amount.side_effect = lambda asset, amount_atomic: (
         amount_atomic / (10**18),
         18,
     )
@@ -382,12 +382,12 @@ async def test_zero_x_swapper_convert_balance_to_token_swap_validation_failed(
     chain.get_token_decimals.return_value = 10
     zero_x_api_client.get_price.side_effect = SwapValidationFailed()
 
-    exchange_converted_balance = await zero_x_swapper.convert_balance_to_token(
+    exchange_converted_balance = await zero_x_swapper.convert_balance_to_asset(
         taker=address,
         balance=BalanceAtomic(
             asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
         ),
-        token=eth_token,
+        asset=eth_token,
         investment_parameters=InvestmentParameters(
             slippage_tolerance_in_percentage=Decimal("1"),
         ),

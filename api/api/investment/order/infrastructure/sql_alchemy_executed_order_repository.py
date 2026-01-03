@@ -22,8 +22,10 @@ from api.protocol.token import Token
 def _deserialize_asset_from_dict(asset_dict: dict[str, Any]) -> Asset:
     """Deserialize an asset from a dictionary."""
 
-    def deserialize_token(token: dict[str, Any]) -> Token:
-        return Token(
+    def deserialize_asset(token: dict[str, Any]) -> Asset:
+        ChildAsset = Token if token["type"] == "TOKEN" else Basket
+
+        return ChildAsset(
             id=token["id"],
             name=token["name"],
             display_name=token["display_name"],
@@ -34,17 +36,7 @@ def _deserialize_asset_from_dict(asset_dict: dict[str, Any]) -> Asset:
             description=token["description"],
         )
 
-    if "tokens" in asset_dict:
-        return Basket(
-            id=asset_dict["id"],
-            name=asset_dict["name"],
-            display_name=asset_dict["display_name"],
-            ticker=asset_dict["ticker"],
-            description=asset_dict["description"],
-            denomination=Decimal(asset_dict["denomination"]),
-            tokens=[deserialize_token(token) for token in asset_dict["tokens"]],
-        )
-    return deserialize_token(asset_dict)
+    return deserialize_asset(asset_dict)
 
 
 class ExecutedOrderModel(Base):

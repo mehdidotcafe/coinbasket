@@ -69,9 +69,9 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_token_balance(
-        self, address: Address, token: Token
-    ) -> BalanceAtomic[Token]:
+    async def get_asset_balance(
+        self, address: Address, asset: Asset
+    ) -> BalanceAtomic[Asset]:
         raise NotImplementedError
 
     @abstractmethod
@@ -81,9 +81,9 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_address_token_balance(
-        self, address: str, token: Token
-    ) -> BalanceAtomic[Token]:
+    async def get_address_asset_balance(
+        self, address: str, asset: Asset
+    ) -> BalanceAtomic[Asset]:
         raise NotImplementedError
 
     @abstractmethod
@@ -107,13 +107,13 @@ class Chain(ABC):
 
     @abstractmethod
     async def convert_amount_to_amount_atomic(
-        self, token: Token, amount_readable: AmountReadable
+        self, asset: Asset, amount_readable: AmountReadable
     ) -> tuple[AmountAtomic, int]:
         raise NotImplementedError
 
     @abstractmethod
     async def convert_amount_atomic_to_amount(
-        self, token: Token, amount_atomic: AmountAtomic
+        self, asset: Asset, amount_atomic: AmountAtomic
     ) -> tuple[AmountReadable, int]:
         raise NotImplementedError
 
@@ -121,8 +121,8 @@ class Chain(ABC):
     async def parse_transaction_receipt(
         self,
         address: Address,
-        sell_token: Token,
-        buy_token: Token,
+        sell_asset: Asset,
+        buy_asset: Asset,
         transaction_hash: str,
     ) -> ParsedReceipt:
         raise NotImplementedError
