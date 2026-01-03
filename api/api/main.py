@@ -51,18 +51,6 @@ from api.investment.build_signable_order_use_case import (
 )
 from api.address.address import Address
 
-from api.investment.fees import Fees
-
-from api.investment.order.order import (
-    ChainTransaction,
-    ChainTransactionStatus,
-    ChainTransactionType,
-    Order,
-    OrderStatus,
-    OrderTrigger,
-    OrderType,
-    Try,
-)
 from api.investment.signable_order import SignableOrder
 from api.portfolio.get_portfolio_asset_balance_use_case import (
     GetPortfolioAssetBalanceUseCase,
@@ -94,10 +82,7 @@ from api.registry import (
     date_time,
     exchange,
     id_generator,
-    order_repository,
-    posting_repository,
     langgraph_db_path,
-    nonce_manager,
     asset_balance_converter,
     small_balance_policy,
     similarity_storage,
@@ -149,7 +134,6 @@ request_address_context: ContextVar[str | None] = ContextVar(
 )
 
 get_portfolio_use_case = GetPortfolioUseCase(
-    order_repository=order_repository,
     holding_repository=holding_repository,
     exchange=exchange,
     chain=chain,
@@ -187,7 +171,7 @@ build_signable_order_use_case = BuildSignableOrderUseCase(
 
 get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
     chain=chain,
-    posting_repository=posting_repository,
+    holding_repository=holding_repository,
     asset_balance_converter=asset_balance_converter,
 )
 
@@ -237,7 +221,6 @@ class ErrorResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    await nonce_manager.resync()
     await similarity_storage.start()
 
     if configuration.app_env != "test":
@@ -581,138 +564,69 @@ class BalanceAtomicResponse(BaseModel):
         )
 
 
-class ChainTransactionResponse(BaseModel):
+class ExecutedOrderResponse(BaseModel):
     id: str
-    try_id: str
-    order_id: str
-    type: ChainTransactionType
-    data: str
-    hash: str | None
-    status: ChainTransactionStatus
-
-    @staticmethod
-    def from_domain(domain: ChainTransaction) -> "ChainTransactionResponse":
-        return ChainTransactionResponse(
-            id=domain.id,
-            try_id=domain.try_id,
-            order_id=domain.order_id,
-            type=domain.type,
-            data=domain.data,
-            hash=domain.hash,
-            status=domain.status,
-        )
-
-
-class FeesResponse(BaseModel):
-    chain_fee: int
-    provider_fee: int | None = None
-    service_fee: int | None = None
-
-    @staticmethod
-    def from_domain(domain: Fees) -> "FeesResponse":
-        return FeesResponse(
-            chain_fee=domain.chain_fee,
-            provider_fee=domain.provider_fee,
-            service_fee=domain.service_fee,
-        )
-
-
-class TryResponse(BaseModel):
-    id: str
-    order_id: str
-    created_at: int
-    chain_transactions: list[ChainTransactionResponse]
-    provider: str
+    transaction_hash: str
     buy_balance: BalanceAtomicResponse
-    fees: FeesResponse | None = None
-
-    @staticmethod
-    def from_domain(domain: Try) -> "TryResponse":
-        return TryResponse(
-            id=domain.id,
-            order_id=domain.order_id,
-            created_at=domain.created_at,
-            chain_transactions=[
-                ChainTransactionResponse.from_domain(tx)
-                for tx in domain.chain_transactions
-            ],
-            provider=domain.provider,
-            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
-            fees=FeesResponse.from_domain(domain.fees) if domain.fees else None,
-        )
-
-
-class OrderResponse(BaseModel):
-    id: str
     sell_balance: BalanceAtomicResponse
-    buy_balance: BalanceAtomicResponse
-    type: OrderType
-    # Don't return tries to lighten the response payload
-    # tries: list[TryResponse]
-    created_at: int
-    status: OrderStatus
-    trigger: OrderTrigger
+    rate: str | None = None
 
     @staticmethod
-    def from_domain(domain: Order) -> "OrderResponse":
-        return OrderResponse(
+    def from_domain(domain: ExecutedOrder) -> "ExecutedOrderResponse":
+        return ExecutedOrderResponse(
             id=domain.id,
-            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
+            transaction_hash=domain.transaction_hash,
             buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
-            type=domain.type,
-            # tries=[TryResponse.from_domain(try_) for try_ in domain.tries],
-            created_at=domain.created_at,
-            status=domain.status,
-            trigger=domain.trigger,
+            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
+            rate=str(domain.rate) if domain.rate else None,
         )
 
 
-class OrdersResponse(BaseModel):
-    orders: list[OrderResponse]
+class ExecutedOrdersResponse(BaseModel):
+    orders: list[ExecutedOrderResponse]
 
     @classmethod
-    def from_domain(cls, orders: list[Order]) -> "OrdersResponse":
-        return cls(orders=[OrderResponse.from_domain(order) for order in orders])
+    def from_domain(cls, orders: list[ExecutedOrder]) -> "ExecutedOrdersResponse":
+        return cls(
+            orders=[ExecutedOrderResponse.from_domain(order) for order in orders]
+        )
 
 
 @tool(
     parse_docstring=True,
 )
-async def get_orders(
-    status: OrderStatus | None = None, limit: int = 50, offset: int = 0
-):
-    """SLOW / EXPENSIVE. Retrieve the orders from an eventual status and an eventual pagination
+async def get_executed_orders(limit: int = 50, offset: int = 0):
+    """SLOW / EXPENSIVE. Retrieve the executed orders from an eventual pagination
 
     Args:
-        status: The status of the orders to retrieve, either "PENDING", "SUCCESS" or "FAIL". If not provided, all orders are retrieved.
         limit: The maximum number of orders to retrieve.
         offset: The offset for pagination.
 
     Returns:
         The list of orders matching the criteria.
     """
-    orders = await order_repository.get_orders(status, limit, offset)
+    orders = await executed_order_repository.get(limit, offset)
 
-    return OrdersResponse.from_domain(orders).model_dump_json()
+    return ExecutedOrdersResponse.from_domain(orders).model_dump_json()
 
 
 @tool(
     parse_docstring=True,
 )
-async def get_order(
-    order_id: str,
+async def get_executed_order(
+    executed_order_id: str,
 ):
-    """FAST. Retrieve an order from its id
+    """FAST. Retrieve an executed order from its id
 
     Args:
-        order_id: The id of the order to retrieve.
+        executed_order_id: The id of the executed order to retrieve.
 
     Returns:
         The order matching the id or None if the order has not been found.
     """
-    order = await order_repository.get_order(order_id)
+    order = await executed_order_repository.get_one(executed_order_id)
 
-    return OrderResponse.from_domain(order).model_dump_json() if order else None
+    return ExecutedOrderResponse.from_domain(order).model_dump_json() if order else None
 
 
 class BalanceRequest(BaseModel):
@@ -828,24 +742,6 @@ class IntentOrderRequest(BaseModel):
             sell_asset_with_amount=await self.sell_asset_with_amount.to_domain()
             if self.sell_asset_with_amount
             else None,
-        )
-
-
-class ExecutedOrderResponse(BaseModel):
-    id: str
-    transaction_hash: str
-    buy_balance: BalanceAtomicResponse
-    sell_balance: BalanceAtomicResponse
-    rate: str | None = None
-
-    @staticmethod
-    def from_domain(domain: ExecutedOrder) -> "ExecutedOrderResponse":
-        return ExecutedOrderResponse(
-            id=domain.id,
-            transaction_hash=domain.transaction_hash,
-            buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
-            sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
-            rate=str(domain.rate) if domain.rate else None,
         )
 
 
@@ -979,6 +875,7 @@ async def plan_and_execute_swap_order(
             ).model_dump_json()
 
         order_receipt = await chain.parse_transaction_receipt(
+            address=address,
             sell_token=planned_order.sell_asset_with_amount.asset,
             buy_token=planned_order.buy_asset_with_amount.asset,
             transaction_hash=cast(str, signed_order_request.transaction_hash),
@@ -1011,8 +908,8 @@ coinbasket_tools = [
     get_token_or_basket_or_asset_holding,
     get_token_or_basket_or_asset_holding_and_available_cash,
     # get_portfolio_summary,
-    # get_orders,
-    # get_order,
+    get_executed_orders,
+    get_executed_order,
 ]
 
 
@@ -1280,11 +1177,13 @@ class ConvertedBalanceResponse(BaseModel):
 @app.post(
     "/asset/swap/price",
 )
-async def get_asset_swap_price(req: AssetSwapPriceInfoRequest):
+async def get_asset_swap_price(request: Request, req: AssetSwapPriceInfoRequest):
     """Test authentication to the Agent."""
+    address = cast(Address, request.state.address)
 
-    converted_balance = await get_asset_swap_price_use_case.execute(req.to_domain())
-
+    converted_balance = await get_asset_swap_price_use_case.execute(
+        address, req.to_domain()
+    )
     return ConvertedBalanceResponse.from_domain(converted_balance)
 
 
@@ -1611,7 +1510,6 @@ class PortfolioResponse(BaseModel):
     available_balance: PortfolioBalanceResponse
     holding_balances: list[PortfolioBalanceResponse]
     total_balance: BalanceAtomicResponse
-    pending_orders: list[OrderResponse]
 
     @staticmethod
     def from_domain(domain: Portfolio) -> "PortfolioResponse":
@@ -1624,9 +1522,6 @@ class PortfolioResponse(BaseModel):
                 for balance in domain.holding_balances
             ],
             total_balance=BalanceAtomicResponse.from_domain(domain.total_balance),
-            pending_orders=[
-                OrderResponse.from_domain(order) for order in domain.pending_orders
-            ],
         )
 
 
@@ -1650,10 +1545,6 @@ class PortfolioAssetBalanceResponse(BaseModel):
     spec=spec,
     schemas=[
         TokenRequest,
-        OrderResponse,
-        FeesResponse,
-        ChainTransactionResponse,
-        TryResponse,
         BalanceAtomicResponse,
         PortfolioBalanceResponse,
         PortfolioRequest,

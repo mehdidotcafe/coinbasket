@@ -1,6 +1,7 @@
 from decimal import Decimal
 from unittest import mock
-from api.chain.balance import BalanceAtomic
+from api.address.address import Address
+from api.chain.balance import Balance, BalanceAtomic
 from api.chain.chain import Chain, Gas
 from api.chain.contract import Contract
 
@@ -35,7 +36,6 @@ from api.investment.exchange.exchange import (
     ExchangeSignableSwap,
 )
 
-from api.investment.order.order import Order
 from api.protocol.token import Token
 from pytest import fixture, mark, raises
 from api.protocol.fixture.token import bnb_token, eth_token
@@ -103,27 +103,25 @@ def investment_parameters():
 
 
 @fixture
-def order():
-    return Order(
-        id="1",
-        sell_balance=BalanceAtomic(
-            asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
-        ),
-        buy_balance=BalanceAtomic(
-            asset=eth_token,
-            amount=Decimal(0.2),
-            amount_atomic=int(0.2 * 10**18),
-            decimals=18,
-        ),
-        type="BUY",
-        asset_type="TOKEN",
-        tries=[],
-        created_at=1234567890,
-        status="PENDING",
-        trigger="MANUAL",
-        buy_basket_id=None,
-        sell_basket_id=None,
+def sell_balance():
+    return BalanceAtomic(
+        asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
     )
+
+
+@fixture
+def buy_balance():
+    return BalanceAtomic(
+        asset=eth_token,
+        amount=Decimal(0.2),
+        amount_atomic=int(0.2 * 10**18),
+        decimals=18,
+    )
+
+
+@fixture
+def address():
+    return Address("0x1234567890abcdef1234567890abcdef12345678")
 
 
 @fixture
@@ -148,7 +146,9 @@ async def test_zero_x_swapper_get_signable_swap_data_no_liquidity(
     zero_x_api_client: ZeroXApiClient,
     zero_x_swapper: ZeroXSwapper,
     investment_parameters: InvestmentParameters,
-    order: Order,
+    sell_balance: BalanceAtomic,
+    buy_balance: BalanceAtomic,
+    address: Address,
 ):
     """Test that an SwapInsufficientLiquidity is raised when there is no liquidity."""
     zero_x_api_client.get_quote.return_value = QuoteResult(
@@ -159,9 +159,10 @@ async def test_zero_x_swapper_get_signable_swap_data_no_liquidity(
 
     with raises(SwapInsufficientLiquidity):
         await zero_x_swapper.get_signable_swap(
-            sell_balance=order.sell_balance,
-            buy_balance=order.buy_balance,
+            sell_balance=sell_balance,
+            buy_balance=buy_balance,
             investment_parameters=investment_parameters,
+            taker=address,
         )
 
 
@@ -170,7 +171,9 @@ async def test_zero_x_swapper_get_signable_swap_data_success(
     zero_x_api_client: ZeroXApiClient,
     zero_x_swapper: ZeroXSwapper,
     investment_parameters: InvestmentParameters,
-    order: Order,
+    sell_balance: BalanceAtomic,
+    buy_balance: BalanceAtomic,
+    address: Address,
 ):
     zero_x_api_client.get_price.return_value = Price(
         issues=Issues(),
@@ -209,9 +212,10 @@ async def test_zero_x_swapper_get_signable_swap_data_success(
     )
 
     signable_swap = await zero_x_swapper.get_signable_swap(
-        sell_balance=order.sell_balance,
-        buy_balance=order.buy_balance,
+        sell_balance=sell_balance,
+        buy_balance=buy_balance,
         investment_parameters=investment_parameters,
+        taker=address,
     )
 
     assert signable_swap == ExchangeSignableSwap(
@@ -243,7 +247,9 @@ async def test_zero_x_swapper_get_signable_swap_data_no_transaction_value(
     zero_x_api_client: ZeroXApiClient,
     zero_x_swapper: ZeroXSwapper,
     investment_parameters: InvestmentParameters,
-    order: Order,
+    sell_balance: BalanceAtomic,
+    buy_balance: BalanceAtomic,
+    address: Address,
 ):
     zero_x_api_client.get_price.return_value = Price(
         issues=Issues(),
@@ -282,9 +288,10 @@ async def test_zero_x_swapper_get_signable_swap_data_no_transaction_value(
     )
 
     signable_swap = await zero_x_swapper.get_signable_swap(
-        sell_balance=order.sell_balance,
-        buy_balance=order.buy_balance,
+        sell_balance=sell_balance,
+        buy_balance=buy_balance,
         investment_parameters=investment_parameters,
+        taker=address,
     )
 
     assert signable_swap.transaction.amount == 0
@@ -296,6 +303,7 @@ async def test_zero_x_swapper_get_signable_swap_data_with_approval(
     zero_x_swapper: ZeroXSwapper,
     chain: Chain,
     investment_parameters: InvestmentParameters,
+    address: Address,
 ):
     chain.is_native_token.return_value = False
     zero_x_api_client.get_price.return_value = Price(
@@ -342,17 +350,14 @@ async def test_zero_x_swapper_get_signable_swap_data_with_approval(
     )
 
     signable_swap = await zero_x_swapper.get_signable_swap(
-        buy_balance=BalanceAtomic[Token](
+        taker=address,
+        buy_balance=Balance[Token](
             asset=bnb_token,
             amount=Decimal(1),
-            amount_atomic=1 * 10**18,
-            decimals=18,
         ),
-        sell_balance=BalanceAtomic[Token](
+        sell_balance=Balance[Token](
             asset=eth_token,
             amount=Decimal(0.2),
-            amount_atomic=int(0.2 * 10**18),
-            decimals=18,
         ),
         investment_parameters=investment_parameters,
     )
@@ -371,12 +376,14 @@ async def test_zero_x_swapper_convert_balance_to_token_swap_validation_failed(
     zero_x_api_client: ZeroXApiClient,
     zero_x_swapper: ZeroXSwapper,
     chain: Chain,
+    address: Address,
 ):
     chain.is_native_token.return_value = False
     chain.get_token_decimals.return_value = 10
     zero_x_api_client.get_price.side_effect = SwapValidationFailed()
 
     exchange_converted_balance = await zero_x_swapper.convert_balance_to_token(
+        taker=address,
         balance=BalanceAtomic(
             asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
         ),

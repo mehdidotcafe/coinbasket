@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import Any, TypedDict
+from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain, Gas
 from api.chain.contract import Contract
@@ -29,14 +30,11 @@ from api.chain.balance import Balance
 from api.protocol.token import Token
 from web3 import AsyncWeb3
 
-from eth_account.signers.local import LocalAccount
-
 RETRY_ATTEMPTS = 5
 
 
 class Configuration(TypedDict):
     bsc_rpc_url: str
-    private_key: str
 
 
 # LINK: https://0x.org/docs/api#tag/Swap/operation/swap::permit2::getPrice
@@ -56,15 +54,13 @@ class ZeroXSwapper(Exchange):
         self.bsc_rpc_url = configuration["bsc_rpc_url"]
 
         self.w3 = w3
-        self.account: LocalAccount = self.w3.eth.account.from_key(
-            private_key=configuration["private_key"]
-        )
 
     def get_name(self):
         return "0X_PROTOCOL"
 
     async def get_signable_swap(
         self,
+        taker: Address,
         sell_balance: Balance[Token],
         buy_balance: Balance[Token],
         investment_parameters: InvestmentParameters,
@@ -78,7 +74,7 @@ class ZeroXSwapper(Exchange):
 
         quote_result = await self.api_client.get_quote(
             chain_id=chain_id,
-            taker=self.account.address,
+            taker=taker,
             sell_token=sell_balance.asset.address,
             buy_token=buy_balance.asset.address,
             amount=amount_atomic,
@@ -136,6 +132,7 @@ class ZeroXSwapper(Exchange):
 
     async def convert_balance_to_token(
         self,
+        taker: Address,
         balance: BalanceAtomic[Token],
         token: Token,
         investment_parameters: InvestmentParameters,
@@ -164,7 +161,7 @@ class ZeroXSwapper(Exchange):
         try:
             price = await self.api_client.get_price(
                 chain_id=await self.chain.get_chain_id(),
-                taker=self.account.address,
+                taker=taker,
                 sell_token=balance.asset.address,
                 buy_token=token.address,
                 amount=amount_atomic,

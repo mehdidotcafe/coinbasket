@@ -26,7 +26,6 @@ class Configuration:
         self.frontend_url = env.str("FRONTEND_URL")
 
         self.bsc_rpc_url = env.str("BSC_RPC_URL")
-        self.bsc_private_key = env.str("BSC_PRIVATE_KEY")
 
         self.database_user = env.str("DATABASE_USER")
         self.database_password = env.str("DATABASE_PASSWORD")
@@ -73,9 +72,6 @@ class Configuration:
 
         self.zero_x_api_url = env.str("ZERO_X_API_URL")
         self.zero_x_api_key = env.str("ZERO_X_API_KEY")
-
-        self.temporal_port = env.int("TEMPORAL_PORT")
-        self.temporal_host = env.str("TEMPORAL_HOST")
 
         if self.langsmith_tracing:
             os.environ["LANGSMITH_TRACING"] = "true"

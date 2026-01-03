@@ -2,18 +2,13 @@ from decimal import ROUND_DOWN, Decimal
 import json
 from typing import TypedDict, cast
 from api.address.address import Address
-from eth_typing import HexStr
-from eth_account.signers.local import LocalAccount
 from hexbytes import HexBytes
 from api.chain.exception.insufficient_balance import InsufficientBalance
-from api.chain.infrastructure.bsc.nonce_manager import NonceManager
 from api.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
 from api.protocol.asset import Asset
-from tenacity import retry, stop_after_attempt, wait_fixed
 from web3 import AsyncWeb3
-from web3.middleware import SignAndSendRawMiddlewareBuilder, ExtraDataToPOAMiddleware  # type: ignore
 from web3.types import TxParams, Wei
 
 from api.protocol.token import Token
@@ -23,7 +18,7 @@ from api.chain.balance import (
     AmountReadable,
     BalanceAtomic,
 )
-from api.chain.chain import Chain, Gas, ParsedReceipt
+from api.chain.chain import Chain, ParsedReceipt
 
 from async_lru import alru_cache
 
@@ -38,14 +33,10 @@ class BscChain(Chain):
     def __init__(
         self,
         w3: AsyncWeb3,
-        nonce_manager: NonceManager,
         transaction_receipt_parser: BscTransactionReceiptParser,
-        private_key: str,
     ):
         self.w3 = w3
-        self.nonce_manager = nonce_manager
         self.transaction_receipt_parser = transaction_receipt_parser
-        self.private_key = private_key
         self.base_token = bnb_token
         self.wrapped_base_token = wbnb_token
         with open(
@@ -54,14 +45,6 @@ class BscChain(Chain):
             encoding="utf-8",
         ) as f:
             self.erc20_token_abi = json.load(f)
-
-        self.account: LocalAccount = self.w3.eth.account.from_key(private_key)
-
-        self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)  # type: ignore
-        self.w3.middleware_onion.inject(
-            SignAndSendRawMiddlewareBuilder.build(self.account),  # type: ignore
-            layer=0,
-        )
 
     def is_native_token(self, asset: Asset) -> bool:
         return (
@@ -82,10 +65,6 @@ class BscChain(Chain):
     async def get_chain_id(self):  # type: ignore
         """Get the chain ID of the BSC network."""
         return await self.w3.eth._chain_id()  # type: ignore
-
-    def get_address(self) -> str:
-        """Get the address of the agent wallet."""
-        return self.account.address
 
     async def get_min_balance(self) -> BalanceAtomic[Token]:
         """Get the native token minimum balance required for the agent wallet."""
@@ -199,81 +178,6 @@ class BscChain(Chain):
     def get_wrapped_base_token(self):
         return self.wrapped_base_token
 
-    async def compute_gas_estimate(
-        self,
-        amount: int,
-        # address checksum
-        to_address: str,
-        data: HexStr | None = None,
-    ) -> int:
-        transaction_params: TxParams = {
-            "from": self.account.address,
-            "to": to_address,
-            "value": Wei(amount),
-        }
-
-        if data is not None:
-            transaction_params["data"] = data
-
-        gas_estimate = int(await self.w3.eth.estimate_gas(transaction_params) * 1.1)
-
-        return gas_estimate
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_fixed(5),
-        reraise=True,
-    )
-    async def sign_send_transaction(
-        self,
-        amount: int,
-        gas: Gas | None = None,
-        to_address: str | None = None,
-        data: HexStr | None = None,
-    ) -> str:
-        nonce = await self.nonce_manager.get_and_increment()
-
-        print(f"Nonce: {nonce}")
-
-        transaction_params: TxParams = {
-            "from": self.account.address,
-            "chainId": await self.get_chain_id(),
-            "value": Wei(amount),
-            "nonce": nonce,
-        }
-        if data is not None:
-            transaction_params["data"] = data
-
-        if to_address is not None:
-            transaction_params["to"] = self.w3.to_checksum_address(to_address)
-
-        if gas is None:
-            eip1559Gas = await self.__compute_eip1559_gas_estimate()
-
-            transaction_params["type"] = eip1559Gas["type"]
-            transaction_params["maxFeePerGas"] = eip1559Gas["maxFeePerGas"]
-            transaction_params["maxPriorityFeePerGas"] = eip1559Gas[
-                "maxPriorityFeePerGas"
-            ]
-
-        if gas is not None and gas.gas is not None:
-            transaction_params["gas"] = gas.gas
-
-        if gas is not None and gas.gas_price is not None:
-            transaction_params["gasPrice"] = Wei(gas.gas_price)
-
-        try:
-            transaction_hash = await self.w3.eth.send_transaction(transaction_params)
-
-            return transaction_hash.to_0x_hex()
-        except Exception as e:
-            error_message = str(e).lower()
-
-            if "nonce too low" in error_message or "already used" in error_message:
-                await self.nonce_manager.resync()
-                raise e
-            raise e
-
     async def wait_transaction(
         self,
         transaction_hash: str,
@@ -297,12 +201,16 @@ class BscChain(Chain):
             return False
 
     async def parse_transaction_receipt(
-        self, sell_token: Token, buy_token: Token, transaction_hash: str
+        self,
+        address: Address,
+        sell_token: Token,
+        buy_token: Token,
+        transaction_hash: str,
     ) -> ParsedReceipt:
         receipt = await self.w3.eth.get_transaction_receipt(HexBytes(transaction_hash))
 
         return await self.transaction_receipt_parser.parse_receipt(
-            address=self.account.address,
+            address=address,
             sell_token=sell_token,
             buy_token=buy_token,
             receipt=receipt,
@@ -325,19 +233,6 @@ class BscChain(Chain):
         decimals = await self.get_token_decimals(token.address)
 
         return amount_atomic / Decimal(10**decimals), decimals
-
-    async def __compute_eip1559_gas_estimate(self):
-        """Compute gas estimate for EIP-1559 transactions."""
-        latest_block = await self.w3.eth.get_block("latest")
-        base_fee = latest_block.get("baseFeePerGas", 0)
-        max_priority_fee = self.w3.to_wei(2, "gwei")  # miner "tip"
-        max_fee_per_gas = Wei(base_fee * 2 + max_priority_fee)
-
-        return Eip1559Gas(
-            type=2,
-            maxFeePerGas=max_fee_per_gas,
-            maxPriorityFeePerGas=max_priority_fee,
-        )
 
     async def __simulate_transaction(self, transaction_hash: str, block_number: int):
         tx = await self.w3.eth.get_transaction(cast(HexBytes, transaction_hash))

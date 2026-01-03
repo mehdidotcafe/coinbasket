@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 
 from api.chain.chain import Gas
@@ -48,6 +49,7 @@ class Exchange(ABC):
     @abstractmethod
     async def get_signable_swap(
         self,
+        taker: Address,
         sell_balance: Balance[Token],
         buy_balance: Balance[Token],
         investment_parameters: InvestmentParameters,
@@ -58,6 +60,7 @@ class Exchange(ABC):
     @abstractmethod
     async def convert_balance_to_token(
         self,
+        taker: Address,
         balance: BalanceAtomic[Token],
         token: Token,
         investment_parameters: InvestmentParameters,

@@ -10,3 +10,10 @@ class ExecutedOrderRepository(ABC):
     ) -> ExecutedOrder:
         """Save an executed order to the repository."""
         raise NotImplementedError
+
+    @abstractmethod
+    async def get(
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[ExecutedOrder]:
+        """Retrieve executed orders with pagination."""
+        raise NotImplementedError

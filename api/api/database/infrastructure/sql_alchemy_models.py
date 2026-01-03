@@ -8,30 +8,16 @@ from api.investment.order.infrastructure.sql_alchemy_executed_order_repository i
 from api.investment.order.infrastructure.sql_alchemy_intended_order_repository import (
     IntendedOrderModel,
 )
-from api.investment.order.infrastructure.sql_alchemy_order_repository import (
-    OrderTryChainTransactionModel,
-    OrderTryModel,
-    OrderModel,
-)
+
 from api.investment.order.infrastructure.sql_alchemy_planned_order_repository import (
     PlannedOrderModel,
 )
 from api.investment.order.infrastructure.sql_alchemy_signable_order_repository import (
     SignableOrderModel,
 )
-from api.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
-    TransactionModel,
-)
-from api.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
-    PostingModel,
-)
+
 
 models: list[type[Base]] = [
-    OrderTryChainTransactionModel,
-    OrderTryModel,
-    OrderModel,
-    TransactionModel,
-    PostingModel,
     IntendedOrderModel,
     PlannedOrderModel,
     ConfirmedOrderModel,

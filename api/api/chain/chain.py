@@ -54,10 +54,6 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_address(self) -> str:
-        raise NotImplementedError
-
-    @abstractmethod
     async def get_min_balance(self) -> BalanceAtomic[Token]:
         raise NotImplementedError
 
@@ -99,26 +95,10 @@ class Chain(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def sign_send_transaction(
-        self,
-        amount: int,
-        gas: Gas | None = None,
-        to_address: str | None = None,
-        data: Any | None = None,
-    ) -> str:
-        raise NotImplementedError
-
-    @abstractmethod
     async def wait_transaction(
         self,
         transaction_hash: str,
     ) -> bool:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def compute_gas_estimate(
-        self, amount: int, to_address: str, data: Any | None = None
-    ) -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -139,6 +119,10 @@ class Chain(ABC):
 
     @abstractmethod
     async def parse_transaction_receipt(
-        self, sell_token: Token, buy_token: Token, transaction_hash: str
+        self,
+        address: Address,
+        sell_token: Token,
+        buy_token: Token,
+        transaction_hash: str,
     ) -> ParsedReceipt:
         raise NotImplementedError

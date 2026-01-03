@@ -86,6 +86,7 @@ class PlanOrderUseCase:
             )
 
             converted_asset_balance = await self.asset_balance_converter.convert(
+                taker=address,
                 sell_balance=BalanceAtomic[Asset](
                     asset=sell_asset,
                     amount=intended_order.sell_asset_with_amount.amount,
@@ -133,6 +134,7 @@ class PlanOrderUseCase:
 
             # TODO: Flipping sell and buy token is inaccurate
             converted_balance = await self.exchange.convert_balance_to_token(
+                taker=address,
                 balance=buy_balance,
                 token=sell_asset,
                 investment_parameters=InvestmentParameters(

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from api.address.address import Address
 from attr import dataclass
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
@@ -6,7 +7,7 @@ from api.investment.calculator.asset_balance_converter import (
     AssetBalanceConverter,
     ConvertedBalance,
 )
-from api.portfolio.posting.posting_repository import PostingRepository
+from api.portfolio.holding.holding_repository import HoldingRepository
 from api.protocol.asset import Asset
 
 
@@ -23,22 +24,18 @@ class GetAssetSwapPriceUseCase:
     def __init__(
         self,
         chain: Chain,
-        posting_repository: PostingRepository,
+        holding_repository: HoldingRepository,
         asset_balance_converter: AssetBalanceConverter,
     ):
         self.chain = chain
-        self.posting_repository = posting_repository
+        self.holding_repository = holding_repository
         self.asset_balance_converter = asset_balance_converter
 
     async def execute(
-        self, asset_swap_price_info: AssetSwapPriceInfo
+        self, address: Address, asset_swap_price_info: AssetSwapPriceInfo
     ) -> ConvertedBalance:
-        sell_asset_decimals = await self.chain.get_token_decimals(
-            asset_swap_price_info.sell_asset.get_pricing_token().address
-        )
-
-        holding = await self.posting_repository.get_holding_balance(
-            asset_swap_price_info.sell_asset, sell_asset_decimals
+        holding = await self.holding_repository.get_holding_balance(
+            address, asset_swap_price_info.sell_asset
         )
         pricing_sell_token = asset_swap_price_info.sell_asset.get_pricing_token()
         amount_atomic, decimals = await self.chain.convert_amount_to_amount_atomic(
@@ -47,6 +44,7 @@ class GetAssetSwapPriceUseCase:
         )
 
         converted_asset_balance = await self.asset_balance_converter.convert(
+            taker=address,
             sell_balance=BalanceAtomic(
                 asset=asset_swap_price_info.sell_asset,
                 amount=asset_swap_price_info.sell_asset_amount,

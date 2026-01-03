@@ -22,6 +22,7 @@ class BuildSignableOrderUseCase:
 
     async def execute(self, confirmed_order: ConfirmedOrder):
         signed_swap = await self.exchange.get_signable_swap(
+            taker=confirmed_order.address,
             sell_balance=confirmed_order.sell_balance,
             buy_balance=confirmed_order.buy_balance,
             investment_parameters=investment_parameters,

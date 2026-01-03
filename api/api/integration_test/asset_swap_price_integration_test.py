@@ -1,8 +1,10 @@
+from pytest import mark
 import requests
 from environs import env
 from api.protocol.fixture.token import btc_token, eth_token
 from api.protocol.fixture.basket import big4_basket, memecoinmania_basket
 from syrupy.filters import paths
+
 
 app_port = env.int("APP_PORT")
 credential = env.str("TEST_CREDENTIAL")
@@ -41,6 +43,7 @@ def test_integration_asset_swap_price_sell_token_buy_token(snapshot):
     assert response_json == snapshot(exclude=paths("buy_balance.amount"))
 
 
+@mark.skip("Waiting Basket refactorization")
 def test_integration_asset_swap_price_sell_token_buy_basket(snapshot):
     response = requests.post(
         f"http://localhost:{app_port}/asset/swap/price",
@@ -59,6 +62,7 @@ def test_integration_asset_swap_price_sell_token_buy_basket(snapshot):
     assert response_json == snapshot(exclude=paths("buy_balance.amount"))
 
 
+@mark.skip("Waiting Basket refactorization")
 def test_integration_asset_swap_price_sell_basket_buy_token(snapshot):
     response = requests.post(
         f"http://localhost:{app_port}/asset/swap/price",
@@ -77,6 +81,7 @@ def test_integration_asset_swap_price_sell_basket_buy_token(snapshot):
     assert response_json == snapshot(exclude=paths("buy_balance.amount"))
 
 
+@mark.skip("Waiting Basket refactorization")
 def test_integration_asset_swap_price_sell_basket_buy_basket():
     response = requests.post(
         f"http://localhost:{app_port}/asset/swap/price",

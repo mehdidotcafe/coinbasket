@@ -1,3 +1,4 @@
+from api.address.address import Address
 from api.chain.balance import Balance, BalanceAtomic
 from api.investment.exchange.exchange import (
     Exchange,
@@ -12,6 +13,7 @@ from api.protocol.token import Token
 class TestExchange(Exchange):
     async def get_signable_swap(
         self,
+        taker: Address,
         sell_balance: Balance[Token],
         buy_balance: Balance[Token],
         investment_parameters: InvestmentParameters,
@@ -41,6 +43,7 @@ class TestExchange(Exchange):
 
     async def convert_balance_to_token(
         self,
+        taker: Address,
         balance: BalanceAtomic[Token],
         token: Token,
         investment_parameters: InvestmentParameters,

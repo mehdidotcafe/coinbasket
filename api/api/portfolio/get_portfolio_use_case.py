@@ -12,8 +12,6 @@ from api.investment.calculator.asset_balance_converter import (
 from api.investment.exchange.exchange import Exchange
 
 from api.investment.investment_parameters import InvestmentParameters
-from api.investment.order.order import Order
-from api.investment.order.order_repository import OrderRepository
 from api.portfolio.holding.holding import Holding
 from api.portfolio.holding.holding_repository import (
     HoldingRepository,
@@ -35,7 +33,7 @@ class Portfolio:
     available_balance: PortfolioBalance
     holding_balances: list[PortfolioBalance]
     total_balance: BalanceAtomic[Token]
-    pending_orders: list[Order]
+    pending_orders: list[Any]
 
 
 investment_parameters = InvestmentParameters(
@@ -46,14 +44,12 @@ investment_parameters = InvestmentParameters(
 class GetPortfolioUseCase:
     def __init__(
         self,
-        order_repository: OrderRepository,
         holding_repository: HoldingRepository,
         exchange: Exchange,
         chain: Chain,
         asset_balance_converter: AssetBalanceConverter,
         small_balance_policy: SmallBalancePolicy,
     ):
-        self.order_repository = order_repository
         self.holding_repository = holding_repository
         self.exchange = exchange
         self.chain = chain
@@ -82,7 +78,7 @@ class GetPortfolioUseCase:
                 conversion_token,
                 conversion_token_decimals,
             ),
-            pending_orders=await self.order_repository.get_pending_orders(),
+            pending_orders=[],
         )
 
     async def __fetch_available_balance(
@@ -93,6 +89,7 @@ class GetPortfolioUseCase:
         )
 
         converted_balance = await self.exchange.convert_balance_to_token(
+            taker=address,
             balance=raw_available_balance,
             token=conversion_token,
             investment_parameters=investment_parameters,
@@ -107,12 +104,15 @@ class GetPortfolioUseCase:
         raw_holdings = await self.holding_repository.get_holding_balances(address, [])
 
         tasks: list[CoroutineType[Any, Any, BalanceAtomic | PortfolioBalance]] = [
-            self._compute_conversion_token_usd_rate(conversion_token, raw_holdings)
+            self._compute_conversion_token_usd_rate(
+                address, conversion_token, raw_holdings
+            )
         ]
 
         for holding in raw_holdings:
             tasks.append(
                 self._convert_holding_balance_to_token(
+                    address=address,
                     holding=holding,
                     holdings=raw_holdings,
                     conversion_token=conversion_token,
@@ -132,12 +132,16 @@ class GetPortfolioUseCase:
 
     async def _convert_holding_balance_to_token(
         self,
+        address: Address,
         holding: Holding,
         holdings: list[Holding],
         conversion_token: Token,
     ) -> PortfolioBalance:
         converted_asset_balance = await self.asset_balance_converter.convert(
-            sell_balance=holding.balance, buy_asset=conversion_token, holdings=holdings
+            taker=address,
+            sell_balance=holding.balance,
+            buy_asset=conversion_token,
+            holdings=holdings,
         )
 
         return PortfolioBalance(
@@ -146,7 +150,7 @@ class GetPortfolioUseCase:
         )
 
     async def _compute_conversion_token_usd_rate(
-        self, conversion_token: Token, holdings: list[Holding]
+        self, address: Address, conversion_token: Token, holdings: list[Holding]
     ):
         conversion_token_decimals = await self.chain.get_token_decimals(
             conversion_token.address
@@ -163,6 +167,7 @@ class GetPortfolioUseCase:
             return sell_balance
 
         converted_balance = await self.asset_balance_converter.convert(
+            taker=address,
             sell_balance=sell_balance,
             buy_asset=usdt_token,
             holdings=holdings,

@@ -1,5 +1,6 @@
 from decimal import Decimal
 from unittest import mock
+from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
 from api.investment.calculator.asset_balance_converter import (
@@ -32,7 +33,7 @@ def exchange():
     exchange = mock.Mock(spec=Exchange)
 
     exchange.convert_balance_to_token.side_effect = (
-        lambda balance, token, investment_parameters: ExchangeConvertedBalance(
+        lambda taker, balance, token, investment_parameters: ExchangeConvertedBalance(
             sell_balance=balance,
             buy_balance=BalanceAtomic(
                 asset=token,
@@ -47,6 +48,11 @@ def exchange():
 
 
 @fixture
+def taker():
+    return Address("0x1234abcd5678efgh9012ijklmnopqrstuvwx3456")
+
+
+@fixture
 def asset_balance_converter(exchange: Exchange, chain: Chain):
     return AssetBalanceConverter(exchange=exchange, chain=chain)
 
@@ -54,6 +60,7 @@ def asset_balance_converter(exchange: Exchange, chain: Chain):
 @mark.asyncio
 async def test_asset_balance_converter_sell_basket_to_buy_basket_should_raise(
     asset_balance_converter: AssetBalanceConverter,
+    taker: Address,
 ):
     sell_balance = BalanceAtomic(
         asset=test_basket, amount=Decimal("0"), amount_atomic=0, decimals=18
@@ -62,12 +69,15 @@ async def test_asset_balance_converter_sell_basket_to_buy_basket_should_raise(
     holdings: list[Holding] = []
 
     with raises(CannotSwapBasketForAnotherException):
-        await asset_balance_converter.convert(sell_balance, big4_basket, holdings)
+        await asset_balance_converter.convert(
+            taker, sell_balance, big4_basket, holdings
+        )
 
 
 @mark.asyncio
 async def test_asset_balance_converter_sell_basket_to_buy_token(
     asset_balance_converter: AssetBalanceConverter,
+    taker: Address,
 ):
     sell_balance = BalanceAtomic(
         asset=test_basket, amount=Decimal("50"), amount_atomic=50, decimals=18
@@ -99,7 +109,7 @@ async def test_asset_balance_converter_sell_basket_to_buy_token(
     ]
 
     convert_asset_balance = await asset_balance_converter.convert(
-        sell_balance, sol_token, holdings
+        taker, sell_balance, sol_token, holdings
     )
 
     assert convert_asset_balance.total_balance == ConvertedBalance(
@@ -149,6 +159,7 @@ async def test_asset_balance_converter_sell_basket_to_buy_token(
 @mark.asyncio
 async def test_asset_balance_converter_sell_basket_to_buy_token_no_holdings(
     asset_balance_converter: AssetBalanceConverter,
+    taker: Address,
 ):
     sell_balance = BalanceAtomic(
         asset=test_basket, amount=Decimal("50"), amount_atomic=50, decimals=18
@@ -180,7 +191,7 @@ async def test_asset_balance_converter_sell_basket_to_buy_token_no_holdings(
     ]
 
     convert_asset_balance = await asset_balance_converter.convert(
-        sell_balance, sol_token, holdings
+        taker, sell_balance, sol_token, holdings
     )
 
     assert convert_asset_balance.total_balance == ConvertedBalance(
@@ -201,6 +212,7 @@ async def test_asset_balance_converter_sell_basket_to_buy_token_no_holdings(
 @mark.asyncio
 async def test_asset_balance_converter_sell_basket_to_buy_token_nil_holding(
     asset_balance_converter: AssetBalanceConverter,
+    taker: Address,
 ):
     sell_balance = BalanceAtomic(
         asset=test_basket, amount=Decimal("50"), amount_atomic=50, decimals=18
@@ -209,7 +221,7 @@ async def test_asset_balance_converter_sell_basket_to_buy_token_nil_holding(
     holdings: list[Holding] = []
 
     convert_asset_balance = await asset_balance_converter.convert(
-        sell_balance, sol_token, holdings
+        taker, sell_balance, sol_token, holdings
     )
 
     assert convert_asset_balance.total_balance == ConvertedBalance(
@@ -230,6 +242,7 @@ async def test_asset_balance_converter_sell_basket_to_buy_token_nil_holding(
 @mark.asyncio
 async def test_asset_balance_converter_buy_basket_to_sell_token(
     asset_balance_converter: AssetBalanceConverter,
+    taker: Address,
 ):
     sell_balance = BalanceAtomic[Token](
         asset=sol_token, amount=Decimal("88"), amount_atomic=88 * 10**18, decimals=18
@@ -248,7 +261,7 @@ async def test_asset_balance_converter_buy_basket_to_sell_token(
     ]
 
     convert_asset_balance = await asset_balance_converter.convert(
-        sell_balance, test_basket, holdings
+        taker, sell_balance, test_basket, holdings
     )
 
     assert convert_asset_balance.total_balance == ConvertedBalance(
@@ -300,6 +313,7 @@ async def test_asset_balance_converter_buy_basket_to_sell_token(
 @mark.asyncio
 async def test_asset_balance_converter_buy_basket_to_sell_token_basket_without_tokens(
     asset_balance_converter: AssetBalanceConverter,
+    taker: Address,
 ):
     basket_without_token = Basket(
         id="0d83917d-a2bd-4482-83e6-68d52c8f293a",
@@ -318,7 +332,7 @@ async def test_asset_balance_converter_buy_basket_to_sell_token_basket_without_t
     holdings: list[Holding] = []
 
     convert_asset_balance = await asset_balance_converter.convert(
-        sell_balance, basket_without_token, holdings
+        taker, sell_balance, basket_without_token, holdings
     )
 
     assert convert_asset_balance.total_balance == ConvertedBalance(
@@ -341,6 +355,7 @@ async def test_asset_balance_converter_buy_basket_to_sell_token_basket_without_t
 @mark.asyncio
 async def test_asset_balance_converter_sell_token_to_buy_token(
     asset_balance_converter: AssetBalanceConverter,
+    taker: Address,
 ):
     sell_balance = BalanceAtomic[Token](
         asset=sol_token, amount=Decimal("88"), amount_atomic=88 * 10**18, decimals=18
@@ -359,7 +374,7 @@ async def test_asset_balance_converter_sell_token_to_buy_token(
     ]
 
     convert_asset_balance = await asset_balance_converter.convert(
-        sell_balance, btc_token, holdings
+        taker, sell_balance, btc_token, holdings
     )
 
     assert convert_asset_balance.total_balance == ConvertedBalance(

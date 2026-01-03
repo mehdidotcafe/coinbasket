@@ -9,8 +9,6 @@ from api.investment.calculator.asset_balance_converter import (
 )
 from api.investment.exchange.exchange import ExchangeConvertedBalance, Exchange
 from api.investment.investment_parameters import InvestmentParameters
-from api.investment.order.order import Order
-from api.investment.order.order_repository import OrderRepository
 from api.portfolio.holding.holding import Holding
 from api.portfolio.holding.holding_repository import (
     HoldingRepository,
@@ -32,11 +30,6 @@ from api.protocol.fixture.token import (
     btc_token,
 )
 from api.protocol.fixture.basket import big4_basket
-
-
-@fixture
-def order_repository():
-    return mock.Mock(spec=OrderRepository)
 
 
 @fixture
@@ -78,7 +71,6 @@ def address():
 
 @fixture
 def use_case(
-    order_repository: OrderRepository,
     holding_repository: HoldingRepository,
     exchange: Exchange,
     chain: Chain,
@@ -86,7 +78,6 @@ def use_case(
     small_balance_policy: SmallBalancePolicy,
 ):
     return GetPortfolioUseCase(
-        order_repository,
         holding_repository,
         exchange,
         chain,
@@ -131,6 +122,7 @@ async def test_get_portfolio_use_case_only_available_balance(
 
     chain.get_native_token_balance.assert_called_once()
     exchange.convert_balance_to_token.assert_called_once_with(
+        taker=address,
         balance=BalanceAtomic(
             asset=bnb_token,
             amount=Decimal("1000"),
@@ -159,60 +151,11 @@ async def test_get_portfolio_use_case_only_available_balance(
 
 @mark.asyncio
 async def test_get_portfolio_use_case_only_pending_orders(
-    use_case: GetPortfolioUseCase, order_repository: OrderRepository, address: Address
+    use_case: GetPortfolioUseCase, address: Address
 ):
-    orders = [
-        Order(
-            id="1",
-            sell_balance=BalanceAtomic(
-                asset=bnb_token,
-                amount=Decimal("1.0"),
-                amount_atomic=1 * 10**18,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=eth_token,
-                amount=Decimal("0.85"),
-                amount_atomic=85 * 10**16,
-                decimals=18,
-            ),
-            type="BUY",
-            asset_type="TOKEN",
-            tries=[],
-            created_at=0,
-            status="PENDING",
-            trigger="MANUAL",
-        ),
-        Order(
-            id="2",
-            sell_balance=BalanceAtomic(
-                asset=bnb_token,
-                amount=Decimal("1.0"),
-                amount_atomic=1 * 10**18,
-                decimals=18,
-            ),
-            buy_balance=BalanceAtomic(
-                asset=sol_token,
-                amount=Decimal("4"),
-                amount_atomic=4 * 10**18,
-                decimals=18,
-            ),
-            type="BUY",
-            asset_type="TOKEN",
-            tries=[],
-            created_at=0,
-            status="PENDING",
-            trigger="MANUAL",
-        ),
-    ]
-
-    order_repository.get_pending_orders.return_value = orders
-
     portfolio = await use_case.execute(address, usdt_token)
 
-    order_repository.get_pending_orders.assert_called_once()
-
-    assert portfolio.pending_orders == orders
+    assert portfolio.pending_orders == []
 
 
 @mark.asyncio
@@ -382,6 +325,7 @@ async def test_get_portfolio_use_case_holding_balances(
     asset_balance_converter.assert_has_calls(
         [
             mock.call.convert(
+                taker=address,
                 sell_balance=BalanceAtomic(
                     asset=wbnb_token,
                     amount=Decimal("1.0"),
@@ -392,6 +336,7 @@ async def test_get_portfolio_use_case_holding_balances(
                 holdings=holding_balances,
             ),
             mock.call.convert(
+                taker=address,
                 sell_balance=BalanceAtomic(
                     asset=sol_token,
                     amount=Decimal("4"),
@@ -402,6 +347,7 @@ async def test_get_portfolio_use_case_holding_balances(
                 holdings=holding_balances,
             ),
             mock.call.convert(
+                taker=address,
                 sell_balance=BalanceAtomic(
                     asset=eth_token,
                     amount=Decimal("0.85"),
@@ -412,6 +358,7 @@ async def test_get_portfolio_use_case_holding_balances(
                 holdings=holding_balances,
             ),
             mock.call.convert(
+                taker=address,
                 sell_balance=BalanceAtomic(
                     asset=big4_basket,
                     amount=Decimal("1000"),

@@ -11,24 +11,6 @@ services:
       - "${DATABASE_PORT}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-  temporal_production:
-    depends_on:
-      - postgres_production
-    container_name: temporal_production
-    image: temporalio/auto-setup:1.29
-    environment:
-      - DB=postgres12
-      - DB_PORT=5432
-      - POSTGRES_SEEDS=postgres_production
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PWD=${DATABASE_PASSWORD}
-      - DBNAME=${APP_NAME}-temporal
-      - VISIBILITY_DBNAME=${APP_NAME}-temporal-visibility
-    ports:
-      - "${TEMPORAL_PORT}:7233"
-      - "8889:8233"
-    volumes:
-      - temporal-data:/tmp/temporal
   qdrant_production:
     image: qdrant/qdrant:latest
     restart: always
@@ -52,5 +34,4 @@ configs:
       log_level: INFO
 volumes:
   postgres-data:
-  temporal-data:
   qdrant-data:

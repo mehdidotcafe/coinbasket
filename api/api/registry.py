@@ -36,7 +36,6 @@ from api.investment.calculator.asset_balance_converter import (
 from api.portfolio.small_balance.absolute_small_balance_policy import (
     AbsoluteSmallBalancePolicy,
 )
-from temporalio.client import Client as TemporalClient
 
 from api.chain.infrastructure.bsc.transaction_receipt_parser import (
     BscTransactionReceiptParser,
@@ -45,16 +44,7 @@ from api.chain.infrastructure.bsc.transaction_receipt_parser import (
 from api.database.infrastructure.sql_alchemy_session_manager import (
     SqlAlchemySessionManager,
 )
-from api.investment.order.infrastructure.sql_alchemy_order_repository import (
-    SqlAlchemyOrderRepository,
-)
-from api.investment.transaction.infrastructure.sql_alchemy_transaction_repository import (
-    SqlAlchemyTransactionRepository,
-)
 
-from api.portfolio.posting.infrastructure.sql_alchemy_posting_repository import (
-    SqlAlchemyPostingRepository,
-)
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -62,10 +52,7 @@ from api.conversation.repository.infrastructure.langchain_sqlite_conversation_re
     LangchainSqliteConversationRepository,
 )
 from api.datetime.infrastructure.python_date_time import PythonDateTime
-from api.chain.infrastructure.bsc.nonce_manager import NonceManager
-from api.investment.order.infrastructure.temporal_order_submitter import (
-    TemporalOrderSubmitter,
-)
+
 from api.shared.http_request.infrastructure.aiohttp_http_request import (
     AiohttpHttpRequest,
 )
@@ -101,18 +88,10 @@ configuration = Configuration()
 
 w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
 
-nonce_manager = NonceManager(
-    w3=w3,
-    configuration={
-        "private_key": configuration.bsc_private_key,
-    },
-)
 transaction_receipt_parser = BscTransactionReceiptParser(w3=w3)
 
 chain = BscChain(
     w3=w3,
-    nonce_manager=nonce_manager,
-    private_key=configuration.bsc_private_key,
     transaction_receipt_parser=transaction_receipt_parser,
 )
 
@@ -142,7 +121,6 @@ exchange = (
         w3=w3,
         configuration={
             "bsc_rpc_url": configuration.bsc_rpc_url,
-            "private_key": configuration.bsc_private_key,
         },
     )
     if configuration.app_env != "test"
@@ -163,15 +141,6 @@ AsyncSessionLocal = cast(
     type[AsyncSession], sessionmaker(expire_on_commit=False, class_=AsyncSession)
 )
 
-order_repository = SqlAlchemyOrderRepository(
-    AsyncSessionLocal=AsyncSessionLocal, engine=engine
-)
-transaction_repository = SqlAlchemyTransactionRepository(
-    AsyncSessionLocal=AsyncSessionLocal, engine=engine
-)
-posting_repository = SqlAlchemyPostingRepository(
-    AsyncSessionLocal=AsyncSessionLocal, engine=engine
-)
 holding_repository = BscChainHoldingRepository(
     chain=chain,
 )
@@ -194,17 +163,6 @@ executed_order_repository = SqlAlchemyExecutedOrderRepository(
 
 conversation_repository = LangchainSqliteConversationRepository(
     db_path=langgraph_db_path, date_time=date_time, id_generator=id_generator
-)
-
-order_submitter = TemporalOrderSubmitter(
-    order_repository=order_repository,
-    id_generator=id_generator,
-    configuration={
-        "temporal_host": configuration.temporal_host,
-        "temporal_port": configuration.temporal_port,
-        "app_name": configuration.app_name,
-    },
-    TemporalClient=TemporalClient,
 )
 
 session_manager = SqlAlchemySessionManager(

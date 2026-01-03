@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import NUMERIC, JSONB
+from sqlalchemy.future import select
 from api.chain.balance import BalanceAtomic
 from api.investment.order.executed_order_repository import ExecutedOrderRepository
 from api.protocol.asset import Asset
@@ -125,3 +126,28 @@ class SqlAlchemyExecutedOrderRepository(
         async with self.get_session(session) as session:
             session.add(ExecutedOrderModel.from_domain(executed_order))
         return executed_order
+
+    async def get(
+        self,
+        limit: int | None = None,
+        offset: int | None = None,
+        session: NullableSession = None,
+    ) -> list[ExecutedOrder]:
+        async with self.get_session(session) as session:
+            stmt = select(ExecutedOrderModel)
+            if limit:
+                stmt = stmt.limit(limit)
+            if offset:
+                stmt = stmt.offset(offset)
+            result = await session.execute(stmt)
+            order_models = result.scalars().all()
+            return [row.to_domain() for row in order_models]
+
+    async def get_one(
+        self, executed_order_id: str, session: NullableSession = None
+    ) -> ExecutedOrder | None:
+        async with self.get_session(session) as session:
+            result = await session.get(ExecutedOrderModel, executed_order_id)
+            if result:
+                return result.to_domain()
+            return None

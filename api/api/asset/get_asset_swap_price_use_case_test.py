@@ -1,6 +1,7 @@
 from decimal import Decimal
 from unittest import mock
 
+from api.address.address import Address
 from api.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
     GetAssetSwapPriceUseCase,
@@ -14,7 +15,7 @@ from api.investment.calculator.asset_balance_converter import (
 )
 from pytest import fixture, mark
 from api.portfolio.holding.holding import Holding
-from api.portfolio.posting.posting_repository import PostingRepository
+from api.portfolio.holding.holding_repository import HoldingRepository
 from api.protocol.fixture.token import wbnb_token
 from api.protocol.fixture.basket import test_basket
 
@@ -40,8 +41,8 @@ def chain():
 
 
 @fixture
-def posting_repository():
-    return mock.Mock(spec=PostingRepository)
+def holding_repository():
+    return mock.Mock(spec=HoldingRepository)
 
 
 @fixture
@@ -50,19 +51,25 @@ def asset_balance_converter():
 
 
 @fixture
+def address():
+    return Address("0x1234abcd5678efgh9012ijklmnopqrstuvwx3456")
+
+
+@fixture
 def use_case(
     chain: Chain,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     asset_balance_converter: AssetBalanceConverter,
 ):
-    return GetAssetSwapPriceUseCase(chain, posting_repository, asset_balance_converter)
+    return GetAssetSwapPriceUseCase(chain, holding_repository, asset_balance_converter)
 
 
 @mark.asyncio
 async def test_get_asset_swap_price_use_case(
     use_case: GetAssetSwapPriceUseCase,
-    posting_repository: PostingRepository,
+    holding_repository: HoldingRepository,
     asset_balance_converter: AssetBalanceConverter,
+    address: Address,
 ):
     asset_swap_price_info = AssetSwapPriceInfo(
         sell_asset=wbnb_token,
@@ -70,7 +77,7 @@ async def test_get_asset_swap_price_use_case(
         buy_asset=test_basket,
     )
 
-    posting_repository.get_holding_balance.return_value = Holding(
+    holding_repository.get_holding_balance.return_value = Holding(
         balance=BalanceAtomic(
             asset=test_basket,
             amount=Decimal("1.0"),
@@ -98,7 +105,7 @@ async def test_get_asset_swap_price_use_case(
         balances=[],
     )
 
-    asset_swap_price = await use_case.execute(asset_swap_price_info)
+    asset_swap_price = await use_case.execute(address, asset_swap_price_info)
 
     assert asset_swap_price == ConvertedBalance(
         sell_balance=BalanceAtomic(

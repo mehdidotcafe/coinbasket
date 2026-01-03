@@ -2,6 +2,7 @@ import asyncio
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import cast
+from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
 from api.investment.exception.cannot_swap_basket_for_another_exception import (
@@ -34,18 +35,23 @@ class AssetBalanceConverter:
         self.chain = chain
 
     async def convert(
-        self, sell_balance: BalanceAtomic, buy_asset: Asset, holdings: list[Holding]
+        self,
+        taker: Address,
+        sell_balance: BalanceAtomic,
+        buy_asset: Asset,
+        holdings: list[Holding],
     ) -> ConvertedAssetBalance:
         if isinstance(sell_balance.asset, Basket) and isinstance(buy_asset, Token):
             return await self._convert_sell_basket_to_buy_token(
-                cast(BalanceAtomic[Basket], sell_balance), buy_asset, holdings
+                taker, cast(BalanceAtomic[Basket], sell_balance), buy_asset, holdings
             )
         if isinstance(buy_asset, Basket) and isinstance(sell_balance.asset, Token):
             return await self._convert_buy_basket_to_sell_token(
-                cast(BalanceAtomic[Token], sell_balance), buy_asset, holdings
+                taker, cast(BalanceAtomic[Token], sell_balance), buy_asset, holdings
             )
         if isinstance(buy_asset, Token) and isinstance(sell_balance.asset, Token):
             return await self._convert_sell_token_to_buy_token(
+                taker,
                 cast(BalanceAtomic[Token], sell_balance),
                 buy_asset,
                 holdings,
@@ -55,6 +61,7 @@ class AssetBalanceConverter:
 
     async def _convert_sell_basket_to_buy_token(
         self,
+        taker: Address,
         sell_balance: BalanceAtomic[Basket],
         buy_token: Token,
         holdings: list[Holding],
@@ -84,6 +91,7 @@ class AssetBalanceConverter:
 
         async def convert_one(sell_child_balance: BalanceAtomic[Token]):
             return await self.exchange.convert_balance_to_token(
+                taker=taker,
                 balance=sell_child_balance,
                 token=buy_token,
                 investment_parameters=InvestmentParameters(
@@ -120,6 +128,7 @@ class AssetBalanceConverter:
 
     async def _convert_buy_basket_to_sell_token(
         self,
+        taker: Address,
         sell_balance: BalanceAtomic[Token],
         buy_basket: Basket,
         holdings: list[Holding],
@@ -147,6 +156,7 @@ class AssetBalanceConverter:
 
         async def convert_one(sell_child_balance: BalanceAtomic[Token], token: Token):
             return await self.exchange.convert_balance_to_token(
+                taker=taker,
                 balance=sell_child_balance,
                 token=token,
                 investment_parameters=InvestmentParameters(
@@ -164,6 +174,7 @@ class AssetBalanceConverter:
         ]
         gather_calls.append(
             self.exchange.convert_balance_to_token(
+                taker=taker,
                 balance=sell_balance,
                 token=pricing_token,
                 investment_parameters=InvestmentParameters(
@@ -200,11 +211,13 @@ class AssetBalanceConverter:
 
     async def _convert_sell_token_to_buy_token(
         self,
+        taker: Address,
         sell_balance: BalanceAtomic[Token],
         buy_token: Token,
         holdings: list[Holding],
     ) -> ConvertedAssetBalance:
         result = await self.exchange.convert_balance_to_token(
+            taker=taker,
             balance=sell_balance,
             token=buy_token,
             investment_parameters=InvestmentParameters(
