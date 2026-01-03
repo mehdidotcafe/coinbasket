@@ -20,6 +20,7 @@ from api.conversation.get_conversation_messages_use_case import (
 from api.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_data_source import (
     CoingeckoLiveTokenListDataSource,
 )
+from api.ingestion.data_source.infrastructure.bsc.test_data_source import TestDataSource
 from api.ingestion.ingest_data_use_case import IngestDataUseCase
 from api.investment.confirmed_order import ConfirmedOrder, ConfirmedOrderId
 from api.investment.executed_order import ExecutedOrder
@@ -50,15 +51,7 @@ from api.shared.app_exception import AppException
 from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from api.similarity.get_similar_assets_use_case import GetSimilarAssetsUseCase
 from api.protocol.basket import Basket
-from api.protocol.fixture.basket import big4_basket, memecoinmania_basket
-from api.protocol.fixture.token import (
-    wbnb_token,
-    eth_token,
-    btc_token,
-    sol_token,
-    shib_token,
-    cake_token,
-)
+
 from apispec import APISpec
 from api.registry import (
     chain,
@@ -173,7 +166,9 @@ ingest_data_use_case = IngestDataUseCase(
         CoingeckoLiveTokenListDataSource(
             id_generator,
             token_repository,
-        ),
+        )
+        if configuration.app_env != "test"
+        else TestDataSource(id_generator),
     ],
 )
 
@@ -203,8 +198,7 @@ class ErrorResponse(BaseModel):
 async def lifespan(_app: FastAPI):
     await similarity_storage.start()
 
-    if configuration.app_env != "test":
-        await ingest_data_use_case.execute()
+    await ingest_data_use_case.execute()
 
     print("API Ready.")
 
@@ -360,17 +354,6 @@ async def get_tokens_from_query(query: str) -> list[TokenResponse | BasketRespon
         Each token has a name, display_name, ticker and address (contract address) property.
     """
 
-    # TODO: Handle test case more elegantly
-    if configuration.app_env == "test":
-        return [
-            TokenResponse.from_domain(wbnb_token),
-            TokenResponse.from_domain(eth_token),
-            TokenResponse.from_domain(btc_token),
-            TokenResponse.from_domain(sol_token),
-            TokenResponse.from_domain(shib_token),
-            TokenResponse.from_domain(cake_token),
-        ]
-
     assets = await get_similar_assets_use_case.execute(query, "TOKEN")
 
     return [
@@ -397,13 +380,6 @@ async def get_baskets_from_query(query: str) -> list[TokenResponse | BasketRespo
         Each token has a name, display_name, ticker and address (contract address) property.
     """
 
-    # TODO: Handle test case more elegantly
-    if configuration.app_env == "test":
-        return [
-            BasketResponse.from_domain(big4_basket),
-            BasketResponse.from_domain(memecoinmania_basket),
-        ]
-
     assets = await get_similar_assets_use_case.execute(query, "BASKET")
 
     return [
@@ -426,11 +402,6 @@ async def get_all_available_baskets():
         Each basket is made of a name, a description and a list of tokens.
         Each token has a name, display_name, ticker and address (contract address) property.
     """
-
-    # TODO: Handle test case more elegantly
-    if configuration.app_env == "test":
-        return [big4_basket, memecoinmania_basket]
-
     baskets = await get_all_baskets_use_case.execute()
 
     return [BasketResponse.from_domain(basket) for basket in baskets]
@@ -658,15 +629,7 @@ class IntentOrderBalanceRequest(BaseModel):
     async def to_domain(self):
         asset = None
 
-        # TODO: BIG SMELL. Handle test case more elegantly
-        if configuration.app_env == "test":
-            asset = (
-                btc_token
-                if self.asset_id == "bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c"
-                else memecoinmania_basket
-            )
-
-        elif self.asset_id == chain.base_token.id:
+        if self.asset_id == chain.base_token.id:
             asset = chain.base_token
         else:
             asset = await get_asset_by_id_use_case.execute(self.asset_id)
