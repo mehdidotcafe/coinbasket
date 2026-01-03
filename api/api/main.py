@@ -17,23 +17,8 @@ from api.conversation.conversation_use_case import ConversationUseCase
 from api.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
-from api.ingestion.data_source.infrastructure.bsc.ai_basket_data_source import (
-    AiBasketDataSource,
-)
-from api.ingestion.data_source.infrastructure.bsc.big4_basket_data_source import (
-    Big4BasketDataSource,
-)
-from api.ingestion.data_source.infrastructure.bsc.cmc_top_10_2025 import (
-    CmcTop102025BasketDataSource,
-)
 from api.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_data_source import (
     CoingeckoLiveTokenListDataSource,
-)
-from api.ingestion.data_source.infrastructure.bsc.cryptoummah_halal_basket_data_source import (
-    CryptoUmmahHalalBasketDataSource,
-)
-from api.ingestion.data_source.infrastructure.bsc.memecoin_mania_basket_data_source import (
-    MemecoinManiaBasketDataSource,
 )
 from api.ingestion.ingest_data_use_case import IngestDataUseCase
 from api.investment.confirmed_order import ConfirmedOrder, ConfirmedOrderId
@@ -189,11 +174,6 @@ ingest_data_use_case = IngestDataUseCase(
             id_generator,
             token_repository,
         ),
-        Big4BasketDataSource(),
-        AiBasketDataSource(),
-        CmcTop102025BasketDataSource(),
-        CryptoUmmahHalalBasketDataSource(),
-        MemecoinManiaBasketDataSource(),
     ],
 )
 
