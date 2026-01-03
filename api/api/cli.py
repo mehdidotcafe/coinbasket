@@ -1,7 +1,7 @@
 import asyncio
 import sys
 
-from api.chain.infrastructure.bsc.transaction_receipt_parser import (
+from api.chain.infrastructure.bsc.bsc_transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
 from api.protocol.token import Token
@@ -29,7 +29,7 @@ async def get_address_balances():
     print(f"Native token ({chain.base_token.ticker}) Balance: {balance.amount}")
 
     for arg in sys.argv[3:]:
-        balance_amount = await chain.get_address_token_balance(
+        balance_amount = await chain.get_address_asset_balance(
             address,
             Token(
                 id="bsc:" + arg,

@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import Any, Literal
 from api.protocol.basket import Basket
 from api.protocol.token import Token
@@ -31,26 +30,18 @@ class GetSimilarAssetsUseCase:
         if not metadata:
             raise InvalidSimilarityDocument(document.id)
 
-        if metadata["type"] == "token":
-            return self._map_similarity_document_metadata_to_token(metadata["source"])
-        if metadata["type"] == "basket":
-            return Basket(
-                id=metadata["source"]["id"],
-                display_name=metadata["source"]["display_name"],
-                name=metadata["source"]["name"],
-                ticker=metadata["source"]["ticker"],
-                description=metadata["source"]["description"],
-                denomination=Decimal(metadata["source"]["denomination"]),
-                tokens=[
-                    self._map_similarity_document_metadata_to_token(token)
-                    for token in metadata["source"]["tokens"]
-                ],
-            )
+        return self._map_similarity_document_metadata_to_asset(metadata["source"])
 
-        raise InvalidSimilarityDocument(document.id)
+    def _map_similarity_document_metadata_to_asset(self, metadata: Any):
+        match metadata["type"]:
+            case "TOKEN":
+                ChildAsset = Token
+            case "BASKET":
+                ChildAsset = Basket
+            case _:
+                raise InvalidSimilarityDocument(metadata["id"])
 
-    def _map_similarity_document_metadata_to_token(self, metadata: Any):
-        return Token(
+        return ChildAsset(
             address=metadata["address"],
             id=metadata["id"],
             name=metadata["name"],

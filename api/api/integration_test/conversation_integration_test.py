@@ -96,7 +96,6 @@ def signed_order_request() -> dict[str, Any]:
     return {
         "status": "CONFIRM",
         "signable_order_id": "signable_order_1",
-        # Real transaction hash for testing purposes
         "transaction_hash": "0x97b5dde11ab8d41bfa45e904ee82efc5135ec75b9d56f2adaa5b28e485c5ff39",
     }
 
@@ -124,6 +123,7 @@ def test_integration_conversation_invalid_credential():
 
 def test_integration_conversation_success(
     signed_order_request: dict[str, Any],
+    seed_fixtures: Any,  # noqa: F811
     cleanup_all: Any,  # noqa: F811
     snapshot,
 ):

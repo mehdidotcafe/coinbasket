@@ -1,9 +1,7 @@
-from decimal import Decimal
 from typing import Any
 from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
-from api.similarity.similarity_document import SimilarityDocument
 from api.similarity.similarity_storage.similarity_storage import (
     SimilarityStorage,
 )
@@ -30,44 +28,21 @@ class GetAssetByIdUseCase:
         if not similarity_document.metadata:
             raise InvalidSimilarityDocument(similarity_document.id)
 
-        return (
-            self._map_similarity_document_to_basket(similarity_document)
-            if similarity_document.metadata["type"] == "basket"
-            else self._map_similarity_document_metadata_to_token(
-                similarity_document.metadata["source"]
-            )
+        return self._map_similarity_document_metadata_to_asset(
+            similarity_document.metadata
         )
 
-    def _map_similarity_document_to_basket(
-        self, document: SimilarityDocument
-    ) -> Basket:
-        metadata = document.metadata
+    def _map_similarity_document_metadata_to_asset(self, document_metadata: Any):
+        ChildAsset = Token if document_metadata["type"] == "token" else Basket
 
-        if not metadata or metadata["type"] != "basket":
-            raise InvalidSimilarityDocument(document.id)
-
-        return Basket(
-            id=metadata["source"]["id"],
-            display_name=metadata["source"]["display_name"],
-            name=metadata["source"]["name"],
-            ticker=metadata["source"]["ticker"],
-            description=metadata["source"]["description"],
-            denomination=Decimal(metadata["source"]["denomination"]),
-            tokens=[
-                self._map_similarity_document_metadata_to_token(token)
-                for token in metadata["source"]["tokens"]
-            ],
-        )
-
-    def _map_similarity_document_metadata_to_token(self, metadata: dict[str, Any]):
-        return Token(
-            address=metadata["address"],
-            id=metadata["id"],
-            name=metadata["name"],
-            display_name=metadata["display_name"],
-            ticker=metadata["ticker"],
-            description=metadata["description"],
-            decimals=int(metadata["decimals"]),
-            categories=metadata["categories"],
-            logo_uri=metadata.get("logo_uri"),
+        return ChildAsset(
+            address=document_metadata["source"]["address"],
+            id=document_metadata["source"]["id"],
+            name=document_metadata["source"]["name"],
+            display_name=document_metadata["source"]["display_name"],
+            ticker=document_metadata["source"]["ticker"],
+            description=document_metadata["source"]["description"],
+            decimals=int(document_metadata["source"]["decimals"]),
+            categories=document_metadata["source"]["categories"],
+            logo_uri=document_metadata["source"].get("logo_uri"),
         )

@@ -1,7 +1,6 @@
 import pytest
 from decimal import Decimal
 from api.protocol.token import Token
-from api.protocol.asset import Asset
 from api.protocol.basket import Basket
 from api.chain.balance import BalanceAtomic
 
@@ -22,15 +21,17 @@ def token():
 
 
 @pytest.fixture
-def basket(token: Token):
+def basket():
     return Basket(
         id="2",
         name="TestBasket",
         display_name="Test Basket",
         ticker="TBK",
+        address="0x123",
         description="A test basket",
-        denomination=Decimal("1"),
-        tokens=[token],
+        decimals=18,
+        logo_uri=None,
+        categories=["test", "basket"],
     )
 
 
@@ -45,7 +46,7 @@ def balance_atomic_token(token: Token):
 
 
 @pytest.fixture
-def balance_atomic_basket(basket: Asset):
+def balance_atomic_basket(basket: Token):
     return BalanceAtomic(
         asset=basket,
         amount=Decimal("2.00"),

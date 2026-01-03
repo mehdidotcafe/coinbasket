@@ -23,7 +23,7 @@ from api.portfolio.holding.holding import Holding
 from api.portfolio.holding.holding_repository import HoldingRepository
 from pytest import fixture, mark
 from api.protocol.fixture.token import eth_token, bnb_token, usdt_token, btc_token
-from api.protocol.fixture.basket import big4_basket, test_basket
+from api.protocol.fixture.basket import test_basket
 from decimal import ROUND_DOWN, Decimal
 
 
@@ -37,13 +37,13 @@ def chain():
     chain = mock.Mock(spec=Chain)
 
     chain.get_base_token.return_value = bnb_token
-    chain.convert_amount_to_amount_atomic.side_effect = lambda token, amount_readable: (
+    chain.convert_amount_to_amount_atomic.side_effect = lambda asset, amount_readable: (
         int(
             (Decimal(amount_readable) * (10**18)).to_integral_exact(rounding=ROUND_DOWN)
         ),
         18,
     )
-    chain.convert_amount_atomic_to_amount.side_effect = lambda token, amount_atomic: (
+    chain.convert_amount_atomic_to_amount.side_effect = lambda asset, amount_atomic: (
         int((Decimal(amount_atomic) / (10**18)).to_integral_exact(rounding=ROUND_DOWN)),
         18,
     )
@@ -159,7 +159,7 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
     )
 
     holding_repository.get_holding_balances.return_value = []
-    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
+    exchange.convert_balance_to_asset.return_value = ExchangeConvertedBalance(
         buy_balance=BalanceAtomic(
             asset=eth_token,
             amount=Decimal("1"),
@@ -238,7 +238,7 @@ async def test_plan_order_use_case_execute_not_defined_tokens(
 
     assert planned_order is None
 
-    exchange.convert_balance_to_token.assert_not_called()
+    exchange.convert_balance_to_asset.assert_not_called()
 
 
 @mark.asyncio
@@ -277,7 +277,7 @@ async def test_plan_order_use_case_execute_not_defined_sell_token(
         ),
     )
 
-    exchange.convert_balance_to_token.assert_not_called()
+    exchange.convert_balance_to_asset.assert_not_called()
 
 
 @mark.asyncio
@@ -316,7 +316,7 @@ async def test_plan_order_use_case_execute_not_defined_buy_token(
         ),
     )
 
-    exchange.convert_balance_to_token.assert_not_called()
+    exchange.convert_balance_to_asset.assert_not_called()
 
 
 @mark.asyncio
@@ -330,7 +330,7 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
         id="order-123",
         address=address,
         buy_asset_with_amount=IntendedOrderBalance(
-            asset=big4_basket,
+            asset=test_basket,
             amount=Decimal("50.0"),
         ),
         sell_asset_with_amount=IntendedOrderBalance(
@@ -340,7 +340,7 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
     )
 
     holding_repository.get_holding_balances.return_value = []
-    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
+    exchange.convert_balance_to_asset.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
             asset=usdt_token,
             amount=Decimal("500"),
@@ -472,7 +472,7 @@ async def test_plan_order_use_case_execute_available_amount_defined(
             children=None,
         ),
     ]
-    exchange.convert_balance_to_token.return_value = ExchangeConvertedBalance(
+    exchange.convert_balance_to_asset.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
             asset=usdt_token,
             amount=Decimal("200"),

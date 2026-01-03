@@ -149,7 +149,6 @@ build_signable_order_use_case = BuildSignableOrderUseCase(
 
 get_asset_swap_price_use_case = GetAssetSwapPriceUseCase(
     chain=chain,
-    holding_repository=holding_repository,
     asset_balance_converter=asset_balance_converter,
 )
 
@@ -272,6 +271,7 @@ class TokenRequest(BaseModel):
     decimals: int
     categories: list[str]
     description: str
+    type: Literal["TOKEN"]
     logo_uri: str | None = None
 
     @staticmethod
@@ -286,6 +286,7 @@ class TokenRequest(BaseModel):
             decimals=token.decimals,
             categories=token.categories,
             description=token.description,
+            type="TOKEN",
             logo_uri=token.logo_uri,
         )
 
@@ -309,17 +310,28 @@ class BasketRequest(BaseModel):
     name: str
     display_name: str
     ticker: str
+    address: str
+    decimals: int
+    categories: list[str]
     description: str
-    denomination: str
-    tokens: list[TokenRequest]
+    type: Literal["BASKET"]
+    logo_uri: str | None = None
 
-    @validator("tokens")
-    @classmethod
-    def at_least_one_token(cls, v):
-        """Ensure at least one token in basket."""
-        if not v or len(v) == 0:
-            raise ValueError("At least one token must be provided.")
-        return v
+    @staticmethod
+    def from_domain(basket: Basket) -> "BasketRequest":
+        """Convert a Token to a BasketRequest."""
+        return BasketRequest(
+            id=basket.id,
+            name=basket.name,
+            display_name=basket.display_name,
+            ticker=basket.ticker,
+            address=basket.address,
+            decimals=basket.decimals,
+            categories=basket.categories,
+            description=basket.description,
+            type="BASKET",
+            logo_uri=basket.logo_uri,
+        )
 
     def to_domain(self) -> Basket:
         """Convert the request to a Basket."""
@@ -328,9 +340,11 @@ class BasketRequest(BaseModel):
             name=self.name,
             display_name=self.display_name,
             ticker=self.ticker,
+            address=self.address,
             description=self.description,
-            denomination=Decimal(self.denomination),
-            tokens=[token.to_domain() for token in self.tokens],
+            decimals=self.decimals,
+            categories=self.categories,
+            logo_uri=self.logo_uri,
         )
 
 
@@ -431,6 +445,7 @@ async def get_portfolio_summary(
     ).model_dump_json()
 
 
+# TODO: Test if correct class is passed (Token or Basket)
 @tool(
     parse_docstring=True,
 )
@@ -819,8 +834,8 @@ async def plan_and_execute_swap_order(
 
         order_receipt = await chain.parse_transaction_receipt(
             address=address,
-            sell_token=planned_order.sell_asset_with_amount.asset,
-            buy_token=planned_order.buy_asset_with_amount.asset,
+            sell_asset=planned_order.sell_asset_with_amount.asset,
+            buy_asset=planned_order.buy_asset_with_amount.asset,
             transaction_hash=cast(str, signed_order_request.transaction_hash),
         )
 

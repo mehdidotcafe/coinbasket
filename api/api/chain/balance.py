@@ -27,34 +27,21 @@ class Balance(Generic[T]):
         """Deserialize a balance from JSON as string."""
         balance_as_json = json.loads(balance_as_str)
 
-        def deserialize_token(token: dict[str, Any]) -> Token:
-            return Token(
-                id=token["id"],
-                name=token["name"],
-                display_name=token["display_name"],
-                ticker=token["ticker"],
-                address=token["address"],
-                decimals=token["decimals"],
-                categories=token["categories"],
-                description=token["description"],
+        def deserialize_asset(asset: dict[str, Any]) -> Asset:
+            ChildAsset = Token if asset["type"] == "TOKEN" else Basket
+
+            return ChildAsset(
+                id=asset["id"],
+                name=asset["name"],
+                display_name=asset["display_name"],
+                ticker=asset["ticker"],
+                address=asset["address"],
+                decimals=asset["decimals"],
+                categories=asset["categories"],
+                description=asset["description"],
             )
 
-        asset = (
-            Basket(
-                id=balance_as_json["asset"]["id"],
-                name=balance_as_json["asset"]["name"],
-                display_name=balance_as_json["asset"]["display_name"],
-                ticker=balance_as_json["asset"]["ticker"],
-                description=balance_as_json["asset"]["description"],
-                denomination=Decimal(balance_as_json["asset"]["denomination"]),
-                tokens=[
-                    deserialize_token(token)
-                    for token in balance_as_json["asset"]["tokens"]
-                ],
-            )
-            if "tokens" in balance_as_json["asset"]
-            else deserialize_token(balance_as_json["asset"])
-        )
+        asset = deserialize_asset(balance_as_json["asset"])
 
         return Balance(
             asset=asset,
@@ -103,34 +90,21 @@ class BalanceAtomic(Balance, Generic[T]):
         """Deserialize a balance from JSON as string."""
         balance_as_json = json.loads(balance_as_str)
 
-        def deserialize_token(token: dict[str, Any]) -> Token:
-            return Token(
-                id=token["id"],
-                name=token["name"],
-                display_name=token["display_name"],
-                ticker=token["ticker"],
-                address=token["address"],
-                decimals=token["decimals"],
-                categories=token["categories"],
-                description=token["description"],
+        def deserialize_asset(asset: dict[str, Any]) -> Asset:
+            ChildAsset = Token if asset["type"] == "TOKEN" else Basket
+
+            return ChildAsset(
+                id=asset["id"],
+                name=asset["name"],
+                display_name=asset["display_name"],
+                ticker=asset["ticker"],
+                address=asset["address"],
+                decimals=asset["decimals"],
+                categories=asset["categories"],
+                description=asset["description"],
             )
 
-        asset = (
-            Basket(
-                id=balance_as_json["asset"]["id"],
-                name=balance_as_json["asset"]["name"],
-                display_name=balance_as_json["asset"]["display_name"],
-                ticker=balance_as_json["asset"]["ticker"],
-                description=balance_as_json["asset"]["description"],
-                denomination=Decimal(balance_as_json["asset"]["denomination"]),
-                tokens=[
-                    deserialize_token(token)
-                    for token in balance_as_json["asset"]["tokens"]
-                ],
-            )
-            if "tokens" in balance_as_json["asset"]
-            else deserialize_token(balance_as_json["asset"])
-        )
+        asset = deserialize_asset(balance_as_json["asset"])
 
         return BalanceAtomic(
             asset=asset,
@@ -144,8 +118,10 @@ class BalanceAtomic(Balance, Generic[T]):
         """Deserialize an asset from JSON as string."""
         asset_as_json = json.loads(asset_as_str)
 
-        def deserialize_token(token: dict[str, Any]) -> Token:
-            return Token(
+        def deserialize_asset(token: dict[str, Any]) -> Asset:
+            ChildAsset = Token if token["type"] == "TOKEN" else Basket
+
+            return ChildAsset(
                 id=token["id"],
                 name=token["name"],
                 display_name=token["display_name"],
@@ -156,17 +132,7 @@ class BalanceAtomic(Balance, Generic[T]):
                 description=token["description"],
             )
 
-        if "tokens" in asset_as_json:
-            return Basket(
-                id=asset_as_json["id"],
-                name=asset_as_json["name"],
-                display_name=asset_as_json["display_name"],
-                ticker=asset_as_json["ticker"],
-                description=asset_as_json["description"],
-                denomination=Decimal(asset_as_json["denomination"]),
-                tokens=[deserialize_token(token) for token in asset_as_json["tokens"]],
-            )
-        return deserialize_token(asset_as_json)
+        return deserialize_asset(asset_as_json)
 
     def __add_decimal(self, amount_atomic: Decimal) -> "BalanceAtomic[T]":
         amount_atomic = self.amount_atomic + amount_atomic

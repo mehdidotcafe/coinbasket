@@ -14,8 +14,6 @@ from api.investment.calculator.asset_balance_converter import (
     ConvertedAssetBalance,
 )
 from pytest import fixture, mark
-from api.portfolio.holding.holding import Holding
-from api.portfolio.holding.holding_repository import HoldingRepository
 from api.protocol.fixture.token import wbnb_token
 from api.protocol.fixture.basket import test_basket
 
@@ -28,21 +26,16 @@ def to_atomic(amount: Decimal) -> int:
 def chain():
     chain = mock.Mock(spec=Chain)
 
-    chain.convert_amount_to_amount_atomic.side_effect = lambda token, amount_readable: (
+    chain.convert_amount_to_amount_atomic.side_effect = lambda asset, amount_readable: (
         int(amount_readable * (10**18)),
         18,
     )
-    chain.convert_amount_atomic_to_amount.side_effect = lambda token, amount_atomic: (
+    chain.convert_amount_atomic_to_amount.side_effect = lambda asset, amount_atomic: (
         int(amount_atomic / (10**18)),
         18,
     )
 
     return chain
-
-
-@fixture
-def holding_repository():
-    return mock.Mock(spec=HoldingRepository)
 
 
 @fixture
@@ -58,16 +51,14 @@ def address():
 @fixture
 def use_case(
     chain: Chain,
-    holding_repository: HoldingRepository,
     asset_balance_converter: AssetBalanceConverter,
 ):
-    return GetAssetSwapPriceUseCase(chain, holding_repository, asset_balance_converter)
+    return GetAssetSwapPriceUseCase(chain, asset_balance_converter)
 
 
 @mark.asyncio
 async def test_get_asset_swap_price_use_case(
     use_case: GetAssetSwapPriceUseCase,
-    holding_repository: HoldingRepository,
     asset_balance_converter: AssetBalanceConverter,
     address: Address,
 ):
@@ -75,16 +66,6 @@ async def test_get_asset_swap_price_use_case(
         sell_asset=wbnb_token,
         sell_asset_amount=Decimal("1.0"),
         buy_asset=test_basket,
-    )
-
-    holding_repository.get_holding_balance.return_value = Holding(
-        balance=BalanceAtomic(
-            asset=test_basket,
-            amount=Decimal("1.0"),
-            amount_atomic=to_atomic(Decimal("1.0")),
-            decimals=18,
-        ),
-        children=[],
     )
 
     asset_balance_converter.convert.return_value = ConvertedAssetBalance(

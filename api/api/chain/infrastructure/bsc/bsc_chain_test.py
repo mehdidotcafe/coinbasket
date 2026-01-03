@@ -1,13 +1,10 @@
-from typing import Any
 from unittest import mock
 from api.address.address import Address
+from api.chain.transaction_receipt_parser import TransactionReceiptParser
 from hexbytes import HexBytes
 from api.chain.balance import AmountReadable, BalanceAtomic
 from api.chain.chain import ParsedReceipt
 from api.chain.exception.insufficient_balance import InsufficientBalance
-from api.chain.infrastructure.bsc.transaction_receipt_parser import (
-    BscTransactionReceiptParser,
-)
 from pytest import fixture, mark, raises
 from decimal import Decimal
 from web3 import AsyncWeb3
@@ -42,13 +39,13 @@ def base_token():
 
 @fixture
 def transaction_receipt_parser():
-    return mock.Mock(spec=BscTransactionReceiptParser)
+    return mock.Mock(spec=TransactionReceiptParser)
 
 
 @fixture
 def bsc_chain(
     w3: AsyncWeb3,
-    transaction_receipt_parser: BscTransactionReceiptParser,
+    transaction_receipt_parser: TransactionReceiptParser,
 ):
     return BscChain(
         w3=w3,
@@ -166,7 +163,7 @@ async def test_bsc_chain_get_available_balance(
 
 
 @mark.asyncio
-async def test_bsc_chain_get_token_balance(bsc_chain: BscChain, w3: AsyncWeb3):
+async def test_bsc_chain_get_asset_balance(bsc_chain: BscChain, w3: AsyncWeb3):
     address = Address("0x1234567890abcdef1234567890abcdef12345678")
     token = Token(
         id="bsc:0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
@@ -182,20 +179,16 @@ async def test_bsc_chain_get_token_balance(bsc_chain: BscChain, w3: AsyncWeb3):
 
     token_contract = mock.Mock()
     token_contract.functions.balanceOf.return_value.call = mock.AsyncMock(
-        return_value=1000
+        return_value=1 * 10**18
     )
-    token_contract.functions.decimals.return_value.call = mock.AsyncMock(return_value=3)
     w3.eth.contract.return_value = token_contract
 
-    w3.from_wei.return_value = Decimal("1")
-
-    balance = await bsc_chain.get_token_balance(address, token)
+    balance = await bsc_chain.get_asset_balance(address, token)
 
     assert balance == BalanceAtomic[Token](
-        asset=token, amount=Decimal("1"), amount_atomic=1000, decimals=3
+        asset=token, amount=Decimal("1"), amount_atomic=1 * 10**18, decimals=18
     )
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
-    token_contract.functions.decimals.return_value.call.assert_called_once()
 
 
 @mark.asyncio
@@ -238,22 +231,20 @@ async def test_bsc_chain_get_address_token_balance(bsc_chain: BscChain, w3: Asyn
 
     token_contract = mock.Mock()
     token_contract.functions.balanceOf.return_value.call = mock.AsyncMock(
-        return_value=1000
+        return_value=1 * 10**18
     )
-    token_contract.functions.decimals.return_value.call = mock.AsyncMock(return_value=3)
     w3.eth.contract.return_value = token_contract
 
-    balance = await bsc_chain.get_address_token_balance(address, token)
+    balance = await bsc_chain.get_address_asset_balance(address, token)
 
     assert balance == BalanceAtomic[Token](
-        asset=token, amount=Decimal("1"), amount_atomic=1000, decimals=3
+        asset=token, amount=Decimal("1"), amount_atomic=1 * 10**18, decimals=18
     )
 
     token_contract.functions.balanceOf.assert_called_once_with(
         "0x2B5616d51Cd04862a6BD16cE63B47364A2261125_checksum",
     )
     token_contract.functions.balanceOf.return_value.call.assert_called_once()
-    token_contract.functions.decimals.return_value.call.assert_called_once()
 
 
 def test_bsc_chain_get_base_token(bsc_chain: BscChain, base_token: Token):
@@ -317,8 +308,7 @@ async def test_bsc_chain_wait_transaction_raise(bsc_chain: BscChain, w3: AsyncWe
 @mark.asyncio
 async def test_bsc_chain_parse_transaction_receipt(
     bsc_chain: BscChain,
-    w3: AsyncWeb3,
-    transaction_receipt_parser: BscTransactionReceiptParser,
+    transaction_receipt_parser: TransactionReceiptParser,
     address: Address,
 ):
     transaction_hash = "0x123994844"
@@ -338,29 +328,21 @@ async def test_bsc_chain_parse_transaction_receipt(
             decimals=18,
         ),
     )
-    receipt: dict[str, Any] = {
-        "type": 0,
-        "status": 1,
-        "cumulativeGasUsed": 144955,
-        "logs": [],
-    }
-
-    w3.eth.get_transaction_receipt.return_value = receipt
 
     transaction_receipt_parser.parse_receipt.return_value = parsed_receipt
 
     result = await bsc_chain.parse_transaction_receipt(
         address=address,
-        sell_token=sell_token,
-        buy_token=buy_token,
+        sell_asset=sell_token,
+        buy_asset=buy_token,
         transaction_hash=transaction_hash,
     )
 
     transaction_receipt_parser.parse_receipt.assert_called_once_with(
         address=address,
-        sell_token=sell_token,
-        buy_token=buy_token,
-        receipt=receipt,
+        sell_asset=sell_token,
+        buy_asset=buy_token,
+        transaction_hash=transaction_hash,
     )
 
     assert result == parsed_receipt
@@ -388,13 +370,9 @@ async def test_bsc_chain_convert_amount_to_amount_atomic_native_token(
 async def test_bsc_chain_convert_amount_to_amount_atomic_token(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
-    amount_atomic = 1250000000000000000
-    amount_readable = AmountReadable("125000000.000000000010")
+    amount_readable = AmountReadable("125000000")
 
     token_contract = mock.Mock()
-    token_contract.functions.decimals.return_value.call = mock.AsyncMock(
-        return_value=10
-    )
     w3.eth.contract.return_value = token_contract
 
     (
@@ -402,10 +380,8 @@ async def test_bsc_chain_convert_amount_to_amount_atomic_token(
         result_decimals,
     ) = await bsc_chain.convert_amount_to_amount_atomic(usdt_token, amount_readable)
 
-    token_contract.functions.decimals.return_value.call.assert_called_once()
-
-    assert result_amount_atomic == amount_atomic
-    assert result_decimals == 10
+    assert result_amount_atomic == amount_readable * Decimal(10**usdt_token.decimals)
+    assert result_decimals == usdt_token.decimals
 
 
 @mark.asyncio
@@ -428,19 +404,13 @@ async def test_bsc_chain_convert_amount_atomic_to_amount_token(
     bsc_chain: BscChain, w3: AsyncWeb3
 ):
     amount_atomic = 1250000000000000000
-    amount_readable = AmountReadable("125000000.0000000000")
 
     token_contract = mock.Mock()
-    token_contract.functions.decimals.return_value.call = mock.AsyncMock(
-        return_value=10
-    )
     w3.eth.contract.return_value = token_contract
 
     result_amount, result_decimals = await bsc_chain.convert_amount_atomic_to_amount(
         usdt_token, amount_atomic
     )
 
-    token_contract.functions.decimals.return_value.call.assert_called_once()
-
-    assert result_amount == amount_readable
-    assert result_decimals == 10
+    assert result_amount == amount_atomic / Decimal(10**usdt_token.decimals)
+    assert result_decimals == usdt_token.decimals

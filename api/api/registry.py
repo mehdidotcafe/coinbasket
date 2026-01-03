@@ -5,6 +5,9 @@ from api.authentication.credential.infrastructure.py_jwt_credential_generator im
 from api.authentication.siwe.infrastructure.siwe_py_siwe_manager import (
     SiwePySiweManager,
 )
+from api.chain.infrastructure.test_transaction_receipt_parser import (
+    TestTransactionReceiptParser,
+)
 from api.investment.infrastructure.test_exchange import TestExchange
 from api.investment.order.infrastructure.sql_alchemy_confirmed_order_repository import (
     SqlAlchemyConfirmedOrderRepository,
@@ -37,7 +40,7 @@ from api.portfolio.small_balance.absolute_small_balance_policy import (
     AbsoluteSmallBalancePolicy,
 )
 
-from api.chain.infrastructure.bsc.transaction_receipt_parser import (
+from api.chain.infrastructure.bsc.bsc_transaction_receipt_parser import (
     BscTransactionReceiptParser,
 )
 
@@ -88,7 +91,11 @@ configuration = Configuration()
 
 w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
 
-transaction_receipt_parser = BscTransactionReceiptParser(w3=w3)
+transaction_receipt_parser = (
+    BscTransactionReceiptParser(w3=w3)
+    if configuration.app_env != "test"
+    else TestTransactionReceiptParser()
+)
 
 chain = BscChain(
     w3=w3,

@@ -10,11 +10,8 @@ sleep 5
 
 
 (cd .. && ./nx migration:test:run $PROJECT)
-env-cmd -f .env.test poetry run python -m $PROJECT.worker &
-WORKER_PID=$!
 
 (cd .. && ./nx start:test api &)
-API_PID=$!
 
 ../script/wait_api_start.sh
 
@@ -23,11 +20,5 @@ TEST_RESULT=$?
 
 
 (cd .. && ./nx infra:test:down $PROJECT)
-
-# Kill Worker
-kill $WORKER_PID
-
-# Kill API
-kill $API_PID
 
 exit $TEST_RESULT

@@ -27,7 +27,7 @@ from api.investment.infrastructure.zero_x.zero_x_api_client import (
 from api.investment.investment_parameters import InvestmentParameters
 
 from api.chain.balance import Balance
-from api.protocol.token import Token
+from api.protocol.asset import Asset
 from web3 import AsyncWeb3
 
 RETRY_ATTEMPTS = 5
@@ -61,14 +61,14 @@ class ZeroXSwapper(Exchange):
     async def get_signable_swap(
         self,
         taker: Address,
-        sell_balance: Balance[Token],
-        buy_balance: Balance[Token],
+        sell_balance: Balance[Asset],
+        buy_balance: Balance[Asset],
         investment_parameters: InvestmentParameters,
     ) -> ExchangeSignableSwap:
         chain_id = await self.chain.get_chain_id()
 
         amount_atomic, _decimals = await self.chain.convert_amount_to_amount_atomic(
-            token=sell_balance.asset,
+            asset=sell_balance.asset,
             amount_readable=sell_balance.amount,
         )
 
@@ -106,11 +106,11 @@ class ZeroXSwapper(Exchange):
         buy_balance_amount_atomic = int(quote.buyAmount)
 
         sell_amount, sell_decimals = await self.chain.convert_amount_atomic_to_amount(
-            amount_atomic=sell_balance_amount_atomic, token=sell_balance.asset
+            amount_atomic=sell_balance_amount_atomic, asset=sell_balance.asset
         )
         buy_amount, buy_decimals = await self.chain.convert_amount_atomic_to_amount(
             amount_atomic=buy_balance_amount_atomic,
-            token=buy_balance.asset,
+            asset=buy_balance.asset,
         )
 
         return ExchangeSignableSwap(
@@ -130,14 +130,14 @@ class ZeroXSwapper(Exchange):
             signature_payload=signature_payload,
         )
 
-    async def convert_balance_to_token(
+    async def convert_balance_to_asset(
         self,
         taker: Address,
-        balance: BalanceAtomic[Token],
-        token: Token,
+        balance: BalanceAtomic[Asset],
+        asset: Asset,
         investment_parameters: InvestmentParameters,
     ):
-        if self.__is_same_token(balance.asset, token):
+        if self.__is_same_token(balance.asset, asset):
             return ExchangeConvertedBalance(
                 sell_balance=BalanceAtomic(
                     asset=balance.asset,
@@ -146,7 +146,7 @@ class ZeroXSwapper(Exchange):
                     decimals=balance.decimals,
                 ),
                 buy_balance=BalanceAtomic(
-                    asset=token,
+                    asset=asset,
                     amount=balance.amount,
                     amount_atomic=balance.amount_atomic,
                     decimals=balance.decimals,
@@ -154,7 +154,7 @@ class ZeroXSwapper(Exchange):
             )
 
         amount_atomic, _decimals = await self.chain.convert_amount_to_amount_atomic(
-            token=balance.asset,
+            asset=balance.asset,
             amount_readable=balance.amount,
         )
 
@@ -163,18 +163,18 @@ class ZeroXSwapper(Exchange):
                 chain_id=await self.chain.get_chain_id(),
                 taker=taker,
                 sell_token=balance.asset.address,
-                buy_token=token.address,
+                buy_token=asset.address,
                 amount=amount_atomic,
                 investment_parameters=investment_parameters,
             )
         except SwapValidationFailed as e:
             print(e)
-            token_decimals = await self.chain.get_token_decimals(token.address)
+            token_decimals = await self.chain.get_token_decimals(asset.address)
 
             return ExchangeConvertedBalance(
                 sell_balance=balance,
                 buy_balance=BalanceAtomic(
-                    asset=token,
+                    asset=asset,
                     amount=Decimal("0"),
                     amount_atomic=0,
                     decimals=token_decimals,
@@ -185,11 +185,11 @@ class ZeroXSwapper(Exchange):
         buy_balance_amount_atomic = int(price.buyAmount)
 
         sell_amount, sell_decimals = await self.chain.convert_amount_atomic_to_amount(
-            amount_atomic=sell_balance_amount_atomic, token=balance.asset
+            amount_atomic=sell_balance_amount_atomic, asset=balance.asset
         )
         buy_amount, buy_decimals = await self.chain.convert_amount_atomic_to_amount(
             amount_atomic=buy_balance_amount_atomic,
-            token=token,
+            asset=asset,
         )
 
         return ExchangeConvertedBalance(
@@ -200,7 +200,7 @@ class ZeroXSwapper(Exchange):
                 decimals=sell_decimals,
             ),
             buy_balance=BalanceAtomic(
-                asset=token,
+                asset=asset,
                 amount=buy_amount,
                 amount_atomic=buy_balance_amount_atomic,
                 decimals=buy_decimals,
@@ -218,5 +218,5 @@ class ZeroXSwapper(Exchange):
     ) -> Decimal:
         return slippage_tolerance_in_percentage * 100
 
-    def __is_same_token(self, token1: Token, token2: Token) -> bool:
-        return token1.address.lower() == token2.address.lower()
+    def __is_same_token(self, asset1: Asset, asset2: Asset) -> bool:
+        return asset1.address.lower() == asset2.address.lower()
