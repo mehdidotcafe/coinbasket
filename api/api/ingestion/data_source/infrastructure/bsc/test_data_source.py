@@ -36,7 +36,7 @@ class TestDataSource(DataSource):
         baskets = [cmc20_basket]
         documents: list[SimilarityDocument] = []
 
-        for asset in tokens + baskets:
+        for asset in tokens:
             documents.append(
                 SimilarityDocument(
                     id=self._generate_id(asset),
@@ -44,6 +44,18 @@ class TestDataSource(DataSource):
                     metadata={
                         "source": asset.to_dict(),
                         "type": "token",
+                        "version": self.version(),
+                    },
+                )
+            )
+        for asset in baskets:
+            documents.append(
+                SimilarityDocument(
+                    id=self._generate_id(asset),
+                    page_content=str(asset),
+                    metadata={
+                        "source": asset.to_dict(),
+                        "type": "basket",
                         "version": self.version(),
                     },
                 )

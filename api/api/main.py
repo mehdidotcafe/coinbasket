@@ -17,6 +17,9 @@ from api.conversation.conversation_use_case import ConversationUseCase
 from api.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
+from api.ingestion.data_source.infrastructure.bsc.cmc_top_20_basket_data_source import (
+    CmcTop20BasketDataSource,
+)
 from api.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_data_source import (
     CoingeckoLiveTokenListDataSource,
 )
@@ -165,10 +168,13 @@ ingest_data_use_case = IngestDataUseCase(
         CoingeckoLiveTokenListDataSource(
             id_generator,
             token_repository,
-        )
-        if configuration.app_env != "test"
-        else TestDataSource(id_generator),
-    ],
+        ),
+        CmcTop20BasketDataSource(
+            id_generator,
+        ),
+    ]
+    if configuration.app_env != "test"
+    else [TestDataSource(id_generator)],
 )
 
 generate_auth_nonce_use_case = GenerateAuthNonceUseCase(

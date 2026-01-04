@@ -13,7 +13,6 @@ from api.investment.planned_order import PlannedOrder, PlannedOrderBalance
 from api.portfolio.holding.holding import Holding
 from api.portfolio.holding.holding_repository import HoldingRepository
 from api.protocol.asset import Asset
-from api.protocol.basket import Basket
 
 
 class PlanOrderUseCase:
@@ -32,15 +31,6 @@ class PlanOrderUseCase:
     async def execute(
         self, address: Address, intended_order: IntendedOrder
     ) -> PlannedOrder | None:
-        if (
-            intended_order.sell_asset_with_amount is not None
-            and isinstance(intended_order.sell_asset_with_amount.asset, Basket)
-        ) or (
-            intended_order.buy_asset_with_amount is not None
-            and isinstance(intended_order.buy_asset_with_amount.asset, Basket)
-        ):
-            raise Exception("Baskets are not supported in investment plans.")
-
         sell_asset = (
             intended_order.sell_asset_with_amount.asset
             if intended_order.sell_asset_with_amount
