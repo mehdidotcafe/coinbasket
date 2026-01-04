@@ -342,24 +342,33 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
     holding_repository.get_holding_balances.return_value = []
     exchange.convert_balance_to_asset.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
-            asset=usdt_token,
+            asset=bnb_token,
             amount=Decimal("500"),
             amount_atomic=500 * 10**18,
             decimals=18,
         ),
         buy_balance=BalanceAtomic(
-            asset=bnb_token,
+            asset=test_basket,
             amount=Decimal("1"),
             amount_atomic=1 * 10**18,
             decimals=18,
         ),
     )
 
-    try:
-        await use_case.execute(address, intended_order)
-        assert False, "Expected exception for basket not supported"
-    except Exception as e:
-        assert str(e) == "Baskets are not supported in investment plans."
+    planned_order = await use_case.execute(address, intended_order)
+
+    assert planned_order == PlannedOrder(
+        id="order-123",
+        address=address,
+        buy_asset_with_amount=PlannedOrderBalance(
+            asset=test_basket, amount=Decimal("1"), available_amount=Decimal("0")
+        ),
+        sell_asset_with_amount=PlannedOrderBalance(
+            asset=bnb_token,
+            amount=Decimal("500"),
+            available_amount=Decimal("0"),
+        ),
+    )
 
 
 @mark.asyncio
@@ -425,11 +434,20 @@ async def test_plan_order_use_case_execute_defined_sell_basket_amount(
         balances=[],
     )
 
-    try:
-        await use_case.execute(address, intended_order)
-        assert False, "Expected exception for basket not supported"
-    except Exception as e:
-        assert str(e) == "Baskets are not supported in investment plans."
+    planned_order = await use_case.execute(address, intended_order)
+
+    assert planned_order == PlannedOrder(
+        id="order-123",
+        address=address,
+        buy_asset_with_amount=PlannedOrderBalance(
+            asset=bnb_token, amount=Decimal("15800"), available_amount=Decimal("0")
+        ),
+        sell_asset_with_amount=PlannedOrderBalance(
+            asset=test_basket,
+            amount=Decimal("50.0"),
+            available_amount=Decimal("100"),
+        ),
+    )
 
 
 @mark.asyncio

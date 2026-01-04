@@ -59,7 +59,7 @@
       "executor": "@nxlv/python:run-commands",
       "dependsOn": ["infra:production"],
       "options": {
-        "command": "env-cmd -f .env.production --use-shell 'poetry run fastapi run api/main.py --port $APP_PORT'",
+        "command": "env-cmd -f .env.production --use-shell 'poetry run fastapi run api/main.py --reload --port $APP_PORT'",
         "cwd": "{projectRoot}"
       },
       "configurations": {

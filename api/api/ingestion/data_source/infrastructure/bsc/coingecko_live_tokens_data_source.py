@@ -11,6 +11,8 @@ from api.protocol.token import Token
 class CoingeckoLiveTokenListDataSource(DataSource):
     """Enhanced CoinGecko token datasource with metadata enrichment."""
 
+    blacklist_tokens = ["0x2f8a339b5889ffac4c5a956787cda593b3c36867"]
+
     def __init__(
         self,
         id_generator: IdGenerator,
@@ -24,6 +26,8 @@ class CoingeckoLiveTokenListDataSource(DataSource):
         documents: list[SimilarityDocument] = []
 
         for coingecko_token in tokens:
+            if coingecko_token.address.lower() in self.blacklist_tokens:
+                continue
             documents.append(
                 SimilarityDocument(
                     id=self._generate_id(coingecko_token),
