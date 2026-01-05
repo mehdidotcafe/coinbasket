@@ -27,11 +27,15 @@ def id_generator():
 
 
 @fixture
+def thread_id():
+    return "63"
+
+
+@fixture
 def use_case(date_time: DateTime, id_generator: IdGenerator):
     return ConversationUseCase(
         date_time=date_time,
         id_generator=id_generator,
-        configuration={"langchain_thread_id": "63"},
     )
 
 
@@ -39,6 +43,7 @@ def use_case(date_time: DateTime, id_generator: IdGenerator):
 async def test_conversation_use_case_execute_agent_last_step(
     date_time: DateTime,
     use_case: ConversationUseCase,
+    thread_id: str,
     agent_executor: CompiledStateGraph,
 ):
     date_time.now_str = mock.Mock(return_value="2023-10-01")
@@ -63,7 +68,7 @@ async def test_conversation_use_case_execute_agent_last_step(
     agent_executor.astream = mock.MagicMock()
     agent_executor.astream.return_value.__aiter__.return_value = [step]
 
-    message = await use_case.execute(agent_executor, message)
+    message = await use_case.execute(agent_executor, thread_id, message)
 
     assert message == Message(
         id="1",
@@ -81,6 +86,7 @@ async def test_conversation_use_case_execute_interrupt_last_step(
     use_case: ConversationUseCase,
     agent_executor: CompiledStateGraph,
     id_generator: IdGenerator,
+    thread_id: str,
 ):
     id_generator.generate_random_id = mock.Mock(return_value="99")
     date_time.now_str = mock.Mock(return_value="2023-10-01")
@@ -117,7 +123,7 @@ async def test_conversation_use_case_execute_interrupt_last_step(
     agent_executor.astream = mock.MagicMock()
     agent_executor.astream.return_value.__aiter__.return_value = [step]
 
-    message = await use_case.execute(agent_executor, message)
+    message = await use_case.execute(agent_executor, thread_id, message)
 
     assert message == Message(
         id="99",

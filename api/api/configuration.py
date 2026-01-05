@@ -1,5 +1,4 @@
 from typing import Literal, cast
-import uuid
 import os
 from environs import env
 from marshmallow.validate import OneOf
@@ -44,9 +43,6 @@ class Configuration:
         self.coingecko_base_url = env.str("COINGECKO_BASE_URL")
         self.coingecko_api_key = env.str("COINGECKO_API_KEY")
 
-        self.langchain_thread_id = env.str(
-            "LANGCHAIN_THREAD_ID", default=uuid.uuid4().hex
-        )
         self.langsmith_tracing = env.bool("LANGSMITH_TRACING")
         self.langsmith_api_key = env.str("LANGSMITH_API_KEY")
         self.langsmith_project = env.str("LANGSMITH_PROJECT")

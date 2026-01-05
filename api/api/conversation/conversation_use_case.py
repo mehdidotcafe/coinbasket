@@ -1,5 +1,5 @@
 import json
-from typing import Any, TypedDict, cast
+from typing import Any, cast
 from langgraph.types import Command
 
 
@@ -14,30 +14,25 @@ from api.shared.id_generator.id_generator import IdGenerator
 from api.conversation.interrupt import Interrupt
 
 
-class Configuration(TypedDict):
-    langchain_thread_id: str
-
-
 class ConversationUseCase:
     def __init__(
         self,
         date_time: DateTime,
         id_generator: IdGenerator,
-        configuration: Configuration,
     ):
         self.date_time = date_time
         self.id_generator = id_generator
-        self.configuration = configuration
 
     async def execute(
         self,
         agent_executor: CompiledStateGraph[Any],
+        thread_id: str,
         message: QueryMessage,
     ):
         step = None
         graph_config: RunnableConfig = {
             "configurable": {
-                "thread_id": self.configuration["langchain_thread_id"],
+                "thread_id": thread_id,
             }
         }
 

@@ -85,7 +85,7 @@ from api.documentation.response.invalid_authentication_credential import (
 
 from api.documentation.openapi import openapi
 from api.protocol.token import Token
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, RootModel
@@ -106,7 +106,6 @@ from langchain.chat_models import init_chat_model
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import interrupt
 
-print(f"Thread ID: {configuration.langchain_thread_id}")
 print(f"Agent Env: {configuration.app_env}")
 
 # Context variable to store the authenticated user's address
@@ -129,9 +128,6 @@ get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
 conversation_use_case = ConversationUseCase(
     date_time=date_time,
     id_generator=id_generator,
-    configuration={
-        "langchain_thread_id": configuration.langchain_thread_id,
-    },
 )
 
 get_conversation_messages_use_case = GetConversationMessagesUseCase(
@@ -949,13 +945,14 @@ class MessageResponse(BaseModel):
 )
 @app.post("/conversation")
 async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
-    address = getattr(request.state, "address", None)
+    address = Address(getattr(request.state, "address"))
     request_address_context.set(address)
 
     async with aiosqlite.connect(langgraph_db_path) as conn:
         agent_executor = await __create_agent_executor(conn)
 
         message = await conversation_use_case.execute(
+            thread_id=address,
             agent_executor=agent_executor,
             message=QueryMessage(
                 id=req.message.id,
@@ -1043,13 +1040,14 @@ class MessagesResponse(BaseModel):
     },
 )
 @app.post("/conversation/messages")
-async def get_conversation_messages() -> MessagesResponse:
+async def get_conversation_messages(request: Request) -> MessagesResponse:
+    address = Address(getattr(request.state, "address"))
     """Retrieve the conversation messages."""
     async with aiosqlite.connect(langgraph_db_path) as conn:
         agent_executor = await __create_agent_executor(conn)
 
         messages = await get_conversation_messages_use_case.execute(
-            thread_id=configuration.langchain_thread_id, agent_executor=agent_executor
+            thread_id=address, agent_executor=agent_executor
         )
 
         return MessagesResponse.from_domain(messages)
@@ -1401,8 +1399,8 @@ async def generate_auth_nonce() -> JSONResponse:
     },
 )
 @app.post("/auth/signout")
-async def signout() -> JSONResponse:
-    response = JSONResponse(content=None, status_code=204)
+async def signout() -> Response:
+    response = Response(status_code=204)
     response.delete_cookie(key="nonce")
     response.delete_cookie(key="credential")
 
