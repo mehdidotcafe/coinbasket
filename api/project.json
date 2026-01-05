@@ -132,7 +132,7 @@
     "infra:test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "env-cmd -f .env.test --use-shell 'docker compose -f docker-compose-test.yml down -v && echo '' > ./database/$APP_ENV/$APP_NAME.langgraph.db && docker compose -f docker-compose-test.yml up -d --force-recreate'",
+        "command": "env-cmd -f .env.test --use-shell 'docker compose -f docker-compose-test.yml down -v && docker compose -f docker-compose-test.yml up -d --force-recreate'",
         "cwd": "{projectRoot}"
       },
       "cache": false

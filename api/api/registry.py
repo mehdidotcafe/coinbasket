@@ -8,6 +8,9 @@ from api.authentication.siwe.infrastructure.siwe_py_siwe_manager import (
 from api.chain.infrastructure.test_transaction_receipt_parser import (
     TestTransactionReceiptParser,
 )
+from api.conversation.repository.infrastructure.langchain_postgresql_conversation_repository import (
+    LangchainPostgresqlConversationRepository,
+)
 from api.investment.infrastructure.test_exchange import TestExchange
 from api.investment.order.infrastructure.sql_alchemy_confirmed_order_repository import (
     SqlAlchemyConfirmedOrderRepository,
@@ -50,10 +53,6 @@ from api.database.infrastructure.sql_alchemy_session_manager import (
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-
-from api.conversation.repository.infrastructure.langchain_sqlite_conversation_repository import (
-    LangchainSqliteConversationRepository,
-)
 from api.datetime.infrastructure.python_date_time import PythonDateTime
 
 from api.shared.http_request.infrastructure.aiohttp_http_request import (
@@ -134,10 +133,6 @@ exchange = (
     else TestExchange()
 )
 
-langgraph_db_path = (
-    f"./database/{configuration.app_env}/{configuration.app_name}.langgraph.db"
-)
-
 engine = create_async_engine(
     f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}",
     pool_pre_ping=True,
@@ -168,8 +163,16 @@ executed_order_repository = SqlAlchemyExecutedOrderRepository(
     AsyncSessionLocal=AsyncSessionLocal, engine=engine
 )
 
-conversation_repository = LangchainSqliteConversationRepository(
-    db_path=langgraph_db_path, date_time=date_time, id_generator=id_generator
+conversation_repository = LangchainPostgresqlConversationRepository(
+    date_time=date_time,
+    id_generator=id_generator,
+    configuration={
+        "database_user": configuration.database_user,
+        "database_password": configuration.database_password,
+        "database_host": configuration.database_host,
+        "database_port": configuration.database_port,
+        "database_name": f"{configuration.app_name}",
+    },
 )
 
 session_manager = SqlAlchemySessionManager(

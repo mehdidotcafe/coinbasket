@@ -3,7 +3,6 @@ from contextvars import ContextVar
 from decimal import Decimal
 from typing import Any, Dict, Literal, Optional, cast
 
-import aiosqlite
 from api.asset.get_asset_by_id_use_case import GetAssetByIdUseCase
 from api.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
@@ -63,7 +62,6 @@ from api.registry import (
     date_time,
     exchange,
     id_generator,
-    langgraph_db_path,
     asset_balance_converter,
     small_balance_policy,
     similarity_storage,
@@ -101,7 +99,7 @@ from api.protocol import (
 )
 from api.protocol.fixture.token import usdt_token
 
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langchain.chat_models import init_chat_model
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import interrupt
@@ -198,6 +196,7 @@ class ErrorResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await similarity_storage.start()
+    await conversation_repository.start()
 
     await ingest_data_use_case.execute()
 
@@ -948,8 +947,10 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
     address = Address(getattr(request.state, "address"))
     request_address_context.set(address)
 
-    async with aiosqlite.connect(langgraph_db_path) as conn:
-        agent_executor = await __create_agent_executor(conn)
+    async with AsyncPostgresSaver.from_conn_string(
+        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}"
+    ) as checkpointer:
+        agent_executor = await __create_agent_executor(checkpointer)
 
         message = await conversation_use_case.execute(
             thread_id=address,
@@ -966,9 +967,7 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
     return MessageResponse.from_domain(message)
 
 
-async def __create_agent_executor(conn: aiosqlite.Connection):
-    sqlite_memory = AsyncSqliteSaver(conn)
-
+async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
     mcp_clients_tools = []
     # mcp_clients_tools = await mcp_clients.get_tools()
 
@@ -980,7 +979,7 @@ async def __create_agent_executor(conn: aiosqlite.Connection):
             reasoning={"effort": "minimal"},
         ),
         tools=coinbasket_tools + mcp_clients_tools,
-        checkpointer=sqlite_memory,
+        checkpointer=checkpointer,
         prompt=SystemMessage(
             "\n".join(
                 [
@@ -1043,8 +1042,10 @@ class MessagesResponse(BaseModel):
 async def get_conversation_messages(request: Request) -> MessagesResponse:
     address = Address(getattr(request.state, "address"))
     """Retrieve the conversation messages."""
-    async with aiosqlite.connect(langgraph_db_path) as conn:
-        agent_executor = await __create_agent_executor(conn)
+    async with AsyncPostgresSaver.from_conn_string(
+        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}"
+    ) as checkpointer:
+        agent_executor = await __create_agent_executor(checkpointer)
 
         messages = await get_conversation_messages_use_case.execute(
             thread_id=address, agent_executor=agent_executor
