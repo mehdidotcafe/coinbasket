@@ -39,7 +39,6 @@
             'ticker': 'BNB',
             'type': 'TOKEN',
           }),
-          'available_amount': '0.00001',
         }),
       }),
     }),

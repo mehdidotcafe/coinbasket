@@ -181,9 +181,7 @@ def test_integration_conversation_success(
             exclude=paths(
                 "args.planned_order.id",
                 "args.planned_order.sell_asset_with_amount.amount",
-                "args.planned_order.sell_asset_with_amount.amount",
                 "args.planned_order.sell_asset_with_amount.available_amount",
-                "args.planned_order.buy_asset_with_amount.amount",
                 "args.planned_order.buy_asset_with_amount.amount",
                 "args.planned_order.buy_asset_with_amount.available_amount",
             ),
@@ -195,9 +193,7 @@ def test_integration_conversation_success(
             exclude=paths(
                 "args.planned_order.id",
                 "args.planned_order.sell_asset_with_amount.amount",
-                "args.planned_order.sell_asset_with_amount.amount"
                 "args.planned_order.sell_asset_with_amount.available_amount",
-                "args.planned_order.buy_asset_with_amount.amount",
                 "args.planned_order.buy_asset_with_amount.amount",
                 "args.planned_order.buy_asset_with_amount.available_amount",
             ),

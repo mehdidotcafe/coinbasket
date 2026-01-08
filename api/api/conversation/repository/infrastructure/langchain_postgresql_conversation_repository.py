@@ -1,5 +1,6 @@
-from typing import cast, Any
-import aiosqlite
+from typing import TypedDict, cast, Any
+
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from api.conversation.message import Message
 from api.conversation.repository.conversation_repository import (
     ConversationRepository,
@@ -8,34 +9,53 @@ from langgraph.graph.state import CompiledStateGraph
 
 from api.datetime.date_time import DateTime
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langchain_core.messages import HumanMessage, AIMessage
 from api.conversation.interrupt import Interrupt
 from api.shared.id_generator.id_generator import IdGenerator
 
 
-class LangchainSqliteConversationRepository(ConversationRepository):
+class Configuration(TypedDict):
+    database_user: str
+    database_password: str
+    database_host: str
+    database_name: str
+    database_port: int
+
+
+class LangchainPostgresqlConversationRepository(ConversationRepository):
     """
-    LangchainSqliteRepository is a class that implements the ConversationRepository interface
-    using SQLite as the backend database. It provides methods to save and retrieve conversations
-    from the SQLite database.
+    LangchainPostgresqlConversationRepository is a class that implements the ConversationRepository interface
+    using PostgreSQL as the backend database. It provides methods to save and retrieve conversations
+    from the PostgreSQL database.
     """
 
-    def __init__(self, db_path: str, date_time: DateTime, id_generator: IdGenerator):
-        self.db_path = db_path
+    def __init__(
+        self,
+        date_time: DateTime,
+        id_generator: IdGenerator,
+        configuration: Configuration,
+    ):
         self.date_time = date_time
         self.id_generator = id_generator
+        self.configuration = configuration
+
+    async def start(self):
+        async with AsyncPostgresSaver.from_conn_string(
+            f"postgres://{self.configuration['database_user']}:{self.configuration['database_password']}@{self.configuration['database_host']}:{self.configuration['database_port']}/{self.configuration['database_name']}"
+        ) as checkpointer:
+            await checkpointer.setup()
 
     async def get_messages(self, thread_id: str) -> list[Message]:
-        async with aiosqlite.connect(self.db_path, check_same_thread=False) as db:
+        async with AsyncPostgresSaver.from_conn_string(
+            f"postgres://{self.configuration['database_user']}:{self.configuration['database_password']}@{self.configuration['database_host']}:{self.configuration['database_port']}/{self.configuration['database_name']}"
+        ) as checkpointer:
             graph_config: RunnableConfig = {
                 "configurable": {
                     "thread_id": thread_id,
                 }
             }
-            store = AsyncSqliteSaver(db)
 
-            checkpoint_data = await store.aget(graph_config)
+            checkpoint_data = await checkpointer.aget(graph_config)
 
             if not checkpoint_data:
                 return []
