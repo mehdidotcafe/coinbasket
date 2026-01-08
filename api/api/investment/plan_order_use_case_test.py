@@ -11,10 +11,7 @@ from api.investment.calculator.asset_balance_converter import (
     ConvertedBalance,
 )
 from api.investment.exchange.exchange import Exchange, ExchangeConvertedBalance
-from api.investment.intended_order import (
-    IntendedOrder,
-    IntendedOrderBalance,
-)
+from api.investment.intended_order import IntendedOrder
 from api.investment.planned_order import (
     PlannedOrder,
     PlannedOrderBalance,
@@ -24,7 +21,7 @@ from api.portfolio.holding.holding_repository import HoldingRepository
 from pytest import fixture, mark
 from api.protocol.fixture.token import eth_token, bnb_token, usdt_token, btc_token
 from api.protocol.fixture.basket import test_basket
-from decimal import ROUND_DOWN, Decimal
+from decimal import Decimal
 
 
 @fixture
@@ -37,16 +34,6 @@ def chain():
     chain = mock.Mock(spec=Chain)
 
     chain.get_base_token.return_value = bnb_token
-    chain.convert_amount_to_amount_atomic.side_effect = lambda asset, amount_readable: (
-        int(
-            (Decimal(amount_readable) * (10**18)).to_integral_exact(rounding=ROUND_DOWN)
-        ),
-        18,
-    )
-    chain.convert_amount_atomic_to_amount.side_effect = lambda asset, amount_atomic: (
-        int((Decimal(amount_atomic) / (10**18)).to_integral_exact(rounding=ROUND_DOWN)),
-        18,
-    )
 
     return chain
 
@@ -91,14 +78,10 @@ async def test_plan_order_use_case_execute_defined_sell_token_amount(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=IntendedOrderBalance(
-            # amount should be override in PlannedOrder
-            asset=eth_token,
-            amount=Decimal("1"),
-        ),
-        sell_asset_with_amount=IntendedOrderBalance(
-            asset=bnb_token, amount=Decimal("100")
-        ),
+        type="SELL",
+        sell_asset=bnb_token,
+        buy_asset=eth_token,
+        amount=Decimal("100"),
     )
 
     holding_repository.get_holding_balances.return_value = []
@@ -147,26 +130,21 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=IntendedOrderBalance(
-            asset=eth_token,
-            amount=Decimal("1"),
-        ),
-        sell_asset_with_amount=IntendedOrderBalance(
-            # amount should be override in PlannedOrder
-            asset=bnb_token,
-            amount=None,
-        ),
+        type="BUY",
+        sell_asset=bnb_token,
+        buy_asset=eth_token,
+        amount=Decimal("1"),
     )
 
     holding_repository.get_holding_balances.return_value = []
     exchange.convert_balance_to_asset.return_value = ExchangeConvertedBalance(
-        buy_balance=BalanceAtomic(
+        sell_balance=BalanceAtomic(
             asset=eth_token,
             amount=Decimal("1"),
             amount_atomic=1 * 10**18,
             decimals=18,
         ),
-        sell_balance=BalanceAtomic(
+        buy_balance=BalanceAtomic(
             asset=bnb_token,
             amount=Decimal("100"),
             amount_atomic=100 * 10**18,
@@ -199,14 +177,10 @@ async def test_plan_order_use_case_execute_same_sell_and_buy_asset(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=IntendedOrderBalance(
-            asset=eth_token,
-            amount=Decimal("1"),
-        ),
-        sell_asset_with_amount=IntendedOrderBalance(
-            asset=eth_token,
-            amount=Decimal("1"),
-        ),
+        type="SELL",
+        sell_asset=eth_token,
+        buy_asset=eth_token,
+        amount=Decimal("1"),
     )
 
     holding_repository.get_holding_balances.return_value = []
@@ -227,8 +201,10 @@ async def test_plan_order_use_case_execute_not_defined_tokens(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=None,
-        sell_asset_with_amount=None,
+        type="SELL",
+        sell_asset=None,
+        buy_asset=None,
+        amount=None,
     )
 
     holding_repository.get_holding_balances.return_value = []
@@ -252,11 +228,10 @@ async def test_plan_order_use_case_execute_not_defined_sell_token(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=IntendedOrderBalance(
-            asset=eth_token,
-            amount=None,
-        ),
-        sell_asset_with_amount=None,
+        type="BUY",
+        sell_asset=None,
+        buy_asset=eth_token,
+        amount=None,
     )
 
     holding_repository.get_holding_balances.return_value = []
@@ -291,11 +266,10 @@ async def test_plan_order_use_case_execute_not_defined_buy_token(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=None,
-        sell_asset_with_amount=IntendedOrderBalance(
-            asset=eth_token,
-            amount=None,
-        ),
+        type="SELL",
+        sell_asset=eth_token,
+        buy_asset=None,
+        amount=None,
     )
 
     holding_repository.get_holding_balances.return_value = []
@@ -329,28 +303,24 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=IntendedOrderBalance(
-            asset=test_basket,
-            amount=Decimal("50.0"),
-        ),
-        sell_asset_with_amount=IntendedOrderBalance(
-            asset=bnb_token,
-            amount=None,
-        ),
+        type="BUY",
+        sell_asset=bnb_token,
+        buy_asset=test_basket,
+        amount=Decimal("50.0"),
     )
 
     holding_repository.get_holding_balances.return_value = []
     exchange.convert_balance_to_asset.return_value = ExchangeConvertedBalance(
         sell_balance=BalanceAtomic(
-            asset=bnb_token,
-            amount=Decimal("500"),
-            amount_atomic=500 * 10**18,
-            decimals=18,
-        ),
-        buy_balance=BalanceAtomic(
             asset=test_basket,
             amount=Decimal("1"),
             amount_atomic=1 * 10**18,
+            decimals=18,
+        ),
+        buy_balance=BalanceAtomic(
+            asset=bnb_token,
+            amount=Decimal("500"),
+            amount_atomic=500 * 10**18,
             decimals=18,
         ),
     )
@@ -381,14 +351,10 @@ async def test_plan_order_use_case_execute_defined_sell_basket_amount(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=IntendedOrderBalance(
-            asset=bnb_token,
-            amount=None,
-        ),
-        sell_asset_with_amount=IntendedOrderBalance(
-            asset=test_basket,
-            amount=Decimal("50.0"),
-        ),
+        type="SELL",
+        sell_asset=test_basket,
+        buy_asset=bnb_token,
+        amount=Decimal("50.0"),
     )
 
     holding_repository.get_holding_balances.return_value = [
@@ -460,14 +426,10 @@ async def test_plan_order_use_case_execute_available_amount_defined(
     intended_order = IntendedOrder(
         id="order-123",
         address=address,
-        buy_asset_with_amount=IntendedOrderBalance(
-            asset=bnb_token,
-            amount=None,
-        ),
-        sell_asset_with_amount=IntendedOrderBalance(
-            asset=usdt_token,
-            amount=Decimal("200"),
-        ),
+        type="SELL",
+        sell_asset=usdt_token,
+        buy_asset=bnb_token,
+        amount=Decimal("200"),
     )
 
     holding_repository.get_holding_balances.return_value = [

@@ -32,14 +32,14 @@ class PlanOrderUseCase:
         self, address: Address, intended_order: IntendedOrder
     ) -> PlannedOrder | None:
         sell_asset = (
-            intended_order.sell_asset_with_amount.asset
-            if intended_order.sell_asset_with_amount
+            intended_order.sell_asset
+            if intended_order.sell_asset
             else self.chain.get_base_token()
         )
 
         buy_asset = (
-            intended_order.buy_asset_with_amount.asset
-            if intended_order.buy_asset_with_amount
+            intended_order.buy_asset
+            if intended_order.buy_asset
             else self.chain.get_base_token()
         )
 
@@ -64,22 +64,20 @@ class PlanOrderUseCase:
         )
 
         if (
-            intended_order.sell_asset_with_amount
-            and intended_order.sell_asset_with_amount.amount
+            intended_order.type == "SELL"
+            and intended_order.sell_asset
+            and intended_order.amount
         ):
-            (
-                sell_balance_amount_atomic,
-                sell_balance_decimals,
-            ) = await self.chain.convert_amount_to_amount_atomic(
-                asset=sell_asset,
-                amount_readable=intended_order.sell_asset_with_amount.amount,
+            sell_balance_decimals = intended_order.sell_asset.decimals
+            sell_balance_amount_atomic = int(
+                intended_order.amount * (10**sell_balance_decimals)
             )
 
             converted_asset_balance = await self.asset_balance_converter.convert(
                 taker=address,
                 sell_balance=BalanceAtomic[Asset](
                     asset=sell_asset,
-                    amount=intended_order.sell_asset_with_amount.amount,
+                    amount=intended_order.amount,
                     amount_atomic=sell_balance_amount_atomic,
                     decimals=sell_balance_decimals,
                 ),
@@ -102,18 +100,16 @@ class PlanOrderUseCase:
             )
 
         if (
-            intended_order.buy_asset_with_amount
-            and intended_order.buy_asset_with_amount.amount
+            intended_order.type == "BUY"
+            and intended_order.amount
+            and intended_order.buy_asset
         ):
-            buy_asset_amount = intended_order.buy_asset_with_amount.amount
-
-            (
-                buy_balance_amount_atomic,
-                buy_balance_decimals,
-            ) = await self.chain.convert_amount_to_amount_atomic(
-                asset=buy_asset,
-                amount_readable=buy_asset_amount,
+            buy_asset_amount = intended_order.amount
+            buy_balance_decimals = intended_order.buy_asset.decimals
+            buy_balance_amount_atomic = int(
+                buy_asset_amount * (10**buy_balance_decimals)
             )
+
             buy_balance = BalanceAtomic[Asset](
                 asset=buy_asset,
                 amount=buy_asset_amount,
@@ -136,51 +132,30 @@ class PlanOrderUseCase:
                 address=intended_order.address,
                 sell_asset_with_amount=PlannedOrderBalance(
                     asset=sell_asset,
-                    amount=converted_balance.sell_balance.amount,
-                    available_amount=sell_asset_available_amount,
-                ),
-                buy_asset_with_amount=PlannedOrderBalance(
-                    asset=buy_asset,
                     amount=converted_balance.buy_balance.amount,
-                    available_amount=buy_asset_available_amount,
-                ),
-            )
-
-        if intended_order.sell_asset_with_amount:
-            return PlannedOrder(
-                id=intended_order.id,
-                address=intended_order.address,
-                sell_asset_with_amount=PlannedOrderBalance(
-                    asset=sell_asset,
-                    amount=intended_order.sell_asset_with_amount.amount
-                    if intended_order.sell_asset_with_amount
-                    else None,
                     available_amount=sell_asset_available_amount,
                 ),
                 buy_asset_with_amount=PlannedOrderBalance(
                     asset=buy_asset,
-                    amount=None,
+                    amount=converted_balance.sell_balance.amount,
                     available_amount=buy_asset_available_amount,
                 ),
             )
 
-        if intended_order.buy_asset_with_amount:
-            return PlannedOrder(
-                id=intended_order.id,
-                address=intended_order.address,
-                sell_asset_with_amount=PlannedOrderBalance(
-                    asset=sell_asset,
-                    amount=None,
-                    available_amount=sell_asset_available_amount,
-                ),
-                buy_asset_with_amount=PlannedOrderBalance(
-                    asset=buy_asset,
-                    amount=intended_order.buy_asset_with_amount.amount
-                    if intended_order.buy_asset_with_amount
-                    else None,
-                    available_amount=buy_asset_available_amount,
-                ),
-            )
+        return PlannedOrder(
+            id=intended_order.id,
+            address=intended_order.address,
+            sell_asset_with_amount=PlannedOrderBalance(
+                asset=sell_asset,
+                amount=None,
+                available_amount=sell_asset_available_amount,
+            ),
+            buy_asset_with_amount=PlannedOrderBalance(
+                asset=buy_asset,
+                amount=None,
+                available_amount=buy_asset_available_amount,
+            ),
+        )
 
     def _get_available_amount(
         self, holding_balances_per_token: dict[str, BalanceAtomic], asset: Asset

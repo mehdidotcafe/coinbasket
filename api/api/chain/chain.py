@@ -8,8 +8,6 @@ from api.protocol.asset import Asset
 from api.protocol.token import Token
 
 from api.chain.balance import (
-    AmountAtomic,
-    AmountReadable,
     BalanceAtomic,
 )
 
@@ -103,18 +101,6 @@ class Chain(ABC):
 
     @abstractmethod
     async def get_token_decimals(self, token_address: str) -> int:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def convert_amount_to_amount_atomic(
-        self, asset: Asset, amount_readable: AmountReadable
-    ) -> tuple[AmountAtomic, int]:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def convert_amount_atomic_to_amount(
-        self, asset: Asset, amount_atomic: AmountAtomic
-    ) -> tuple[AmountReadable, int]:
         raise NotImplementedError
 
     @abstractmethod

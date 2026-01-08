@@ -2,7 +2,7 @@ from unittest import mock
 from api.address.address import Address
 from api.chain.transaction_receipt_parser import TransactionReceiptParser
 from hexbytes import HexBytes
-from api.chain.balance import AmountReadable, BalanceAtomic
+from api.chain.balance import BalanceAtomic
 from api.chain.chain import ParsedReceipt
 from api.chain.exception.insufficient_balance import InsufficientBalance
 from pytest import fixture, mark, raises
@@ -346,71 +346,3 @@ async def test_bsc_chain_parse_transaction_receipt(
     )
 
     assert result == parsed_receipt
-
-
-@mark.asyncio
-async def test_bsc_chain_convert_amount_to_amount_atomic_native_token(
-    bsc_chain: BscChain, w3: AsyncWeb3
-):
-    amount_atomic = 1250000000000000000
-    amount_readable = AmountReadable("1.25")
-
-    token_contract = mock.Mock()
-    w3.eth.contract.return_value = token_contract
-
-    result_amount, result_decimals = await bsc_chain.convert_amount_to_amount_atomic(
-        bnb_token, amount_readable
-    )
-
-    assert result_amount == amount_atomic
-    assert result_decimals == 18
-
-
-@mark.asyncio
-async def test_bsc_chain_convert_amount_to_amount_atomic_token(
-    bsc_chain: BscChain, w3: AsyncWeb3
-):
-    amount_readable = AmountReadable("125000000")
-
-    token_contract = mock.Mock()
-    w3.eth.contract.return_value = token_contract
-
-    (
-        result_amount_atomic,
-        result_decimals,
-    ) = await bsc_chain.convert_amount_to_amount_atomic(usdt_token, amount_readable)
-
-    assert result_amount_atomic == amount_readable * Decimal(10**usdt_token.decimals)
-    assert result_decimals == usdt_token.decimals
-
-
-@mark.asyncio
-async def test_bsc_chain_convert_amount_atomic_to_amount_native_token(
-    bsc_chain: BscChain, w3: AsyncWeb3
-):
-    amount_atomic = 1250000000000000000
-    amount_readable = AmountReadable("1.25")
-
-    result_amount, result_decimals = await bsc_chain.convert_amount_atomic_to_amount(
-        bnb_token, amount_atomic
-    )
-
-    assert result_amount == amount_readable
-    assert result_decimals == 18
-
-
-@mark.asyncio
-async def test_bsc_chain_convert_amount_atomic_to_amount_token(
-    bsc_chain: BscChain, w3: AsyncWeb3
-):
-    amount_atomic = 1250000000000000000
-
-    token_contract = mock.Mock()
-    w3.eth.contract.return_value = token_contract
-
-    result_amount, result_decimals = await bsc_chain.convert_amount_atomic_to_amount(
-        usdt_token, amount_atomic
-    )
-
-    assert result_amount == amount_atomic / Decimal(10**usdt_token.decimals)
-    assert result_decimals == usdt_token.decimals

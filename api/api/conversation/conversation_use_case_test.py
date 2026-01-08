@@ -1,6 +1,7 @@
 from unittest import mock
+from api.conversation.exception.waiting_interrupt import WaitingInterrupt
 from api.conversation.message import Message, MessageUi, QueryMessage
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 
 from api.conversation.conversation_use_case import (
     ConversationUseCase,
@@ -65,6 +66,7 @@ async def test_conversation_use_case_execute_agent_last_step(
             ]
         }
     }
+    agent_executor.aget_state = mock.AsyncMock(return_value=mock.Mock(interrupts=[]))
     agent_executor.astream = mock.MagicMock()
     agent_executor.astream.return_value.__aiter__.return_value = [step]
 
@@ -120,6 +122,8 @@ async def test_conversation_use_case_execute_interrupt_last_step(
             ),
         )
     }
+
+    agent_executor.aget_state = mock.AsyncMock(return_value=mock.Mock(interrupts=[]))
     agent_executor.astream = mock.MagicMock()
     agent_executor.astream.return_value.__aiter__.return_value = [step]
 
@@ -143,3 +147,25 @@ async def test_conversation_use_case_execute_interrupt_last_step(
         ),
         created_at="2023-10-01",
     )
+
+
+async def test_conversation_use_case_execute_with_active_interrupt_raises(
+    use_case: ConversationUseCase,
+    agent_executor: CompiledStateGraph,
+    thread_id: str,
+):
+    message = QueryMessage(
+        id="42",
+        is_resuming=False,
+        role="user",
+        content="Hello?",
+        created_at="2023-10-01",
+    )
+
+    snap_mock = mock.Mock()
+    snap_mock.interrupts = [mock.Mock()]
+
+    agent_executor.aget_state = mock.AsyncMock(return_value=snap_mock)
+
+    with raises(WaitingInterrupt):
+        await use_case.execute(agent_executor, thread_id, message)

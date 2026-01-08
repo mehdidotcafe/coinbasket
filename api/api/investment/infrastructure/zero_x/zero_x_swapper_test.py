@@ -70,15 +70,6 @@ def zero_x_api_client():
 def chain():
     chain = mock.Mock(spec=Chain)
 
-    chain.convert_amount_to_amount_atomic.side_effect = lambda asset, amount_readable: (
-        amount_readable * (10**18),
-        18,
-    )
-    chain.convert_amount_atomic_to_amount.side_effect = lambda asset, amount_atomic: (
-        amount_atomic / (10**18),
-        18,
-    )
-
     return chain
 
 
@@ -195,7 +186,7 @@ async def test_zero_x_swapper_get_signable_swap_data_success(
                 gasPrice="100000000",
                 value="1000000000000000000",
             ),
-            buyAmount="254516995428172740",
+            buyAmount="254000000000000000000",
             buyToken=eth_token.address,
             sellAmount="1000000000000000000",
             sellToken=bnb_token.address,
@@ -221,13 +212,13 @@ async def test_zero_x_swapper_get_signable_swap_data_success(
     assert signable_swap == ExchangeSignableSwap(
         buy_balance=BalanceAtomic(
             asset=eth_token,
-            amount=Decimal(254516995428172740 / 10**18),
-            amount_atomic=254516995428172740,
+            amount=Decimal("254"),
+            amount_atomic=254000000000000000000,
             decimals=18,
         ),
         sell_balance=BalanceAtomic(
             asset=bnb_token,
-            amount=Decimal(1000000000000000000 / 10**18),
+            amount=Decimal("1"),
             amount_atomic=1000000000000000000,
             decimals=18,
         ),

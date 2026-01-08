@@ -1,5 +1,6 @@
 import json
 from typing import Any, cast
+from api.conversation.exception.waiting_interrupt import WaitingInterrupt
 from langgraph.types import Command
 
 
@@ -35,6 +36,11 @@ class ConversationUseCase:
                 "thread_id": thread_id,
             }
         }
+
+        snap = await agent_executor.aget_state(graph_config)
+
+        if snap.interrupts and not message.is_resuming:
+            raise WaitingInterrupt()
 
         async for step in agent_executor.astream(
             {"messages": [{"role": "user", "content": message.content}]}
