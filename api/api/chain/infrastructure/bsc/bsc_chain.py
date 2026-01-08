@@ -1,4 +1,4 @@
-from decimal import ROUND_DOWN, Decimal
+from decimal import Decimal
 import json
 from typing import TypedDict, cast
 from api.address.address import Address
@@ -12,8 +12,6 @@ from web3.types import TxParams, Wei
 
 from api.protocol.fixture.token import bnb_token, wbnb_token
 from api.chain.balance import (
-    AmountAtomic,
-    AmountReadable,
     BalanceAtomic,
 )
 from api.chain.chain import Chain, ParsedReceipt
@@ -128,9 +126,8 @@ class BscChain(Chain):
             self.w3.to_checksum_address(address)
         ).call()
 
-        amount, decimals = await self.convert_amount_atomic_to_amount(
-            asset=asset, amount_atomic=amount_atomic
-        )
+        decimals = asset.decimals
+        amount = Decimal(amount_atomic) / Decimal(10**decimals)
 
         return BalanceAtomic[Asset](
             asset=asset, amount=amount, amount_atomic=amount_atomic, decimals=decimals
@@ -162,9 +159,9 @@ class BscChain(Chain):
         amount_atomic = await token_contract.functions.balanceOf(
             self.w3.to_checksum_address(address)
         ).call()
-        amount, decimals = await self.convert_amount_atomic_to_amount(
-            asset=asset, amount_atomic=amount_atomic
-        )
+
+        decimals = asset.decimals
+        amount = Decimal(amount_atomic) / Decimal(10**decimals)
 
         return BalanceAtomic[Asset](
             asset=asset, amount=amount, amount_atomic=amount_atomic, decimals=decimals
@@ -211,24 +208,6 @@ class BscChain(Chain):
             buy_asset=buy_asset,
             transaction_hash=transaction_hash,
         )
-
-    async def convert_amount_to_amount_atomic(
-        self, asset: Asset, amount_readable: AmountReadable
-    ) -> tuple[AmountAtomic, int]:
-        decimals = asset.decimals
-
-        return int(
-            (Decimal(amount_readable) * Decimal(10**decimals)).to_integral_exact(
-                rounding=ROUND_DOWN
-            )
-        ), decimals
-
-    async def convert_amount_atomic_to_amount(
-        self, asset: Asset, amount_atomic: AmountAtomic
-    ) -> tuple[AmountReadable, int]:
-        decimals = asset.decimals
-
-        return amount_atomic / Decimal(10**decimals), decimals
 
     async def __simulate_transaction(self, transaction_hash: str, block_number: int):
         tx = await self.w3.eth.get_transaction(cast(HexBytes, transaction_hash))

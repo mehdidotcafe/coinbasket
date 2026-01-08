@@ -26,15 +26,6 @@ def to_atomic(amount: Decimal) -> int:
 def chain():
     chain = mock.Mock(spec=Chain)
 
-    chain.convert_amount_to_amount_atomic.side_effect = lambda asset, amount_readable: (
-        int(amount_readable * (10**18)),
-        18,
-    )
-    chain.convert_amount_atomic_to_amount.side_effect = lambda asset, amount_atomic: (
-        int(amount_atomic / (10**18)),
-        18,
-    )
-
     return chain
 
 

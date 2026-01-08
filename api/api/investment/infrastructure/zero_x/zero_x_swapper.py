@@ -67,10 +67,8 @@ class ZeroXSwapper(Exchange):
     ) -> ExchangeSignableSwap:
         chain_id = await self.chain.get_chain_id()
 
-        amount_atomic, _decimals = await self.chain.convert_amount_to_amount_atomic(
-            asset=sell_balance.asset,
-            amount_readable=sell_balance.amount,
-        )
+        decimals = sell_balance.asset.decimals
+        amount_atomic = int(sell_balance.amount * (10**decimals))
 
         quote_result = await self.api_client.get_quote(
             chain_id=chain_id,
@@ -105,13 +103,11 @@ class ZeroXSwapper(Exchange):
         sell_balance_amount_atomic = int(quote.sellAmount)
         buy_balance_amount_atomic = int(quote.buyAmount)
 
-        sell_amount, sell_decimals = await self.chain.convert_amount_atomic_to_amount(
-            amount_atomic=sell_balance_amount_atomic, asset=sell_balance.asset
-        )
-        buy_amount, buy_decimals = await self.chain.convert_amount_atomic_to_amount(
-            amount_atomic=buy_balance_amount_atomic,
-            asset=buy_balance.asset,
-        )
+        sell_decimals = sell_balance.asset.decimals
+        sell_amount = Decimal(sell_balance_amount_atomic) / Decimal(10**sell_decimals)
+
+        buy_decimals = buy_balance.asset.decimals
+        buy_amount = Decimal(buy_balance_amount_atomic) / Decimal(10**buy_decimals)
 
         return ExchangeSignableSwap(
             sell_balance=BalanceAtomic(
@@ -136,7 +132,7 @@ class ZeroXSwapper(Exchange):
         balance: BalanceAtomic[Asset],
         asset: Asset,
         investment_parameters: InvestmentParameters,
-    ):
+    ) -> ExchangeConvertedBalance:
         if self.__is_same_token(balance.asset, asset):
             return ExchangeConvertedBalance(
                 sell_balance=BalanceAtomic(
@@ -153,10 +149,8 @@ class ZeroXSwapper(Exchange):
                 ),
             )
 
-        amount_atomic, _decimals = await self.chain.convert_amount_to_amount_atomic(
-            asset=balance.asset,
-            amount_readable=balance.amount,
-        )
+        decimals = balance.asset.decimals
+        amount_atomic = int(balance.amount * (10**decimals))
 
         try:
             price = await self.api_client.get_price(
@@ -183,6 +177,12 @@ class ZeroXSwapper(Exchange):
 
         sell_balance_amount_atomic = int(price.sellAmount)
         buy_balance_amount_atomic = int(price.buyAmount)
+
+        sell_decimals = balance.asset.decimals
+        sell_amount = Decimal(sell_balance_amount_atomic) / Decimal(10**sell_decimals)
+
+        buy_decimals = asset.decimals
+        buy_amount = Decimal(buy_balance_amount_atomic) / Decimal(10**buy_decimals)
 
         sell_amount, sell_decimals = await self.chain.convert_amount_atomic_to_amount(
             amount_atomic=sell_balance_amount_atomic, asset=balance.asset

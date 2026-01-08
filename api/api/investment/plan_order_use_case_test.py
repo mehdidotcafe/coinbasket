@@ -21,7 +21,7 @@ from api.portfolio.holding.holding_repository import HoldingRepository
 from pytest import fixture, mark
 from api.protocol.fixture.token import eth_token, bnb_token, usdt_token, btc_token
 from api.protocol.fixture.basket import test_basket
-from decimal import ROUND_DOWN, Decimal
+from decimal import Decimal
 
 
 @fixture
@@ -34,16 +34,6 @@ def chain():
     chain = mock.Mock(spec=Chain)
 
     chain.get_base_token.return_value = bnb_token
-    chain.convert_amount_to_amount_atomic.side_effect = lambda asset, amount_readable: (
-        int(
-            (Decimal(amount_readable) * (10**18)).to_integral_exact(rounding=ROUND_DOWN)
-        ),
-        18,
-    )
-    chain.convert_amount_atomic_to_amount.side_effect = lambda asset, amount_atomic: (
-        int((Decimal(amount_atomic) / (10**18)).to_integral_exact(rounding=ROUND_DOWN)),
-        18,
-    )
 
     return chain
 

@@ -31,10 +31,8 @@ class GetAssetSwapPriceUseCase:
     async def execute(
         self, address: Address, asset_swap_price_info: AssetSwapPriceInfo
     ) -> ConvertedBalance:
-        amount_atomic, decimals = await self.chain.convert_amount_to_amount_atomic(
-            asset=asset_swap_price_info.sell_asset,
-            amount_readable=asset_swap_price_info.sell_asset_amount,
-        )
+        decimals = asset_swap_price_info.sell_asset.decimals
+        amount_atomic = int(asset_swap_price_info.sell_asset_amount * (10**decimals))
 
         converted_asset_balance = await self.asset_balance_converter.convert(
             taker=address,

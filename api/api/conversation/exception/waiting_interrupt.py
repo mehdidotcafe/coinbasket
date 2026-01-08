@@ -1,4 +1,7 @@
-class WaitingInterrupt(BaseException):
+from api.shared.app_exception import AppException
+
+
+class WaitingInterrupt(AppException):
     def __init__(
         self, message: str = "There is an active interrupt. Please resume first."
     ):

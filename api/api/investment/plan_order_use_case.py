@@ -68,12 +68,9 @@ class PlanOrderUseCase:
             and intended_order.sell_asset
             and intended_order.amount
         ):
-            (
-                sell_balance_amount_atomic,
-                sell_balance_decimals,
-            ) = await self.chain.convert_amount_to_amount_atomic(
-                asset=sell_asset,
-                amount_readable=intended_order.amount,
+            sell_balance_decimals = intended_order.sell_asset.decimals
+            sell_balance_amount_atomic = int(
+                intended_order.amount * (10**sell_balance_decimals)
             )
 
             converted_asset_balance = await self.asset_balance_converter.convert(
@@ -108,15 +105,11 @@ class PlanOrderUseCase:
             and intended_order.buy_asset
         ):
             buy_asset_amount = intended_order.amount
-
-            # Remove this call, compute directly from decimals
-            (
-                buy_balance_amount_atomic,
-                buy_balance_decimals,
-            ) = await self.chain.convert_amount_to_amount_atomic(
-                asset=buy_asset,
-                amount_readable=buy_asset_amount,
+            buy_balance_decimals = intended_order.buy_asset.decimals
+            buy_balance_amount_atomic = int(
+                buy_asset_amount * (10**buy_balance_decimals)
             )
+
             buy_balance = BalanceAtomic[Asset](
                 asset=buy_asset,
                 amount=buy_asset_amount,
