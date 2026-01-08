@@ -1,0 +1,194 @@
+{
+  "https://agent-warren.coinbasket.ai": [
+    {
+      "id": "7e0bc972-6408-4ebd-9454-cab184168c64",
+      "role": "user",
+      "content": "Hello Agent Warren, what can you do?",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "run--d5668e47-3f05-4af5-be9a-b73de2839e9a-0",
+      "role": "assistant",
+      "content": "Hello! I can help you create and invest in crypto coin baskets on the Binance Smart Chain (BSC) network. Here\u2019s a quick overview of my capabilities:\n\n1. **Create Coin Baskets**: I can create a basket of selected cryptocurrencies and provide a name and description for it.\n2. **Manage Baskets**: Once a basket is created, I can help you add or remove coins from it.\n3. **Invest in Baskets**: I can assist you in investing in the basket, but I will always ask for your confirmation before making any investments.\n4. **Divest from Baskets**: If you want to sell or divest from the entire basket, I can help with that too, again confirming your choice first.\n5. **Provide Information**: I can retrieve information about available preset baskets and tokens/coins for investment.\n\nIf you're interested in creating a basket or need more information, just let me know!",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "5040cff7-440f-425c-a13f-4960e2067021",
+      "role": "user",
+      "content": "I am very interested about this coin called SOLANA, do you have any premade basket containing it?",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "run--54034452-6066-41b0-827a-607686c3d8d4-0",
+      "role": "assistant",
+      "content": "Yes, there is a premade basket containing SOLANA! Here are the details:\n\n### Basket Name: Big4\n**Description:** This curated basket offers broad exposure to the crypto market through a selection of established, high-liquidity digital assets spanning different blockchain ecosystems. It is designed to balance long-term value preservation with growth potential, reflecting both foundational and emerging trends in decentralized technology. The combination supports diversification across transaction layers, use cases, and network adoption, making it a resilient core holding for crypto-oriented portfolios.\n\n#### Tokens in the Basket:\n1. **Bitcoin** (BTC) - [0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c](https://bscscan.com/token/0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c)\n2. **Ethereum** (ETH) - [0x2170Ed0880ac9A755fd29B2688956BD959F933F8](https://bscscan.com/token/0x2170Ed0880ac9A755fd29B2688956BD959F933F8)\n3. **SOLANA** (SOL) - [0x570A5D26f7765Ecb712C0924E4De545B89fD43dF](https://bscscan.com/token/0x570A5D26f7765Ecb712C0924E4De545B89fD43dF)\n4. **Binance Coin** (WBNB) - [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c](https://bscscan.com/token/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c)\n\nWould you like to add or remove any coins from this basket, or would you like to invest in it? Please confirm if you want to proceed with the investment, and remember to do your own research (DYOR) before investing.",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "45d81a7d-24ce-4222-a3f0-def4b0d709df",
+      "role": "user",
+      "content": "Could you please add TRON to my basket and then invest it?",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "run--6b63cc96-9d79-43a2-affc-e30a888b3c94-0",
+      "role": "assistant",
+      "content": "Since there is no existing basket that includes TRON, I will create a new basket by adding TRON to it, along with the coins in the Big4 basket.\n\n### New Basket Name: Enhanced Big4\n**Description:** This updated basket provides broad exposure to the crypto market through a carefully selected mix of established, high-liquidity digital assets. It includes leading cryptocurrencies while also incorporating TRON for enhanced diversity.\n\n#### Tokens in the Basket:\n1. **Bitcoin** (BTC) - [0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c](https://bscscan.com/token/0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c)\n2. **Ethereum** (ETH) - [0x2170Ed0880ac9A755fd29B2688956BD959F933F8](https://bscscan.com/token/0x2170Ed0880ac9A755fd29B2688956BD959F933F8)\n3. **SOLANA** (SOL) - [0x570A5D26f7765Ecb712C0924E4De545B89fD43dF](https://bscscan.com/token/0x570A5D26f7765Ecb712C0924E4De545B89fD43dF)\n4. **Binance Coin** (WBNB) - [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c](https://bscscan.com/token/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c)\n5. **Tron** (TRX) - [0x85EAC5Ac2F758618dFa09bDbe0cf174e7d574D5B](https://bscscan.com/token/0x85EAC5Ac2F758618dFa09bDbe0cf174e7d574D5B)\n\nWould you like to proceed with the investment in this Enhanced Big4 basket? Please confirm your decision, and remember to do your own research (DYOR) before investing.",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "81b740f6-e2cc-4fc8-955f-44031cdf0f48",
+      "role": "user",
+      "content": "yes, please invest.",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "run--1da1d282-117a-4151-a6f1-4b0049ef19f0-0",
+      "role": "assistant",
+      "content": "The investment in the **Enhanced Big4** basket has been successfully completed! Here are the details:\n\n### Basket Name: Enhanced Big4\n**Description:** This updated basket provides broad exposure to the crypto market through a carefully selected mix of established, high-liquidity digital assets. It includes leading cryptocurrencies while also incorporating TRON for enhanced diversity.\n\n#### Tokens in the Basket:\n1. **Bitcoin** (BTC) - [0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c](https://bscscan.com/token/0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c)\n2. **Ethereum** (ETH) - [0x2170Ed0880ac9A755fd29B2688956BD959F933F8](https://bscscan.com/token/0x2170Ed0880ac9A755fd29B2688956BD959F933F8)\n3. **SOLANA** (SOL) - [0x570A5D26f7765Ecb712C0924E4De545B89fD43dF](https://bscscan.com/token/0x570A5D26f7765Ecb712C0924E4De545B89fD43dF)\n4. **Binance Coin** (WBNB) - [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c](https://bscscan.com/token/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c)\n5. **Tron** (TRX) - [0x85EAC5Ac2F758618dFa09bDbe0cf174e7d574D5B](https://bscscan.com/token/0x85EAC5Ac2F758618dFa09bDbe0cf174e7d574D5B)\n\nThe investment was made at **2025-06-05 21:47:33**.\n\nIf you would like to manage this basket further (add/remove coins or divest), just let me know!",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "86090980-d752-4350-89ab-35e7cce8f486",
+      "role": "user",
+      "content": "Thank you, could you display my whole portfolio in USD?",
+      "created_at": "2025-06-05 21:49:16"
+    },
+    {
+      "id": "run--28d99a24-1f4d-4b51-a580-be819d9be926-0",
+      "role": "assistant",
+      "content": "Here is the breakdown of your entire portfolio in USD:\n\n### Portfolio Overview\n- **Total Portfolio Value:** **$6406.03** USD\n\n#### Breakdown by Token:\n1. **BNB (Binance Coin)**: \n   - Amount: 0.00368 BNB\n   - USD Value: $0.03\n2. **Bitcoin (BTC)**: \n   - Amount: 0.01260 BTC\n   - USD Value: $1282.18\n3. **Ethereum (ETH)**: \n   - Amount: 0.50684 ETH\n   - USD Value: $1282.63\n4. **SOLANA (SOL)**: \n   - Amount: 8.78222 SOL\n   - USD Value: $1282.20\n5. **Binance Coin (WBNB)**: \n   - Amount: 1.9992 WBNB\n   - USD Value: $1285.71\n6. **Tron (TRX)**: \n   - Amount: 4746.99778 TRX\n   - USD Value: $1270.95\n\nIf you have any further questions or if you\u2019d like to manage your assets, just let me know!",
+      "created_at": "2025-06-05 21:49:16"
+    }
+  ],
+  "https://agent-satoshi.coinbasket.ai": [
+    {
+      "id": "265e2e8b-e7e5-4d66-ae13-12a13b37280d",
+      "role": "user",
+      "content": "Hello Agent Satoshi, please invest all my balance in bitcoin!",
+      "created_at": "2025-06-05 22:19:17"
+    },
+    {
+      "id": "run--c20370d1-4c65-4d5f-b44c-302a21c30a3d-0",
+      "role": "assistant",
+      "content": "I can create a basket for Bitcoin but first, let me retrieve your Wallet address and balance to check how much you have. Please hold on for a moment.",
+      "created_at": "2025-06-05 22:19:17"
+    },
+    {
+      "id": "run--570b622b-bae1-4d18-9d1a-f9f18f8431d4-0",
+      "role": "assistant",
+      "content": "I have gathered the necessary information. However, it appears that you are looking to invest in Bitcoin, specifically the Binance Pegged Bitcoin.\n\nHere is the basket I will create for you:\n\n### Basket Name: \"Invest in Bitcoin\"\n**Description:** A focused investment in Binance Pegged Bitcoin (BTCB).\n\n#### Coins in the Basket:\n- **Bitcoin**  \n  Ticker: BTCB  \n  Address: [0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c](https://bscscan.com/token/0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c)\n\nYour current balance is approximately 99.999 BNB. \n\nWould you like to add or remove any coins from this basket, or do you wish to proceed with investing in it? Please remember to conduct your own research (DYOR) before confirming the investment.",
+      "created_at": "2025-06-05 22:19:17"
+    },
+    {
+      "id": "6d4e567e-709a-432f-b79b-886ba8d10743",
+      "role": "user",
+      "content": "yes, invest please.",
+      "created_at": "2025-06-05 22:19:17"
+    },
+    {
+      "id": "run--e77bc9cf-8064-4f74-947e-c10a8dbb532f-0",
+      "role": "assistant",
+      "content": "Just to confirm, you would like to invest all your balance (approximately 99.999 BNB) in the following basket:\n\n### Basket Name: \"Invest in Bitcoin\"\n**Description:** A focused investment in Binance Pegged Bitcoin (BTCB).\n\n#### Coins in the Basket:\n- **Bitcoin**  \n  Ticker: BTCB  \n  Address: [0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c](https://bscscan.com/token/0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c)\n\nPlease confirm if you wish to proceed with the investment, and remember to conduct your own research (DYOR) before confirming.",
+      "created_at": "2025-06-05 22:19:17"
+    },
+    {
+      "id": "d3d98e88-f812-49ea-9fb5-c4395492f8a3",
+      "role": "user",
+      "content": "yes",
+      "created_at": "2025-06-05 22:19:17"
+    },
+    {
+      "id": "run--7133d0fe-6480-47c1-b25a-7c62b3a480d4-0",
+      "role": "assistant",
+      "content": "Your investment has been successfully processed!\n\n### Investment Details:\n- **Basket Name:** Invest in Bitcoin\n- **Description:** A focused investment in Binance Pegged Bitcoin (BTCB).\n- **Invested Amount:** 99.995 BNB\n- **Bitcoin Acquired:** Approximately 0.6259 BTCB\n\nCongratulations on your investment! Would you like to do anything else, such as checking your invested basket's status or making changes?",
+      "created_at": "2025-06-05 22:19:17"
+    },
+    {
+      "id": "c5f40602-0ddd-4e83-8bd3-85c90027ae40",
+      "role": "user",
+      "content": "What is my current basket?",
+      "created_at": "2025-06-05 22:19:17"
+    },
+    {
+      "id": "run--7b0e358b-8910-4c60-9a70-43a247c80860-0",
+      "role": "assistant",
+      "content": "Your current basket is as follows:\n\n### Basket Name: \"Invest in Bitcoin\"\n**Description:** A focused investment in Binance Pegged Bitcoin (BTCB).\n- **Status:** Invested\n- **Invested At:** 2025-06-05 22:18:26\n\n#### Investment Details:\n- **Invested Amount:** 99.995 BNB\n- **Bitcoin Acquired:** Approximately 0.6259 BTCB\n- **Token Details:**\n  - **Bitcoin**  \n    Ticker: BTCB  \n    Address: [0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c](https://bscscan.com/token/0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c)\n\nWould you like to make any changes to your basket or perform any other actions?",
+      "created_at": "2025-06-05 22:19:17"
+    }
+  ],
+  "https://agent-graham.coinbasket.ai": [
+    {
+      "id": "3c150663-0b97-46bf-a0d8-2c13b052385b",
+      "role": "user",
+      "content": "Hello, what is my current balance?",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "run--79dd96ad-db23-4187-95c5-ed2592418587-0",
+      "role": "assistant",
+      "content": "Your current balance is **20 BNB**. \n\nWould you like to add or remove any coins from your investment basket, or would you like to invest in a basket?",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "cf25f500-d890-4c43-9ca7-1eeda4ea24c2",
+      "role": "user",
+      "content": "I want to invest them in a basket made of:\n\nfetch.ai\n\nwbnb\n\nmubarak\n\nCall the basket \"coinbasket & friends\"",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "run--9a7564fb-a0c3-48b6-92c8-fdef9c7f4bad-0",
+      "role": "assistant",
+      "content": "I have created your basket called **\"coinbasket & friends\"** with the following coins:\n\n1. **Fetch.ai**\n   - Display Name: FetchToken\n   - Ticker: FET\n   - Address: [0x031b41e504677879370e9DBcF937283A8691Fa7f](https://bscscan.com/token/0x031b41e504677879370e9DBcF937283A8691Fa7f)\n\n2. **WBNB**\n   - Display Name: WBNB Token\n   - Ticker: WBNB\n   - Address: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c](https://bscscan.com/token/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c)\n\n3. **Mubarak**\n   - Display Name: mubarak\n   - Ticker: mubarak\n   - Address: [0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6](https://bscscan.com/token/0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6)\n\nWould you like to add or remove any coins from this basket, or do you want to invest in it? Please confirm if you want to proceed with the investment, and remember to do your own research (DYOR) before investing.",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "80684ef7-e11f-4bfa-b032-f50ff8161653",
+      "role": "user",
+      "content": "Can you add to the basket another AI related token please",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "run--6e7ae323-ae30-44a3-8871-cdb86e8b03ca-0",
+      "role": "assistant",
+      "content": "I found an AI-related token that can be added to your basket. Here are the details:\n\n- **AITECH**\n  - Display Name: AITECH\n  - Ticker: AITECH\n  - Address: [0x2D060Ef4d6BF7f9e5edDe373Ab735513c0e4F944](https://bscscan.com/token/0x2D060Ef4d6BF7f9e5edDe373Ab735513c0e4F944)\n\nWould you like to add **AITECH** to your basket \"coinbasket & friends\"? Please confirm if you'd like to proceed with this addition.",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "8c069d99-3057-4960-8437-f38393bb2c41",
+      "role": "user",
+      "content": "yes then invest",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "run--303eaf24-bc6c-43f8-bc1b-13a759fadfeb-0",
+      "role": "assistant",
+      "content": "Your investment in the basket **\"coinbasket & friends\"** was successful. Here are the details of your investment:\n\n1. **Fetch.ai (FET)**\n   - Invested Amount: 4.999 BNB\n   - Received: 4337.27 FET\n\n2. **WBNB (WBNB)**\n   - Invested Amount: 4.999 BNB\n   - Received: 4.999 WBNB\n\n3. **Mubarak (mubarak)**\n   - Invested Amount: 4.999 BNB\n   - Received: 81716.71 mubarak\n\n4. **AITECH (AITECH)**\n   - Invested Amount: 4.999 BNB\n   - Received: 65578.09 AITECH\n\nIf you need further actions, such as checking your portfolio or divesting the basket, let me know!",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "4a20d3b1-a238-404d-bddb-5be10c273314",
+      "role": "user",
+      "content": "Could you remind me what is my current invested basket?",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "run--93c988f1-0ae0-4261-98ef-f123bc7f038d-0",
+      "role": "assistant",
+      "content": "Here are the details of your currently invested basket, **\"coinbasket & friends\"**:\n\n1. **Fetch.ai (FET)**\n   - Invested Amount: 4.999 BNB\n   - Tokens Received: 4337.27 FET\n   - Address: [0x031b41e504677879370e9DBcF937283A8691Fa7f](https://bscscan.com/token/0x031b41e504677879370e9DBcF937283A8691Fa7f)\n\n2. **WBNB (WBNB)**\n   - Invested Amount: 4.999 BNB\n   - Tokens Received: 4.999 WBNB\n   - Address: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c](https://bscscan.com/token/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c)\n\n3. **Mubarak (mubarak)**\n   - Invested Amount: 4.999 BNB\n   - Tokens Received: 81716.71 mubarak\n   - Address: [0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6](https://bscscan.com/token/0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6)\n\n4. **AITECH (AITECH)**\n   - Invested Amount: 4.999 BNB\n   - Tokens Received: 65578.09 AITECH\n   - Address: [0x2D060Ef4d6BF7f9e5edDe373Ab735513c0e4F944](https://bscscan.com/token/0x2D060Ef4d6BF7f9e5edDe373Ab735513c0e4F944)\n\nIf you need further assistance, such as divesting or checking your portfolio, let me know!",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "936fbbd1-b3d2-43f7-96c8-9be8115dd0b5",
+      "role": "user",
+      "content": "Thanks, I made enough profit, please sell everything now",
+      "created_at": "2025-06-05 22:02:45"
+    },
+    {
+      "id": "run--c6b306be-d569-4c46-b0c8-bbfbefdb9f48-0",
+      "role": "assistant",
+      "content": "Your divestment from the basket **\"coinbasket & friends\"** was successful. Here are the details of your divestment:\n\n1. **Fetch.ai (FET)**\n   - Sold Amount: 4337.27 FET\n   - Received: 4.92 BNB\n\n2. **WBNB (WBNB)**\n   - Sold Amount: 4.999 WBNB\n   - Received: 4.999 BNB\n\n3. **Mubarak (mubarak)**\n   - Sold Amount: 81716.71 mubarak\n   - Received: 4.94 BNB\n\n4. **AITECH (AITECH)**\n   - Sold Amount: 65578.09 AITECH\n   - Received: 4.91 BNB\n\nIf you need any further assistance or want to perform more actions, just let me know!",
+      "created_at": "2025-06-05 22:02:45"
+    }
+  ]
+}
