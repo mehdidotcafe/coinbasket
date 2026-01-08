@@ -28,7 +28,6 @@ from api.investment.confirmed_order import ConfirmedOrder, ConfirmedOrderId
 from api.investment.executed_order import ExecutedOrder
 from api.investment.intended_order import (
     IntendedOrder,
-    IntendedOrderBalance,
     IntendedOrderId,
 )
 from api.investment.plan_order_use_case import (
@@ -87,7 +86,6 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, RootModel
-from pydantic.v1 import root_validator, validator
 
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage
@@ -446,42 +444,18 @@ async def get_portfolio_summary(
     ).model_dump_json()
 
 
-# TODO: Test if correct class is passed (Token or Basket)
 @tool(
     parse_docstring=True,
 )
-async def get_token_or_basket_or_asset_holding_and_available_cash(
-    request: ToolAssetRequest,
-):
-    """FAST. Retrieve ONLY the available cash and holding of a specific asset (token or basket) in the agent's wallet, including both held balance and available balance.
+async def get_token_or_basket_or_asset_balance(request: ToolAssetRequest):
+    """FAST. Retrieve ONLY the balance of a specific asset (token or basket).
+    Use this tool when the user asks for his asset balance / holding or when you need the asset balance for planning and executing an order.
 
     Args:
-        request: An object containing a field token to retrieve the available cash and holding for.
+        request: An object containing a field token to retrieve the available cash and balance for.
 
     Returns:
-        The the available cash and holding balances of the asset in the agent's wallet.
-    """
-    address = cast(Address, request_address_context.get())
-
-    asset_balance = await get_portfolio_asset_balance_use_case.execute(
-        address, request.asset.to_domain()
-    )
-
-    return PortfolioAssetBalanceResponse.from_domain(asset_balance).model_dump_json()
-
-
-@tool(
-    parse_docstring=True,
-)
-async def get_token_or_basket_or_asset_holding(request: ToolAssetRequest):
-    """FAST. Retrieve ONLY the holding balance of a specific asset (token or basket).
-    Use this tool when the user asks for his asset holding.
-
-    Args:
-        request: An object containing a field token to retrieve the available cash and holding for.
-
-    Returns:
-        The holding balance of the asset in the agent's wallet.
+        The balance of the asset in the agent's wallet.
     """
     address = cast(Address, request_address_context.get())
     asset = request.asset.to_domain()
@@ -629,78 +603,40 @@ class SignedOrderRequest(BaseModel):
     transaction_hash: str | None = None
 
 
-class IntentOrderBalanceRequest(BaseModel):
-    asset_id: str
-    amount: str | None = None
-
-    @validator("asset_id", pre=True)
-    def normalize_asset_id(cls, v: Any):
-        if not isinstance(v, str):
-            return v
-        # Always return lowercased, and if not bsc: prefix, use last part
-        if v.startswith("bsc:"):
-            return v.lower()
-        return v.split(":")[-1].lower()
-
-    async def to_domain(self):
-        asset = None
-
-        if self.asset_id == chain.base_token.id:
-            asset = chain.base_token
-        else:
-            asset = await get_asset_by_id_use_case.execute(self.asset_id)
-
-            if not asset:
-                raise ValueError(f"Asset id {self.asset_id} not found")
-
-        return IntendedOrderBalance(
-            asset=asset,
-            amount=Decimal(self.amount)
-            if self.amount
-            else None
-            if self.amount is not None and self.amount != ""
-            else None,
-        )
-
-
 class IntentOrderRequest(BaseModel):
-    buy_asset_with_amount: IntentOrderBalanceRequest | None = None
-    sell_asset_with_amount: IntentOrderBalanceRequest | None = None
-
-    @root_validator(pre=True)
-    def at_least_one_asset(cls, values: dict[str, Any]):
-        """
-        Ensure at least one of buy_asset_with_amount or sell_asset_with_amount is provided.
-        If asset_id is '' or 'None', set the corresponding field to None.
-        """
-        for field in ["buy_asset_with_amount", "sell_asset_with_amount"]:
-            asset_req = values.get(field)
-            if asset_req is not None:
-                asset_id = getattr(asset_req, "asset_id", None)
-                # Handle both dict and object cases
-                if asset_id is None and isinstance(asset_req, dict):
-                    asset_id = asset_req.get("asset_id")
-                if asset_id == "" or asset_id == "None":
-                    values[field] = None
-
-        if not (
-            values.get("buy_asset_with_amount") or values.get("sell_asset_with_amount")
-        ):
-            raise ValueError(
-                "At least one of buy_asset_with_amount or sell_asset_with_amount must be provided."
-            )
-        return values
+    sell_asset_id: str | None = None
+    buy_asset_id: str | None = None
+    amount: str | None = None
+    type: Literal["SELL", "BUY"]
 
     async def to_domain(self, id: IntendedOrderId, address: Address):
+        sell_asset = None
+
+        if self.sell_asset_id == chain.base_token.id:
+            sell_asset = chain.base_token
+        elif self.sell_asset_id:
+            sell_asset = await get_asset_by_id_use_case.execute(self.sell_asset_id)
+
+            if not sell_asset:
+                raise ValueError(f"Asset id {self.sell_asset_id} not found")
+
+        buy_asset = None
+
+        if self.buy_asset_id == chain.base_token.id:
+            buy_asset = chain.base_token
+        elif self.buy_asset_id:
+            buy_asset = await get_asset_by_id_use_case.execute(self.buy_asset_id)
+
+            if not buy_asset:
+                raise ValueError(f"Asset id {self.buy_asset_id} not found")
+
         return IntendedOrder(
             id=id,
             address=address,
-            buy_asset_with_amount=await self.buy_asset_with_amount.to_domain()
-            if self.buy_asset_with_amount
-            else None,
-            sell_asset_with_amount=await self.sell_asset_with_amount.to_domain()
-            if self.sell_asset_with_amount
-            else None,
+            sell_asset=sell_asset,
+            buy_asset=buy_asset,
+            amount=Decimal(self.amount) if self.amount else None,
+            type=self.type,
         )
 
 
@@ -773,10 +709,10 @@ async def plan_and_execute_swap_order(
     intended_order_request: IntentOrderRequest,
 ):
     """Executes the intent order.
-    If no buy_asset, buy_asset_amount, sell_asset or sell_asset_amount is provided set the field to None.
+    If no buy_asset_id, amount or sell_asset_id is provided set the field to None.
     Pass asset_id as they are don't change them.
-    IMPORTANT: You can make a swap by providing both a buy_asset_with_amount and a sell_asset_with_amount in the same step.
-    IMPORTANT: You don't need to know the amount to buy or sell an asset in advance. You can leave the amount fields empty (set to None) and the agent will decide the amount to buy or sell based on the available cash and holdings.
+    IMPORTANT: You can make a swap by providing both a buy_asset_id and a sell_asset_id.
+    IMPORTANT: You don't need to know the amount to buy, sell, swap an asset in advance. You can leave the amount fields empty (set to None) and the agent will decide the amount to buy or sell based on the available cash and holdings.
     IMPORTANT: Do not call another tool if this returns results.
 
     Args:
@@ -787,14 +723,10 @@ async def plan_and_execute_swap_order(
 
     Example:
         IntentOrderRequest(
-            buy_asset_with_amount=IntentOrderBalanceRequest(
-                asset_id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
-                amount="5.33",
-            ),
-            sell_asset_with_amount=IntentOrderBalanceRequest(
-                asset_id="bsc:0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-                amount="10.95",
-            )
+            buy_asset_id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
+            sell_asset_id="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            amount="5.33",
+            type="BUY",
         )
     """
     address = cast(Address, request_address_context.get())
@@ -864,8 +796,7 @@ coinbasket_tools = [
     get_all_available_baskets,
     plan_and_execute_swap_order,
     get_available_cash,
-    get_token_or_basket_or_asset_holding,
-    get_token_or_basket_or_asset_holding_and_available_cash,
+    get_token_or_basket_or_asset_balance,
     # get_portfolio_summary,
     get_executed_orders,
     get_executed_order,
