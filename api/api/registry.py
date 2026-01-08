@@ -134,7 +134,7 @@ exchange = (
 )
 
 engine = create_async_engine(
-    f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}",
+    f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}_{configuration.app_env}",
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
@@ -171,7 +171,7 @@ conversation_repository = LangchainPostgresqlConversationRepository(
         "database_password": configuration.database_password,
         "database_host": configuration.database_host,
         "database_port": configuration.database_port,
-        "database_name": f"{configuration.app_name}",
+        "database_name": f"{configuration.app_name}_{configuration.app_env}",
     },
 )
 

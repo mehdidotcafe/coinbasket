@@ -8,9 +8,10 @@ database_password = env.str("DATABASE_PASSWORD")
 database_host = env.str("DATABASE_HOST")
 database_port = env.int("DATABASE_PORT")
 app_name = env.str("APP_NAME")
+app_env = env.str("APP_ENV")
 
 engine = create_async_engine(
-    f"postgresql+asyncpg://{database_user}:{database_password}@{database_host}:{database_port}/{app_name}",
+    f"postgresql+asyncpg://{database_user}:{database_password}@{database_host}:{database_port}/{app_name}_{app_env}",
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,

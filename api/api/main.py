@@ -948,7 +948,7 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
     request_address_context.set(address)
 
     async with AsyncPostgresSaver.from_conn_string(
-        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}"
+        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}_{configuration.app_env}"
     ) as checkpointer:
         agent_executor = await __create_agent_executor(checkpointer)
 
@@ -1043,7 +1043,7 @@ async def get_conversation_messages(request: Request) -> MessagesResponse:
     address = Address(getattr(request.state, "address"))
     """Retrieve the conversation messages."""
     async with AsyncPostgresSaver.from_conn_string(
-        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}"
+        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}_{configuration.app_env}"
     ) as checkpointer:
         agent_executor = await __create_agent_executor(checkpointer)
 
