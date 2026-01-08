@@ -12,8 +12,7 @@ jobs:
   get-affected:
     runs-on: ubuntu-latest
     outputs:
-      affected_project: ${{ steps.set-project.outputs.affected_project }}
-      affected_application: ${{ steps.set-application.outputs.affected_application }}
+      affected_api: ${{ steps.set-application.outputs.affected_api }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -28,24 +27,19 @@ jobs:
       - name: Install Node dependencies
         run: npm install
 
-      - name: Get affected projects
-        id: set-project
-        run: |
-          AFFECTED=$(npx nx show projects --exclude=*-root --affected --base=origin/main --head=HEAD | jq -R -s -c 'split("\n") | map(select(. != ""))')
-          echo "affected_project={\"project\": $AFFECTED}" >> $GITHUB_OUTPUT
-      - name: Get affected applications
+      - name: Get affected api
         id: set-application
         run: |
           AFFECTED=$(npx nx show projects --exclude=*-root --affected --base=origin/main --head=HEAD |
             jq -R -s -c 'split("\n") | map(select(. != "" and test("api$")))')
 
-          echo "affected_application={\"project\": $AFFECTED}" >> $GITHUB_OUTPUT
+          echo "affected_api={\"project\": $AFFECTED}" >> $GITHUB_OUTPUT
 
   lint-check:
     needs: get-affected
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.get-affected.outputs.affected_project) }}
+      matrix: ${{ fromJson(needs.get-affected.outputs.affected_api) }}
     steps:
       - uses: actions/checkout@v3
 
@@ -76,7 +70,7 @@ jobs:
     needs: get-affected
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.get-affected.outputs.affected_project) }}
+      matrix: ${{ fromJson(needs.get-affected.outputs.affected_api) }}
     steps:
       - uses: actions/checkout@v3
 
@@ -112,7 +106,7 @@ jobs:
     needs: get-affected
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.get-affected.outputs.affected_application) }}
+      matrix: ${{ fromJson(needs.get-affected.outputs.affected_api) }}
     steps:
       - uses: actions/checkout@v3
 
