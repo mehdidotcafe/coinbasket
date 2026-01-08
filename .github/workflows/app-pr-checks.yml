@@ -12,7 +12,7 @@ jobs:
   get-affected:
     runs-on: ubuntu-latest
     outputs:
-      affected_api: ${{ steps.set-application.outputs.affected_api }}
+      affected_app: ${{ steps.set-application.outputs.affected_app }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -27,7 +27,7 @@ jobs:
       - name: Install Node dependencies
         run: npm install
 
-      - name: Get affected api
+      - name: Get affected app
         id: set-application
         run: |
           AFFECTED=$(npx nx show projects --exclude=*-root --affected --base=origin/main --head=HEAD |
