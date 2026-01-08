@@ -570,6 +570,21 @@ async def get_executed_order(
     return ExecutedOrderResponse.from_domain(order).model_dump_json() if order else None
 
 
+@tool(
+    parse_docstring=True,
+)
+async def get_address():
+    """FAST. Retrieve the address of the authenticated user.
+
+    Args: None
+
+    Returns:
+        The address of the authenticated user.
+    """
+    address = cast(Address, request_address_context.get())
+    return address
+
+
 class BalanceRequest(BaseModel):
     asset: AssetRequest
     amount: str
@@ -800,6 +815,7 @@ coinbasket_tools = [
     # get_portfolio_summary,
     get_executed_orders,
     get_executed_order,
+    get_address,
 ]
 
 
