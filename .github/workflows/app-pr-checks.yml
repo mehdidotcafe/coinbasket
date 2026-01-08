@@ -72,7 +72,6 @@ jobs:
           npm install
           npx nx install ${{ matrix.project }}
 
-      # TODO: See how to handle this better. Maybe mocking every external API with MockServer.
       - name: Create .env file from GitHub Secret
         run: |
           echo "${{ secrets[format('{0}_ENV_FILE_CONTENTS', matrix.project)] }}" > ${{ matrix.project }}/.env

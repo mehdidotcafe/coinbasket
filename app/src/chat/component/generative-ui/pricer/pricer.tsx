@@ -144,8 +144,6 @@ const NB_DECIMALS = 8
 function AssetInput<T extends FieldValues>({ asset, availableAmount, control, name, preLabel, onChange, disabled, hasError }: AssetInputProps<T>) {
   const debouncedOnChange = useDebouncedCallback((e: ChangeEvent<HTMLInputElement>) => onChange?.(e), 300)
 
-  console.log("WIP")
-
   return (
     <section className={`border ${hasError ? 'border-destructive' : ''} bg-primary rounded-lg shadow-xs w-full p-4 ${disabled ? 'cursor-not-allowed' : ''}`}>
       <div className="flex items-center justify-between mb-1">
