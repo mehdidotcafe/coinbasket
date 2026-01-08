@@ -1,0 +1,80 @@
+name: APP PR Quality Checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - '**'
+jobs:
+  get-affected:
+    runs-on: ubuntu-latest
+    outputs:
+      affected_app: ${{ steps.set-application.outputs.affected_app }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Get affected app
+        id: set-application
+        run: |
+          AFFECTED=$(npx nx show projects --exclude=*-root --affected --base=origin/main --head=HEAD |
+            jq -R -s -c 'split("\n") | map(select(. != "" and test("app$")))')
+
+          echo "affected_app={\"project\": $AFFECTED}" >> $GITHUB_OUTPUT
+
+  lint-check:
+    needs: get-affected
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.get-affected.outputs.affected_app) }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - run: |
+          npm install
+          npx nx install ${{ matrix.project }}
+
+      - name: Run lint check
+        run: npx nx lint ${{ matrix.project }}
+
+  test:
+    needs: get-affected
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.get-affected.outputs.affected_app) }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - run: |
+          npm install
+          npx nx install ${{ matrix.project }}
+
+      - name: Create .env file from GitHub Secret
+        run: |
+          echo "${{ secrets[format('{0}_ENV_FILE_CONTENTS', matrix.project)] }}" > ${{ matrix.project }}/.env
+
+      - name: Run unit tests
+        run: npx nx test ${{ matrix.project }}
