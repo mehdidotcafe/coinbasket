@@ -4,7 +4,7 @@ export function ScreenContainer({
   children: React.ReactNode
 }>) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen w-6/7 md:w-2/3 xl:w-1/2 mx-auto pb-32">
+    <div className="items-center flex flex-col px-8 md:px-24 xl:px-64 2xl:px-96 mb-48">
       {children}
     </div>
   )

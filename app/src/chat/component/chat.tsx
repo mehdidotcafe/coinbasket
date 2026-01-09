@@ -36,12 +36,13 @@ function FlashMessageHandler({
   useEffect(() => {
     if (hasProcessedFlash.current)
       return
+    hasProcessedFlash.current = true
 
     const flash = searchParams.get('f')
     if (!flash)
       return
 
-    hasProcessedFlash.current = true
+
     router.replace(pathname, { scroll: false })
     addMessage(makeQueryMessage(decodeURIComponent(flash), false))
   }, [searchParams, router, pathname, addMessage])
@@ -69,8 +70,6 @@ function MessageListContainer({ messages, addMessage, isWaitingMessage, isInterr
           <EmptyConversationScreen onSubmit={addMessage} />
         )
         : (
-          <>
-            <Suspense><FlashMessageHandler addMessage={addMessage} /></Suspense>
             <section className="relative flex align-center">
               <div className="flex flex-col pt-16 w-6/7 md:w-2/3 xl:w-1/2 mx-auto max-w-6/7 md:max-w-2/3 xl:max-w-1/2 overflow-hidden break-all">
                 <MessageList messages={messages} onMessage={addMessage} />
@@ -98,7 +97,6 @@ function MessageListContainer({ messages, addMessage, isWaitingMessage, isInterr
                 </div>
               </div>
             </section>
-          </>
         )}
     </>
   )

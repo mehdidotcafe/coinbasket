@@ -4,7 +4,7 @@ export function ScreenTitle({
   children: React.ReactNode
 }>) {
   return (
-    <h1 className="text-3xl font-bold lg:text-4xl font-sofia-sans pb-8">
+    <h1 className="text-6xl mt-32 md:mt-64 font-sofia-sans mb-8 text-center">
       {children}
     </h1>
   )
