@@ -351,7 +351,7 @@ AssetRequest = BasketRequest | TokenRequest
 
 
 class ToolAssetRequest(BaseModel):
-    asset: AssetRequest
+    asset_id: str
 
 
 @tool(parse_docstring=True)
@@ -420,11 +420,15 @@ async def get_all_available_baskets():
     return [BasketResponse.from_domain(basket) for basket in baskets]
 
 
+class GetPortfolioSummaryRequest(BaseModel):
+    conversion_token_id: str = usdt_token.id
+
+
 @tool(
     parse_docstring=True,
 )
 async def get_portfolio_summary(
-    conversion_token: TokenRequest = TokenRequest.from_domain(usdt_token),
+    request: GetPortfolioSummaryRequest = GetPortfolioSummaryRequest(),
 ):
     """EXPENSIVE/SLOW. Retrieve the portfolio. Only use this tool when the user asks for his portfolio.
     The portfolio contains the list of assets held by the agent (holdings) and their balances both in asset token and in converted token (defaults to USDT).
@@ -432,15 +436,21 @@ async def get_portfolio_summary(
     IMPORTANT: Do not call another tool if this returns results.
 
     Args:
-        conversion_token: The token to convert the portfolio asset balances to (defaults to USDT).
+        request: The request containing the token ID to convert the portfolio asset balances to (defaults to USDT).
 
     Returns:
         The portfolio of the agent.
     """
     address = cast(Address, request_address_context.get())
 
+    conversion_asset = await get_asset_by_id_use_case.execute(
+        request.conversion_token_id
+    )
+
+    if not conversion_asset:
+        raise ValueError(f"Conversion token id {request.conversion_token_id} not found")
     return PortfolioResponse.from_domain(
-        await get_portfolio_use_case.execute(address, conversion_token.to_domain())
+        await get_portfolio_use_case.execute(address, conversion_asset)
     ).model_dump_json()
 
 
@@ -458,7 +468,10 @@ async def get_token_or_basket_or_asset_balance(request: ToolAssetRequest):
         The balance of the asset in the agent's wallet.
     """
     address = cast(Address, request_address_context.get())
-    asset = request.asset.to_domain()
+    asset = await get_asset_by_id_use_case.execute(request.asset_id)
+
+    if not asset:
+        raise ValueError(f"Asset id {request.asset_id} not found")
 
     holding = await holding_repository.get_holding_balance(
         address,

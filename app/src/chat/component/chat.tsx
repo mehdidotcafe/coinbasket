@@ -36,12 +36,12 @@ function FlashMessageHandler({
   useEffect(() => {
     if (hasProcessedFlash.current)
       return
-    hasProcessedFlash.current = true
 
     const flash = searchParams.get('f')
     if (!flash)
       return
 
+    hasProcessedFlash.current = true
 
     router.replace(pathname, { scroll: false })
     addMessage(makeQueryMessage(decodeURIComponent(flash), false))
