@@ -1,9 +1,11 @@
+import { useAuthentication } from '@/authentication/use-authentication'
 import { useAccountEns } from '@/chain/use-account-ens'
 
 export function UserHeadingText() {
-  const { address, ensName } = useAccountEns()
+  const authentication = useAuthentication()
+  const { ensName } = useAccountEns()
 
-  if (ensName) {
+  if (authentication.authStatus === 'authenticated' && ensName) {
     return (
       <>
         Hello,
@@ -12,14 +14,14 @@ export function UserHeadingText() {
       </>
     )
   }
-  if (address) {
+  if (authentication.authStatus === 'authenticated') {
     return (
       <>
         Hello,
         {' '}
-        {address.slice(0, 6)}
+        {authentication.address.slice(0, 6)}
         ...
-        {address.slice(-5)}
+        {authentication.address.slice(-5)}
         .
       </>
     )
