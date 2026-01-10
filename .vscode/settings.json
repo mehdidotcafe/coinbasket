@@ -22,4 +22,9 @@
   ],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
+  "eslint.format.enable": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always",
+  },
+  "editor.formatOnSave": true
 }

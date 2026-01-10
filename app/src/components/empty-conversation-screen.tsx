@@ -1,5 +1,5 @@
 import type { QueryMessage } from '@/chat/message/QueryMessage'
-import { PromptForm } from '@/chat/component/prompt-form'
+import { HeroPromptForm } from '@/chat/component/hero-prompt-form'
 import { ScreenContainer } from './screen/screen-container'
 import { ScreenTitle } from './screen/screen-title'
 import { UserHeadingText } from './screen/user-heading-text'
@@ -17,9 +17,7 @@ export function EmptyConversationScreen({ onSubmit }: Props) {
         {' '}
         How can I help?
       </ScreenTitle>
-      <div className="w-full md:w-2/3 lg:w-5/6 mx-auto">
-        <PromptForm size="large" onSubmit={onSubmit} status="ready" />
-      </div>
+      <HeroPromptForm size="large" />
     </ScreenContainer>
   )
 }

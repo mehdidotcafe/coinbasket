@@ -37,7 +37,7 @@ function FlashMessageHandler({
     if (hasProcessedFlash.current)
       return
 
-    const flash = searchParams.get('f')
+    const flash = searchParams.get('flash')
     if (!flash)
       return
 
@@ -70,33 +70,33 @@ function MessageListContainer({ messages, addMessage, isWaitingMessage, isInterr
           <EmptyConversationScreen onSubmit={addMessage} />
         )
         : (
-            <section className="relative flex align-center">
-              <div className="flex flex-col pt-16 w-6/7 md:w-2/3 xl:w-1/2 mx-auto max-w-6/7 md:max-w-2/3 xl:max-w-1/2 overflow-hidden break-all">
-                <MessageList messages={messages} onMessage={addMessage} />
-                {
-                  isWaitingMessage
-                    ? (
-                      <div className="my-8">
-                        <Loader
-                          width={36}
-                          height={36}
-                        />
-                      </div>
-
-                    )
-                    : null
-                }
-                <div ref={messageEndAnchor} className="h-32" />
-                <div className="fixed bottom-0 left-0 right-0 w-full md:w-2/3 xl:w-1/2 mx-auto">
-                  <div>
-                    <PromptForm size="small" onSubmit={addMessage} status={computePromptFormStatus(isWaitingMessage, isInterrupted)} />
-                    <div className="text-center w-full pt-1 bg-background pb-2">
-                      <Disclaimer />
+          <section className="relative flex align-center">
+            <div className="flex flex-col pt-16 w-6/7 md:w-2/3 xl:w-1/2 mx-auto max-w-6/7 md:max-w-2/3 xl:max-w-1/2 overflow-hidden break-all">
+              <MessageList messages={messages} onMessage={addMessage} />
+              {
+                isWaitingMessage
+                  ? (
+                    <div className="my-8">
+                      <Loader
+                        width={36}
+                        height={36}
+                      />
                     </div>
+
+                  )
+                  : null
+              }
+              <div ref={messageEndAnchor} className="h-32" />
+              <div className="fixed bottom-0 left-0 right-0 w-full md:w-2/3 xl:w-1/2 mx-auto">
+                <div>
+                  <PromptForm size="small" onSubmit={addMessage} status={computePromptFormStatus(isWaitingMessage, isInterrupted)} />
+                  <div className="text-center w-full pt-1 bg-background pb-2">
+                    <Disclaimer />
                   </div>
                 </div>
               </div>
-            </section>
+            </div>
+          </section>
         )}
     </>
   )

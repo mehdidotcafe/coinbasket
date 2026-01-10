@@ -17,7 +17,7 @@ import { makeQueryMessage } from '../message/make-query-message'
 
 type PromptStatus = 'waiting_user_response' | 'waiting_ai_response' | 'ready'
 
-interface Props {
+export interface Props {
   status: PromptStatus
   onSubmit: (message: QueryMessage) => void
   size: 'large' | 'small'
