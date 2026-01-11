@@ -1,8 +1,10 @@
 'use client'
 import type { Message } from '../message/Message'
 import type { QueryMessage } from '../message/QueryMessage'
+import type { Authentication } from '@/authentication/authentication'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useRef } from 'react'
+import { useAuthentication } from '@/authentication/use-authentication'
 import { Disclaimer } from '@/components/disclaimer'
 import { EmptyConversationScreen } from '@/components/empty-conversation-screen'
 import { LoadingScreen } from '@/components/screen/loading-screen'
@@ -50,7 +52,7 @@ function FlashMessageHandler({
   return null
 }
 
-function MessageListContainer({ messages, addMessage, isWaitingMessage, isInterrupted }: { messages: Message[], addMessage: (message: QueryMessage) => Promise<Message>, isWaitingMessage: boolean, isInterrupted: boolean }) {
+function MessageListContainer({ authentication, messages, addMessage, isWaitingMessage, isInterrupted }: { authentication: Authentication, messages: Message[], addMessage: (message: QueryMessage) => Promise<Message>, isWaitingMessage: boolean, isInterrupted: boolean }) {
   const messageEndAnchor = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -65,44 +67,45 @@ function MessageListContainer({ messages, addMessage, isWaitingMessage, isInterr
   return (
     <>
       <Suspense><FlashMessageHandler addMessage={addMessage} /></Suspense>
-      {messages.length === 0
-        ? (
-          <EmptyConversationScreen onSubmit={addMessage} />
-        )
-        : (
-          <section className="relative flex align-center">
-            <div className="flex flex-col pt-16 w-6/7 md:w-2/3 xl:w-1/2 mx-auto max-w-6/7 md:max-w-2/3 xl:max-w-1/2 overflow-hidden break-all">
-              <MessageList messages={messages} onMessage={addMessage} />
-              {
-                isWaitingMessage
-                  ? (
-                    <div className="my-8">
-                      <Loader
-                        width={36}
-                        height={36}
-                      />
-                    </div>
+      {
+        authentication.authStatus === 'unauthenticated' || messages.length === 0
+          ? (<EmptyConversationScreen onSubmit={addMessage} />)
+          : (
+            <section className="relative flex align-center">
+              <div className="flex flex-col pt-16 w-6/7 md:w-2/3 xl:w-1/2 mx-auto max-w-6/7 md:max-w-2/3 xl:max-w-1/2 overflow-hidden break-all">
+                <MessageList messages={messages} onMessage={addMessage} />
+                {
+                  isWaitingMessage
+                    ? (
+                      <div className="my-8">
+                        <Loader
+                          width={36}
+                          height={36}
+                        />
+                      </div>
 
-                  )
-                  : null
-              }
-              <div ref={messageEndAnchor} className="h-32" />
-              <div className="fixed bottom-0 left-0 right-0 w-full md:w-2/3 xl:w-1/2 mx-auto">
-                <div>
-                  <PromptForm size="small" onSubmit={addMessage} status={computePromptFormStatus(isWaitingMessage, isInterrupted)} />
-                  <div className="text-center w-full pt-1 bg-background pb-2">
-                    <Disclaimer />
+                    )
+                    : null
+                }
+                <div ref={messageEndAnchor} className="h-32" />
+                <div className="fixed bottom-0 left-0 right-0 w-full md:w-2/3 xl:w-1/2 mx-auto">
+                  <div>
+                    <PromptForm size="small" onSubmit={addMessage} status={computePromptFormStatus(isWaitingMessage, isInterrupted)} hasMessageHistory={messages.length > 0} />
+                    <div className="text-center w-full pt-1 bg-background pb-2">
+                      <Disclaimer />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-        )}
+            </section>
+          )
+      }
     </>
   )
 }
 
 export function Chat() {
+  const authentication = useAuthentication()
   const { messages, addMessage, isFetching, isPending, isInterrupted, isWaitingMessage, isEnabled } = useChat()
 
   if (isEnabled && (isFetching || isPending)) {
@@ -111,6 +114,7 @@ export function Chat() {
 
   return (
     <MessageListContainer
+      authentication={authentication}
       messages={messages}
       addMessage={addMessage}
       isWaitingMessage={isWaitingMessage}

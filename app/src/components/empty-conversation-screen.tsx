@@ -5,7 +5,7 @@ import { ScreenTitle } from './screen/screen-title'
 import { UserHeadingText } from './screen/user-heading-text'
 
 interface Props {
-  onSubmit: (message: QueryMessage) => void
+  onSubmit?: (message: QueryMessage) => void
 }
 
 export function EmptyConversationScreen({ onSubmit }: Props) {
@@ -17,7 +17,10 @@ export function EmptyConversationScreen({ onSubmit }: Props) {
         {' '}
         How can I help?
       </ScreenTitle>
-      <HeroPromptForm size="large" />
+      <HeroPromptForm
+        size="large"
+        onSubmit={onSubmit}
+      />
     </ScreenContainer>
   )
 }
