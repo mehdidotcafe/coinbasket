@@ -45,7 +45,7 @@ export function Header() {
   return (
     <header className="fixed flex items-center h-16 md:h-auto p-1 md:p-4 top-0 left-0 right-0 z-2 align-center bg-primary md:bg-inherit border-b md:border-b-0 px-4 md:px-16">
       <CoinbasketLogo />
-      <div className="invisible md:visible">
+      <div className="hidden md:block">
         <Coinbasket />
       </div>
       <div className="ml-auto">
