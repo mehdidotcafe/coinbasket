@@ -1,31 +1,17 @@
 /* eslint-disable node/prefer-global/process */
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-
-function ActionButton({ href, children }: { href: string, children: React.ReactNode }) {
-  return (
-    <Button asChild variant="secondary" className="w-52 h-30 b-1 text-4xl text-center">
-      <a href={href} rel="noopener noreferrer" className="btn btn-secondary">
-        {children}
-      </a>
-    </Button>
-  )
-}
+import { HeroPromptForm } from '@/chat/component/hero-prompt-form'
 
 export function Footer() {
   return (
     <footer className="bg-primary">
       <div className="border-y py-8  md:px-24  px-8  xl:px-64 2xl:px-96">
-        <h3 className="text-6xl font-sofia-sans mb-16">
-          AI-Powered Crypto Orders
-          <br />
-          One Prompt Away
+        <h3 className="text-4xl font-sofia-sans mb-4">
+          Try a prompt now
         </h3>
-        <ActionButton href={`${process.env.NEXT_PUBLIC_APP_LIVE_URL!}/c`}>
-          Place
-          <br />
-          Order
-        </ActionButton>
+        <div className="[&>*]:text-2xl min-w-[33vw] max-w-[800px]">
+          <HeroPromptForm size="small" />
+        </div>
       </div>
       <div className="px-8 md:px-24 xl:px-64 2xl:px-96 flex flex-col pb-4 pt-8">
         <div className="grid grid-cols-2 grid-rows-5 gap-1">

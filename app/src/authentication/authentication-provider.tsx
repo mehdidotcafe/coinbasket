@@ -1,17 +1,10 @@
+import type { Authentication } from './authentication'
 import type { Credential } from '@/authentication/credential'
 import type { Address } from '@/chain/address'
 import { createAuthenticationAdapter, RainbowKitAuthenticationProvider } from '@rainbow-me/rainbowkit'
 import React, { createContext, useState } from 'react'
 import { createSiweMessage } from 'viem/siwe'
 import { useRegistry } from '@/registry/use-registry'
-
-type Authentication = {
-  authStatus: 'unauthenticated'
-} | {
-  authStatus: 'authenticated'
-  credential: Credential
-  address: Address
-}
 
 export const AuthenticationContext = createContext<Authentication>({
   authStatus: 'unauthenticated',

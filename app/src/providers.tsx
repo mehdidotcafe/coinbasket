@@ -24,6 +24,7 @@ import { EnvProvider } from './env/env-provider'
 import { useMode } from './mode/use-mode'
 import { demoPricerClient } from './price/client/infrastructure/demo-pricer-client'
 import { httpPricerClient } from './price/client/infrastructure/http-pricer-client'
+import { PromptInputProvider } from './prompt-input/prompt-input-context'
 import { RegistryProvider } from './registry/registry-provider'
 import { idbStorage } from './storage/infrastructure/idb-storage'
 import '@rainbow-me/rainbowkit/styles.css'
@@ -113,7 +114,9 @@ function NestedProviders({ children }: { children: React.ReactNode }) {
           <AuthenticationProvider>
             <TooltipProvider>
               <RainbowKitProvider locale="en-US" theme={theme}>
-                {children}
+                <PromptInputProvider>
+                  {children}
+                </PromptInputProvider>
               </RainbowKitProvider>
             </TooltipProvider>
           </AuthenticationProvider>

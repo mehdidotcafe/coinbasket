@@ -13,15 +13,17 @@ import { Form, FormControl, FormField, FormItem } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { useMode } from '@/mode/use-mode'
+import { usePromptInput } from '@/prompt-input/prompt-input-context'
 import { makeQueryMessage } from '../message/make-query-message'
 
 type PromptStatus = 'waiting_user_response' | 'waiting_ai_response' | 'ready'
 
-interface Props {
+export interface Props {
   status: PromptStatus
-  onSubmit: (message: QueryMessage) => void
+  onSubmit?: (message: QueryMessage) => void
   size: 'large' | 'small'
   placeholder?: string
+  hasMessageHistory?: boolean
 }
 
 const FormSchema = z.object({
@@ -30,27 +32,29 @@ const FormSchema = z.object({
     .min(1),
 })
 
-export function PromptForm({ onSubmit, status, size, placeholder = 'Ask something' }: Props) {
+export function PromptForm({ onSubmit, status, size, placeholder = 'Ask something', hasMessageHistory = false }: Props) {
   const { openConnectModal } = useConnectModal()
   const { authStatus } = useAuthentication()
   const { mode } = useMode()
+  const { promptInput, setPromptInput } = usePromptInput()
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      content: '',
+      content: promptInput,
     },
   })
-  const pendingSubmitForm = useRef<z.infer<typeof FormSchema> | null>(null)
+  const hasSubmittedFormWithPromptInput = useRef(false)
   const buttonDisabled = status !== 'ready' || mode === 'demo'
 
   const onSubmitForm = (data: z.infer<typeof FormSchema>) => {
     if (authStatus !== 'authenticated' && openConnectModal) {
-      pendingSubmitForm.current = data
       openConnectModal()
     }
     else {
       form.reset()
-      onSubmit(makeQueryMessage(data.content, false))
+      setPromptInput('')
+      onSubmit?.(makeQueryMessage(data.content, false))
     }
   }
 
@@ -95,13 +99,35 @@ export function PromptForm({ onSubmit, status, size, placeholder = 'Ask somethin
     }
   }
 
+  // Send prompt input if any on first render when authenticated and no message history
   useEffect(() => {
-    if (authStatus === 'authenticated' && pendingSubmitForm.current) {
-      form.reset()
-      onSubmit(makeQueryMessage(pendingSubmitForm.current.content, false))
-      pendingSubmitForm.current = null
+    if (promptInput !== '' && authStatus === 'authenticated' && !hasSubmittedFormWithPromptInput.current) {
+      hasSubmittedFormWithPromptInput.current = true
+
+      if (hasMessageHistory === false) {
+        const promptInputToSubmit = promptInput
+        form.reset()
+
+        setPromptInput('')
+        onSubmit?.(makeQueryMessage(promptInputToSubmit, false))
+      }
     }
-  }, [authStatus, onSubmit])
+  }, [])
+
+  // Keep form input in sync with prompt input state
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      setPromptInput(value.content || '')
+    })
+    return () => subscription.unsubscribe()
+  }, [form.watch, setPromptInput])
+
+  // Keep form value in sync when prompt input changes externally (first render mostly)
+  useEffect(() => {
+    if (promptInput !== form.getValues('content') && promptInput !== '') {
+      form.setValue('content', promptInput)
+    }
+  }, [promptInput])
 
   return (
     <div className="border bg-primary rounded-lg shadow-xl w-full p-2">
