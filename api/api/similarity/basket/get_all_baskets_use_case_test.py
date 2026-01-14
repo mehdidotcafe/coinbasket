@@ -3,8 +3,8 @@ from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
 from api.similarity.similarity_document import SimilarityDocument
-from api.similarity.similarity_storage.similarity_storage import (
-    SimilarityStorage,
+from api.similarity.asset_similarity_repository import (
+    AssetSimilarityRepository,
 )
 from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from api.protocol.basket import Basket
@@ -13,17 +13,17 @@ from pytest import fixture, mark, raises
 
 @fixture
 def basket_repository():
-    return mock.Mock(spec=SimilarityStorage)
+    return mock.Mock(spec=AssetSimilarityRepository)
 
 
 @fixture
-def use_case(basket_repository: SimilarityStorage):
+def use_case(basket_repository: AssetSimilarityRepository):
     return GetAllBasketsUseCase(basket_repository)
 
 
 @mark.asyncio
 async def test_get_all_baskets_use_case_no_metadata_document(
-    basket_repository: SimilarityStorage, use_case: GetAllBasketsUseCase
+    basket_repository: AssetSimilarityRepository, use_case: GetAllBasketsUseCase
 ):
     basket_repository.get_by_field.return_value = [
         SimilarityDocument(
@@ -39,7 +39,7 @@ async def test_get_all_baskets_use_case_no_metadata_document(
 
 @mark.asyncio
 async def test_get_all_baskets_use_case_no_basket_document(
-    basket_repository: SimilarityStorage, use_case: GetAllBasketsUseCase
+    basket_repository: AssetSimilarityRepository, use_case: GetAllBasketsUseCase
 ):
     basket_repository.get_by_field.return_value = [
         SimilarityDocument(
@@ -55,7 +55,7 @@ async def test_get_all_baskets_use_case_no_basket_document(
 
 @mark.asyncio
 async def test_get_all_baskets_use_case_success(
-    basket_repository: SimilarityStorage, use_case: GetAllBasketsUseCase
+    basket_repository: AssetSimilarityRepository, use_case: GetAllBasketsUseCase
 ):
     basket_repository.get_by_field.return_value = [
         SimilarityDocument(

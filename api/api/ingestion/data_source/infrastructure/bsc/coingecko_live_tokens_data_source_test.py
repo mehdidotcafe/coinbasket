@@ -52,4 +52,4 @@ def test_coingecko_live_tokens_data_source_version(
     )
     version = data_source.version()
 
-    assert version == 5
+    assert version == 7

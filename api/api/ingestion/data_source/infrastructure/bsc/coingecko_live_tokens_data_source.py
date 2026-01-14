@@ -1,11 +1,11 @@
+import asyncio
+from api.similarity.asset_similarity import AssetSimilarity
 from api.token.infrastructure.coingecko.coingecko_token_repository import (
     CoingeckoTokenRepository,
 )
 
 from api.shared.id_generator.id_generator import IdGenerator
-from api.similarity.similarity_document import SimilarityDocument
 from api.ingestion.data_source.data_source import DataSource
-from api.protocol.token import Token
 
 
 class CoingeckoLiveTokenListDataSource(DataSource):
@@ -21,28 +21,27 @@ class CoingeckoLiveTokenListDataSource(DataSource):
         self.id_generator = id_generator
         self.token_repository = token_repository
 
-    async def get(self) -> list[SimilarityDocument]:
+    async def get(self) -> list[AssetSimilarity]:
         tokens = await self.token_repository.get_all_tokens()
-        documents: list[SimilarityDocument] = []
+        tokens_similarity: list[AssetSimilarity] = []
 
         for coingecko_token in tokens:
             if coingecko_token.address.lower() in self.blacklist_tokens:
                 continue
-            documents.append(
-                SimilarityDocument(
-                    id=self._generate_id(coingecko_token),
-                    page_content=str(coingecko_token),
-                    metadata={
-                        "source": coingecko_token.to_dict(),
-                        "type": "token",
-                        "version": self.version(),
-                    },
-                )
+
+            full_token = await self.token_repository.get_by_address(
+                coingecko_token.address
             )
-        return documents
+
+            if full_token is None:
+                continue
+
+            tokens_similarity.append(full_token)
+
+            # Coingecko DEMO Rate Limit is 30 calls per minute
+            await asyncio.sleep(2)
+
+        return tokens_similarity
 
     def version(self) -> int:
-        return 5
-
-    def _generate_id(self, token: Token) -> str:
-        return self.id_generator.generate_id(token.address[2:])
+        return 7

@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 
-from api.similarity.similarity_document import SimilarityDocument
+from api.similarity.asset_similarity import AssetSimilarity
 
 
 class DataSource(ABC):
     @abstractmethod
-    async def get(self) -> list[SimilarityDocument]:
+    async def get(self) -> list[AssetSimilarity]:
         raise NotImplementedError
 
     @abstractmethod

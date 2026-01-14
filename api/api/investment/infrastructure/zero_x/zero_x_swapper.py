@@ -184,13 +184,11 @@ class ZeroXSwapper(Exchange):
         buy_decimals = asset.decimals
         buy_amount = Decimal(buy_balance_amount_atomic) / Decimal(10**buy_decimals)
 
-        sell_amount, sell_decimals = await self.chain.convert_amount_atomic_to_amount(
-            amount_atomic=sell_balance_amount_atomic, asset=balance.asset
-        )
-        buy_amount, buy_decimals = await self.chain.convert_amount_atomic_to_amount(
-            amount_atomic=buy_balance_amount_atomic,
-            asset=asset,
-        )
+        sell_decimals = balance.asset.decimals
+        sell_amount = Decimal(sell_balance_amount_atomic) / Decimal(10**sell_decimals)
+
+        buy_decimals = asset.decimals
+        buy_amount = Decimal(buy_balance_amount_atomic) / Decimal(10**buy_decimals)
 
         return ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(

@@ -10,7 +10,7 @@ def test_basket__str__():
         description="Big2 Description",
         address="0xbasketaddress1234",
         decimals=18,
-        categories=["category1", "category2"],
+        categories=["8Bit Chain Ecosystem", "8Bit Chain Ecosystem"],
         logo_uri=None,
     )
 
@@ -21,10 +21,7 @@ name: Big2
 display_name: Big2 Display
 description: Big2 Description
 ticker: B2
-decimals: 18
 address: 0xbasketaddress1234
-logo_uri: 
-categories: category1, category2
-type: basket
+categories: 8Bit Chain Ecosystem, 8Bit Chain Ecosystem
 """
     )

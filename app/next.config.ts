@@ -2,7 +2,23 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['coin-images.coingecko.com', 'assets.coingecko.com', 'tokens.pancakeswap.finance'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'coin-images.coingecko.com',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'assets.coingecko.com',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'tokens.pancakeswap.finance',
+        pathname: '**',
+      },
+    ],
   },
 }
 

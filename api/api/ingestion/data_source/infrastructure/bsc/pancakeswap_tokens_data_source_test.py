@@ -66,7 +66,7 @@ def test_pancakeswap_tokens_data_source_version(
     data_source = PancakeswapTokenListDataSource(http_request, id_generator)
     version = data_source.version()
 
-    assert version == 3
+    assert version == 4
 
 
 @mark.asyncio
@@ -114,9 +114,9 @@ async def test_pancakeswap_tokens_data_source_display_name_cleaning(
     id_generator.generate_id.side_effect = ["id1", "id2", "id3", "id4"]
 
     data_source = PancakeswapTokenListDataSource(http_request, id_generator)
-    similarity_documents = await data_source.get()
+    tokens = await data_source.get()
 
-    assert similarity_documents[0].metadata["source"]["display_name"] == "Bitcoin"
-    assert similarity_documents[1].metadata["source"]["display_name"] == "Ethereum"
-    assert similarity_documents[2].metadata["source"]["display_name"] == "USD Coin"
-    assert similarity_documents[3].metadata["source"]["display_name"] == "Tether"
+    assert tokens[0].display_name == "Bitcoin"
+    assert tokens[1].display_name == "Ethereum"
+    assert tokens[2].display_name == "USD Coin"
+    assert tokens[3].display_name == "Tether"

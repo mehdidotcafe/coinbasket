@@ -33,3 +33,6 @@ api/database/test/*
 !api/database/production/.gitkeep
 !api/database/development/.gitkeep
 !api/database/test/.gitkeep
+
+api/data/*
+!api/data/.gitkeep
