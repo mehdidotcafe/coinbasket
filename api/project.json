@@ -57,7 +57,9 @@
     },
     "start": {
       "executor": "@nxlv/python:run-commands",
-      "dependsOn": ["infra:production"],
+      "dependsOn": [
+        "infra:production"
+      ],
       "options": {
         "command": "env-cmd -f .env.production --use-shell 'poetry run fastapi run api/main.py --reload --port $APP_PORT'",
         "cwd": "{projectRoot}"
@@ -80,7 +82,9 @@
     },
     "dev": {
       "executor": "@nxlv/python:run-commands",
-      "dependsOn": ["infra"],
+      "dependsOn": [
+        "infra"
+      ],
       "options": {
         "command": "fastapi dev api/main.py --reload --port $APP_PORT --host 0.0.0.0",
         "cwd": "{projectRoot}"
@@ -89,9 +93,24 @@
     },
     "cli": {
       "executor": "@nxlv/python:run-commands",
-      "dependsOn": ["infra"],
       "options": {
         "command": "poetry run python -m api.cli",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "cli:test": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.test --use-shell 'poetry run python -m api.cli'",
+        "cwd": "{projectRoot}"
+      },
+      "cache": false
+    },
+    "cli:production": {
+      "executor": "@nxlv/python:run-commands",
+      "options": {
+        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.cli'",
         "cwd": "{projectRoot}"
       },
       "cache": false

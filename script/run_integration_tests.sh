@@ -11,7 +11,9 @@ sleep 5
 
 (cd .. && ./nx migration:test:run $PROJECT)
 
-(cd .. && ./nx start:test api &)
+(cd .. && ./nx cli:test $PROJECT seed_assets)
+
+(cd .. && ./nx start:test $PROJECT &)
 
 ../script/wait_api_start.sh
 

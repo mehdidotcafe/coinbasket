@@ -15,10 +15,10 @@ class DevDataSource(DataSource):
         self.id_generator = id_generator
 
     async def get(self) -> list[AssetSimilarity]:
-        file_path = "data/dev_data_source_tokens.json"
+        file_path = "data/dev_data_source_assets.json"
         if not os.path.exists(file_path):
             raise FileNotFoundError(
-                "run make_tokens_snapshot command to generate dev tokens snapshot"
+                "run make_assets_snapshot command to generate dev assets snapshot"
             )
 
         with open(
