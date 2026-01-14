@@ -386,14 +386,9 @@ async def get_assets_from_filters(
     Returns:
         A list of documents containing assets.
     """
-    print(f"ASSETS QUERY: {name_or_ticker}")
-    print(f"ASSETS CATEGORY: {categories}")
-
     assets = await get_similar_assets_use_case.execute(
         name_or_ticker, asset_type, categories
     )
-
-    print(f"ASSETS: {[str(asset) for asset in assets]}")
 
     return [
         (
