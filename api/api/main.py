@@ -16,16 +16,6 @@ from api.conversation.conversation_use_case import ConversationUseCase
 from api.conversation.get_conversation_messages_use_case import (
     GetConversationMessagesUseCase,
 )
-from api.ingestion.data_source.data_source import DataSource
-from api.ingestion.data_source.infrastructure.bsc.cmc_top_20_basket_data_source import (
-    CmcTop20BasketDataSource,
-)
-from api.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_data_source import (
-    CoingeckoLiveTokenListDataSource,
-)
-from api.ingestion.data_source.infrastructure.bsc.dev_data_source import DevDataSource
-from api.ingestion.data_source.infrastructure.bsc.test_data_source import TestDataSource
-from api.ingestion.ingest_data_use_case import IngestDataUseCase
 from api.investment.confirmed_order import ConfirmedOrder, ConfirmedOrderId
 from api.investment.executed_order import ExecutedOrder
 from api.investment.intended_order import (
@@ -67,7 +57,6 @@ from api.registry import (
     asset_balance_converter,
     small_balance_policy,
     similarity_storage,
-    token_repository,
     siwe_manager,
     credential_generator,
     holding_repository,
@@ -157,31 +146,6 @@ get_all_baskets_use_case = GetAllBasketsUseCase(similarity_storage)
 
 get_asset_by_id_use_case = GetAssetByIdUseCase(similarity_storage)
 
-data_sources: list[DataSource] = []
-
-match configuration.app_env:
-    case "test":
-        data_sources = [TestDataSource(id_generator)]
-    case "development":
-        data_sources = [DevDataSource(id_generator)]
-    case _:
-        data_sources = [
-            CoingeckoLiveTokenListDataSource(
-                id_generator,
-                token_repository,
-            ),
-            CmcTop20BasketDataSource(
-                id_generator,
-            ),
-        ]
-
-
-ingest_data_use_case = IngestDataUseCase(
-    similarity_storage=similarity_storage,
-    id_generator=id_generator,
-    data_sources=data_sources,
-)
-
 generate_auth_nonce_use_case = GenerateAuthNonceUseCase(
     siwe_manager=siwe_manager,
 )
@@ -210,7 +174,6 @@ async def lifespan(_app: FastAPI):
     similarity_storage.start()
 
     await conversation_repository.start()
-    await ingest_data_use_case.execute()
 
     print("API Ready.")
 
@@ -398,21 +361,6 @@ async def get_assets_from_filters(
         )
         for asset in assets
     ]
-
-
-@tool(parse_docstring=True)
-async def get_all_available_baskets():
-    """
-    Retrieve a list of all available baskets.
-
-    Returns:
-        A list of baskets.
-        Each basket is made of a name, a description and a list of tokens.
-        Each token has a name, display_name, ticker and address (contract address) property.
-    """
-    baskets = await get_all_baskets_use_case.execute()
-
-    return [BasketResponse.from_domain(basket) for basket in baskets]
 
 
 class GetPortfolioSummaryRequest(BaseModel):
@@ -815,7 +763,6 @@ async def plan_and_execute_swap_order(
 
 coinbasket_tools = [
     get_assets_from_filters,
-    # get_all_available_baskets,
     plan_and_execute_swap_order,
     get_available_cash,
     get_token_or_basket_or_asset_balance,
