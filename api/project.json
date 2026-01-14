@@ -93,9 +93,6 @@
     },
     "cli": {
       "executor": "@nxlv/python:run-commands",
-      "dependsOn": [
-        "infra"
-      ],
       "options": {
         "command": "poetry run python -m api.cli",
         "cwd": "{projectRoot}"
@@ -104,9 +101,6 @@
     },
     "cli:test": {
       "executor": "@nxlv/python:run-commands",
-      "dependsOn": [
-        "infra:test"
-      ],
       "options": {
         "command": "env-cmd -f .env.test --use-shell 'poetry run python -m api.cli'",
         "cwd": "{projectRoot}"
@@ -115,9 +109,6 @@
     },
     "cli:production": {
       "executor": "@nxlv/python:run-commands",
-      "dependsOn": [
-        "infra:production"
-      ],
       "options": {
         "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.cli'",
         "cwd": "{projectRoot}"

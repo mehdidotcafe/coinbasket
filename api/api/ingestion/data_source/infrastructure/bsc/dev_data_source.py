@@ -18,7 +18,7 @@ class DevDataSource(DataSource):
         file_path = "data/dev_data_source_assets.json"
         if not os.path.exists(file_path):
             raise FileNotFoundError(
-                "run make_assets_snapshot command to generate dev tokens snapshot"
+                "run make_assets_snapshot command to generate dev assets snapshot"
             )
 
         with open(
