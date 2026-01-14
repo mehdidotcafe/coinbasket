@@ -1,18 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Literal
 
+from api.protocol.asset import Asset
+from api.protocol.asset_category import AssetCategory
 from api.similarity.similarity_document import SimilarityDocument
 
 
-class SimilarityStorage(ABC):
+class AssetSimilarityRepository(ABC):
     @abstractmethod
     def start(self) -> None:
         raise NotImplementedError
 
     @abstractmethod
     async def similarity_search(
-        self, query: str, filters: dict[str, Any] | None
-    ) -> list[SimilarityDocument]:
+        self,
+        name_or_ticker: str | None,
+        type: Literal["BASKET", "TOKEN"] | None,
+        categories: list[AssetCategory] | None,
+    ) -> list[Asset]:
         raise NotImplementedError
 
     @abstractmethod

@@ -32,7 +32,7 @@ from api.portfolio.holding.infrastructure.bsc_chain_holding_repository import (
 )
 from pydantic import SecretStr
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, AsyncQdrantClient
 
 from langchain_openai import OpenAIEmbeddings
 
@@ -74,8 +74,8 @@ from api.chain.infrastructure.bsc.bsc_chain import BscChain
 from api.chain.infrastructure.bsc.bsc_contract import BscContract
 from api.configuration import Configuration
 
-from api.similarity.infrastructure.qdrant_langchain.similarity_storage.qdrant_langchain_similarity_storage import (
-    QdrantLangChainSimilarityStorage,
+from api.similarity.infrastructure.qdrant_langchain.qdrant_langchain_asset_similarity_repository import (
+    QdrantLangChainAssetSimilarityRepository,
 )
 from api.token.infrastructure.coingecko.coingecko_token_repository import (
     CoingeckoTokenRepository,
@@ -185,7 +185,7 @@ small_balance_policy = AbsoluteSmallBalancePolicy(
     {"threshold": configuration.small_balance_threshold}
 )
 
-similarity_storage = QdrantLangChainSimilarityStorage(
+similarity_storage = QdrantLangChainAssetSimilarityRepository(
     {
         "qdrant_url": configuration.qdrant_url,
         "qdrant_port": configuration.qdrant_port,
@@ -194,6 +194,7 @@ similarity_storage = QdrantLangChainSimilarityStorage(
         "qdrant_api_key": configuration.qdrant_api_key,
     },
     QdrantClient,
+    AsyncQdrantClient,
     QdrantVectorStore,
     OpenAIEmbeddings(
         model=configuration.embedding_provider_model,

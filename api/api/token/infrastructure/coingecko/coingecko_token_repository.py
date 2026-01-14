@@ -1,4 +1,7 @@
-from typing import TypedDict
+import re
+from typing import Any, TypedDict, cast
+from api.protocol.asset_category import AssetCategory
+from api.similarity.asset_similarity import TokenSimilarity
 from api.token.token_repository import TokenRepository
 from api.protocol.token import Token
 from pydantic import BaseModel, Field
@@ -17,7 +20,7 @@ class GetFromAddressTokenDetailPlatform(BaseModel):
 
 
 class GetFromAddressTokenDetailPlatformImage(BaseModel):
-    thumb: str
+    small: str
 
 
 class GetFromAddressTokenDetailPlatforms(BaseModel):
@@ -28,6 +31,14 @@ class GetFromAddressTokenDetailPlatforms(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class GetFromAddressTokenDetailMarketCap(BaseModel):
+    usd: float
+
+
+class GetFromAddressTokenDetailMarketData(BaseModel):
+    market_cap: GetFromAddressTokenDetailMarketCap
+
+
 class GetFromAddressToken(BaseModel):
     id: str
     symbol: str
@@ -36,6 +47,7 @@ class GetFromAddressToken(BaseModel):
     categories: list[str]
     description: dict[str, str]
     image: GetFromAddressTokenDetailPlatformImage
+    market_data: GetFromAddressTokenDetailMarketData
 
 
 class CoinGeckoToken(BaseModel):
@@ -44,6 +56,7 @@ class CoinGeckoToken(BaseModel):
     name: str
     symbol: str
     decimals: int
+    categories: list[str] | None = None
     logoURI: str | None = None
 
     def to_domain(self) -> Token:
@@ -51,11 +64,13 @@ class CoinGeckoToken(BaseModel):
             id=f"bsc:{self.address}".lower(),
             name=self.name,
             display_name=self.name,
-            ticker=self.symbol,
+            ticker=self.symbol.upper(),
             address=self.address,
             description="",
             decimals=self.decimals,
-            categories=[],
+            categories=[
+                cast(AssetCategory, category) for category in self.categories or []
+            ],
             logo_uri=self.logoURI.replace("/thumb/", "/small/")
             if self.logoURI
             else None,
@@ -83,7 +98,7 @@ class CoingeckoTokenRepository(TokenRepository):
 
         return [token.to_domain() for token in token_list.tokens]
 
-    async def get_by_address(self, address: str) -> Token | None:
+    async def get_by_address(self, address: str) -> TokenSimilarity | None:
         try:
             token = await self.http_request.get(
                 {
@@ -98,17 +113,36 @@ class CoingeckoTokenRepository(TokenRepository):
                 return None
             raise e
 
-        return Token(
+        return TokenSimilarity(
             id=f"bsc:{address}".lower(),
             name=token.name,
-            display_name=token.name,
-            ticker=token.symbol,
+            display_name=self._clean_display_name(token.name),
+            ticker=token.symbol.upper(),
             address=address,
             description=token.description["en"],
             decimals=token.detail_platforms.binance_smart_chain.decimal_place,
-            categories=token.categories,
-            logo_uri=token.image.thumb,
+            categories=[
+                cast(AssetCategory, category) for category in token.categories or []
+            ],
+            logo_uri=token.image.small,
+            market_cap_usd=int(token.market_data.market_cap.usd),
         )
+
+    async def get_by_address_raw(self, address: str) -> Any | None:
+        try:
+            raw_token = await self.http_request.get_raw(
+                {
+                    "url": f"{self.config['coingecko_base_url']}/v3/coins/{self.platform_id}/contract/{address}",
+                    "headers": self._build_headers(),
+                },
+            )
+        except FailedRequest as e:
+            print(f"{__name__} error: {e}")
+            if e.status_code == 404:
+                return None
+            raise e
+
+        return raw_token
 
     def _build_headers(self) -> dict[str, str]:
         headers = {
@@ -121,3 +155,11 @@ class CoingeckoTokenRepository(TokenRepository):
             headers["x-cg-demo-api-key"] = self.config["coingecko_api_key"]
 
         return headers
+
+    def _clean_display_name(self, name: str) -> str:
+        """
+        Removes 'Binance Pegged' and 'Wrapped' (case-insensitive) from the name and trims/normalizes spaces.
+        """
+        display_name = re.sub(r"(?i)\b(Binance Pegged|Wrapped)\b", "", name).strip()
+        display_name = re.sub(r"\s+", " ", display_name)
+        return display_name

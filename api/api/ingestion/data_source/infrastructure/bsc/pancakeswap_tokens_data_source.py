@@ -1,11 +1,9 @@
 from pydantic import BaseModel
 import re
 from api.shared.id_generator.id_generator import IdGenerator
-from api.similarity.similarity_document import SimilarityDocument
 from api.ingestion.data_source.data_source import DataSource
 from api.shared.http_request.http_request import HttpRequest
-
-from api.protocol.token import Token
+from api.similarity.asset_similarity import AssetSimilarity, TokenSimilarity
 
 
 class PancakeswapToken(BaseModel):
@@ -38,7 +36,7 @@ class PancakeswapTokenListDataSource(DataSource):
         display_name = re.sub(r"\s+", " ", display_name)
         return display_name
 
-    async def get(self) -> list[SimilarityDocument]:
+    async def get(self) -> list[AssetSimilarity]:
         """
         Fetches the token list from the Pancakeswap API.
         """
@@ -51,42 +49,28 @@ class PancakeswapTokenListDataSource(DataSource):
         )
 
         return [
-            self.__map_pancakeswap_token_to_similarity_document(token)
+            self.__map_pancakeswap_token_to_token_similarity(token)
             for token in tokens.tokens
         ]
 
     def version(self):
-        return 3
+        return 4
 
-    def __map_pancakeswap_token_to_similarity_document(
+    def __map_pancakeswap_token_to_token_similarity(
         self, pancakeswap_token: PancakeswapToken
-    ) -> SimilarityDocument:
+    ) -> AssetSimilarity:
         """
-        Maps a PancakeswapToken to a Token.
+        Maps a PancakeswapToken to a TokenSimilarity.
         """
-        token = Token(
+        return TokenSimilarity(
             id=f"bsc:{pancakeswap_token.address}",
             name=pancakeswap_token.name,
             display_name=self.__clean_display_name(pancakeswap_token.name),
-            ticker=pancakeswap_token.symbol,
+            ticker=pancakeswap_token.symbol.upper(),
             address=pancakeswap_token.address,
             categories=[],
             description="",
             decimals=pancakeswap_token.decimals,
+            logo_uri=pancakeswap_token.logoURI,
+            market_cap_usd=0,
         )
-
-        return SimilarityDocument(
-            id=self.__generate_id(token),
-            page_content=str(token),
-            metadata={
-                "source": token.to_dict(),
-                "type": "token",
-                "version": self.version(),
-            },
-        )
-
-    def __generate_id(self, token: Token) -> str:
-        """
-        Generates a unique ID (UUID) for the token based on its address.
-        """
-        return self.id_generator.generate_id(token.address[2:])

@@ -124,7 +124,7 @@ export function PromptForm({ onSubmit, status, size, placeholder = 'Ask somethin
 
   // Keep form value in sync when prompt input changes externally (first render mostly)
   useEffect(() => {
-    if (promptInput !== form.getValues('content') && promptInput !== '') {
+    if (promptInput !== form.getValues('content')) {
       form.setValue('content', promptInput)
     }
   }, [promptInput])

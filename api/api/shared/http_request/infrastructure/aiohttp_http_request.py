@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar
 from pydantic import BaseModel
 import aiohttp
 
@@ -27,6 +27,27 @@ class AiohttpHttpRequest(HttpRequest):
             ) as response:
                 if response.status >= 200 and response.status < 400:
                     return schema.model_validate(await response.json())
+
+                print(f"Failed request: {response.status} {await response.text()}")
+
+                raise FailedRequest(
+                    status_code=response.status,
+                    response=await response.text(),
+                )
+
+    async def get_raw(self, params: GetParams) -> Any:
+        """
+        Fetches raw data from a given URL using the aiohttp library.
+        """
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                params.get("url"),
+                params=params.get("params"),
+                headers=params.get("headers"),
+                timeout=aiohttp.ClientTimeout(total=self.TIMEOUT),
+            ) as response:
+                if response.status >= 200 and response.status < 400:
+                    return await response.json()
 
                 print(f"Failed request: {response.status} {await response.text()}")
 

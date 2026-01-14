@@ -23,5 +23,8 @@ class HttpRequest(ABC):
     async def get(self, params: GetParams, schema: Type[T]) -> T:
         raise NotImplementedError
 
+    async def get_raw(self, params: GetParams) -> Any:
+        raise NotImplementedError
+
     async def post(self, params: PostParams, schema: Type[T]) -> T:
         raise NotImplementedError

@@ -4,8 +4,8 @@ from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
 from api.similarity.similarity_document import SimilarityDocument
-from api.similarity.similarity_storage.similarity_storage import (
-    SimilarityStorage,
+from api.similarity.asset_similarity_repository import (
+    AssetSimilarityRepository,
 )
 from pytest import fixture, mark, raises
 from api.protocol.token import Token
@@ -14,17 +14,17 @@ from api.protocol.fixture.basket import test_basket
 
 @fixture
 def asset_repository():
-    return mock.Mock(spec=SimilarityStorage)
+    return mock.Mock(spec=AssetSimilarityRepository)
 
 
 @fixture
-def use_case(asset_repository: SimilarityStorage):
+def use_case(asset_repository: AssetSimilarityRepository):
     return GetAssetByIdUseCase(asset_repository=asset_repository)
 
 
 @mark.asyncio
 async def test_get_asset_by_id_use_case_not_found(
-    asset_repository: SimilarityStorage, use_case: GetAssetByIdUseCase
+    asset_repository: AssetSimilarityRepository, use_case: GetAssetByIdUseCase
 ):
     asset_repository.get_by_field.return_value = None
 
@@ -39,7 +39,7 @@ async def test_get_asset_by_id_use_case_not_found(
 
 @mark.asyncio
 async def test_get_asset_by_id_use_case_found_without_metadata(
-    asset_repository: SimilarityStorage, use_case: GetAssetByIdUseCase
+    asset_repository: AssetSimilarityRepository, use_case: GetAssetByIdUseCase
 ):
     asset_repository.get_by_field.return_value = [
         SimilarityDocument(
@@ -55,7 +55,7 @@ async def test_get_asset_by_id_use_case_found_without_metadata(
 
 @mark.asyncio
 async def test_get_asset_by_id_use_case_found_basket(
-    asset_repository: SimilarityStorage, use_case: GetAssetByIdUseCase
+    asset_repository: AssetSimilarityRepository, use_case: GetAssetByIdUseCase
 ):
     asset_repository.get_by_field.return_value = [
         SimilarityDocument(
@@ -82,7 +82,7 @@ async def test_get_asset_by_id_use_case_found_basket(
 
 @mark.asyncio
 async def test_get_asset_by_id_use_case_found_token(
-    asset_repository: SimilarityStorage, use_case: GetAssetByIdUseCase
+    asset_repository: AssetSimilarityRepository, use_case: GetAssetByIdUseCase
 ):
     asset_repository.get_by_field.return_value = [
         SimilarityDocument(

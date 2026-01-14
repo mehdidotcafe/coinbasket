@@ -16,8 +16,8 @@ export function AssetLogo({
       <Image
         src={logoUri}
         alt={asset.ticker}
-        width={25}
-        height={25}
+        width={24}
+        height={24}
       />
     </div>
   )

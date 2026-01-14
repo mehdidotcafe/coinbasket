@@ -1,5 +1,7 @@
 from typing import Literal
 
+from api.protocol.asset_category import AssetCategory
+
 
 class Basket:
     id: str
@@ -9,7 +11,7 @@ class Basket:
     ticker: str
     decimals: int
     address: str
-    categories: list[str]
+    categories: list[AssetCategory]
     logo_uri: str | None = None
     type: Literal["BASKET"]
 
@@ -22,7 +24,7 @@ class Basket:
         address: str,
         description: str,
         decimals: int,
-        categories: list[str],
+        categories: list[AssetCategory],
         logo_uri: str | None = None,
     ):
         self.id = id.lower()
@@ -42,14 +44,11 @@ name: {self.name}
 display_name: {self.display_name}
 description: {self.description}
 ticker: {self.ticker}
-decimals: {self.decimals}
 address: {self.address}
-logo_uri: {self.logo_uri or ""}
 categories: {", ".join(self.categories)}
-type: {self.type.lower()}
 """
 
-    def to_dict(self) -> dict[str, str | int | list[str] | None]:
+    def to_dict(self) -> dict[str, str | int | list[AssetCategory] | None]:
         return {
             "id": self.id,
             "name": self.name,

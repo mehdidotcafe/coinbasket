@@ -2,14 +2,14 @@ from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
 from api.similarity.similarity_document import SimilarityDocument
-from api.similarity.similarity_storage.similarity_storage import (
-    SimilarityStorage,
+from api.similarity.asset_similarity_repository import (
+    AssetSimilarityRepository,
 )
 from api.protocol.basket import Basket
 
 
 class GetAllBasketsUseCase:
-    def __init__(self, basket_repository: SimilarityStorage):
+    def __init__(self, basket_repository: AssetSimilarityRepository):
         self.basket_repository = basket_repository
 
     async def execute(self) -> list[Basket]:

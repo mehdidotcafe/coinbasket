@@ -2,8 +2,8 @@ from typing import Any
 from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
-from api.similarity.similarity_storage.similarity_storage import (
-    SimilarityStorage,
+from api.similarity.asset_similarity_repository import (
+    AssetSimilarityRepository,
 )
 from api.protocol.basket import Basket
 from api.protocol.token import Token
@@ -11,7 +11,7 @@ from api.protocol.asset import Asset
 
 
 class GetAssetByIdUseCase:
-    def __init__(self, asset_repository: SimilarityStorage):
+    def __init__(self, asset_repository: AssetSimilarityRepository):
         self.asset_repository = asset_repository
 
     async def execute(self, id: str) -> Asset | None:

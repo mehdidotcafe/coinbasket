@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar
 from pydantic import BaseModel
 import requests
 
@@ -26,6 +26,26 @@ class RequestsHttpRequest(HttpRequest):
         )
         if response.status_code >= 200 and response.status_code < 400:
             return schema.model_validate(response.json())
+        else:
+            print(f"Failed request: {response.status_code} {response.text}")
+
+            raise FailedRequest(
+                status_code=response.status_code,
+                response=response.text,
+            )
+
+    async def get_raw(self, params: GetParams) -> Any:
+        """
+        Fetches raw data from a given URL using the requests library.
+        """
+        response = requests.get(
+            params.get("url"),
+            params.get("params"),
+            headers=params.get("headers"),
+            timeout=self.TIMEOUT,
+        )
+        if response.status_code >= 200 and response.status_code < 400:
+            return response.json()
         else:
             print(f"Failed request: {response.status_code} {response.text}")
 
