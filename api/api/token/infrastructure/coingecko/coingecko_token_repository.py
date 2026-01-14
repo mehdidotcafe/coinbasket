@@ -157,9 +157,10 @@ class CoingeckoTokenRepository(TokenRepository):
         return headers
 
     def _clean_display_name(self, name: str) -> str:
-        """
-        Removes 'Binance Pegged' and 'Wrapped' (case-insensitive) from the name and trims/normalizes spaces.
-        """
-        display_name = re.sub(r"(?i)\b(Binance Pegged|Wrapped)\b", "", name).strip()
+        display_name = re.sub(
+            r"(?i)(\b(Binance Pegged|Wrapped|Binance Bridged|Binance-Peg)\b|\(BNB Smart Chain\))",
+            "",
+            name,
+        ).strip()
         display_name = re.sub(r"\s+", " ", display_name)
         return display_name

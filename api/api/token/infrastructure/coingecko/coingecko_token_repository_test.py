@@ -108,3 +108,35 @@ async def test_coingecko_token_repository_get_from_address_success(
         },
         mock.ANY,
     )
+
+
+@mark.asyncio
+async def test_coingecko_token_repository_get_from_address_display_name_format(
+    repository: CoingeckoTokenRepository,
+    http_request: HttpRequest,
+):
+    address = "0x1234567890abcdef1234567890abcdef12345678"
+
+    http_request.get.return_value = GetFromAddressToken(
+        id="test_token",
+        symbol="ttk",
+        name="Test Token (BNB Smart Chain)",
+        detail_platforms=GetFromAddressTokenDetailPlatforms(
+            binance_smart_chain=GetFromAddressTokenDetailPlatform(  # type: ignore
+                decimal_place=18, contract_address=address
+            )
+        ),
+        categories=["category1", "category2"],
+        description={"en": "This is a test token."},
+        image=GetFromAddressTokenDetailPlatformImage(
+            small="https://testtoken.org/logo.png"
+        ),
+        market_data=GetFromAddressTokenDetailMarketData(
+            market_cap=GetFromAddressTokenDetailMarketCap(usd=1000000),
+        ),
+    )
+
+    result = await repository.get_by_address(address)
+
+    assert result
+    assert result.display_name == "Test Token"
