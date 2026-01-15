@@ -66,6 +66,7 @@ class TestDataSource(DataSource):
             categories=token.categories,
             logo_uri=token.logo_uri,
             market_cap_usd=market_cap_usd,
+            is_canonical=True,
         )
 
     def _map_basket_to_basket_similarity(
@@ -82,4 +83,5 @@ class TestDataSource(DataSource):
             categories=basket.categories,
             logo_uri=basket.logo_uri,
             market_cap_usd=market_cap_usd,
+            is_canonical=True,
         )

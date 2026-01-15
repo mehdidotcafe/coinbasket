@@ -53,8 +53,18 @@ class DevDataSource(DataSource):
             ),
             categories=raw_token["categories"] or [],
             logo_uri=raw_token["image"].get("small"),
+            is_canonical=self._is_canonical(raw_token["name"]),
             market_cap_usd=int(raw_token["market_data"]["market_cap"].get("usd", 0)),
         )
+
+    def _is_canonical(self, name: str) -> bool:
+        patterns = [
+            r"(?i)\b(Binance Pegged|Binance Bridged|Binance-Peg)\b",
+        ]
+        for pattern in patterns:
+            if re.search(pattern, name):
+                return True
+        return False
 
     def _clean_display_name(self, name: str) -> str:
         display_name = re.sub(
