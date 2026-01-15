@@ -90,9 +90,11 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_name_or_
 
     bnb_token_similarity = bnb_token.to_dict() | {
         "market_cap_usd": 0,
+        "is_canonical": 1,
     }
     eth_token_similarity = eth_token.to_dict() | {
         "market_cap_usd": 0,
+        "is_canonical": 1,
     }
 
     qdrant_vector_store.asimilarity_search_with_score.return_value = [
@@ -172,12 +174,15 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_name_or_
 
     bnb_token_similarity = bnb_token.to_dict() | {
         "market_cap_usd": 131425427,
+        "is_canonical": 1,
     }
     eth_token_similarity = eth_token.to_dict() | {
         "market_cap_usd": 379722660,
+        "is_canonical": 1,
     }
     sol_token_similarity = sol_token.to_dict() | {
         "market_cap_usd": 500000000,
+        "is_canonical": 1,
     }
 
     qdrant_vector_store.asimilarity_search_with_score.return_value = [
@@ -219,7 +224,7 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_categori
     qdrant_async_client: type[AsyncQdrantClient],
     qdrant_vector_store: type[QdrantVectorStore],
     embeddings: OpenAIEmbeddings,
-    return_limit: int,
+    fetch_limit: int,
 ):
     categories = ["Decentralized Finance (DeFi)", "Dogechain Ecosystem"]
 
@@ -241,36 +246,45 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_categori
 
     bnb_token_similarity = bnb_token.to_dict() | {
         "market_cap_usd": 0,
+        "is_canonical": 1,
     }
     eth_token_similarity = eth_token.to_dict() | {
         "market_cap_usd": 0,
+        "is_canonical": 1,
     }
 
-    qdrant_async_client.scroll.return_value = (
-        [
-            Record(
-                id="1",
-                payload={
-                    "metadata": {
-                        "_id": "1",
-                        "type": "token",
-                        "source": bnb_token_similarity,
+    qdrant_async_client.scroll.side_effect = [
+        (
+            [
+                Record(
+                    id="1",
+                    payload={
+                        "metadata": {
+                            "_id": "1",
+                            "type": "token",
+                            "source": bnb_token_similarity,
+                        },
                     },
-                },
-            ),
-            Record(
-                id="2",
-                payload={
-                    "metadata": {
-                        "_id": "2",
-                        "type": "token",
-                        "source": eth_token_similarity,
+                ),
+            ],
+            None,
+        ),
+        (
+            [
+                Record(
+                    id="2",
+                    payload={
+                        "metadata": {
+                            "_id": "2",
+                            "type": "token",
+                            "source": eth_token_similarity,
+                        },
                     },
-                },
-            ),
-        ],
-        None,
-    )
+                ),
+            ],
+            None,
+        ),
+    ]
 
     assets = await similarity_storage.similarity_search(None, "TOKEN", categories)
 
@@ -293,29 +307,61 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_categori
     )
     qdrant_vector_store.asimilarity_search_with_score.assert_not_called()
 
-    qdrant_async_client.scroll.assert_called_once_with(
-        collection_name="datasets",
-        scroll_filter=Filter(
-            must=[
-                FieldCondition(
-                    key="metadata.source.categories",
-                    match=MatchValue(value="Decentralized Finance (DeFi)"),
+    qdrant_async_client.assert_has_calls(
+        [
+            mock.call.scroll(
+                collection_name="datasets",
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="metadata.source.categories",
+                            match=MatchValue(value="Decentralized Finance (DeFi)"),
+                        ),
+                        FieldCondition(
+                            key="metadata.source.categories",
+                            match=MatchValue(value="Dogechain Ecosystem"),
+                        ),
+                        FieldCondition(
+                            key="metadata.type",
+                            match=MatchValue(value="token"),
+                        ),
+                        FieldCondition(
+                            key="metadata.source.is_canonical",
+                            match=MatchValue(value=0),
+                        ),
+                    ]
                 ),
-                FieldCondition(
-                    key="metadata.source.categories",
-                    match=MatchValue(value="Dogechain Ecosystem"),
+                order_by=OrderBy(
+                    key="metadata.source.market_cap_usd",
+                    direction=Direction.DESC,
                 ),
-                FieldCondition(
-                    key="metadata.type",
-                    match=MatchValue(value="token"),
+                limit=fetch_limit,
+            ),
+            mock.call.scroll(
+                collection_name="datasets",
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="metadata.source.categories",
+                            match=MatchValue(value="Decentralized Finance (DeFi)"),
+                        ),
+                        FieldCondition(
+                            key="metadata.source.categories",
+                            match=MatchValue(value="Dogechain Ecosystem"),
+                        ),
+                        FieldCondition(
+                            key="metadata.type",
+                            match=MatchValue(value="token"),
+                        ),
+                        FieldCondition(
+                            key="metadata.source.is_canonical",
+                            match=MatchValue(value=1),
+                        ),
+                    ]
                 ),
-            ]
-        ),
-        order_by=OrderBy(
-            key="metadata.source.market_cap_usd",
-            direction=Direction.DESC,
-        ),
-        limit=return_limit,
+                limit=fetch_limit,
+            ),
+        ]
     )
 
 

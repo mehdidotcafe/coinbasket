@@ -73,5 +73,5 @@ class PancakeswapTokenListDataSource(DataSource):
             decimals=pancakeswap_token.decimals,
             logo_uri=pancakeswap_token.logoURI,
             market_cap_usd=0,
-            is_canonical=False,
+            is_canonical=0,
         )

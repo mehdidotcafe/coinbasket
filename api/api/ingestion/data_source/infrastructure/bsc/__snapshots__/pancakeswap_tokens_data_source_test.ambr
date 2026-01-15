@@ -9,7 +9,7 @@
       description='',
       display_name='Lithosphere',
       id='bsc:0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93',
-      is_canonical=False,
+      is_canonical=0,
       logo_uri='https://tokens.pancakeswap.finance/images/0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82.png',
       market_cap_usd=0,
       name='Lithosphere',

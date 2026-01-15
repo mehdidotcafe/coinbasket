@@ -64,7 +64,7 @@ async def test_ingest_data_use_case_success(
             decimals=18,
             logo_uri="https://example.com/wbnb-logo.png",
             market_cap_usd=5_000_000_000,
-            is_canonical=True,
+            is_canonical=1,
         )
     ]
     token_data_source.get.return_value = token_similarity
@@ -82,7 +82,7 @@ async def test_ingest_data_use_case_success(
             decimals=18,
             address="0x12345567890abcdef1234567890abcdef1234567",
             market_cap_usd=10_000_000_000,
-            is_canonical=True,
+            is_canonical=1,
         )
     ]
 
@@ -121,7 +121,7 @@ async def test_ingest_data_use_case_success(
                                 "categories": ["wrapped", "bnb"],
                                 "type": "TOKEN",
                                 "market_cap_usd": 5_000_000_000,
-                                "is_canonical": True,
+                                "is_canonical": 1,
                             },
                             "type": "token",
                             "version": 1,
@@ -150,7 +150,7 @@ async def test_ingest_data_use_case_success(
                                 "categories": ["basket"],
                                 "type": "BASKET",
                                 "market_cap_usd": 10000000000,
-                                "is_canonical": True,
+                                "is_canonical": 1,
                             },
                         },
                         page_content="\nname: Wrapped BNB\ndisplay_name: Wrapped BNB\ndescription: Just BNB\nticker: WBNB\naddress: 0x12345567890abcdef1234567890abcdef1234567\ncategories: basket\n",
@@ -180,7 +180,7 @@ async def test_ingest_data_use_case_with_existing_documents_lower_version(
             decimals=18,
             logo_uri="https://example.com/wbnb-logo.png",
             market_cap_usd=5_000_000_000,
-            is_canonical=True,
+            is_canonical=1,
         )
     ]
 
@@ -235,7 +235,7 @@ async def test_ingest_data_use_case_with_existing_documents_same_version(
             decimals=18,
             logo_uri="https://example.com/wbnb-logo.png",
             market_cap_usd=5_000_000_000,
-            is_canonical=True,
+            is_canonical=1,
         )
     ]
     token_data_source.get.return_value = token_similarity_documents

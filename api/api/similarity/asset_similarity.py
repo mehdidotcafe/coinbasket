@@ -4,10 +4,10 @@ from api.protocol.asset_category import AssetCategory
 
 
 class TokenSimilarity(Token):
-    is_canonical: bool
+    is_canonical: int
     market_cap_usd: int
 
-    def __init__(self, is_canonical: bool, market_cap_usd: int, **kwargs):
+    def __init__(self, is_canonical: int, market_cap_usd: int, **kwargs):
         super().__init__(**kwargs)
         self.is_canonical = is_canonical
         self.market_cap_usd = market_cap_usd
@@ -20,10 +20,10 @@ class TokenSimilarity(Token):
 
 
 class BasketSimilarity(Basket):
-    is_canonical: bool
+    is_canonical: int
     market_cap_usd: int
 
-    def __init__(self, is_canonical: bool, market_cap_usd: int, **kwargs):
+    def __init__(self, is_canonical: int, market_cap_usd: int, **kwargs):
         super().__init__(**kwargs)
         self.is_canonical = is_canonical
         self.market_cap_usd = market_cap_usd

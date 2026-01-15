@@ -18,7 +18,7 @@ class CmcTop20BasketDataSource(DataSource):
             categories=["BNB Chain Ecosystem", "DTF", "Basket"],
             decimals=18,
             market_cap_usd=6_773_392,
-            is_canonical=True,
+            is_canonical=1,
         )
 
     async def get(self) -> list[AssetSimilarity]:

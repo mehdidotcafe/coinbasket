@@ -86,8 +86,6 @@ async def make_assets_snapshot():
                 token.address
             )
 
-            print(f"raw_token: {raw_token}")  # Debugging line
-
             if raw_token:
                 snapshot.append(raw_token)
             else:

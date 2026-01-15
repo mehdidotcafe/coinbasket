@@ -171,4 +171,4 @@ async def test_coingecko_token_repository_get_from_address_is_canonical(
     result = await repository.get_by_address(address)
 
     assert result
-    assert result.is_canonical
+    assert result.is_canonical == 1
