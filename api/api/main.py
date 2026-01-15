@@ -442,6 +442,66 @@ async def get_available_cash():
     return BalanceAtomicResponse.from_domain(balance).model_dump_json()
 
 
+class GetAssetPriceRequest(BaseModel):
+    asset_id: str
+    conversion_asset_id: str = usdt_token.id
+    asset_amount: str = "1"
+
+    async def to_domain(self) -> AssetSwapPriceInfo:
+        """Convert the request to an AssetSwapPriceInfo."""
+        asset = await get_asset_by_id_use_case.execute(self.asset_id)
+        if not asset:
+            raise ValueError(f"Asset id {self.asset_id} not found")
+
+        conversion_asset = await get_asset_by_id_use_case.execute(
+            self.conversion_asset_id
+        )
+
+        if not conversion_asset:
+            raise ValueError(
+                f"Conversion asset id {self.conversion_asset_id} not found"
+            )
+
+        return AssetSwapPriceInfo(
+            sell_asset=asset,
+            sell_asset_amount=Decimal(self.asset_amount),
+            buy_asset=conversion_asset,
+        )
+
+
+@tool(
+    parse_docstring=True,
+)
+async def get_asset_price(request: GetAssetPriceRequest):
+    """FAST. Retrieve the price of a specific asset converted to a conversion token.
+    Use this tool when the user asks for the price of an asset.
+
+    Args:
+        request: An object containing the asset_id to get the price for, an optional conversion_asset_id (defaults to USDT) and asset_amount (defaults to 1).
+
+    Returns:
+        The price of 1 unit of the asset in both native and converted form.
+    """
+    address = cast(Address, request_address_context.get())
+
+    asset = await get_asset_by_id_use_case.execute(request.asset_id)
+    if not asset:
+        raise ValueError(f"Asset id {request.asset_id} not found")
+
+    conversion_asset = await get_asset_by_id_use_case.execute(
+        request.conversion_asset_id
+    )
+    if not conversion_asset:
+        raise ValueError(f"Conversion asset id {request.conversion_asset_id} not found")
+
+    balance = await get_asset_swap_price_use_case.execute(
+        address=address,
+        asset_swap_price_info=await request.to_domain(),
+    )
+
+    return ConvertedBalanceResponse.from_domain(balance).model_dump_json()
+
+
 class BalanceAtomicResponse(BaseModel):
     asset: AssetResponse
     amount: str
@@ -766,6 +826,7 @@ coinbasket_tools = [
     plan_and_execute_swap_order,
     get_available_cash,
     get_token_or_basket_or_asset_balance,
+    get_asset_price,
     # get_portfolio_summary,
     get_executed_orders,
     get_executed_order,

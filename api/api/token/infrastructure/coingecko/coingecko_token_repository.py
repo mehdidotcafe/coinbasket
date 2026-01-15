@@ -121,11 +121,10 @@ class CoingeckoTokenRepository(TokenRepository):
             address=address,
             description=token.description["en"],
             decimals=token.detail_platforms.binance_smart_chain.decimal_place,
-            categories=[
-                cast(AssetCategory, category) for category in token.categories or []
-            ],
+            categories=self._make_categories(token.categories),
             logo_uri=token.image.small,
             market_cap_usd=int(token.market_data.market_cap.usd),
+            is_canonical=self._is_canonical(token),
         )
 
     async def get_by_address_raw(self, address: str) -> Any | None:
@@ -155,6 +154,38 @@ class CoingeckoTokenRepository(TokenRepository):
             headers["x-cg-demo-api-key"] = self.config["coingecko_api_key"]
 
         return headers
+
+    def _make_categories(self, categories: list[str] | None) -> list[str]:
+        categories = [cast(AssetCategory, category) for category in categories or []]
+
+        if "Storage" in categories:
+            categories.append("DePIN")
+
+        if next(
+            (
+                category
+                for category in categories
+                if re.search(r"(?i)\b(Stablecoin)\b", category)
+                and category != "Stablecoins"
+            ),
+            None,
+        ):
+            categories.append("Stablecoins")
+
+        return list(set(categories))
+
+    def _is_canonical(self, token: GetFromAddressToken) -> int:
+        patterns = [
+            r"(?i)\b(Binance Pegged|Binance Bridged|Binance-Peg)\b",
+        ]
+
+        if token.categories and "Binance Bridged" in token.categories:
+            return 1
+
+        for pattern in patterns:
+            if re.search(pattern, token.name):
+                return 1
+        return 0
 
     def _clean_display_name(self, name: str) -> str:
         display_name = re.sub(

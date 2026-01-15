@@ -1,4 +1,5 @@
-from typing import Any, Literal, TypedDict, cast
+import asyncio
+from typing import Any, Literal, TypedDict
 import math
 from api.protocol.asset import Asset
 from api.protocol.basket import Basket
@@ -74,11 +75,16 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
                 collection_name=self.configuration["qdrant_collection"],
                 vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
             )
-            self.client.create_payload_index(
-                collection_name=self.configuration["qdrant_collection"],
-                field_name="metadata.source.market_cap_usd",
-                field_schema=PayloadSchemaType.INTEGER,
-            )
+        self.client.create_payload_index(
+            collection_name=self.configuration["qdrant_collection"],
+            field_name="metadata.source.market_cap_usd",
+            field_schema=PayloadSchemaType.INTEGER,
+        )
+        self.client.create_payload_index(
+            collection_name=self.configuration["qdrant_collection"],
+            field_name="metadata.source.is_canonical",
+            field_schema=PayloadSchemaType.INTEGER,
+        )
 
         self.qdrant = self.qdrant_vector_store(
             client=self.client,
@@ -86,6 +92,8 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
             embedding=self.embeddings,
         )
 
+    # TODO: Use qdrant native reranking
+    # https://qdrant.tech/documentation/concepts/hybrid-queries/
     async def similarity_search(
         self,
         name_or_ticker: str | None = None,
@@ -115,6 +123,8 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
                 )
             )
 
+        reranked_raw_assets: list[tuple[dict[str, Any], float]] = []
+
         if name_or_ticker:
             documents_with_score = await self.qdrant.asimilarity_search_with_score(
                 name_or_ticker,
@@ -122,40 +132,96 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
                 filter=Filter(must=must_conditions),
             )
 
-            # Re-rank based on market cap using log-scale weight
-            reranked_results = self._rerank_by_market_cap(documents_with_score)
-
-            return [
-                self._map_document_to_asset(doc)
-                for doc, _ in reranked_results[:return_limit]
-            ]
-        else:
-            records, _id = await self.async_client.scroll(
-                collection_name=self.configuration["qdrant_collection"],
-                scroll_filter=Filter(must=must_conditions),
-                limit=return_limit,
-                order_by=OrderBy(
-                    key="metadata.source.market_cap_usd", direction=Direction.DESC
-                ),
+            # Re-rank based on market cap, similarity, and canonical status
+            reranked_raw_assets = self._rerank_results(
+                [
+                    (doc.metadata, score)
+                    for doc, score in documents_with_score
+                    if doc.metadata
+                ]
             )
 
-            return [self._map_record_to_asset(record) for record in records]
+        else:
+            results = await asyncio.gather(
+                *[
+                    # Fetch non-canonical assets ordered by market cap descending
+                    self.async_client.scroll(
+                        collection_name=self.configuration["qdrant_collection"],
+                        scroll_filter=Filter(
+                            must=[
+                                *must_conditions,
+                                FieldCondition(
+                                    key="metadata.source.is_canonical",
+                                    match=MatchValue(value=0),
+                                ),
+                            ]
+                        ),
+                        limit=fetch_limit,
+                        order_by=OrderBy(
+                            key="metadata.source.market_cap_usd",
+                            direction=Direction.DESC,
+                        ),
+                    ),
+                    # Fetch canonical assets without specific ordering, canonical assets often have zero market cap provided
+                    self.async_client.scroll(
+                        collection_name=self.configuration["qdrant_collection"],
+                        scroll_filter=Filter(
+                            must=[
+                                *must_conditions,
+                                FieldCondition(
+                                    key="metadata.source.is_canonical",
+                                    match=MatchValue(value=1),
+                                ),
+                            ]
+                        ),
+                        limit=fetch_limit,
+                    ),
+                ]
+            )
 
-    def _rerank_by_market_cap(
+            records = results[0][0] + results[1][0]
+
+            reranked_raw_assets = self._rerank_results(
+                [
+                    (record.payload["metadata"], 0)
+                    for record in records
+                    if record.payload
+                ],
+            )
+
+        for asset, score in reranked_raw_assets:
+            print(
+                f"Record Token: {asset['source']['name']}, Score: {score}, Market Cap: {asset['source']['market_cap_usd']}"
+            )
+
+        return [
+            self._map_raw_asset_to_asset(asset)
+            for (asset, _) in reranked_raw_assets[:return_limit]
+        ]
+
+    def _rerank_results(
         self,
-        documents_with_score: list[tuple[Document, float]],
-        similarity_weight: float = 0.6,
-    ) -> list[tuple[Document, float]]:
+        documents_with_score: list[tuple[dict[str, Any], float]],
+        similarity_weight: float = 0.55,
+        market_cap_weight: float = 0.35,
+        canonical_weight: float = 0.10,
+    ) -> list[tuple[dict[str, Any], float]]:
         """
-        Re-ranks search results using a weighted combination of similarity and market cap.
+        Re-ranks search results using a weighted combination of similarity, market cap, and canonical status.
 
-        Uses an additive formula: final_score = w * similarity + (1-w) * market_cap_score
-        This allows high market cap to overcome moderate similarity differences.
+        Uses an additive formula:
+            final_score = similarity_weight * similarity
+                        + market_cap_weight * market_cap_score
+                        + canonical_weight * canonical_score
+
+        Canonical tokens with market_cap = 0 receive a neutral market_cap_score (0.5)
+        to avoid being penalized by missing/erroneous provider data.
 
         Args:
             documents_with_score: List of (document, similarity_score) tuples
-            similarity_weight: Weight for similarity score (0-1). Market cap weight is 1 - similarity_weight.
-                               Default 0.6 means 60% similarity, 40% market cap.
+            similarity_weight: Weight for similarity score. Default 0.55.
+            market_cap_weight: Weight for market cap score. Default 0.35.
+            canonical_weight: Weight for canonical status. Default 0.10.
 
         Returns:
             Reranked list of (document, final_score) tuples sorted by final score
@@ -165,26 +231,32 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
 
         # Extract market caps for normalization
         market_caps: list[int] = [
-            doc.metadata["source"]["market_cap_usd"] for doc, _ in documents_with_score
+            doc["source"]["market_cap_usd"] for doc, _ in documents_with_score
         ]
         max_market_cap = max(market_caps) if market_caps else 1
 
-        reranked: list[tuple[Document, float]] = []
+        reranked: list[tuple[dict[str, Any], float]] = []
         for doc, similarity_score in documents_with_score:
-            market_cap = doc.metadata["source"]["market_cap_usd"]
+            market_cap = doc["source"]["market_cap_usd"]
+            is_canonical = doc["source"]["is_canonical"]
 
-            # Square root normalization of market cap (0 to 1 range)
-            # sqrt compresses less than log, giving more advantage to high market cap
+            # Market cap score with rescue for canonical tokens
             if market_cap > 0 and max_market_cap > 0:
                 market_cap_score = math.sqrt(market_cap) / math.sqrt(max_market_cap)
+            elif market_cap == 0 and is_canonical:
+                # Rescue canonical tokens with missing/erroneous market cap data
+                market_cap_score = 0.5
             else:
                 market_cap_score = 0
 
-            # Weighted combination of similarity and market cap
-            market_cap_weight = 1 - similarity_weight
+            # Canonical score
+            canonical_score = 1.0 if is_canonical else 0.0
+
+            # Three-factor weighted combination
             final_score = (
                 similarity_weight * similarity_score
                 + market_cap_weight * market_cap_score
+                + canonical_weight * canonical_score
             )
 
             reranked.append((doc, final_score))
@@ -242,54 +314,25 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
             ],
         )
 
-    def _map_record_to_asset(self, record: Record) -> Asset:
-        if record.payload is None:
-            raise InvalidSimilarityDocument(
-                f"Record payload is None for record ID {record.id}"
-            )
-        metadata = cast(dict[str, Any], record.payload["metadata"])
-
-        match metadata["type"]:
+    def _map_raw_asset_to_asset(self, asset: dict[str, Any]) -> Asset:
+        match asset["type"]:
             case "token":
                 ChildAsset = Token
             case "basket":
                 ChildAsset = Basket
             case _:
-                raise InvalidSimilarityDocument(metadata["_id"])
+                raise InvalidSimilarityDocument(asset["_id"])
 
         return ChildAsset(
-            address=metadata["source"]["address"],
-            id=metadata["source"]["id"],
-            name=metadata["source"]["name"],
-            display_name=metadata["source"]["display_name"],
-            ticker=metadata["source"]["ticker"],
-            description=metadata["source"]["description"],
-            decimals=int(metadata["source"]["decimals"]),
-            categories=metadata["source"]["categories"],
-            logo_uri=metadata["source"].get("logo_uri"),
-        )
-
-    def _map_document_to_asset(self, document: Document) -> Asset:
-        metadata = cast(dict[str, Any], document.metadata)
-
-        match metadata["type"]:
-            case "token":
-                ChildAsset = Token
-            case "basket":
-                ChildAsset = Basket
-            case _:
-                raise InvalidSimilarityDocument(metadata["_id"])
-
-        return ChildAsset(
-            address=metadata["source"]["address"],
-            id=metadata["source"]["id"],
-            name=metadata["source"]["name"],
-            display_name=metadata["source"]["display_name"],
-            ticker=metadata["source"]["ticker"],
-            description=metadata["source"]["description"],
-            decimals=int(metadata["source"]["decimals"]),
-            categories=metadata["source"]["categories"],
-            logo_uri=metadata["source"].get("logo_uri"),
+            address=asset["source"]["address"],
+            id=asset["source"]["id"],
+            name=asset["source"]["name"],
+            display_name=asset["source"]["display_name"],
+            ticker=asset["source"]["ticker"],
+            description=asset["source"]["description"],
+            decimals=int(asset["source"]["decimals"]),
+            categories=asset["source"]["categories"],
+            logo_uri=asset["source"].get("logo_uri"),
         )
 
     def __map_document_to_similarity_document(
