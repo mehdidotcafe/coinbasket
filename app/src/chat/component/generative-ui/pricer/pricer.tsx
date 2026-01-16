@@ -145,7 +145,7 @@ function AssetInput<T extends FieldValues>({ asset, availableAmount, control, na
   const debouncedOnChange = useDebouncedCallback((e: ChangeEvent<HTMLInputElement>) => onChange?.(e), 300)
 
   return (
-    <section className={`border ${hasError ? 'border-destructive' : ''} bg-primary rounded-lg shadow-xs w-full p-4 ${disabled ? 'cursor-not-allowed' : ''}`}>
+    <section className={`border ${hasError ? 'border-destructive' : ''} rounded-lg shadow-md bg-primary w-full p-4 ${disabled ? 'cursor-not-allowed' : ''}`}>
       <div className="flex items-center justify-between mb-1">
         <label htmlFor={name} className="block text-sm font-medium text-muted-foreground">
           {preLabel}
@@ -187,9 +187,9 @@ function AssetInput<T extends FieldValues>({ asset, availableAmount, control, na
             )}
           />
         </div>
-        <div className="flex items-center gap-2 ml-4">
-          <AssetName asset={asset} />
+        <div className="flex items-center gap-2 ml-4 border rounded-full p-1 pr-2 bg-secondary/10">
           <AssetLogo asset={asset} />
+          <AssetName asset={asset} />
         </div>
       </div>
 

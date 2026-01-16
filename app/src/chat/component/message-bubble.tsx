@@ -59,7 +59,7 @@ function UserMessageBubble({
 
   return (
     <article className={cn('flex justify-end', avatar && 'md:-mr-[32px]')}>
-      <Card className="text-white px-1 py-2 rounded-xl shadow-sm bg-tertiary">
+      <Card className="text-white p-1 rounded-xl shadow-sm bg-secondary/10">
         <CardContent>
           <MarkdownView>{message.content!}</MarkdownView>
         </CardContent>
