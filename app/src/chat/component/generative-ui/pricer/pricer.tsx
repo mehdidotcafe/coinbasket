@@ -1,11 +1,13 @@
 import type { ChangeEvent } from 'react'
 import type { Control, FieldValues, Path, UseFormReturn } from 'react-hook-form'
 import type { Asset } from '@/asset/Asset'
+import type { Fees } from '@/fee/fees'
 import type { ConfirmedOrder } from '@/invest/order/confirmed-order'
 import type { PlannedOrder } from '@/invest/order/planned-order'
 import type { SignableOrder } from '@/invest/order/signable-order'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Big from 'big.js'
+import Image from 'next/image'
 import { useEffect, useReducer, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { NumericFormat } from 'react-number-format'
@@ -64,9 +66,22 @@ const assetWithAmountFormSchema = z.object({
   availableAmount: z.string().optional(),
 })
 
+const balanceAtomicSchema = z.object({
+  asset: assetFormSchema,
+  amount: z.instanceof(Big),
+  amountAtomic: z.bigint(),
+}).optional()
+
+const feesSchema = z.object({
+  platformFee: balanceAtomicSchema,
+  providerFee: balanceAtomicSchema,
+  gasFee: balanceAtomicSchema,
+}).optional()
+
 const formSchema = z.object({
   buyAssetWithAmount: assetWithAmountFormSchema,
   sellAssetWithAmount: assetWithAmountFormSchema,
+  fees: feesSchema,
 }).superRefine((data, ctx) => {
   if (!data.sellAssetWithAmount.availableAmount) {
     return
@@ -231,6 +246,7 @@ function mapPlannedOrderToForm(plannedOrder: PlannedOrder): FormData {
       amount: plannedOrder.sellAssetWithAmount.amount?.toFixed() ?? '',
       availableAmount: plannedOrder.sellAssetWithAmount.availableAmount.toFixed(),
     },
+    fees: plannedOrder.fees,
   }
 }
 
@@ -250,6 +266,74 @@ function BottomSwapArrow() {
   )
 }
 
+interface FeeRowProps {
+  label: string
+  fee?: { amount: Big, asset: { ticker: string } }
+  tooltip?: string
+  icon: string
+}
+
+function FeeRow({ label, fee, tooltip, icon }: FeeRowProps) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+        <Image
+          className="rounded-full bg-white border shadow-sm mr-1 w-[20px] h-[20px]"
+          width={20}
+          height={20}
+          src={icon}
+          alt="Fee icon"
+        />
+        <label className="min-w-[85px]">{label}</label>
+        {tooltip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 cursor-help">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+              </svg>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      <span className="text-sm" aria-label={label}>
+        {fee ? `${fee.amount.toFixed(NB_DECIMALS)} ${fee.asset.ticker}` : <span className="text-secondary font-sofia-sans font-bold">Free</span>}
+      </span>
+    </div>
+  )
+}
+
+interface FeesDisplayProps {
+  fees?: Fees
+}
+
+function FeesDisplay({ fees }: FeesDisplayProps) {
+  return (
+    <div className="w-full mt-4">
+      <FeeRow
+        label="Platform fee"
+        fee={fees?.platformFee}
+        tooltip="Fee charged by coinbasket"
+        icon="/logo/coinbasket-icon.png"
+      />
+      <FeeRow
+        label="Provider fee"
+        fee={fees?.providerFee}
+        tooltip="Fee charged by the smart router"
+        icon="/logo/0x.svg"
+      />
+      <FeeRow
+        label="Network cost"
+        fee={fees?.gasFee}
+        tooltip="Estimated gas fee for the transaction"
+        icon="/logo/bnb.svg"
+      />
+    </div>
+  )
+}
+
 function useFormPricer({
   form,
   order,
@@ -263,9 +347,10 @@ function useFormPricer({
 }) {
   const { getPrice } = usePricer()
 
-  const updateFromAsset = (asset1: keyof typeof order, asset2: keyof typeof order) => async (sellAssetAmount: Big | undefined, blockingReload: boolean) => {
+  const updateFromAsset = (asset1: 'sellAssetWithAmount' | 'buyAssetWithAmount', asset2: 'sellAssetWithAmount' | 'buyAssetWithAmount') => async (sellAssetAmount: Big | undefined, blockingReload: boolean) => {
     if (!sellAssetAmount) {
       form.setValue(`${asset2}.amount`, '')
+      form.setValue('fees', undefined)
     }
     else {
       if (blockingReload) {
@@ -273,12 +358,13 @@ function useFormPricer({
       }
 
       try {
-        const { buyBalance } = await getPrice({
+        const { buyBalance, fees: newFees } = await getPrice({
           sellAsset: order[asset1].asset,
           buyAsset: order[asset2].asset,
           sellAssetAmount,
         })
         form.setValue(`${asset2}.amount`, buyBalance.amount.toFixed())
+        form.setValue('fees', newFees)
       }
       finally {
         if (blockingReload) {
@@ -651,6 +737,7 @@ export function Pricer({ plannedOrder, onSubmit }: Props) {
   })
   const { apiClient } = useRegistry()
   const [isFormLoading, setIsFormLoading] = useState(false)
+  const fees = form.watch('fees')
 
   const { currentStep, error, startTransaction, cancelTransaction } = useTransactionFlow({
     onTransactionConfirmed: (transactionHash, signableOrderId) => {
@@ -750,6 +837,7 @@ export function Pricer({ plannedOrder, onSubmit }: Props) {
                 setFormLoading={setIsFormLoading}
               />
             </div>
+            <FeesDisplay fees={fees} />
             {displayError && (
               <div className="w-full mt-4 p-3 rounded-lg text-sm bg-destructive text-destructive-foreground">
                 {displayError}

@@ -28,6 +28,7 @@ import { PromptInputProvider } from './prompt-input/prompt-input-context'
 import { RegistryProvider } from './registry/registry-provider'
 import { idbStorage } from './storage/infrastructure/idb-storage'
 import '@rainbow-me/rainbowkit/styles.css'
+import './app/globals.css'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!
 

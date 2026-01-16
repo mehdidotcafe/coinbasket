@@ -14,6 +14,11 @@ export const demoPricerClient: PricerClient = {
         asset: buyAsset,
         amount: randomBuyAssetAmount,
       },
+      fees: {
+        platformFee: undefined,
+        providerFee: undefined,
+        gasFee: undefined,
+      },
     }
   },
 }

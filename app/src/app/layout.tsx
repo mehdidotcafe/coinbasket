@@ -6,7 +6,17 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'coinbasket',
-  description: 'Be free to invest',
+  description: 'AI-Powered Crypto Orders. One Prompt Away',
+  icons: {
+    icon: 'favicon/favicon.ico',
+    shortcut: 'favicon/favicon.ico',
+    apple: 'favicon/apple-touch-icon.png',
+    other: {
+      rel: 'apple-touch-icon',
+      sizes: '180x180',
+      url: 'favicon/apple-touch-icon.png',
+    },
+  },
 }
 
 export default function RootLayout({

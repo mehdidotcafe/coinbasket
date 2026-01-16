@@ -35,6 +35,23 @@ export const BuyTokenWithSellToken: Story = {
         amount: Big('52.28349'),
         availableAmount: Big('90.48534'),
       },
+      fees: {
+        gasFee: {
+          amount: Big('0.0005'),
+          asset: bnbToken,
+          amountAtomic: BigInt(50000),
+        },
+        providerFee: {
+          amount: Big('0.25'),
+          asset: btcToken,
+          amountAtomic: BigInt(25000000),
+        },
+        platformFee: {
+          amount: Big('1.5'),
+          asset: btcToken,
+          amountAtomic: BigInt(150000000),
+        },
+      },
     },
     onSubmit: async (_result) => {
       return new Promise<void>((resolve) => {
@@ -59,6 +76,23 @@ export const BuyTokenWithSellTokenErrorSubmitting: Story = {
         asset: bnbToken,
         amount: Big('52.28349'),
         availableAmount: Big('90.48534'),
+      },
+      fees: {
+        gasFee: {
+          amount: Big('0.0005'),
+          asset: bnbToken,
+          amountAtomic: BigInt(50000),
+        },
+        providerFee: {
+          amount: Big('0.25'),
+          asset: btcToken,
+          amountAtomic: BigInt(25000000),
+        },
+        platformFee: {
+          amount: Big('1.5'),
+          asset: btcToken,
+          amountAtomic: BigInt(150000000),
+        },
       },
     },
     onSubmit: () => {
