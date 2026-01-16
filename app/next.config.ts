@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         hostname: 'tokens.pancakeswap.finance',
         pathname: '**',
       },
+      {
+        protocol: 'https',
+        hostname: 'token-registry.s3.amazonaws.com',
+        pathname: '**',
+      },
     ],
   },
 }

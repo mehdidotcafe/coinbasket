@@ -35,7 +35,7 @@ class DevDataSource(DataSource):
         ]
 
     def version(self) -> int:
-        return 2
+        return 3
 
     def _map_raw_token_to_token_similarity(
         self, raw_token: dict[str, Any]
@@ -53,7 +53,7 @@ class DevDataSource(DataSource):
                 raw_token["detail_platforms"]["binance-smart-chain"]["decimal_place"]
             ),
             categories=self._make_categories(raw_token.get("categories")),
-            logo_uri=raw_token["image"].get("small"),
+            logo_uri=f"https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/{address}.png",
             is_canonical=self._is_canonical(raw_token),
             market_cap_usd=int(raw_token["market_data"]["market_cap"].get("usd", 0)),
         )

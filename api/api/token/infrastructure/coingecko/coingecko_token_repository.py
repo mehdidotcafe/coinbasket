@@ -122,7 +122,7 @@ class CoingeckoTokenRepository(TokenRepository):
             description=token.description["en"],
             decimals=token.detail_platforms.binance_smart_chain.decimal_place,
             categories=self._make_categories(token.categories),
-            logo_uri=token.image.small,
+            logo_uri=f"https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/{address}.png",
             market_cap_usd=int(token.market_data.market_cap.usd),
             is_canonical=self._is_canonical(token),
         )

@@ -9,7 +9,7 @@ bnb_token = Token(
     description="Binance native token",
     decimals=18,
     categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Wrapped-Tokens"],
-    logo_uri="https://coin-images.coingecko.com/coins/images/12591/thumb/binance-coin-logo.png",
+    logo_uri="https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png",
 )
 
 
@@ -22,7 +22,7 @@ wbnb_token = Token(
     description="Wrapped BNB a wrapped version of the BNB native tokens on the BEP-20 standard on the Binance Smart Chain and other EVM-compatible chains. Not to be confused with BNB Native Token on the BSC Chain.",
     decimals=18,
     categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Wrapped-Tokens"],
-    logo_uri="https://coin-images.coingecko.com/coins/images/12591/thumb/binance-coin-logo.png",
+    logo_uri="https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png",
 )
 
 eth_token = Token(

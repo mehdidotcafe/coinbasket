@@ -71,7 +71,7 @@ class PancakeswapTokenListDataSource(DataSource):
             categories=[],
             description="",
             decimals=pancakeswap_token.decimals,
-            logo_uri=pancakeswap_token.logoURI,
+            logo_uri=f"https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/{pancakeswap_token.address}.png",
             market_cap_usd=0,
             is_canonical=0,
         )
