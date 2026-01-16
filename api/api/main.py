@@ -488,24 +488,12 @@ async def get_asset_price(request: GetAssetPriceRequest):
     """
     address = cast(Address, request_address_context.get())
 
-    base_token = chain.get_base_token()
-
-    print(f"Base token id: {base_token.id}")
-    print(f"Request asset id: {request.asset_id}")
-    print(f"Request conversion asset id: {request.conversion_asset_id}")
-
-    asset = (
-        base_token
-        if base_token.id.lower() == request.asset_id.lower()
-        else await get_asset_by_id_use_case.execute(request.asset_id)
-    )
+    asset = await get_asset_by_id_use_case.execute(request.asset_id)
     if not asset:
         raise ValueError(f"Asset id {request.asset_id} not found")
 
-    conversion_asset = (
-        base_token
-        if base_token.id.lower() == request.conversion_asset_id.lower()
-        else await get_asset_by_id_use_case.execute(request.conversion_asset_id)
+    conversion_asset = await get_asset_by_id_use_case.execute(
+        request.conversion_asset_id
     )
     if not conversion_asset:
         raise ValueError(f"Conversion asset id {request.conversion_asset_id} not found")
@@ -659,9 +647,7 @@ class IntentOrderRequest(BaseModel):
     async def to_domain(self, id: IntendedOrderId, address: Address):
         sell_asset = None
 
-        if self.sell_asset_id == chain.base_token.id:
-            sell_asset = chain.base_token
-        elif self.sell_asset_id:
+        if self.sell_asset_id:
             sell_asset = await get_asset_by_id_use_case.execute(self.sell_asset_id)
 
             if not sell_asset:
@@ -669,9 +655,7 @@ class IntentOrderRequest(BaseModel):
 
         buy_asset = None
 
-        if self.buy_asset_id == chain.base_token.id:
-            buy_asset = chain.base_token
-        elif self.buy_asset_id:
+        if self.buy_asset_id:
             buy_asset = await get_asset_by_id_use_case.execute(self.buy_asset_id)
 
             if not buy_asset:
