@@ -58,9 +58,6 @@ from api.datetime.infrastructure.python_date_time import PythonDateTime
 from api.shared.http_request.infrastructure.aiohttp_http_request import (
     AiohttpHttpRequest,
 )
-from api.shared.http_request.infrastructure.requests_http_request import (
-    RequestsHttpRequest,
-)
 from api.shared.id_generator.id_generator import IdGenerator
 from api.shared.random_generator.random_generator import RandomGenerator
 from api.investment.infrastructure.zero_x.zero_x_api_client import (
@@ -103,8 +100,6 @@ chain = BscChain(
 
 contract = BscContract(w3=w3)
 
-requests_http_request = RequestsHttpRequest()
-
 aiohttp_http_request = AiohttpHttpRequest()
 
 id_generator = IdGenerator()
@@ -116,7 +111,7 @@ api_client = ZeroXApiClient(
         "zero_x_api_url": configuration.zero_x_api_url,
         "zero_x_api_key": configuration.zero_x_api_key,
     },
-    http_request=requests_http_request,
+    http_request=aiohttp_http_request,
 )
 
 exchange = (
@@ -203,7 +198,7 @@ similarity_storage = QdrantLangChainAssetSimilarityRepository(
 )
 
 token_repository = CoingeckoTokenRepository(
-    requests_http_request,
+    aiohttp_http_request,
     {
         "coingecko_base_url": configuration.coingecko_base_url,
         "coingecko_api_key": configuration.coingecko_api_key,

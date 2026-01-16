@@ -26,7 +26,9 @@ class AiohttpHttpRequest(HttpRequest):
                 timeout=aiohttp.ClientTimeout(total=self.TIMEOUT),
             ) as response:
                 if response.status >= 200 and response.status < 400:
-                    return schema.model_validate(await response.json())
+                    json_response = await response.json()
+
+                    return schema.model_validate(json_response)
 
                 print(f"Failed request: {response.status} {await response.text()}")
 
