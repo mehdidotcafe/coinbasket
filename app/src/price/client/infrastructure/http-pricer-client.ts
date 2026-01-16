@@ -31,7 +31,7 @@ export function httpPricerClient(baseUrl: string): PricerClient {
         body: JSON.stringify({
           buy_asset: AssetDto.toRequest(priceInfo.buyAsset),
           sell_asset: AssetDto.toRequest(priceInfo.sellAsset),
-          sell_asset_amount: priceInfo.sellAssetAmount.toString(),
+          sell_asset_amount: priceInfo.sellAssetAmount.toFixed(),
         }),
       }).then((res) => {
         if (!res.ok) {

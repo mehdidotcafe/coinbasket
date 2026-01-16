@@ -25,7 +25,7 @@ export class BalanceAtomicDto {
   static toRequest(balance: BalanceAtomic) {
     return {
       asset: AssetDto.toRequest(balance.asset),
-      amount: balance.amount.toString(),
+      amount: balance.amount.toFixed(),
     }
   }
 }

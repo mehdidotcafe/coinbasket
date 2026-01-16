@@ -223,13 +223,13 @@ function mapPlannedOrderToForm(plannedOrder: PlannedOrder): FormData {
   return {
     buyAssetWithAmount: {
       asset: plannedOrder.buyAssetWithAmount.asset,
-      amount: plannedOrder.buyAssetWithAmount.amount?.toString() ?? '',
-      availableAmount: plannedOrder.buyAssetWithAmount.availableAmount.toString(),
+      amount: plannedOrder.buyAssetWithAmount.amount?.toFixed() ?? '',
+      availableAmount: plannedOrder.buyAssetWithAmount.availableAmount.toFixed(),
     },
     sellAssetWithAmount: {
       asset: plannedOrder.sellAssetWithAmount.asset,
-      amount: plannedOrder.sellAssetWithAmount.amount?.toString() ?? '',
-      availableAmount: plannedOrder.sellAssetWithAmount.availableAmount.toString(),
+      amount: plannedOrder.sellAssetWithAmount.amount?.toFixed() ?? '',
+      availableAmount: plannedOrder.sellAssetWithAmount.availableAmount.toFixed(),
     },
   }
 }
@@ -278,7 +278,7 @@ function useFormPricer({
           buyAsset: order[asset2].asset,
           sellAssetAmount,
         })
-        form.setValue(`${asset2}.amount`, buyBalance.amount.toString())
+        form.setValue(`${asset2}.amount`, buyBalance.amount.toFixed())
       }
       finally {
         if (blockingReload) {
