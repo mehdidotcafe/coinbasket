@@ -3,6 +3,11 @@ import Big from 'big.js'
 import * as z from 'zod'
 import { AssetDto, AssetResponseSchema } from '@/asset/infrastructure/AssetDto'
 
+export const BalanceResponseSchema = z.object({
+  amount: z.string(),
+  asset: AssetResponseSchema,
+})
+
 export const BalanceAtomicSchema = z.object({
   asset: AssetResponseSchema,
   amount: z.string(),

@@ -18,6 +18,7 @@ from api.conversation.get_conversation_messages_use_case import (
 )
 from api.investment.confirmed_order import ConfirmedOrder, ConfirmedOrderId
 from api.investment.executed_order import ExecutedOrder
+from api.investment.fees import Fees
 from api.investment.intended_order import (
     IntendedOrder,
     IntendedOrderId,
@@ -30,6 +31,7 @@ from api.investment.build_signable_order_use_case import (
 )
 from api.address.address import Address
 
+from api.investment.planned_order import PlannedOrder, PlannedOrderBalance
 from api.investment.signable_order import SignableOrder
 from api.portfolio.get_portfolio_asset_balance_use_case import (
     GetPortfolioAssetBalanceUseCase,
@@ -144,7 +146,9 @@ get_similar_assets_use_case = GetSimilarAssetsUseCase(similarity_storage)
 
 get_all_baskets_use_case = GetAllBasketsUseCase(similarity_storage)
 
-get_asset_by_id_use_case = GetAssetByIdUseCase(similarity_storage)
+get_asset_by_id_use_case = GetAssetByIdUseCase(
+    asset_repository=similarity_storage, chain=chain
+)
 
 generate_auth_nonce_use_case = GenerateAuthNonceUseCase(
     siwe_manager=siwe_manager,
@@ -484,12 +488,24 @@ async def get_asset_price(request: GetAssetPriceRequest):
     """
     address = cast(Address, request_address_context.get())
 
-    asset = await get_asset_by_id_use_case.execute(request.asset_id)
+    base_token = chain.get_base_token()
+
+    print(f"Base token id: {base_token.id}")
+    print(f"Request asset id: {request.asset_id}")
+    print(f"Request conversion asset id: {request.conversion_asset_id}")
+
+    asset = (
+        base_token
+        if base_token.id.lower() == request.asset_id.lower()
+        else await get_asset_by_id_use_case.execute(request.asset_id)
+    )
     if not asset:
         raise ValueError(f"Asset id {request.asset_id} not found")
 
-    conversion_asset = await get_asset_by_id_use_case.execute(
-        request.conversion_asset_id
+    conversion_asset = (
+        base_token
+        if base_token.id.lower() == request.conversion_asset_id.lower()
+        else await get_asset_by_id_use_case.execute(request.conversion_asset_id)
     )
     if not conversion_asset:
         raise ValueError(f"Conversion asset id {request.conversion_asset_id} not found")
@@ -735,6 +751,66 @@ class SignableOrderResponse(BaseModel):
         )
 
 
+class PlannedOrderAssetWithAmountResponse(BaseModel):
+    asset: AssetResponse
+    available_amount: str
+    amount: str | None
+
+    @staticmethod
+    def from_domain(
+        domain: PlannedOrderBalance,
+    ) -> "PlannedOrderAssetWithAmountResponse":
+        return PlannedOrderAssetWithAmountResponse(
+            asset=TokenResponse.from_domain(domain.asset)
+            if isinstance(domain.asset, Token)
+            else BasketResponse.from_domain(domain.asset),
+            amount=format(domain.amount, "f") if domain.amount is not None else None,
+            available_amount=format(domain.available_amount, "f"),
+        )
+
+
+class FeesResponse(BaseModel):
+    gas_fee: BalanceAtomicResponse | None
+    provider_fee: BalanceAtomicResponse | None
+    platform_fee: BalanceAtomicResponse | None
+
+    @staticmethod
+    def from_domain(fees: Fees) -> "FeesResponse":
+        return FeesResponse(
+            gas_fee=BalanceAtomicResponse.from_domain(fees.gas_fee)
+            if fees.gas_fee
+            else None,
+            provider_fee=BalanceAtomicResponse.from_domain(fees.provider_fee)
+            if fees.provider_fee
+            else None,
+            platform_fee=BalanceAtomicResponse.from_domain(fees.platform_fee)
+            if fees.platform_fee
+            else None,
+        )
+
+
+class PlannedOrderResponse(BaseModel):
+    id: str
+    address: str
+    sell_asset_with_amount: PlannedOrderAssetWithAmountResponse
+    buy_asset_with_amount: PlannedOrderAssetWithAmountResponse
+    fees: FeesResponse
+
+    @staticmethod
+    def from_domain(domain: PlannedOrder) -> "PlannedOrderResponse":
+        return PlannedOrderResponse(
+            id=domain.id,
+            address=domain.address,
+            sell_asset_with_amount=PlannedOrderAssetWithAmountResponse.from_domain(
+                domain.sell_asset_with_amount
+            ),
+            buy_asset_with_amount=PlannedOrderAssetWithAmountResponse.from_domain(
+                domain.buy_asset_with_amount
+            ),
+            fees=FeesResponse.from_domain(domain.fees),
+        )
+
+
 @tool(parse_docstring=True)
 async def plan_and_execute_swap_order(
     intended_order_request: IntentOrderRequest,
@@ -744,6 +820,7 @@ async def plan_and_execute_swap_order(
     Pass asset_id as they are don't change them.
     IMPORTANT: You can make a swap by providing both a buy_asset_id and a sell_asset_id.
     IMPORTANT: You don't need to know the amount to buy, sell, swap an asset in advance. You can leave the amount fields empty (set to None) and the agent will decide the amount to buy or sell based on the available cash and holdings.
+    IMPORTANT: Amount should be related to the buy or sell asset only. If user wants to buy or sell from a dollars or euro amount you first have to convert it to the related asset amount using the get_asset_price tool.
     IMPORTANT: Do not call another tool if this returns results.
 
     Args:
@@ -782,7 +859,9 @@ async def plan_and_execute_swap_order(
                     "ui": {
                         "id": "confirm_planned_order",
                         "args": {
-                            "planned_order": planned_order.to_dict(),
+                            "planned_order": PlannedOrderResponse.from_domain(
+                                planned_order
+                            ).model_dump(),
                         },
                     },
                     "content": None,
@@ -945,11 +1024,12 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
         prompt=SystemMessage(
             "\n".join(
                 [
-                    "Your goal is to manage a portfolio made of assets. An asset is either a token or a basket.  ",
-                    "Users can buy, sell, or swap assets in their portfolio.  ",
+                    "Your goal is to manage a portfolio made of assets on the BNB Chain. An asset is either a token or a basket.  ",
+                    "Users can buy, sell, or swap assets in their portfolio by placing orders.  ",
                     "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'.  ",
                     "ALWAYS use a tool to fetch an asset address when you need it.  ",
                     "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
+                    "If the user provides an amount in dollars or euro, ALWAYS first convert it to the related asset amount using the get_asset_price tool and then provide the computed amount to the plan_and_execute_swap_order tool.  ",
                     "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
                     "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
                     "Consider all tool parameters optional unless explicitly stated otherwise.",
@@ -1048,6 +1128,7 @@ class BalanceResponse(BaseModel):
 class ConvertedBalanceResponse(BaseModel):
     sell_balance: BalanceResponse
     buy_balance: BalanceResponse
+    fees: FeesResponse
 
     @staticmethod
     def from_domain(
@@ -1056,6 +1137,7 @@ class ConvertedBalanceResponse(BaseModel):
         return ConvertedBalanceResponse(
             sell_balance=BalanceResponse.from_domain(converted_balance.sell_balance),
             buy_balance=BalanceResponse.from_domain(converted_balance.buy_balance),
+            fees=FeesResponse.from_domain(converted_balance.fees),
         )
 
 

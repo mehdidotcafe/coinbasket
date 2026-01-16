@@ -1,10 +1,12 @@
 import type { Asset } from '@/asset/Asset'
 import type { Balance } from '@/balance/Balance'
 import type { BalanceAtomic } from '@/balance/BalanceAtomic'
+import type { Fees } from '@/fee/fees'
 
 export interface ConvertedBalance {
-  sellBalance: Balance
-  buyBalance: Balance
+    sellBalance: Balance
+    buyBalance: Balance
+    fees: Fees
 }
 
 interface PortfolioBalance {

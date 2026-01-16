@@ -8,6 +8,7 @@ from api.investment.calculator.asset_balance_converter import (
     ConvertedBalance,
 )
 from api.investment.exchange.exchange import ExchangeConvertedBalance, Exchange
+from api.investment.fees import Fees
 from api.investment.investment_parameters import InvestmentParameters
 from api.portfolio.holding.holding import Holding
 from api.portfolio.holding.holding_repository import (
@@ -70,6 +71,20 @@ def address():
 
 
 @fixture
+def fees():
+    return Fees(
+        gas_fee=None,
+        provider_fee=None,
+        platform_fee=BalanceAtomic(
+            asset=btc_token,
+            amount=Decimal("0.0000001"),
+            amount_atomic=1,
+            decimals=18,
+        ),
+    )
+
+
+@fixture
 def use_case(
     holding_repository: HoldingRepository,
     exchange: Exchange,
@@ -93,6 +108,7 @@ async def test_get_portfolio_use_case_only_available_balance(
     exchange: Exchange,
     investment_parameters: InvestmentParameters,
     address: Address,
+    fees: Fees,
 ):
     chain.get_native_token_balance.return_value = BalanceAtomic(
         asset=bnb_token,
@@ -115,6 +131,7 @@ async def test_get_portfolio_use_case_only_available_balance(
                 amount_atomic=800000 * 10**18,
                 decimals=18,
             ),
+            fees=fees,
         ),
     ]
 
@@ -167,6 +184,7 @@ async def test_get_portfolio_use_case_holding_balances(
     asset_balance_converter: AssetBalanceConverter,
     small_balance_policy: SmallBalancePolicy,
     address: Address,
+    fees: Fees,
 ):
     holding_balances: list[Holding] = [
         Holding(
@@ -250,7 +268,9 @@ async def test_get_portfolio_use_case_holding_balances(
                     amount_atomic=800 * 10**18,
                     decimals=18,
                 ),
+                fees=fees,
             ),
+            fees=fees,
             balances=[],
         ),
         ConvertedAssetBalance(
@@ -267,8 +287,10 @@ async def test_get_portfolio_use_case_holding_balances(
                     amount_atomic=600 * 10**18,
                     decimals=18,
                 ),
+                fees=fees,
             ),
             balances=[],
+            fees=fees,
         ),
         ConvertedAssetBalance(
             total_balance=ConvertedBalance(
@@ -284,8 +306,10 @@ async def test_get_portfolio_use_case_holding_balances(
                     amount_atomic=1 * 10**15,
                     decimals=18,
                 ),
+                fees=fees,
             ),
             balances=[],
+            fees=fees,
         ),
         ConvertedAssetBalance(
             total_balance=ConvertedBalance(
@@ -301,8 +325,10 @@ async def test_get_portfolio_use_case_holding_balances(
                     amount_atomic=36 * 10**18,
                     decimals=18,
                 ),
+                fees=fees,
             ),
             balances=[],
+            fees=fees,
         ),
     ]
 
@@ -315,6 +341,7 @@ async def test_get_portfolio_use_case_holding_balances(
             buy_balance=BalanceAtomic(
                 asset=usdt_token, amount=Decimal("0"), amount_atomic=0, decimals=18
             ),
+            fees=fees,
         ),
     ]
     small_balance_policy.is_small_balance.side_effect = [False, False, True, False]
@@ -423,6 +450,7 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
     asset_balance_converter: AssetBalanceConverter,
     small_balance_policy: SmallBalancePolicy,
     address: Address,
+    fees: Fees,
 ):
     holding_balances: list[Holding] = [
         Holding(
@@ -454,8 +482,10 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
                     amount_atomic=1 * 10**15,
                     decimals=18,
                 ),
+                fees=fees,
             ),
             balances=[],
+            fees=fees,
         ),
         ConvertedAssetBalance(
             total_balance=ConvertedBalance(
@@ -471,8 +501,10 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
                     amount_atomic=9 * 10**18,
                     decimals=18,
                 ),
+                fees=fees,
             ),
             balances=[],
+            fees=fees,
         ),
     ]
 
@@ -485,6 +517,7 @@ async def test_get_portfolio_use_case_holding_balances_conversion_token_not_usd(
             buy_balance=BalanceAtomic(
                 asset=usdt_token, amount=Decimal("0"), amount_atomic=0, decimals=18
             ),
+            fees=fees,
         ),
     ]
     small_balance_policy.is_small_balance.return_value = True
@@ -516,6 +549,7 @@ async def test_get_portfolio_use_case_total_balance(
     asset_balance_converter: AssetBalanceConverter,
     small_balance_policy: SmallBalancePolicy,
     address: Address,
+    fees: Fees,
 ):
     holding_balances = [
         Holding(
@@ -552,8 +586,10 @@ async def test_get_portfolio_use_case_total_balance(
                     amount_atomic=3956 * 10**18,
                     decimals=18,
                 ),
+                fees=fees,
             ),
             balances=[],
+            fees=fees,
         ),
     ]
 
@@ -571,6 +607,7 @@ async def test_get_portfolio_use_case_total_balance(
                 amount_atomic=800000 * 10**18,
                 decimals=18,
             ),
+            fees=fees,
         ),
     ]
 

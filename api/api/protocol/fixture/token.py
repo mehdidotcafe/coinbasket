@@ -45,7 +45,12 @@ btc_token = Token(
     address="0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
     description="Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",
     decimals=18,
-    categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Harmony Ecosystem"],
+    categories=[
+        "Crypto-Backed Tokens",
+        "BNB Chain Ecosystem",
+        "Harmony Ecosystem",
+        "Bitcoin Ecosystem",
+    ],
     logo_uri="https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png",
 )
 

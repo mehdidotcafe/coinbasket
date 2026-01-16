@@ -43,6 +43,7 @@ from api.protocol.fixture.token import bnb_token, eth_token
 from web3 import AsyncWeb3
 from web3.eth import Eth
 from eth_account.signers.local import LocalAccount
+from api.investment.fees import Fees as InvestmentFees
 
 
 @fixture
@@ -79,10 +80,11 @@ def contract():
 
 
 @fixture
-def configuration():
+def configuration() -> dict[str, Decimal | str]:
     return {
         "bsc_rpc_url": "https://bsc-dataseed.binance.org/",
-        "private_key": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        "fee_integrator_address": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        "fee_value_in_percentage": Decimal("0.15"),
     }
 
 
@@ -394,6 +396,116 @@ async def test_zero_x_swapper_convert_balance_to_token_swap_validation_failed(
             amount_atomic=0,
             decimals=10,
         ),
+        fees=InvestmentFees(),
     )
 
     chain.get_token_decimals.assert_awaited_once_with(eth_token.address)
+
+
+@mark.asyncio
+async def test_zero_x_swapper_convert_balance_to_token_same_token(
+    zero_x_swapper: ZeroXSwapper,
+    chain: Chain,
+    address: Address,
+):
+    exchange_converted_balance = await zero_x_swapper.convert_balance_to_asset(
+        taker=address,
+        balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        asset=eth_token,
+        investment_parameters=InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+        ),
+    )
+
+    assert exchange_converted_balance == ExchangeConvertedBalance(
+        sell_balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        buy_balance=BalanceAtomic(
+            asset=eth_token,
+            amount=Decimal(1),
+            amount_atomic=1 * 10**18,
+            decimals=18,
+        ),
+        fees=InvestmentFees(),
+    )
+
+
+@mark.asyncio
+async def test_zero_x_swapper_convert_balance_to_token_success(
+    zero_x_swapper: ZeroXSwapper,
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    address: Address,
+):
+    chain.is_native_token.return_value = False
+
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254000000000000000",
+        sellAmount="1000000000000000000",
+        buyToken=eth_token.address,
+        sellToken=bnb_token.address,
+        fees=Fees(
+            integratorFee=Fee(
+                amount="1000000000000000",
+                token=eth_token.address,
+                type="volume",
+            ),
+            zeroExFee=Fee(
+                amount="500000000000000",
+                token=eth_token.address,
+                type="volume",
+            ),
+            gasFee=Fee(
+                amount="200000000000000",
+                token=bnb_token.address,
+                type="fixed",
+            ),
+        ),
+    )
+
+    exchange_converted_balance = await zero_x_swapper.convert_balance_to_asset(
+        taker=address,
+        balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        asset=bnb_token,
+        investment_parameters=InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+        ),
+    )
+
+    assert exchange_converted_balance == ExchangeConvertedBalance(
+        sell_balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        buy_balance=BalanceAtomic(
+            asset=bnb_token,
+            amount=Decimal("0.254"),
+            amount_atomic=254000000000000000,
+            decimals=18,
+        ),
+        fees=InvestmentFees(
+            provider_fee=BalanceAtomic(
+                amount=Decimal("0.0005"),
+                amount_atomic=500000000000000,
+                decimals=18,
+                asset=eth_token,
+            ),
+            platform_fee=BalanceAtomic(
+                amount=Decimal("0.001"),
+                amount_atomic=1000000000000000,
+                decimals=18,
+                asset=eth_token,
+            ),
+            gas_fee=BalanceAtomic(
+                amount=Decimal("0.0002"),
+                amount_atomic=200000000000000,
+                decimals=18,
+                asset=bnb_token,
+            ),
+        ),
+    )

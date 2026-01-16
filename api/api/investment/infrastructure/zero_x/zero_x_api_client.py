@@ -7,7 +7,9 @@ from api.shared.http_request.exception.failed_request import FailedRequest
 from api.shared.http_request.http_request import HttpRequest
 from api.investment.infrastructure.zero_x.price import Price
 from api.investment.infrastructure.zero_x.quote import QuoteResult
-from api.investment.investment_parameters import InvestmentParameters
+from api.investment.investment_parameters import (
+    InvestmentParametersWithFee,
+)
 
 
 class Configuration(TypedDict):
@@ -34,7 +36,7 @@ class ZeroXApiClient:
         sell_token: str,
         buy_token: str,
         amount: int,
-        investment_parameters: InvestmentParameters,
+        investment_parameters_with_fee: InvestmentParametersWithFee,
         sell_entire_balance: bool | None = None,
         slippage_bps: Decimal | None = None,
     ) -> Price:
@@ -45,7 +47,7 @@ class ZeroXApiClient:
             buy_token,
             amount,
             taker,
-            investment_parameters,
+            investment_parameters_with_fee,
             sell_entire_balance,
             slippage_bps,
         )
@@ -72,7 +74,7 @@ class ZeroXApiClient:
         sell_token: str,
         buy_token: str,
         amount: int,
-        investment_parameters: InvestmentParameters,
+        investment_parameters_with_fee: InvestmentParametersWithFee,
         sell_entire_balance: bool | None = None,
         slippage_bps: Decimal | None = None,
     ) -> QuoteResult:
@@ -83,7 +85,7 @@ class ZeroXApiClient:
             buy_token,
             amount,
             taker,
-            investment_parameters,
+            investment_parameters_with_fee,
             sell_entire_balance,
             slippage_bps,
         )
@@ -104,7 +106,7 @@ class ZeroXApiClient:
         buy_token: str,
         amount: int,
         taker: str,
-        investment_parameters: InvestmentParameters,
+        investment_parameters_with_fee: InvestmentParametersWithFee,
         sell_entire_balance: bool | None = None,
         slippage_bps: Decimal | None = None,
     ) -> dict[str, str | int]:
@@ -122,15 +124,15 @@ class ZeroXApiClient:
         if slippage_bps is not None:
             params["slippageBps"] = int(slippage_bps)
 
-        if investment_parameters.integrator_fee is not None:
-            params["swapFeeRecipient"] = investment_parameters.integrator_fee.recipient
+        if investment_parameters_with_fee.integrator_fee is not None:
+            params["swapFeeRecipient"] = (
+                investment_parameters_with_fee.integrator_fee.recipient
+            )
             params["swapFeeBps"] = int(
                 self.__percentage_to_bps(
-                    investment_parameters.integrator_fee.value_in_percentage
+                    investment_parameters_with_fee.integrator_fee.value_in_percentage
                 )
             )
-            params["swapFeeToken"] = investment_parameters.integrator_fee.token.address
-
         return params
 
     def __percentage_to_bps(self, percentage: Decimal) -> Decimal:

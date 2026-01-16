@@ -6,6 +6,7 @@ from api.investment.calculator.asset_balance_converter import (
     AssetBalanceConverter,
 )
 from api.investment.exchange.exchange import Exchange
+from api.investment.fees import Fees
 from api.investment.intended_order import IntendedOrder
 from api.investment.investment_parameters import InvestmentParameters
 
@@ -97,6 +98,7 @@ class PlanOrderUseCase:
                     amount=converted_asset_balance.total_balance.buy_balance.amount,
                     available_amount=buy_asset_available_amount,
                 ),
+                fees=converted_asset_balance.fees,
             )
 
         if (
@@ -140,6 +142,7 @@ class PlanOrderUseCase:
                     amount=converted_balance.sell_balance.amount,
                     available_amount=buy_asset_available_amount,
                 ),
+                fees=converted_balance.fees,
             )
 
         return PlannedOrder(
@@ -155,6 +158,7 @@ class PlanOrderUseCase:
                 amount=None,
                 available_amount=buy_asset_available_amount,
             ),
+            fees=Fees(),
         )
 
     def _get_available_amount(

@@ -1,5 +1,6 @@
 from decimal import Decimal
 from api.investment.confirmed_order import ConfirmedOrder
+from api.investment.fees import Fees
 from api.investment.planned_order import PlannedOrder, PlannedOrderBalance
 from api.investment.signable_order import SignableOrder
 from pytest import fixture
@@ -7,6 +8,7 @@ import requests
 from environs import env
 from api.protocol.fixture.token import btc_token, eth_token
 from syrupy.filters import paths
+from api.chain.balance import BalanceAtomic
 
 from api.test.database.cleanup_all import cleanup_all  # noqa: F401
 from api.test.database.seed_fixtures import seed_fixtures  # noqa: F401
@@ -31,6 +33,26 @@ def planned_orders():
                 asset=eth_token,
                 amount=Decimal("1.0"),
                 available_amount=Decimal("2.0"),
+            ),
+            fees=Fees(
+                gas_fee=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("0.03"),
+                    amount_atomic=30000000000000000,
+                    decimals=18,
+                ),
+                provider_fee=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("0.08"),
+                    amount_atomic=80000000000000000,
+                    decimals=18,
+                ),
+                platform_fee=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("0.01"),
+                    amount_atomic=10000000000000000,
+                    decimals=18,
+                ),
             ),
         ),
     ]

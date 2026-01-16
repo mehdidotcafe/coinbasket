@@ -8,6 +8,7 @@ from api.investment.calculator.asset_balance_converter import (
     ConvertedBalance,
 )
 from api.investment.exchange.exchange import Exchange, ExchangeConvertedBalance
+from api.investment.fees import Fees
 from api.protocol.token import Token
 from pytest import fixture, mark
 
@@ -35,6 +36,16 @@ def exchange():
                 amount=balance.amount * Decimal("10"),
                 amount_atomic=balance.amount_atomic * 10,
                 decimals=18,
+            ),
+            fees=Fees(
+                gas_fee=None,
+                provider_fee=None,
+                platform_fee=BalanceAtomic(
+                    asset=btc_token,
+                    amount=Decimal("0.0000001"),
+                    amount_atomic=1,
+                    decimals=18,
+                ),
             ),
         )
     )
@@ -78,6 +89,16 @@ async def test_asset_balance_converter_sell_basket_to_buy_token(
             amount_atomic=500 * 10**18,
             decimals=18,
         ),
+        fees=Fees(
+            gas_fee=None,
+            provider_fee=None,
+            platform_fee=BalanceAtomic(
+                asset=btc_token,
+                amount=Decimal("0.0000001"),
+                amount_atomic=1,
+                decimals=18,
+            ),
+        ),
     )
 
     assert convert_asset_balance.balances == []
@@ -91,11 +112,20 @@ async def test_asset_balance_converter_buy_basket_to_sell_token(
     sell_balance = BalanceAtomic[Token](
         asset=sol_token, amount=Decimal("88"), amount_atomic=88 * 10**18, decimals=18
     )
-
     convert_asset_balance = await asset_balance_converter.convert(
         taker, sell_balance, test_basket
     )
 
+    assert convert_asset_balance.fees == Fees(
+        gas_fee=None,
+        provider_fee=None,
+        platform_fee=BalanceAtomic(
+            asset=btc_token,
+            amount=Decimal("0.0000001"),
+            amount_atomic=1,
+            decimals=18,
+        ),
+    )
     assert convert_asset_balance.total_balance == ConvertedBalance(
         sell_balance=BalanceAtomic(
             asset=sol_token,
@@ -108,6 +138,16 @@ async def test_asset_balance_converter_buy_basket_to_sell_token(
             amount=Decimal("880"),
             amount_atomic=880 * 10**18,
             decimals=18,
+        ),
+        fees=Fees(
+            gas_fee=None,
+            provider_fee=None,
+            platform_fee=BalanceAtomic(
+                asset=btc_token,
+                amount=Decimal("0.0000001"),
+                amount_atomic=1,
+                decimals=18,
+            ),
         ),
     )
     assert convert_asset_balance.balances == []
@@ -138,6 +178,16 @@ async def test_asset_balance_converter_sell_token_to_buy_token(
             amount=Decimal("880"),
             amount_atomic=880 * 10**18,
             decimals=18,
+        ),
+        fees=Fees(
+            gas_fee=None,
+            provider_fee=None,
+            platform_fee=BalanceAtomic(
+                asset=btc_token,
+                amount=Decimal("0.0000001"),
+                amount_atomic=1,
+                decimals=18,
+            ),
         ),
     )
     assert convert_asset_balance.balances == []
