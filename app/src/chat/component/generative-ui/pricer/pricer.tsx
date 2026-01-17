@@ -266,31 +266,44 @@ function BottomSwapArrow() {
   )
 }
 
-interface FeeRowProps {
+interface AmountRowProps {
   label: string
-  fee?: { amount: Big, asset: { ticker: string } }
+  amountElement: React.ReactNode
   tooltip?: string
-  icon: string
+  icon?: string
 }
 
-function FeeRow({ label, fee, tooltip, icon }: FeeRowProps) {
+function FeeAmount({ amount, asset, label }: { amount?: Big, asset?: { ticker: string }, label: string }) {
+  return (
+    <span className="text-sm" aria-label={label}>
+      {amount && asset ? `${amount.toFixed(NB_DECIMALS)} ${asset.ticker}` : <span className="text-secondary font-sofia-sans font-bold">Free</span>}
+    </span>
+  )
+}
+
+function AmountRow({ label, amountElement, tooltip, icon }: AmountRowProps) {
   return (
     <div className="flex items-center justify-between py-1">
       <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-        <Image
-          className="rounded-full bg-white border shadow-sm mr-1 w-[20px] h-[20px]"
-          width={20}
-          height={20}
-          src={icon}
-          alt="Fee icon"
-        />
+        {icon
+          ? (
+            <Image
+              className="rounded-full bg-white border shadow-sm mr-1 w-[20px] h-[20px]"
+              width={20}
+              height={20}
+              src={icon}
+              alt="Fee icon"
+            />
+          )
+          : <span className="w-[20px] h-[20px] mr-1" />}
         <label className="min-w-[85px]">{label}</label>
         {tooltip && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 cursor-help">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="size-4">
+                <path fillRule="evenodd" d="M15 8A7 7 0 1 1 1 8a7 7 0 0 1 14 0ZM9 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM6.75 8a.75.75 0 0 0 0 1.5h.75v1.75a.75.75 0 0 0 1.5 0v-2.5A.75.75 0 0 0 8.25 8h-1.5Z" clipRule="evenodd" />
               </svg>
+
             </TooltipTrigger>
             <TooltipContent>
               <p>{tooltip}</p>
@@ -298,9 +311,7 @@ function FeeRow({ label, fee, tooltip, icon }: FeeRowProps) {
           </Tooltip>
         )}
       </div>
-      <span className="text-sm" aria-label={label}>
-        {fee ? `${fee.amount.toFixed(NB_DECIMALS)} ${fee.asset.ticker}` : <span className="text-secondary font-sofia-sans font-bold">Free</span>}
-      </span>
+      {amountElement}
     </div>
   )
 }
@@ -312,23 +323,50 @@ interface FeesDisplayProps {
 function FeesDisplay({ fees }: FeesDisplayProps) {
   return (
     <div className="w-full mt-4">
-      <FeeRow
+      <AmountRow
         label="Platform fee"
-        fee={fees?.platformFee}
+        amountElement={(
+          <FeeAmount
+            amount={fees?.platformFee?.amount}
+            asset={fees?.platformFee?.asset}
+            label="Platform fee"
+          />
+        )}
         tooltip="Fee charged by coinbasket"
         icon="/logo/coinbasket-icon.png"
       />
-      <FeeRow
+      <AmountRow
         label="Provider fee"
-        fee={fees?.providerFee}
-        tooltip="Fee charged by the smart router"
+        amountElement={(
+          <FeeAmount
+            amount={fees?.providerFee?.amount}
+            asset={fees?.providerFee?.asset}
+            label="Provider fee"
+          />
+        )}
+        tooltip="Fee charged by the smart router provider"
         icon="/logo/0x.svg"
       />
-      <FeeRow
+      <AmountRow
         label="Network cost"
-        fee={fees?.gasFee}
+        amountElement={(
+          <FeeAmount
+            amount={fees?.gasFee?.amount}
+            asset={fees?.gasFee?.asset}
+            label="Network cost"
+          />
+        )}
         tooltip="Estimated gas fee for the transaction"
         icon="/logo/bnb.svg"
+      />
+      <AmountRow
+        label="Max slippage"
+        amountElement={(
+          <span className="text-sm" aria-label="Max slippage">
+            1.00%
+          </span>
+        )}
+        tooltip="Maximum allowed slippage for the transaction. If the price changes more than this value, the transaction will revert."
       />
     </div>
   )
