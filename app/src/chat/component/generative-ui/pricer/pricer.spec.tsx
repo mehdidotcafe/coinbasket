@@ -574,3 +574,34 @@ describe('fee estimation', () => {
     })
   })
 })
+
+describe('slippage', () => {
+  it('should display max slippage', () => {
+    const { getByText, getByLabelText } = renderComponent({
+      plannedOrder: {
+        id: 'planned-order-1',
+        buyAssetWithAmount: {
+          asset: aiBasket,
+          amount: Big(10),
+          availableAmount: Big(20),
+        },
+        sellAssetWithAmount: {
+          asset: bnbToken,
+          amount: Big(5),
+          availableAmount: Big(10),
+        },
+        fees: {
+          gasFee: undefined,
+          providerFee: undefined,
+          platformFee: undefined,
+        },
+      },
+    })
+
+    const slippageElement = getByText(/Max slippage/i)
+    const slippageValue = getByLabelText(/Max slippage/i)
+
+    expect(slippageElement).toBeDefined()
+    expect(slippageValue.textContent).to.equal('1.00%')
+  })
+})
