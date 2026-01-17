@@ -1,3 +1,4 @@
+from decimal import Decimal
 from api.address.address import Address
 from api.chain.balance import Balance, BalanceAtomic
 from api.investment.exchange.exchange import (
@@ -6,8 +7,10 @@ from api.investment.exchange.exchange import (
     ExchangeSignableSwap,
     SignableTransaction,
 )
+from api.investment.fees import Fees
 from api.investment.investment_parameters import InvestmentParameters
 from api.protocol.asset import Asset
+from api.protocol.fixture.token import bnb_token
 
 
 class TestExchange(Exchange):
@@ -55,6 +58,26 @@ class TestExchange(Exchange):
                 amount=balance.amount * 2,
                 amount_atomic=balance.amount_atomic * 2,
                 decimals=asset.decimals,
+            ),
+            fees=Fees(
+                gas_fee=BalanceAtomic(
+                    asset=bnb_token,
+                    amount=Decimal("0.00015"),
+                    amount_atomic=15000,
+                    decimals=asset.decimals,
+                ),
+                provider_fee=BalanceAtomic(
+                    asset=asset,
+                    amount=Decimal("0.0003"),
+                    amount_atomic=30000,
+                    decimals=asset.decimals,
+                ),
+                platform_fee=BalanceAtomic(
+                    asset=asset,
+                    amount=Decimal("0.0001"),
+                    amount_atomic=10000,
+                    decimals=asset.decimals,
+                ),
             ),
         )
 

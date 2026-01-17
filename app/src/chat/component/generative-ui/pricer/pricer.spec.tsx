@@ -51,6 +51,27 @@ vi.mock('wagmi', async () => {
 const registry: Pick<Registry, 'pricerClient' | 'apiClient'> = {
   pricerClient: {
     getPrice: vi.fn().mockImplementation(async ({ buyAsset, sellAsset, sellAssetAmount }) => {
+      const fees = {
+        platformFee: {
+          asset: ethToken,
+          amount: Big('0.2'),
+          amountAtomic: BigInt('200000000000000000'),
+          decimals: ethToken.decimals,
+        },
+        providerFee: {
+          asset: solToken,
+          amount: Big('0.00018'),
+          amountAtomic: BigInt('180000000000000'),
+          decimals: solToken.decimals,
+        },
+        gasFee: {
+          asset: bnbToken,
+          amount: Big('0.00042'),
+          amountAtomic: BigInt('420000000000000'),
+          decimals: bnbToken.decimals,
+        },
+      }
+
       if (buyAsset.ticker === 'ETH' && sellAsset.ticker === 'BNB') {
         return {
           buyBalance: {
@@ -61,6 +82,7 @@ const registry: Pick<Registry, 'pricerClient' | 'apiClient'> = {
             asset: bnbToken,
             amount: sellAssetAmount,
           },
+          fees,
         }
       }
 
@@ -74,6 +96,7 @@ const registry: Pick<Registry, 'pricerClient' | 'apiClient'> = {
             asset: bnbToken,
             amount: Big(90),
           },
+          fees,
         }
       }
 
@@ -89,6 +112,7 @@ const registry: Pick<Registry, 'pricerClient' | 'apiClient'> = {
             asset: usdtToken,
             amount: sellAssetAmount,
           },
+          fees,
         }
       }
 
@@ -101,6 +125,7 @@ const registry: Pick<Registry, 'pricerClient' | 'apiClient'> = {
           asset: buyAsset,
           amount: Big('0'),
         },
+        fees,
       }
     }),
   },
@@ -240,12 +265,36 @@ describe('validation', () => {
   })
 })
 
-it('should render sell and buy asset inputs for each step', () => {
-  const { getByLabelText } = renderComponent({
-    plannedOrder: {
+describe('amount inputs', () => {
+  it('should render sell and buy asset inputs for each step', () => {
+    const { getByLabelText } = renderComponent({
+      plannedOrder: {
+        id: 'planned-order-1',
+        buyAssetWithAmount: {
+          asset: aiBasket,
+          amount: Big(10),
+          availableAmount: Big(20),
+        },
+        sellAssetWithAmount: {
+          asset: bnbToken,
+          amount: Big(5),
+          availableAmount: Big(10),
+        },
+      },
+    })
+
+    const sellAssetInput = getByLabelText('Sell') as HTMLInputElement
+    const buyAssetInput = getByLabelText('Buy') as HTMLInputElement
+
+    expect(sellAssetInput.value).to.equal('5')
+    expect(buyAssetInput.value).to.equal('10')
+  })
+
+  describe('when updating an input', () => {
+    const plannedOrder = {
       id: 'planned-order-1',
       buyAssetWithAmount: {
-        asset: aiBasket,
+        asset: ethToken,
         amount: Big(10),
         availableAmount: Big(20),
       },
@@ -254,17 +303,166 @@ it('should render sell and buy asset inputs for each step', () => {
         amount: Big(5),
         availableAmount: Big(10),
       },
-    },
+    }
+
+    it('should call pricer client only once when SELL input is typed several times in a row', async () => {
+      const { getByLabelText } = renderComponent({
+        plannedOrder,
+      })
+
+      const sellAssetInput = getByLabelText('Sell') as HTMLInputElement
+
+      await userEvent.clear(sellAssetInput)
+      await userEvent.type(sellAssetInput, '20')
+      await userEvent.type(sellAssetInput, '.3883')
+
+      await waitFor(() => {
+        expect(registry.pricerClient.getPrice).toHaveBeenCalledOnce()
+      })
+    })
+
+    it('should update both input values and call pricer client when SELL asset is changed', async () => {
+      const { getByLabelText } = renderComponent({
+        plannedOrder,
+      })
+
+      const sellAssetInput = getByLabelText('Sell') as HTMLInputElement
+
+      await userEvent.clear(sellAssetInput)
+      await userEvent.type(sellAssetInput, '20.3883')
+
+      await waitFor(() => {
+        expect(sellAssetInput.value).to.equal('20.3883')
+        const buyAssetInput = getByLabelText('Buy') as HTMLInputElement
+        expect(buyAssetInput.value).to.equal('75')
+      })
+    })
+
+    it('should display loader when fetching price after manual input', async () => {
+      const { getByLabelText, getByRole } = renderComponent({
+        plannedOrder: {
+          id: 'planned-order-1',
+          buyAssetWithAmount: {
+            asset: solToken,
+            amount: Big(10),
+            availableAmount: Big(20),
+          },
+          sellAssetWithAmount: {
+            asset: usdtToken,
+            amount: Big(5),
+            availableAmount: Big(10),
+          },
+        },
+      })
+
+      const sellAssetInput = getByLabelText('Sell') as HTMLInputElement
+
+      await userEvent.clear(sellAssetInput)
+      await userEvent.type(sellAssetInput, '20.3883')
+
+      waitFor(() => {
+        const loader = getByRole('status')
+        expect(loader).toBeDefined()
+      })
+    })
+
+    describe('buy token auto update', () => {
+      beforeAll(() => {
+        vi.useFakeTimers()
+      })
+
+      afterAll(() => {
+        vi.useRealTimers()
+      })
+
+      it('should update buy asset automatically after 20 seconds', async () => {
+        const { getByLabelText } = renderComponent({
+          plannedOrder,
+        })
+
+        await vi.advanceTimersByTimeAsync(21000)
+
+        const buyAssetInput = getByLabelText('Buy') as HTMLInputElement
+        expect(buyAssetInput.value).to.equal('75')
+      })
+    })
+
+    describe('when submitting the form', () => {
+      const plannedOrder = {
+        id: 'planned-order-1',
+        buyAssetWithAmount: {
+          asset: ethToken,
+          amount: Big(10.29834),
+          availableAmount: Big(20),
+        },
+        sellAssetWithAmount: {
+          asset: bnbToken,
+          amount: Big(5.23883),
+          availableAmount: Big(10),
+        },
+      }
+
+      it('should submit the form with status confirm and correct values', async () => {
+        const onSubmit = vi.fn()
+        const { findByRole } = renderComponent({
+          plannedOrder,
+          onSubmit,
+        })
+
+        const swapButton = await findByRole('button', { name: /confirm/i }) as HTMLButtonElement
+
+        await userEvent.click(swapButton)
+
+        await waitFor(() => {
+          expect(onSubmit).toHaveBeenCalledWith({
+            status: 'CONFIRM',
+            signableOrderId: '1',
+            transactionHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+          })
+        })
+      })
+
+      it('should submit the form with status cancel and empty steps', async () => {
+        const onSubmit = vi.fn()
+        const { findByRole } = renderComponent({
+          plannedOrder,
+          onSubmit,
+        })
+
+        const cancelButton = await findByRole('button', { name: /cancel/i }) as HTMLButtonElement
+
+        await userEvent.click(cancelButton)
+
+        expect(onSubmit).toHaveBeenCalledWith({
+          status: 'CANCEL',
+        })
+      })
+    })
+
+    it('should display disclaimer', () => {
+      const { getByText } = renderComponent({
+        plannedOrder: {
+          id: 'planned-order-1',
+          buyAssetWithAmount: {
+            asset: aiBasket,
+            amount: Big(0),
+            availableAmount: Big(0),
+          },
+          sellAssetWithAmount: {
+            asset: bnbToken,
+            amount: Big(0),
+            availableAmount: Big(0),
+          },
+        },
+      })
+
+      expect(getByText(/coinbasket can make mistakes/i)).toBeDefined()
+      expect(getByText(/Please do your own research and check token addresses before proceeding with any transaction/i)).toBeDefined()
+    })
   })
-
-  const sellAssetInput = getByLabelText('Sell') as HTMLInputElement
-  const buyAssetInput = getByLabelText('Buy') as HTMLInputElement
-
-  expect(sellAssetInput.value).to.equal('5')
-  expect(buyAssetInput.value).to.equal('10')
 })
 
-describe('when updating an input', () => {
+describe('fee estimation', () => {
   const plannedOrder = {
     id: 'planned-order-1',
     buyAssetWithAmount: {
@@ -277,9 +475,84 @@ describe('when updating an input', () => {
       amount: Big(5),
       availableAmount: Big(10),
     },
+    fees: {
+      gasFee: {
+        asset: bnbToken,
+        amount: Big(0.00021),
+        amountAtomic: BigInt(210000000),
+        decimals: 18,
+      },
+      providerFee: {
+        asset: ethToken,
+        amount: Big(0.00009),
+        amountAtomic: BigInt(90000000),
+        decimals: 18,
+      },
+      platformFee: {
+        asset: ethToken,
+        amount: Big(0.1),
+        amountAtomic: BigInt(100000000000000000),
+        decimals: 18,
+      },
+    },
   }
 
-  it('should call pricer client only once when SELL input is typed several times in a row', async () => {
+  it('should display estimated gas fee on render', () => {
+    const { getByLabelText, getByText } = renderComponent({
+      plannedOrder,
+    })
+
+    const feeElement = getByText(/Network cost/i)
+    const feeValue = getByLabelText(/Network cost/i)
+
+    expect(feeElement).toBeDefined()
+    expect(feeValue.textContent).to.equal('0.00021000 BNB')
+  })
+
+  it('should display estimated provider fee on render', () => {
+    const { getByLabelText, getByText } = renderComponent({
+      plannedOrder,
+    })
+
+    const feeElement = getByText(/Provider fee/i)
+    const feeValue = getByLabelText(/Provider fee/i)
+
+    expect(feeElement).toBeDefined()
+    expect(feeValue.textContent).to.equal('0.00009000 ETH')
+  })
+
+  it('should display estimated platform fee on render', () => {
+    const { getByLabelText, getByText } = renderComponent({
+      plannedOrder,
+    })
+
+    const feeElement = getByText(/Platform fee/i)
+    const feeValue = getByLabelText(/Platform fee/i)
+
+    expect(feeElement).toBeDefined()
+    expect(feeValue.textContent).to.equal('0.10000000 ETH')
+  })
+
+  it('should display "Free" when a fee is undefined', () => {
+    const { getByLabelText, getByText } = renderComponent({
+      plannedOrder: {
+        ...plannedOrder,
+        fees: {
+          gasFee: undefined,
+          providerFee: undefined,
+          platformFee: undefined,
+        },
+      },
+    })
+
+    const providerFeeElement = getByText(/Provider fee/i)
+    const providerFeeValue = getByLabelText(/Provider fee/i)
+
+    expect(providerFeeElement).toBeDefined()
+    expect(providerFeeValue.textContent).to.equal('Free')
+  })
+
+  it('should update fees when sell amount is changed', async () => {
     const { getByLabelText } = renderComponent({
       plannedOrder,
     })
@@ -288,149 +561,16 @@ describe('when updating an input', () => {
 
     await userEvent.clear(sellAssetInput)
     await userEvent.type(sellAssetInput, '20')
-    await userEvent.type(sellAssetInput, '.3883')
 
     await waitFor(() => {
-      expect(registry.pricerClient.getPrice).toHaveBeenCalledOnce()
+      const gasFeeValue = getByLabelText(/Network cost/i)
+      expect(gasFeeValue.textContent).to.equal('0.00042000 BNB')
+
+      const providerFeeValue = getByLabelText(/Provider fee/i)
+      expect(providerFeeValue.textContent).to.equal('0.00018000 SOL')
+
+      const platformFeeValue = getByLabelText(/Platform fee/i)
+      expect(platformFeeValue.textContent).to.equal('0.20000000 ETH')
     })
-  })
-
-  it('should update both input values and call pricer client when SELL asset is changed', async () => {
-    const { getByLabelText } = renderComponent({
-      plannedOrder,
-    })
-
-    const sellAssetInput = getByLabelText('Sell') as HTMLInputElement
-
-    await userEvent.clear(sellAssetInput)
-    await userEvent.type(sellAssetInput, '20.3883')
-
-    await waitFor(() => {
-      expect(sellAssetInput.value).to.equal('20.3883')
-      const buyAssetInput = getByLabelText('Buy') as HTMLInputElement
-      expect(buyAssetInput.value).to.equal('75')
-    })
-  })
-
-  it('should display loader when fetching price after manual input', async () => {
-    const { getByLabelText, getByRole } = renderComponent({
-      plannedOrder: {
-        id: 'planned-order-1',
-        buyAssetWithAmount: {
-          asset: solToken,
-          amount: Big(10),
-          availableAmount: Big(20),
-        },
-        sellAssetWithAmount: {
-          asset: usdtToken,
-          amount: Big(5),
-          availableAmount: Big(10),
-        },
-      },
-    })
-
-    const sellAssetInput = getByLabelText('Sell') as HTMLInputElement
-
-    await userEvent.clear(sellAssetInput)
-    await userEvent.type(sellAssetInput, '20.3883')
-
-    waitFor(() => {
-      const loader = getByRole('status')
-      expect(loader).toBeDefined()
-    })
-  })
-
-  describe('buy token auto update', () => {
-    beforeAll(() => {
-      vi.useFakeTimers()
-    })
-
-    afterAll(() => {
-      vi.useRealTimers()
-    })
-
-    it('should update buy asset automatically after 20 seconds', async () => {
-      const { getByLabelText } = renderComponent({
-        plannedOrder,
-      })
-
-      await vi.advanceTimersByTimeAsync(21000)
-
-      const buyAssetInput = getByLabelText('Buy') as HTMLInputElement
-      expect(buyAssetInput.value).to.equal('75')
-    })
-  })
-
-  describe('when submitting the form', () => {
-    const plannedOrder = {
-      id: 'planned-order-1',
-      buyAssetWithAmount: {
-        asset: ethToken,
-        amount: Big(10.29834),
-        availableAmount: Big(20),
-      },
-      sellAssetWithAmount: {
-        asset: bnbToken,
-        amount: Big(5.23883),
-        availableAmount: Big(10),
-      },
-    }
-
-    it('should submit the form with status confirm and correct values', async () => {
-      const onSubmit = vi.fn()
-      const { findByRole } = renderComponent({
-        plannedOrder,
-        onSubmit,
-      })
-
-      const swapButton = await findByRole('button', { name: /confirm/i }) as HTMLButtonElement
-
-      await userEvent.click(swapButton)
-
-      await waitFor(() => {
-        expect(onSubmit).toHaveBeenCalledWith({
-          status: 'CONFIRM',
-          signableOrderId: '1',
-          transactionHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-        })
-      })
-    })
-
-    it('should submit the form with status cancel and empty steps', async () => {
-      const onSubmit = vi.fn()
-      const { findByRole } = renderComponent({
-        plannedOrder,
-        onSubmit,
-      })
-
-      const cancelButton = await findByRole('button', { name: /cancel/i }) as HTMLButtonElement
-
-      await userEvent.click(cancelButton)
-
-      expect(onSubmit).toHaveBeenCalledWith({
-        status: 'CANCEL',
-      })
-    })
-  })
-
-  it('should display disclaimer', () => {
-    const { getByText } = renderComponent({
-      plannedOrder: {
-        id: 'planned-order-1',
-        buyAssetWithAmount: {
-          asset: aiBasket,
-          amount: Big(0),
-          availableAmount: Big(0),
-        },
-        sellAssetWithAmount: {
-          asset: bnbToken,
-          amount: Big(0),
-          availableAmount: Big(0),
-        },
-      },
-    })
-
-    expect(getByText(/coinbasket can make mistakes/i)).toBeDefined()
-    expect(getByText(/Please do your own research and check token addresses before proceeding with any transaction/i)).toBeDefined()
   })
 })

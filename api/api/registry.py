@@ -122,6 +122,8 @@ exchange = (
         w3=w3,
         configuration={
             "bsc_rpc_url": configuration.bsc_rpc_url,
+            "fee_integrator_address": configuration.fee_integrator_address,
+            "fee_value_in_percentage": configuration.fee_value_in_percentage,
         },
     )
     if configuration.app_env != "test"

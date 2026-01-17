@@ -4,6 +4,7 @@ from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
 from api.investment.exchange.exchange import Exchange
+from api.investment.fees import Fees
 from api.investment.investment_parameters import InvestmentParameters
 from api.protocol.asset import Asset
 
@@ -12,12 +13,14 @@ from api.protocol.asset import Asset
 class ConvertedBalance:
     sell_balance: BalanceAtomic
     buy_balance: BalanceAtomic
+    fees: Fees
 
 
 @dataclass
 class ConvertedAssetBalance:
     total_balance: ConvertedBalance
     balances: list[ConvertedBalance]
+    fees: Fees
 
 
 class AssetBalanceConverter:
@@ -51,24 +54,13 @@ class AssetBalanceConverter:
                 slippage_tolerance_in_percentage=Decimal("1"),
             ),
         )
+
         return ConvertedAssetBalance(
             total_balance=ConvertedBalance(
                 sell_balance=result.sell_balance,
                 buy_balance=result.buy_balance,
+                fees=result.fees,
             ),
             balances=[],
-        )
-
-    async def _build_empty_balance(
-        self, sell_balance: BalanceAtomic, buy_asset: Asset
-    ) -> ConvertedAssetBalance:
-        buy_asset_decimals = await self.chain.get_token_decimals(buy_asset.address)
-        return ConvertedAssetBalance(
-            total_balance=ConvertedBalance(
-                sell_balance=sell_balance,
-                buy_balance=BalanceAtomic.empty(
-                    asset=buy_asset, decimals=buy_asset_decimals
-                ),
-            ),
-            balances=[],
+            fees=result.fees,
         )

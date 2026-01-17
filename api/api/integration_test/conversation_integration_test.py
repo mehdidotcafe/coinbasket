@@ -7,6 +7,7 @@ from api.chain.chain import Gas
 from api.conversation.message import QueryMessage
 from api.investment.confirmed_order import ConfirmedOrder
 from api.investment.exchange.exchange import SignableTransaction
+from api.investment.fees import Fees as InvestmentFees
 from api.investment.planned_order import PlannedOrder, PlannedOrderBalance
 from api.investment.signable_order import SignableOrder
 from pytest import fixture
@@ -36,6 +37,26 @@ def planned_orders():
                 asset=eth_token,
                 amount=Decimal("1.0"),
                 available_amount=Decimal("2.0"),
+            ),
+            fees=InvestmentFees(
+                gas_fee=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("0.03"),
+                    amount_atomic=30000000000000000,
+                    decimals=18,
+                ),
+                provider_fee=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("0.08"),
+                    amount_atomic=80000000000000000,
+                    decimals=18,
+                ),
+                platform_fee=BalanceAtomic(
+                    asset=eth_token,
+                    amount=Decimal("0.01"),
+                    amount_atomic=10000000000000000,
+                    decimals=18,
+                ),
             ),
         ),
     ]
@@ -110,7 +131,7 @@ def test_integration_conversation_invalid_credential():
                     id="42",
                     is_resuming=False,
                     role="user",
-                    content="Please invest in bitcoin. Don't ask for fund allocation.",
+                    content="Please invest in bitcoin. Don't ask for fund allocation or clarification.",
                     created_at="2023-10-01",
                 )
             ),
@@ -136,7 +157,7 @@ def test_integration_conversation_success(
                     id="42",
                     is_resuming=False,
                     role="user",
-                    content="Please invest in bitcoin. Don't ask for fund allocation.",
+                    content="Spend Wrapped BNB to buy 5 Bitcoins. Don't ask for fund allocation or clarification.",
                     created_at="2023-10-01",
                 )
             ),

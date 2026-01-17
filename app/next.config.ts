@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
         hostname: 'token-registry.s3.amazonaws.com',
         pathname: '**',
       },
+      {
+        protocol: 'https',
+        hostname: 'euc.li',
+        pathname: '**',
+      },
     ],
   },
 }

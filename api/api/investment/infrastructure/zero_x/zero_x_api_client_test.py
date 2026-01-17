@@ -21,10 +21,9 @@ from api.investment.infrastructure.zero_x.price import Price, Issues
 
 from api.investment.investment_parameters import (
     IntegratorFee,
-    InvestmentParameters,
+    InvestmentParametersWithFee,
 )
 from pytest import fixture, mark, raises
-from api.protocol.fixture.token import bnb_token
 
 
 @fixture
@@ -42,12 +41,11 @@ def http_request():
 
 @fixture
 def investment_parameters():
-    return InvestmentParameters(
+    return InvestmentParametersWithFee(
         slippage_tolerance_in_percentage=Decimal("1"),
         integrator_fee=IntegratorFee(
             recipient="0x1234567890abcdef1234567890abcdef12345678",
             value_in_percentage=Decimal("0.01"),
-            token=bnb_token,
         ),
     )
 
@@ -56,7 +54,7 @@ def investment_parameters():
 async def test_zero_x_api_client_get_price_success(
     configuration: Configuration,
     http_request: HttpRequest,
-    investment_parameters: InvestmentParameters,
+    investment_parameters: InvestmentParametersWithFee,
 ):
     client = ZeroXApiClient(configuration, http_request)
 
@@ -84,7 +82,7 @@ async def test_zero_x_api_client_get_price_success(
         buy_token=buy_token,
         amount=amount,
         slippage_bps=Decimal("100"),
-        investment_parameters=investment_parameters,
+        investment_parameters_with_fee=investment_parameters,
     )
 
     assert price == expected_price
@@ -101,7 +99,6 @@ async def test_zero_x_api_client_get_price_success(
                 "slippageBps": 100,
                 "swapFeeRecipient": "0x1234567890abcdef1234567890abcdef12345678",
                 "swapFeeBps": 1,
-                "swapFeeToken": bnb_token.address,
             },
             "headers": {
                 "Content-Type": "application/json",
@@ -117,7 +114,7 @@ async def test_zero_x_api_client_get_price_success(
 async def test_zero_x_api_client_get_price_swap_validation_failed(
     configuration: Configuration,
     http_request: HttpRequest,
-    investment_parameters: InvestmentParameters,
+    investment_parameters: InvestmentParametersWithFee,
 ):
     client = ZeroXApiClient(configuration, http_request)
 
@@ -139,7 +136,7 @@ async def test_zero_x_api_client_get_price_swap_validation_failed(
             buy_token=buy_token,
             amount=amount,
             slippage_bps=Decimal("100"),
-            investment_parameters=investment_parameters,
+            investment_parameters_with_fee=investment_parameters,
         )
 
 
@@ -147,7 +144,7 @@ async def test_zero_x_api_client_get_price_swap_validation_failed(
 async def test_zero_x_api_client_get_quote_success(
     configuration: Configuration,
     http_request: HttpRequest,
-    investment_parameters: InvestmentParameters,
+    investment_parameters: InvestmentParametersWithFee,
 ):
     client = ZeroXApiClient(configuration, http_request)
 
@@ -191,7 +188,7 @@ async def test_zero_x_api_client_get_quote_success(
         buy_token=buy_token,
         amount=amount,
         slippage_bps=Decimal("100"),
-        investment_parameters=investment_parameters,
+        investment_parameters_with_fee=investment_parameters,
     )
 
     assert quote == expected_quote
@@ -208,7 +205,6 @@ async def test_zero_x_api_client_get_quote_success(
                 "slippageBps": 100,
                 "swapFeeRecipient": "0x1234567890abcdef1234567890abcdef12345678",
                 "swapFeeBps": 1,
-                "swapFeeToken": bnb_token.address,
             },
             "headers": {
                 "Content-Type": "application/json",

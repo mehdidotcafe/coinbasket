@@ -6,6 +6,7 @@ from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 
 from api.chain.chain import Gas
+from api.investment.fees import Fees
 from api.investment.investment_parameters import InvestmentParameters
 
 from api.chain.balance import Balance
@@ -16,6 +17,7 @@ from api.protocol.asset import Asset
 class ExchangeConvertedBalance:
     sell_balance: BalanceAtomic[Asset]
     buy_balance: BalanceAtomic[Asset]
+    fees: Fees
 
 
 @dataclass

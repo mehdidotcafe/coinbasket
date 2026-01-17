@@ -30,6 +30,7 @@
           'Crypto-Backed Tokens',
           'BNB Chain Ecosystem',
           'Harmony Ecosystem',
+          'Bitcoin Ecosystem',
         ]),
         'decimals': 18,
         'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",

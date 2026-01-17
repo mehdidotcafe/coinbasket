@@ -1,27 +1,21 @@
 from dataclasses import dataclass
 import json
 
+from api.chain.balance import BalanceAtomic
+
 
 @dataclass
 class Fees:
-    chain_fee: int
-    provider_fee: int | None = None
-    service_fee: int | None = None
+    gas_fee: BalanceAtomic | None = None
+    provider_fee: BalanceAtomic | None = None
+    platform_fee: BalanceAtomic | None = None
 
     def serialize(self):
-        return json.dumps(
-            {
-                "chain_fee": self.chain_fee,
-                "provider_fee": self.provider_fee,
-                "service_fee": self.service_fee,
-            }
-        )
+        return json.dumps(self.to_dict())
 
-    @staticmethod
-    def deserialize(fees_as_json: str) -> "Fees":
-        fees_data = json.loads(fees_as_json)
-        return Fees(
-            chain_fee=fees_data["chain_fee"],
-            provider_fee=fees_data.get("provider_fee"),
-            service_fee=fees_data.get("service_fee"),
-        )
+    def to_dict(self):
+        return {
+            "gas_fee": self.gas_fee.to_dict() if self.gas_fee else None,
+            "provider_fee": self.provider_fee.to_dict() if self.provider_fee else None,
+            "platform_fee": self.platform_fee.to_dict() if self.platform_fee else None,
+        }

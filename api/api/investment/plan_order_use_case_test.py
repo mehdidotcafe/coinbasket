@@ -2,6 +2,7 @@ from unittest import mock
 from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.chain.chain import Chain
+from api.investment.fees import Fees
 from api.investment.plan_order_use_case import (
     PlanOrderUseCase,
 )
@@ -54,6 +55,20 @@ def address():
 
 
 @fixture
+def fees():
+    return Fees(
+        gas_fee=None,
+        provider_fee=None,
+        platform_fee=BalanceAtomic(
+            asset=btc_token,
+            amount=Decimal("0.0000001"),
+            amount_atomic=1,
+            decimals=18,
+        ),
+    )
+
+
+@fixture
 def use_case(
     exchange: Exchange,
     chain: Chain,
@@ -71,6 +86,7 @@ def use_case(
 @mark.asyncio
 async def test_plan_order_use_case_execute_defined_sell_token_amount(
     address: Address,
+    fees: Fees,
     asset_balance_converter: AssetBalanceConverter,
     holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
@@ -100,8 +116,10 @@ async def test_plan_order_use_case_execute_defined_sell_token_amount(
                 amount_atomic=42 * 10**18,
                 decimals=18,
             ),
+            fees=fees,
         ),
         balances=[],
+        fees=fees,
     )
 
     planned_order = await use_case.execute(address, intended_order)
@@ -117,12 +135,14 @@ async def test_plan_order_use_case_execute_defined_sell_token_amount(
             amount=Decimal("100"),
             available_amount=Decimal("0"),
         ),
+        fees=fees,
     )
 
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_defined_buy_token_amount(
     address: Address,
+    fees: Fees,
     exchange: Exchange,
     holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
@@ -150,6 +170,7 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
             amount_atomic=100 * 10**18,
             decimals=18,
         ),
+        fees=fees,
     )
 
     planned_order = await use_case.execute(address, intended_order)
@@ -165,6 +186,7 @@ async def test_plan_order_use_case_execute_defined_buy_token_amount(
             amount=Decimal("100"),
             available_amount=Decimal("0"),
         ),
+        fees=fees,
     )
 
 
@@ -250,6 +272,7 @@ async def test_plan_order_use_case_execute_not_defined_sell_token(
             amount=None,
             available_amount=Decimal("0"),
         ),
+        fees=Fees(),
     )
 
     exchange.convert_balance_to_asset.assert_not_called()
@@ -288,6 +311,7 @@ async def test_plan_order_use_case_execute_not_defined_buy_token(
             amount=None,
             available_amount=Decimal("0"),
         ),
+        fees=Fees(),
     )
 
     exchange.convert_balance_to_asset.assert_not_called()
@@ -296,6 +320,7 @@ async def test_plan_order_use_case_execute_not_defined_buy_token(
 @mark.asyncio
 async def test_plan_order_use_case_execute_defined_buy_basket_amount(
     address: Address,
+    fees: Fees,
     exchange: Exchange,
     holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
@@ -323,6 +348,7 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
             amount_atomic=500 * 10**18,
             decimals=18,
         ),
+        fees=fees,
     )
 
     planned_order = await use_case.execute(address, intended_order)
@@ -338,12 +364,14 @@ async def test_plan_order_use_case_execute_defined_buy_basket_amount(
             amount=Decimal("500"),
             available_amount=Decimal("0"),
         ),
+        fees=fees,
     )
 
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_defined_sell_basket_amount(
     address: Address,
+    fees: Fees,
     asset_balance_converter: AssetBalanceConverter,
     holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
@@ -396,8 +424,10 @@ async def test_plan_order_use_case_execute_defined_sell_basket_amount(
                 amount_atomic=8000 * 10**18,
                 decimals=18,
             ),
+            fees=fees,
         ),
         balances=[],
+        fees=fees,
     )
 
     planned_order = await use_case.execute(address, intended_order)
@@ -413,12 +443,14 @@ async def test_plan_order_use_case_execute_defined_sell_basket_amount(
             amount=Decimal("50.0"),
             available_amount=Decimal("100"),
         ),
+        fees=fees,
     )
 
 
 @mark.asyncio
 async def test_plan_order_use_case_execute_available_amount_defined(
     address: Address,
+    fees: Fees,
     exchange: Exchange,
     holding_repository: HoldingRepository,
     use_case: PlanOrderUseCase,
@@ -465,6 +497,7 @@ async def test_plan_order_use_case_execute_available_amount_defined(
             amount_atomic=1 * 10**18,
             decimals=18,
         ),
+        fees=fees,
     )
 
     planned_order = await use_case.execute(address, intended_order)

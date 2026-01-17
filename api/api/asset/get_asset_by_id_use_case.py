@@ -1,4 +1,5 @@
 from typing import Any
+from api.chain.chain import Chain
 from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
@@ -11,10 +12,15 @@ from api.protocol.asset import Asset
 
 
 class GetAssetByIdUseCase:
-    def __init__(self, asset_repository: AssetSimilarityRepository):
+    def __init__(self, asset_repository: AssetSimilarityRepository, chain: Chain):
         self.asset_repository = asset_repository
+        self.chain = chain
 
     async def execute(self, id: str) -> Asset | None:
+        base_token = self.chain.get_base_token()
+        if base_token.id.lower() == id.lower():
+            return base_token
+
         similarity_documents = await self.asset_repository.get_by_field(
             name="source.id",
             value=id.lower(),

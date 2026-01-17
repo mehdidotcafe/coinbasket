@@ -1,20 +1,20 @@
 import type { Asset } from '@/asset/Asset'
+import type { Fees } from '@/fee/fees'
+
+interface AssetWithAmount {
+  asset: Asset
+  availableAmount: Big
+  amount?: Big
+}
 
 export interface MessageUiConfirmPlannedOrder {
   id: 'confirm_planned_order'
   args: {
     plannedOrder: {
-        id: string
-        buyAssetWithAmount: {
-          asset: Asset
-          availableAmount: Big
-          amount?: Big
-        }
-        sellAssetWithAmount: {
-          asset: Asset
-          availableAmount: Big
-          amount?: Big
-        }
+      id: string
+      buyAssetWithAmount: AssetWithAmount
+      sellAssetWithAmount: AssetWithAmount
+      fees: Fees
     }
   }
 }

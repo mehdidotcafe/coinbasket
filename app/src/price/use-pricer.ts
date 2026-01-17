@@ -19,10 +19,15 @@ export function usePricer() {
             asset: priceInfo.buyAsset,
             amount: Big(0),
           },
+          fees: {
+            platformFee: undefined,
+            providerFee: undefined,
+            gasFee: undefined,
+          },
         }
       }
 
-      const { sellBalance, buyBalance } = await pricerClient.getPrice({
+      const { sellBalance, buyBalance, fees } = await pricerClient.getPrice({
         buyAsset: priceInfo.buyAsset,
         sellAsset: priceInfo.sellAsset,
         sellAssetAmount: priceInfo.sellAssetAmount,
@@ -31,6 +36,7 @@ export function usePricer() {
       return {
         sellBalance,
         buyBalance,
+        fees,
       }
     },
   })

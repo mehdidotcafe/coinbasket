@@ -1,8 +1,8 @@
 import type { Portfolio } from '../portfolio/portfolio'
 import { useQuery } from '@tanstack/react-query'
+import { useAuthentication } from '@/authentication/use-authentication'
 import { useEnv } from '@/env/use-env'
 import { useRegistry } from '../registry/use-registry'
-import { useAuthentication } from './authentication/use-authentication'
 
 export function usePortfolio() {
   const {

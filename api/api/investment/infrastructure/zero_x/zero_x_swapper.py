@@ -11,12 +11,14 @@ from api.investment.exchange.exchange import (
     ExchangeSignableSwap,
     SignableTransaction,
 )
+from api.investment.fees import Fees
 from api.investment.infrastructure.zero_x.exception.swap_insufficient_liquidity import (
     SwapInsufficientLiquidity,
 )
 from api.investment.infrastructure.zero_x.exception.swap_validation_failed import (
     SwapValidationFailed,
 )
+from api.investment.infrastructure.zero_x.price import Price
 from api.investment.infrastructure.zero_x.quote import (
     InsufficientLiquidityQuote,
     Quote,
@@ -24,7 +26,11 @@ from api.investment.infrastructure.zero_x.quote import (
 from api.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
-from api.investment.investment_parameters import InvestmentParameters
+from api.investment.investment_parameters import (
+    IntegratorFee,
+    InvestmentParameters,
+    InvestmentParametersWithFee,
+)
 
 from api.chain.balance import Balance
 from api.protocol.asset import Asset
@@ -35,6 +41,8 @@ RETRY_ATTEMPTS = 5
 
 class Configuration(TypedDict):
     bsc_rpc_url: str
+    fee_integrator_address: str | None
+    fee_value_in_percentage: Decimal | None
 
 
 # LINK: https://0x.org/docs/api#tag/Swap/operation/swap::permit2::getPrice
@@ -52,6 +60,8 @@ class ZeroXSwapper(Exchange):
         self.chain = chain
         self.contract = contract
         self.bsc_rpc_url = configuration["bsc_rpc_url"]
+        self.fee_integrator_address = configuration["fee_integrator_address"]
+        self.fee_value_in_percentage = configuration["fee_value_in_percentage"]
 
         self.w3 = w3
 
@@ -66,6 +76,9 @@ class ZeroXSwapper(Exchange):
         investment_parameters: InvestmentParameters,
     ) -> ExchangeSignableSwap:
         chain_id = await self.chain.get_chain_id()
+        investment_parameters_with_fee = self._make_investment_parameters_with_fee(
+            investment_parameters
+        )
 
         decimals = sell_balance.asset.decimals
         amount_atomic = int(sell_balance.amount * (10**decimals))
@@ -79,7 +92,7 @@ class ZeroXSwapper(Exchange):
             slippage_bps=self.__compute_slippage_tolerance_in_bps(
                 investment_parameters.slippage_tolerance_in_percentage
             ),
-            investment_parameters=investment_parameters,
+            investment_parameters_with_fee=investment_parameters_with_fee,
         )
         quote = quote_result.root
 
@@ -147,10 +160,15 @@ class ZeroXSwapper(Exchange):
                     amount_atomic=balance.amount_atomic,
                     decimals=balance.decimals,
                 ),
+                fees=Fees(),
             )
 
         decimals = balance.asset.decimals
         amount_atomic = int(balance.amount * (10**decimals))
+
+        investment_parameters_with_fee = self._make_investment_parameters_with_fee(
+            investment_parameters
+        )
 
         try:
             price = await self.api_client.get_price(
@@ -159,7 +177,7 @@ class ZeroXSwapper(Exchange):
                 sell_token=balance.asset.address,
                 buy_token=asset.address,
                 amount=amount_atomic,
-                investment_parameters=investment_parameters,
+                investment_parameters_with_fee=investment_parameters_with_fee,
             )
         except SwapValidationFailed as e:
             print(e)
@@ -173,6 +191,7 @@ class ZeroXSwapper(Exchange):
                     amount_atomic=0,
                     decimals=token_decimals,
                 ),
+                fees=Fees(),
             )
 
         sell_balance_amount_atomic = int(price.sellAmount)
@@ -190,6 +209,8 @@ class ZeroXSwapper(Exchange):
         buy_decimals = asset.decimals
         buy_amount = Decimal(buy_balance_amount_atomic) / Decimal(10**buy_decimals)
 
+        native_token = self.chain.get_base_token()
+
         return ExchangeConvertedBalance(
             sell_balance=BalanceAtomic(
                 asset=balance.asset,
@@ -202,6 +223,14 @@ class ZeroXSwapper(Exchange):
                 amount=buy_amount,
                 amount_atomic=buy_balance_amount_atomic,
                 decimals=buy_decimals,
+            ),
+            fees=self._compute_fees(
+                price,
+                {
+                    balance.asset.address.lower(): balance.asset,
+                    asset.address.lower(): asset,
+                    native_token.address.lower(): native_token,
+                },
             ),
         )
 
@@ -218,3 +247,74 @@ class ZeroXSwapper(Exchange):
 
     def __is_same_token(self, asset1: Asset, asset2: Asset) -> bool:
         return asset1.address.lower() == asset2.address.lower()
+
+    def _make_investment_parameters_with_fee(
+        self, investment_parameters: InvestmentParameters
+    ):
+        if self.fee_integrator_address is None or self.fee_value_in_percentage is None:
+            return InvestmentParametersWithFee(
+                slippage_tolerance_in_percentage=investment_parameters.slippage_tolerance_in_percentage,
+                integrator_fee=None,
+            )
+
+        return InvestmentParametersWithFee(
+            slippage_tolerance_in_percentage=investment_parameters.slippage_tolerance_in_percentage,
+            integrator_fee=IntegratorFee(
+                recipient=self.fee_integrator_address,
+                value_in_percentage=self.fee_value_in_percentage,
+            ),
+        )
+
+    def _compute_fees(
+        self, price: Price | Quote, possible_assets: dict[str, Asset]
+    ) -> Fees:
+        provider_fee_asset = (
+            possible_assets.get(price.fees.zeroExFee.token.lower())
+            if price.fees.zeroExFee
+            else None
+        )
+        platform_fee_asset = (
+            possible_assets.get(price.fees.integratorFee.token.lower())
+            if price.fees.integratorFee
+            else None
+        )
+        gas_fee_asset = (
+            possible_assets.get(price.fees.gasFee.token.lower())
+            if price.fees.gasFee
+            else None
+        )
+
+        return Fees(
+            gas_fee=self._make_balance_atomic_from_fee_asset(
+                gas_fee_asset,
+                price.fees.gasFee.amount,
+            )
+            if price.fees.gasFee and gas_fee_asset
+            else None,
+            provider_fee=self._make_balance_atomic_from_fee_asset(
+                provider_fee_asset,
+                price.fees.zeroExFee.amount,
+            )
+            if price.fees.zeroExFee and provider_fee_asset
+            else None,
+            platform_fee=self._make_balance_atomic_from_fee_asset(
+                platform_fee_asset,
+                price.fees.integratorFee.amount,
+            )
+            if price.fees.integratorFee and platform_fee_asset
+            else None,
+        )
+
+    def _make_balance_atomic_from_fee_asset(
+        self, fee_asset: Asset, fee_amount_str: str
+    ) -> BalanceAtomic | None:
+        fee_amount_atomic = int(fee_amount_str)
+        fee_decimals = fee_asset.decimals
+        fee_amount = Decimal(fee_amount_atomic) / Decimal(10**fee_decimals)
+
+        return BalanceAtomic(
+            asset=fee_asset,
+            amount=fee_amount,
+            amount_atomic=fee_amount_atomic,
+            decimals=fee_decimals,
+        )

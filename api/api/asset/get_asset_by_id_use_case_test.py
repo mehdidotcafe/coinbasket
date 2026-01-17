@@ -1,5 +1,6 @@
 from unittest import mock
 from api.asset.get_asset_by_id_use_case import GetAssetByIdUseCase
+from api.chain.chain import Chain
 from api.similarity.exception.invalid_similarity_document import (
     InvalidSimilarityDocument,
 )
@@ -10,6 +11,7 @@ from api.similarity.asset_similarity_repository import (
 from pytest import fixture, mark, raises
 from api.protocol.token import Token
 from api.protocol.fixture.basket import test_basket
+from api.protocol.fixture.token import bnb_token
 
 
 @fixture
@@ -18,8 +20,17 @@ def asset_repository():
 
 
 @fixture
-def use_case(asset_repository: AssetSimilarityRepository):
-    return GetAssetByIdUseCase(asset_repository=asset_repository)
+def chain():
+    c = mock.Mock(spec=Chain)
+
+    c.get_base_token.return_value = bnb_token
+
+    return c
+
+
+@fixture
+def use_case(asset_repository: AssetSimilarityRepository, chain: Chain):
+    return GetAssetByIdUseCase(asset_repository=asset_repository, chain=chain)
 
 
 @mark.asyncio
@@ -126,3 +137,16 @@ async def test_get_asset_by_id_use_case_found_token(
     asset_repository.get_by_field.assert_called_once_with(
         name="source.id", value="123456a"
     )
+
+
+@mark.asyncio
+async def test_get_asset_by_id_use_case_found_base_token(
+    asset_repository: AssetSimilarityRepository,
+    use_case: GetAssetByIdUseCase,
+    chain: Chain,
+):
+    result = await use_case.execute(bnb_token.id)
+
+    assert result == bnb_token
+
+    asset_repository.get_by_field.assert_not_called()

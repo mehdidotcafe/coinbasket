@@ -13,6 +13,7 @@ from api.investment.calculator.asset_balance_converter import (
     AssetBalanceConverter,
     ConvertedAssetBalance,
 )
+from api.investment.fees import Fees
 from pytest import fixture, mark
 from api.protocol.fixture.token import wbnb_token
 from api.protocol.fixture.basket import test_basket
@@ -59,6 +60,17 @@ async def test_get_asset_swap_price_use_case(
         buy_asset=test_basket,
     )
 
+    fees = Fees(
+        gas_fee=None,
+        provider_fee=None,
+        platform_fee=BalanceAtomic(
+            asset=wbnb_token,
+            amount=Decimal("0.0000001"),
+            amount_atomic=to_atomic(Decimal("0.0000001")),
+            decimals=18,
+        ),
+    )
+
     asset_balance_converter.convert.return_value = ConvertedAssetBalance(
         total_balance=ConvertedBalance(
             sell_balance=BalanceAtomic(
@@ -73,7 +85,9 @@ async def test_get_asset_swap_price_use_case(
                 amount_atomic=to_atomic(Decimal("300.0")),
                 decimals=18,
             ),
+            fees=fees,
         ),
+        fees=fees,
         balances=[],
     )
 
@@ -92,4 +106,5 @@ async def test_get_asset_swap_price_use_case(
             amount_atomic=to_atomic(Decimal("300.0")),
             decimals=18,
         ),
+        fees=fees,
     )
