@@ -462,7 +462,7 @@ describe('amount inputs', () => {
   })
 })
 
-describe.only('fee estimation', () => {
+describe('fee estimation', () => {
   const plannedOrder = {
     id: 'planned-order-1',
     buyAssetWithAmount: {

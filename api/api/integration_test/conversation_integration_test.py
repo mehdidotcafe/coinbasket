@@ -157,7 +157,7 @@ def test_integration_conversation_success(
                     id="42",
                     is_resuming=False,
                     role="user",
-                    content="Please buy 5 bitcoin. Don't ask for fund allocation or clarification..",
+                    content="Spend Wrapped BNB to buy 5 Bitcoins. Don't ask for fund allocation or clarification.",
                     created_at="2023-10-01",
                 )
             ),
