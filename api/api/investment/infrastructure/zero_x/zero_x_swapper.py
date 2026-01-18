@@ -6,6 +6,7 @@ from api.chain.chain import Chain, Gas
 from api.chain.contract import Contract
 
 from api.investment.exchange.exchange import (
+    ApprovalTransaction,
     ExchangeConvertedBalance,
     Exchange,
     ExchangeSignableSwap,
@@ -122,6 +123,10 @@ class ZeroXSwapper(Exchange):
         buy_decimals = buy_balance.asset.decimals
         buy_amount = Decimal(buy_balance_amount_atomic) / Decimal(10**buy_decimals)
 
+        approval_transaction = self.__build_approval_transaction(
+            quote, sell_balance.asset
+        )
+
         return ExchangeSignableSwap(
             sell_balance=BalanceAtomic(
                 asset=sell_balance.asset,
@@ -137,6 +142,30 @@ class ZeroXSwapper(Exchange):
             ),
             transaction=transaction,
             signature_payload=signature_payload,
+            approval_transaction=approval_transaction,
+        )
+
+    def __build_approval_transaction(
+        self, quote: Quote, sell_asset: Asset
+    ) -> ApprovalTransaction | None:
+        """Build an approval transaction if the sell token needs allowance for Permit2."""
+        if self.chain.is_native_token(sell_asset) or quote.issues.allowance is None:
+            return None
+
+        # Max uint256 for unlimited approval
+        MAX_UINT256 = 2**256 - 1
+
+        encoded_data = self.contract.make_approve_transaction_input(
+            token_address=sell_asset.address,
+            spender_address=quote.issues.allowance.spender,
+            amount=Decimal(MAX_UINT256),
+        )
+
+        return ApprovalTransaction(
+            token_address=sell_asset.address,
+            spender_address=quote.issues.allowance.spender,
+            data=encoded_data,
+            amount=0,
         )
 
     async def convert_balance_to_asset(

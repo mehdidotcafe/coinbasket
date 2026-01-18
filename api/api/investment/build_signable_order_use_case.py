@@ -36,4 +36,5 @@ class BuildSignableOrderUseCase:
             sell_balance=signed_swap.sell_balance,
             signature_payload=signed_swap.signature_payload,
             transaction=signed_swap.transaction,
+            approval_transaction=signed_swap.approval_transaction,
         )

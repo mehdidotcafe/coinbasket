@@ -40,11 +40,31 @@ class SignableTransaction:
 
 
 @dataclass
+class ApprovalTransaction:
+    """Transaction to approve token spending by the Permit2 contract."""
+
+    token_address: str
+    spender_address: str
+    data: str
+    amount: int
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the ApprovalTransaction to a dictionary."""
+        return {
+            "token_address": self.token_address,
+            "spender_address": self.spender_address,
+            "data": self.data,
+            "amount": self.amount,
+        }
+
+
+@dataclass
 class ExchangeSignableSwap:
     sell_balance: BalanceAtomic[Asset]
     buy_balance: BalanceAtomic[Asset]
     signature_payload: dict[str, Any] | None
     transaction: SignableTransaction
+    approval_transaction: ApprovalTransaction | None = None
 
 
 class Exchange(ABC):
