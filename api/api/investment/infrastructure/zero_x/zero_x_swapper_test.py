@@ -72,6 +72,8 @@ def zero_x_api_client():
 def chain():
     chain = mock.Mock(spec=Chain)
 
+    chain.get_base_token.return_value = bnb_token
+
     return chain
 
 
@@ -176,6 +178,7 @@ async def test_zero_x_swapper_get_signable_swap_data_success(
         buyToken=eth_token.address,
         sellToken=bnb_token.address,
         fees=Fees(),
+        totalNetworkFee="21000000000000",
     )
 
     zero_x_api_client.get_quote.return_value = QuoteResult(
@@ -203,6 +206,7 @@ async def test_zero_x_swapper_get_signable_swap_data_success(
                 ),
                 gasFee=None,
             ),
+            totalNetworkFee="21000000000000",
         )
     )
 
@@ -253,6 +257,7 @@ async def test_zero_x_swapper_get_signable_swap_data_no_transaction_value(
         buyToken=eth_token.address,
         sellToken=bnb_token.address,
         fees=Fees(),
+        totalNetworkFee="21000000000000",
     )
 
     zero_x_api_client.get_quote.return_value = QuoteResult(
@@ -280,6 +285,7 @@ async def test_zero_x_swapper_get_signable_swap_data_no_transaction_value(
                 ),
                 gasFee=None,
             ),
+            totalNetworkFee="21000000000000",
         )
     )
 
@@ -309,6 +315,7 @@ async def test_zero_x_swapper_get_signable_swap_data_with_permit2(
         buyToken=bnb_token.address,
         sellToken=eth_token.address,
         fees=Fees(),
+        totalNetworkFee="21000000000000",
     )
 
     zero_x_api_client.get_quote.return_value = QuoteResult(
@@ -343,6 +350,7 @@ async def test_zero_x_swapper_get_signable_swap_data_with_permit2(
                 ),
                 gasFee=None,
             ),
+            totalNetworkFee="21000000000000",
         )
     )
 
@@ -386,6 +394,7 @@ async def test_zero_x_swapper_get_signable_swap_data_with_allowance(
         buyToken=bnb_token.address,
         sellToken=eth_token.address,
         fees=Fees(),
+        totalNetworkFee="21000000000000",
     )
 
     zero_x_api_client.get_quote.return_value = QuoteResult(
@@ -417,6 +426,7 @@ async def test_zero_x_swapper_get_signable_swap_data_with_allowance(
                 ),
                 gasFee=None,
             ),
+            totalNetworkFee="21000000000000",
         )
     )
 
@@ -537,11 +547,12 @@ async def test_zero_x_swapper_convert_balance_to_token_success(
                 type="volume",
             ),
             gasFee=Fee(
-                amount="200000000000000",
-                token=bnb_token.address,
+                amount="900000000000000",
+                token=eth_token.address,
                 type="fixed",
             ),
         ),
+        totalNetworkFee="21000000000000",
     )
 
     exchange_converted_balance = await zero_x_swapper.convert_balance_to_asset(
@@ -579,8 +590,8 @@ async def test_zero_x_swapper_convert_balance_to_token_success(
                 asset=eth_token,
             ),
             gas_fee=BalanceAtomic(
-                amount=Decimal("0.0002"),
-                amount_atomic=200000000000000,
+                amount=Decimal("0.000021"),
+                amount_atomic=21000000000000,
                 decimals=18,
                 asset=bnb_token,
             ),
