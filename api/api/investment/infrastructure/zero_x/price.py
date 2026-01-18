@@ -18,3 +18,4 @@ class Price(BaseModel):
     sellAmount: str
     sellToken: str
     fees: Fees
+    totalNetworkFee: str

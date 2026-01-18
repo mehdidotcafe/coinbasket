@@ -30,6 +30,7 @@ class Quote(BaseModel):
     sellToken: str
     fees: Fees
     issues: Issues
+    totalNetworkFee: str
 
 
 class QuoteResult(RootModel[Any]):

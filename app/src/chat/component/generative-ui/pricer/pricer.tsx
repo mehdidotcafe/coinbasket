@@ -285,7 +285,7 @@ interface AmountRowProps {
 function FeeAmount({ amount, asset, label }: { amount?: Big, asset?: { ticker: string }, label: string }) {
   return (
     <span className="text-sm" aria-label={label}>
-      {amount && asset ? `${amount.toFixed(NB_DECIMALS)} ${asset.ticker}` : <span className="text-secondary font-sofia-sans font-bold">Free</span>}
+      {amount && asset ? `${amount.toFixed(NB_DECIMALS)} ${asset.ticker}` : <span className="text-secondary font-bold">Free</span>}
     </span>
   )
 }

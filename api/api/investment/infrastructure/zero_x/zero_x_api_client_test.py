@@ -71,6 +71,7 @@ async def test_zero_x_api_client_get_price_success(
         buyToken="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
         sellToken="0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         fees=Fees(),
+        totalNetworkFee="21000000000000",
     )
 
     http_request.get.return_value = expected_price
@@ -182,6 +183,7 @@ async def test_zero_x_api_client_get_quote_success(
             ),
             gasFee=None,
         ),
+        totalNetworkFee="21000000000000",
     )
 
     http_request.get.return_value = expected_quote

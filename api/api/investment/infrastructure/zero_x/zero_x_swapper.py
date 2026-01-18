@@ -255,6 +255,7 @@ class ZeroXSwapper(Exchange):
             ),
             fees=self._compute_fees(
                 price,
+                native_token,
                 {
                     balance.asset.address.lower(): balance.asset,
                     asset.address.lower(): asset,
@@ -295,7 +296,10 @@ class ZeroXSwapper(Exchange):
         )
 
     def _compute_fees(
-        self, price: Price | Quote, possible_assets: dict[str, Asset]
+        self,
+        price: Price | Quote,
+        native_token: Asset,
+        possible_assets: dict[str, Asset],
     ) -> Fees:
         provider_fee_asset = (
             possible_assets.get(price.fees.zeroExFee.token.lower())
@@ -307,19 +311,12 @@ class ZeroXSwapper(Exchange):
             if price.fees.integratorFee
             else None
         )
-        gas_fee_asset = (
-            possible_assets.get(price.fees.gasFee.token.lower())
-            if price.fees.gasFee
-            else None
-        )
 
         return Fees(
             gas_fee=self._make_balance_atomic_from_fee_asset(
-                gas_fee_asset,
-                price.fees.gasFee.amount,
-            )
-            if price.fees.gasFee and gas_fee_asset
-            else None,
+                native_token,
+                price.totalNetworkFee,
+            ),
             provider_fee=self._make_balance_atomic_from_fee_asset(
                 provider_fee_asset,
                 price.fees.zeroExFee.amount,
