@@ -371,6 +371,21 @@ class GetPortfolioSummaryRequest(BaseModel):
     conversion_token_id: str = usdt_token.id
 
 
+class BalanceResponse(BaseModel):
+    amount: str
+    asset: AssetResponse
+
+    @staticmethod
+    def from_domain(balance: Balance) -> "BalanceResponse":
+        """Convert the domain Balance to a BalanceResponse."""
+        return BalanceResponse(
+            amount=format(balance.amount, "f"),
+            asset=TokenResponse.from_domain(balance.asset)
+            if isinstance(balance.asset, Token)
+            else BasketResponse.from_domain(balance.asset),
+        )
+
+
 @tool(
     parse_docstring=True,
 )
@@ -473,6 +488,20 @@ class GetAssetPriceRequest(BaseModel):
         )
 
 
+class GetAssetPriceResponse(BaseModel):
+    sell_balance: BalanceResponse
+    buy_balance: BalanceResponse
+
+    @staticmethod
+    def from_domain(
+        converted_balance: ConvertedBalance,
+    ) -> "GetAssetPriceResponse":
+        return GetAssetPriceResponse(
+            sell_balance=BalanceResponse.from_domain(converted_balance.sell_balance),
+            buy_balance=BalanceResponse.from_domain(converted_balance.buy_balance),
+        )
+
+
 @tool(
     parse_docstring=True,
 )
@@ -503,7 +532,7 @@ async def get_asset_price(request: GetAssetPriceRequest):
         asset_swap_price_info=await request.to_domain(),
     )
 
-    return ConvertedBalanceResponse.from_domain(balance).model_dump_json()
+    return GetAssetPriceResponse.from_domain(balance).model_dump_json()
 
 
 class BalanceAtomicResponse(BaseModel):
@@ -707,12 +736,20 @@ class SignableTransactionResponse(BaseModel):
     to_address: str | None = None
 
 
+class ApprovalTransactionResponse(BaseModel):
+    token_address: str
+    spender_address: str
+    data: str
+    amount: str
+
+
 class SignableOrderResponse(BaseModel):
     id: str
     buy_balance: BalanceAtomicResponse
     sell_balance: BalanceAtomicResponse
     transaction: SignableTransactionResponse
     signature_payload: Dict[str, Any] | None = None
+    approval_transaction: ApprovalTransactionResponse | None = None
 
     @staticmethod
     def from_domain(
@@ -723,6 +760,14 @@ class SignableOrderResponse(BaseModel):
             buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
             sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
             signature_payload=domain.signature_payload,
+            approval_transaction=ApprovalTransactionResponse(
+                token_address=domain.approval_transaction.token_address,
+                spender_address=domain.approval_transaction.spender_address,
+                data=domain.approval_transaction.data,
+                amount=str(domain.approval_transaction.amount),
+            )
+            if domain.approval_transaction
+            else None,
             transaction=SignableTransactionResponse(
                 type=domain.transaction.type,
                 amount=str(domain.transaction.amount),
@@ -1091,21 +1136,6 @@ class AssetSwapPriceInfoRequest(BaseModel):
             sell_asset=self.sell_asset.to_domain(),
             sell_asset_amount=Decimal(self.sell_asset_amount),
             buy_asset=self.buy_asset.to_domain(),
-        )
-
-
-class BalanceResponse(BaseModel):
-    amount: str
-    asset: AssetResponse
-
-    @staticmethod
-    def from_domain(balance: Balance) -> "BalanceResponse":
-        """Convert the domain Balance to a BalanceResponse."""
-        return BalanceResponse(
-            amount=format(balance.amount, "f"),
-            asset=TokenResponse.from_domain(balance.asset)
-            if isinstance(balance.asset, Token)
-            else BasketResponse.from_domain(balance.asset),
         )
 
 

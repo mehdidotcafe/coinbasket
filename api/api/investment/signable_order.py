@@ -4,7 +4,7 @@ from typing import Any
 from api.address.address import Address
 from api.chain.balance import BalanceAtomic
 from api.investment.confirmed_order import ConfirmedOrderId
-from api.investment.exchange.exchange import SignableTransaction
+from api.investment.exchange.exchange import ApprovalTransaction, SignableTransaction
 
 SignableOrderId = str
 
@@ -18,6 +18,7 @@ class SignableOrder:
     sell_balance: BalanceAtomic
     signature_payload: dict[str, Any] | None
     transaction: SignableTransaction
+    approval_transaction: ApprovalTransaction | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the SignableOrder to a dictionary."""
@@ -29,4 +30,7 @@ class SignableOrder:
             "sell_balance": self.sell_balance.to_dict(),
             "signature_payload": self.signature_payload,
             "transaction": self.transaction.to_dict(),
+            "approval_transaction": self.approval_transaction.to_dict()
+            if self.approval_transaction
+            else None,
         }

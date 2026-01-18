@@ -58,12 +58,20 @@ class ConfirmedOrderDto {
   }
 }
 
+const ApprovalTransactionResponseSchema = z.object({
+  token_address: z.string(),
+  spender_address: z.string(),
+  data: z.string(),
+  amount: z.string(),
+})
+
 const SignableOrderResponseSchema = z.object({
   id: z.string(),
   buy_balance: BalanceAtomicSchema,
   sell_balance: BalanceAtomicSchema,
   signature_payload: z.record(z.string(), z.any()).optional().nullable(),
   transaction: SignableTransactionResponseSchema,
+  approval_transaction: ApprovalTransactionResponseSchema.optional().nullable(),
 })
 
 type SignableOrderResponse = z.infer<typeof SignableOrderResponseSchema>
@@ -76,6 +84,14 @@ class SignableOrderDto {
       sellBalance: BalanceAtomicDto.fromResponse(signableOrderResponse.sell_balance),
       signaturePayload: signableOrderResponse.signature_payload || undefined,
       transaction: SignableTransactionDto.fromResponse(signableOrderResponse.transaction),
+      approvalTransaction: signableOrderResponse.approval_transaction
+        ? {
+            tokenAddress: signableOrderResponse.approval_transaction.token_address,
+            spenderAddress: signableOrderResponse.approval_transaction.spender_address,
+            data: signableOrderResponse.approval_transaction.data,
+            amount: signableOrderResponse.approval_transaction.amount,
+          }
+        : undefined,
     }
   }
 }

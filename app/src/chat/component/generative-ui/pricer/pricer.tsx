@@ -101,14 +101,17 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-type TransactionStep = 'idle' | 'signing-permit' | 'waiting-permit' | 'confirming-permit' | 'sending-transaction' | 'waiting-transaction' | 'confirming-transaction' | 'completed' | 'canceled' | 'error'
+type TransactionStep = 'idle' | 'sending-approval' | 'waiting-approval' | 'confirming-approval' | 'signing-permit' | 'waiting-permit' | 'confirming-permit' | 'sending-transaction' | 'waiting-transaction' | 'confirming-transaction' | 'completed' | 'canceled' | 'error'
 
 interface TransactionState {
   currentStep: TransactionStep
   error: string | null
 }
 
-type TransactionAction = { type: 'START_SIGNING_PERMIT' }
+type TransactionAction = { type: 'START_SENDING_APPROVAL' }
+  | { type: 'APPROVAL_SENT' }
+  | { type: 'APPROVAL_CONFIRMED' }
+  | { type: 'START_SIGNING_PERMIT' }
   | { type: 'PERMIT_SIGNED' }
   | { type: 'START_SENDING_TRANSACTION' }
   | { type: 'TRANSACTION_SENT' }
@@ -120,6 +123,12 @@ type TransactionAction = { type: 'START_SIGNING_PERMIT' }
 
 function transactionReducer(state: TransactionState, action: TransactionAction): TransactionState {
   switch (action.type) {
+    case 'START_SENDING_APPROVAL':
+      return { ...state, currentStep: 'sending-approval', error: null }
+    case 'APPROVAL_SENT':
+      return { ...state, currentStep: 'waiting-approval' }
+    case 'APPROVAL_CONFIRMED':
+      return { ...state, currentStep: 'confirming-approval' }
     case 'START_SIGNING_PERMIT':
       return { ...state, currentStep: 'signing-permit', error: null }
     case 'PERMIT_SIGNED':
@@ -269,7 +278,7 @@ function BottomSwapArrow() {
 interface AmountRowProps {
   label: string
   amountElement: React.ReactNode
-  tooltip?: string
+  tooltip?: string | React.ReactNode
   icon?: string
 }
 
@@ -288,7 +297,7 @@ function AmountRow({ label, amountElement, tooltip, icon }: AmountRowProps) {
         {icon
           ? (
             <Image
-              className="rounded-full bg-white border shadow-sm mr-1 w-[20px] h-[20px]"
+              className="rounded-full bg-white shadow-sm mr-1 w-[20px] h-[20px]"
               width={20}
               height={20}
               src={icon}
@@ -366,7 +375,13 @@ function FeesDisplay({ fees }: FeesDisplayProps) {
             1.00%
           </span>
         )}
-        tooltip="Maximum allowed slippage for the transaction. If the price changes more than this value, the transaction will revert."
+        tooltip={(
+          <>
+            Maximum allowed slippage for the transaction.
+            <br />
+            The transaction will be canceled if the price moves against you by more than this percentage.
+          </>
+        )}
       />
     </div>
   )
@@ -468,11 +483,13 @@ function useTransactionFlow({
 
   const [signableOrder, setSignableOrder] = useState<SignableOrder | null>(null)
   const hasPermit = !!signableOrder?.signaturePayload
+  const hasApproval = !!signableOrder?.approvalTransaction
 
   const { address } = useAccount()
   const { data: walletClient } = useWalletClient()
 
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
+  const [approvalTxHash, setApprovalTxHash] = useState<`0x${string}` | undefined>()
 
   // Permit2 signature handling
   const {
@@ -482,7 +499,16 @@ function useTransactionFlow({
     error: permitError,
   } = useSignTypedData()
 
-  // Transaction confirmation handling
+  // Approval transaction confirmation handling
+  const {
+    isLoading: isApprovalConfirming,
+    isSuccess: isApprovalConfirmed,
+    error: approvalConfirmError,
+  } = useWaitForTransactionReceipt({
+    hash: approvalTxHash,
+  })
+
+  // Swap transaction confirmation handling
   const {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
@@ -508,6 +534,39 @@ function useTransactionFlow({
     ])
 
     return result
+  }
+
+  const handleSendApprovalTransaction = async (order: SignableOrder) => {
+    if (!walletClient || !address) {
+      dispatch({ type: 'ERROR', error: 'Wallet not connected' })
+      return
+    }
+
+    const approvalTransaction = order.approvalTransaction
+
+    if (!approvalTransaction) {
+      dispatch({ type: 'ERROR', error: 'No approval transaction available' })
+      return
+    }
+
+    try {
+      const hash = await walletClient.sendTransaction({
+        to: approvalTransaction.tokenAddress as `0x${string}`,
+        data: approvalTransaction.data as `0x${string}`,
+        value: BigInt(approvalTransaction.amount),
+      })
+
+      setApprovalTxHash(hash)
+      dispatch({ type: 'APPROVAL_SENT' })
+    }
+    catch (error: any) {
+      if (error instanceof TransactionExecutionError && error.shortMessage) {
+        dispatch({ type: 'ERROR', error: error.shortMessage || 'Approval failed' })
+      }
+      else {
+        dispatch({ type: 'ERROR', error: error.message || 'Approval failed' })
+      }
+    }
   }
 
   const handleSignAndSendTransaction = async (order: SignableOrder) => {
@@ -550,9 +609,41 @@ function useTransactionFlow({
     }
   }
 
+  const proceedAfterApproval = (order: SignableOrder) => {
+    const orderHasPermit = !!order.signaturePayload
+
+    if (orderHasPermit) {
+      try {
+        const permitData = order.signaturePayload! as any
+        signPermit(permitData)
+      }
+      catch {
+        dispatch({ type: 'ERROR', error: 'Failed to parse permit data' })
+      }
+    }
+    else {
+      dispatch({ type: 'START_SENDING_TRANSACTION' })
+      handleSignAndSendTransaction(order)
+    }
+  }
+
+  // Handle approval transaction confirmation flow
+  useEffect(() => {
+    if (isApprovalConfirming && state.currentStep === 'waiting-approval') {
+      dispatch({ type: 'APPROVAL_CONFIRMED' })
+    }
+    else if (isApprovalConfirmed && state.currentStep === 'confirming-approval' && signableOrder) {
+      // Approval confirmed, proceed to permit signing or swap transaction
+      proceedAfterApproval(signableOrder)
+    }
+    else if (approvalConfirmError && state.currentStep !== 'canceled') {
+      dispatch({ type: 'ERROR', error: approvalConfirmError.message })
+    }
+  }, [isApprovalConfirming, isApprovalConfirmed, approvalConfirmError, state.currentStep, signableOrder])
+
   // Handle permit signature flow
   useEffect(() => {
-    if (isSigningPermit && state.currentStep === 'idle') {
+    if (isSigningPermit && (state.currentStep === 'idle' || state.currentStep === 'confirming-approval')) {
       dispatch({ type: 'START_SIGNING_PERMIT' })
     }
     else if (permitSignature && state.currentStep === 'signing-permit' && signableOrder) {
@@ -565,7 +656,7 @@ function useTransactionFlow({
     }
   }, [isSigningPermit, permitSignature, permitError, state.currentStep, signableOrder])
 
-  // Handle transaction confirmation flow
+  // Handle swap transaction confirmation flow
   useEffect(() => {
     if (isConfirming && state.currentStep === 'waiting-transaction') {
       dispatch({ type: 'START_CONFIRMING' })
@@ -586,23 +677,19 @@ function useTransactionFlow({
     }
 
     setSignableOrder(order)
+    setApprovalTxHash(undefined)
+    setTxHash(undefined)
     dispatch({ type: 'RESET' })
 
-    const orderHasPermit = !!order.signaturePayload
+    // If approval is needed, start with approval flow
+    if (order.approvalTransaction) {
+      dispatch({ type: 'START_SENDING_APPROVAL' })
+      handleSendApprovalTransaction(order)
+      return
+    }
 
-    if (orderHasPermit) {
-      try {
-        const permitData = order.signaturePayload! as any
-        signPermit(permitData)
-      }
-      catch {
-        dispatch({ type: 'ERROR', error: 'Failed to parse permit data' })
-      }
-    }
-    else {
-      dispatch({ type: 'START_SENDING_TRANSACTION' })
-      handleSignAndSendTransaction(order)
-    }
+    // Otherwise proceed directly to permit/swap
+    proceedAfterApproval(order)
   }
 
   const cancelTransaction = () => {
@@ -614,6 +701,7 @@ function useTransactionFlow({
     error: state.error,
     startTransaction,
     cancelTransaction,
+    hasApproval,
   }
 }
 
@@ -733,6 +821,15 @@ function FormActionButtons({
           </Button>
         </>
       )
+    case 'sending-approval':
+    case 'waiting-approval':
+    case 'confirming-approval':
+      return (
+        <Button variant="secondary" className="pointer-events-none w-32">
+          Approving
+          <WaitingEllipsis />
+        </Button>
+      )
     case 'signing-permit':
       return (
         <Button variant="secondary" className="pointer-events-none w-32">
@@ -838,8 +935,10 @@ export function Pricer({ plannedOrder, onSubmit }: Props) {
 
   const getStepMessage = (): string | null => {
     switch (currentStep) {
+      case 'sending-approval':
+        return 'Please approve the token in your wallet...'
       case 'signing-permit':
-        return 'Please sign the approval in your wallet...'
+        return 'Please sign the permit in your wallet...'
       case 'sending-transaction':
         return 'Please confirm the order in your wallet...'
       default:
@@ -854,7 +953,6 @@ export function Pricer({ plannedOrder, onSubmit }: Props) {
   // Consolidate all errors: prioritize transaction errors over field errors
   const displayError = error || fieldErrorMessage
 
-  const isWaitingForWallet = currentStep === 'signing-permit' || currentStep === 'sending-transaction'
   const stepMessage = getStepMessage()
   const isFormDisabled = currentStep !== 'idle'
 
@@ -883,11 +981,7 @@ export function Pricer({ plannedOrder, onSubmit }: Props) {
             )}
             {stepMessage
               ? (
-                <div className={`w-full mt-4 p-3 rounded-lg text-sm ${isWaitingForWallet
-                  ? 'bg-accent text-accent-foreground'
-                  : 'bg-primary text-primary-foreground'
-                  }`}
-                >
+                <div className="w-full mt-4 p-3 rounded-lg text-sm bg-accent text-accent-foreground">
                   {stepMessage}
                 </div>
               )

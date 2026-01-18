@@ -1,5 +1,6 @@
 from typing import Any, Dict, Literal, Optional, Union, Annotated
 from api.investment.infrastructure.zero_x.fee import Fees
+from api.investment.infrastructure.zero_x.price import Issues
 from pydantic import BaseModel, Field, RootModel
 
 
@@ -28,6 +29,7 @@ class Quote(BaseModel):
     sellAmount: str
     sellToken: str
     fees: Fees
+    issues: Issues
 
 
 class QuoteResult(RootModel[Any]):

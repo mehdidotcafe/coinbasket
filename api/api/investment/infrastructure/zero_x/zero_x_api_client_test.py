@@ -17,7 +17,7 @@ from api.investment.infrastructure.zero_x.zero_x_api_client import (
 from api.investment.infrastructure.zero_x.zero_x_api_client import (
     ZeroXApiClient,
 )
-from api.investment.infrastructure.zero_x.price import Price, Issues
+from api.investment.infrastructure.zero_x.price import Price, Issues, Allowance
 
 from api.investment.investment_parameters import (
     IntegratorFee,
@@ -156,6 +156,11 @@ async def test_zero_x_api_client_get_quote_success(
 
     expected_quote = Quote(
         permit2=None,
+        issues=Issues(
+            allowance=Allowance(
+                spender="0xdefdefdefdefdefdefdefdefdefdefdefdefdefd",
+            )
+        ),
         transaction=Transaction(
             to="0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
             data="0x1234567890abcdef1234567890abcdef12345678",
