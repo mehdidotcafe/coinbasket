@@ -39,6 +39,9 @@ from web3 import AsyncWeb3
 
 RETRY_ATTEMPTS = 5
 
+# Max uint256 for unlimited approval
+MAX_UINT256 = 2**256 - 1
+
 
 class Configuration(TypedDict):
     bsc_rpc_url: str
@@ -151,9 +154,6 @@ class ZeroXSwapper(Exchange):
         """Build an approval transaction if the sell token needs allowance for Permit2."""
         if self.chain.is_native_token(sell_asset) or quote.issues.allowance is None:
             return None
-
-        # Max uint256 for unlimited approval
-        MAX_UINT256 = 2**256 - 1
 
         encoded_data = self.contract.make_approve_transaction_input(
             token_address=sell_asset.address,
