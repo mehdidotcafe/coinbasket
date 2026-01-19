@@ -61,11 +61,8 @@
         "infra:production"
       ],
       "options": {
-        "command": "env-cmd -f .env.production --use-shell 'poetry run fastapi run api/main.py --reload --port $APP_PORT'",
+        "command": "env-cmd --silent -f .env.production --use-shell 'gunicorn -k uvicorn.workers.UvicornWorker -w 1 -b 0.0.0.0:${PORT:-$APP_PORT} api.main:app'",
         "cwd": "{projectRoot}"
-      },
-      "configurations": {
-        "production": {}
       },
       "cache": false
     },
@@ -74,9 +71,6 @@
       "options": {
         "command": "env-cmd -f .env.test --use-shell 'poetry run fastapi run api/main.py --reload --port $APP_PORT'",
         "cwd": "{projectRoot}"
-      },
-      "configurations": {
-        "production": {}
       },
       "cache": false
     },
@@ -110,7 +104,7 @@
     "cli:production": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.cli'",
+        "command": "env-cmd -f .env.production_server --use-shell 'poetry run python -m api.cli'",
         "cwd": "{projectRoot}"
       },
       "cache": false
@@ -188,28 +182,28 @@
     "migration:init": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic init alembic",
+        "command": "python -m alembic init alembic",
         "cwd": "{projectRoot}"
       }
     },
     "migration:gen": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${APP_NAME}_${APP_ENV}\" revision --autogenerate",
+        "command": "python -m alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" revision --autogenerate",
         "cwd": "{projectRoot}"
       }
     },
     "migration:run": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${APP_NAME}_${APP_ENV}\" upgrade head",
+        "command": "python -m alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" upgrade head",
         "cwd": "{projectRoot}"
       }
     },
     "migration:test:run": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.test --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${APP_NAME}_${APP_ENV}\" upgrade head'",
+        "command": "env-cmd -f .env.test --use-shell 'alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" upgrade head'",
         "cwd": "{projectRoot}"
       },
       "cache": false
@@ -217,28 +211,28 @@
     "migration:production:run": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.production --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${APP_NAME}_${APP_ENV}\" upgrade head'",
+        "command": "env-cmd --silent -f .env.production --use-shell 'alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" upgrade head'",
         "cwd": "{projectRoot}"
       }
     },
     "migration:rollback": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${APP_NAME}_${APP_ENV}\" downgrade -1",
+        "command": "python -m alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" downgrade -1",
         "cwd": "{projectRoot}"
       }
     },
     "migration:production:rollback": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.production --use-shell './.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${APP_NAME}_${APP_ENV}\" downgrade -1'",
+        "command": "env-cmd --silent -f .env.production --use-shell 'alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" downgrade -1'",
         "cwd": "{projectRoot}"
       }
     },
     "migration:list": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "./.venv/bin/alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${APP_NAME}_${APP_ENV}\" history",
+        "command": "python -m alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" history",
         "cwd": "{projectRoot}"
       }
     }

@@ -9,6 +9,8 @@ from api.protocol.asset_category import AssetCategory
 
 
 class DevDataSource(DataSource):
+    blacklist_tokens = ["0x2f8a339b5889ffac4c5a956787cda593b3c36867"]
+
     def __init__(
         self,
         id_generator: IdGenerator,
@@ -32,10 +34,12 @@ class DevDataSource(DataSource):
         return [
             self._map_raw_token_to_token_similarity(raw_token)
             for raw_token in raw_tokens
+            if raw_token["platforms"]["binance-smart-chain"].lower()
+            not in self.blacklist_tokens
         ]
 
     def version(self) -> int:
-        return 3
+        return 4
 
     def _map_raw_token_to_token_similarity(
         self, raw_token: dict[str, Any]

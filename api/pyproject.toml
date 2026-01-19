@@ -51,6 +51,9 @@ readme = "README.md"
   siwe = "^4.4.0"
   pyjwt = "^2.10.1"
   langgraph-checkpoint-postgres = "^3.0.2"
+  uvicorn = {extras = ["standard"], version = "^0.40.0"}
+  gunicorn = "^23.0.0"
+  psycopg = {extras = ["binary", "pool"], version = "^3.3.2"}
     [tool.poetry.dependencies.langchain]
     extras = [ "openai" ]
     version = "^1.0.2"

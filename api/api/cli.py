@@ -30,7 +30,12 @@ from api.registry import id_generator, similarity_storage, token_repository
 
 
 configuration = Configuration()
-w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
+w3 = AsyncWeb3(
+    AsyncHTTPProvider(
+        configuration.bsc_rpc_url,
+        request_kwargs={"headers": {"Origin": configuration.app_domain}},
+    )
+)
 
 transaction_receipt_parser = BscTransactionReceiptParser(w3=w3)
 
@@ -64,7 +69,9 @@ async def get_address_balances():
 
 
 async def make_assets_snapshot():
-    http_request = AiohttpHttpRequest()
+    http_request = AiohttpHttpRequest(
+        configuration={"app_domain": configuration.app_domain}
+    )
     coingecko_token_repository = CoingeckoTokenRepository(
         http_request,
         {
@@ -114,7 +121,12 @@ async def seed_assets():
         case "test":
             data_sources = [TestDataSource(id_generator)]
         case "development":
-            data_sources = [DevDataSource(id_generator)]
+            data_sources = [
+                DevDataSource(id_generator),
+                CmcTop20BasketDataSource(
+                    id_generator,
+                ),
+            ]
         case _:
             data_sources = [
                 CoingeckoLiveTokenListDataSource(

@@ -10,7 +10,7 @@ def http_request() -> AiohttpHttpRequest:
     """
     Fixture to provide an instance of AiohttpHttpRequest.
     """
-    return AiohttpHttpRequest()
+    return AiohttpHttpRequest(configuration={"app_domain": "https://test.example.com"})
 
 
 def test_aiohttp_http_request_defined(http_request: AiohttpHttpRequest):

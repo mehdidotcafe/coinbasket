@@ -85,7 +85,16 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
             field_name="metadata.source.is_canonical",
             field_schema=PayloadSchemaType.INTEGER,
         )
-
+        self.client.create_payload_index(
+            collection_name=self.configuration["qdrant_collection"],
+            field_name="metadata.source.id",
+            field_schema=PayloadSchemaType.KEYWORD,
+        )
+        self.client.create_payload_index(
+            collection_name=self.configuration["qdrant_collection"],
+            field_name="metadata.type",
+            field_schema=PayloadSchemaType.KEYWORD,
+        )
         self.qdrant = self.qdrant_vector_store(
             client=self.client,
             collection_name=self.configuration["qdrant_collection"],
@@ -125,7 +134,31 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
 
         reranked_raw_assets: list[tuple[dict[str, Any], float]] = []
 
-        if name_or_ticker:
+        # Address exact match has highest priority
+        if name_or_ticker and name_or_ticker.startswith("0x"):
+            results, _ = await self.async_client.scroll(
+                collection_name=self.configuration["qdrant_collection"],
+                scroll_filter=Filter(
+                    must=[
+                        *must_conditions,
+                        FieldCondition(
+                            key="metadata.source.address",
+                            match=MatchValue(value=name_or_ticker.lower()),
+                        ),
+                    ]
+                ),
+                limit=fetch_limit,
+            )
+
+            reranked_raw_assets = self._rerank_results(
+                [
+                    (record.payload["metadata"], 1.0)
+                    for record in results
+                    if record.payload
+                ],
+            )
+
+        elif name_or_ticker:
             documents_with_score = await self.qdrant.asimilarity_search_with_score(
                 name_or_ticker,
                 fetch_limit,
@@ -272,6 +305,7 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
             for doc in await self.qdrant.aget_by_ids(ids)
         ]
 
+    # TODO: Rename get by id
     async def get_by_field(self, name: str, value: str) -> list[SimilarityDocument]:
         records: list[Record] = []
         offset = None
