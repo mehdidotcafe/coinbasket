@@ -22,10 +22,10 @@ class AiohttpHttpRequest(HttpRequest):
     def __init__(self, configuration: ConfigurationDict):
         self._configuration = configuration
 
-    def _get_headers(self, headers: dict[str, Any] = {}) -> dict[str, Any]:
+    def _get_headers(self, headers: dict[str, Any] = None) -> dict[str, Any]:
         base_headers = {"Origin": self._configuration["app_domain"]}
 
-        return {**base_headers, **headers}
+        return {**base_headers, **(headers or {})}
 
     async def get(self, params: GetParams, schema: Type[T]) -> T:
         """

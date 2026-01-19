@@ -203,7 +203,7 @@
     "migration:test:run": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.test --use-shell 'alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" upgrade head'",
+        "command": "env-cmd -f .env.test --use-shell 'python -m alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" upgrade head'",
         "cwd": "{projectRoot}"
       },
       "cache": false
@@ -211,7 +211,7 @@
     "migration:production:run": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd --silent -f .env.production --use-shell 'alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" upgrade head'",
+        "command": "env-cmd --silent -f .env.production --use-shell 'python -m  alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" upgrade head'",
         "cwd": "{projectRoot}"
       }
     },
@@ -225,7 +225,7 @@
     "migration:production:rollback": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd --silent -f .env.production --use-shell 'alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" downgrade -1'",
+        "command": "env-cmd --silent -f .env.production --use-shell 'python -m  alembic -x \"url=postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/${DATABASE_NAME}\" downgrade -1'",
         "cwd": "{projectRoot}"
       }
     },
