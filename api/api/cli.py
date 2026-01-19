@@ -32,8 +32,10 @@ from api.registry import id_generator, similarity_storage, token_repository
 configuration = Configuration()
 w3 = AsyncWeb3(
     AsyncHTTPProvider(
-        configuration.bsc_rpc_url,
-        request_kwargs={"headers": {"Origin": configuration.app_domain}},
+        endpoint_uri=configuration.bsc_rpc_url,
+        request_kwargs={"headers": {"Origin": configuration.app_domain}}
+        if configuration.app_env == "production"
+        else None,
     )
 )
 
