@@ -366,6 +366,79 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_categori
 
 
 @mark.asyncio
+async def test_qdrant_langchain_asset_similarity_repository_search_with_address(
+    qdrant_client: type[QdrantClient],
+    qdrant_async_client: type[AsyncQdrantClient],
+    qdrant_vector_store: type[QdrantVectorStore],
+    embeddings: OpenAIEmbeddings,
+    fetch_limit: int,
+):
+    address = "0xabc12123def4567890abc12123def4567890abc12"
+
+    similarity_storage = QdrantLangChainAssetSimilarityRepository(
+        {
+            "qdrant_url": "http://localhost",
+            "qdrant_port": 6333,
+            "qdrant_grpc_port": 6334,
+            "qdrant_collection": "datasets",
+            "qdrant_api_key": "d011246a-b8dd-4a8c-baf2-7ec12f2507db",
+        },
+        qdrant_client,
+        qdrant_async_client,
+        qdrant_vector_store,
+        embeddings,
+    )
+
+    similarity_storage.start()
+
+    bnb_token_similarity = bnb_token.to_dict() | {
+        "market_cap_usd": 0,
+        "is_canonical": 1,
+    }
+
+    qdrant_async_client.scroll.return_value = (
+        [
+            Record(
+                id="1",
+                payload={
+                    "metadata": {
+                        "_id": "1",
+                        "type": "token",
+                        "source": bnb_token_similarity,
+                    },
+                },
+            ),
+        ],
+        None,
+    )
+
+    assets = await similarity_storage.similarity_search(address, "TOKEN")
+
+    assert assets == [
+        bnb_token,
+    ]
+
+    qdrant_vector_store.asimilarity_search_with_score.assert_not_called()
+
+    qdrant_async_client.scroll.assert_called_once_with(
+        collection_name="datasets",
+        scroll_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="metadata.type",
+                    match=MatchValue(value="token"),
+                ),
+                FieldCondition(
+                    key="metadata.source.address",
+                    match=MatchValue(value=address),
+                ),
+            ]
+        ),
+        limit=fetch_limit,
+    )
+
+
+@mark.asyncio
 async def test_qdrant_langchain_asset_similarity_repository_get(
     qdrant_client: type[QdrantClient],
     qdrant_async_client: type[AsyncQdrantClient],

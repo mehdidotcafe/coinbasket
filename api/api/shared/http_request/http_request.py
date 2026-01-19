@@ -19,6 +19,10 @@ class PostParams(TypedDict):
     headers: NotRequired[dict[str, Any]]
 
 
+class ConfigurationDict(TypedDict):
+    app_domain: str
+
+
 class HttpRequest(ABC):
     async def get(self, params: GetParams, schema: Type[T]) -> T:
         raise NotImplementedError

@@ -403,17 +403,18 @@ async def get_portfolio_summary(
     Returns:
         The portfolio of the agent.
     """
-    address = cast(Address, request_address_context.get())
+    # address = cast(Address, request_address_context.get())
 
-    conversion_asset = await get_asset_by_id_use_case.execute(
-        request.conversion_token_id
-    )
+    # conversion_asset = await get_asset_by_id_use_case.execute(
+    #     request.conversion_token_id
+    # )
 
-    if not conversion_asset:
-        raise ValueError(f"Conversion token id {request.conversion_token_id} not found")
-    return PortfolioResponse.from_domain(
-        await get_portfolio_use_case.execute(address, conversion_asset)
-    ).model_dump_json()
+    # if not conversion_asset:
+    #     raise ValueError(f"Conversion token id {request.conversion_token_id} not found")
+    # return PortfolioResponse.from_domain(
+    #     await get_portfolio_use_case.execute(address, conversion_asset)
+    # ).model_dump_json()
+    return "Coming soon, not implemented yet."
 
 
 @tool(
@@ -489,16 +490,14 @@ class GetAssetPriceRequest(BaseModel):
 
 
 class GetAssetPriceResponse(BaseModel):
-    sell_balance: BalanceResponse
-    buy_balance: BalanceResponse
+    balance: BalanceResponse
 
     @staticmethod
     def from_domain(
         converted_balance: ConvertedBalance,
     ) -> "GetAssetPriceResponse":
         return GetAssetPriceResponse(
-            sell_balance=BalanceResponse.from_domain(converted_balance.sell_balance),
-            buy_balance=BalanceResponse.from_domain(converted_balance.buy_balance),
+            balance=BalanceResponse.from_domain(converted_balance.buy_balance),
         )
 
 
@@ -559,7 +558,6 @@ class ExecutedOrderResponse(BaseModel):
     transaction_hash: str
     buy_balance: BalanceAtomicResponse
     sell_balance: BalanceAtomicResponse
-    rate: str | None = None
 
     @staticmethod
     def from_domain(domain: ExecutedOrder) -> "ExecutedOrderResponse":
@@ -568,7 +566,6 @@ class ExecutedOrderResponse(BaseModel):
             transaction_hash=domain.transaction_hash,
             buy_balance=BalanceAtomicResponse.from_domain(domain.buy_balance),
             sell_balance=BalanceAtomicResponse.from_domain(domain.sell_balance),
-            rate=str(domain.rate) if domain.rate else None,
         )
 
 
@@ -670,8 +667,8 @@ class SignedOrderRequest(BaseModel):
 class IntentOrderRequest(BaseModel):
     sell_asset_id: str | None = None
     buy_asset_id: str | None = None
-    amount: str | None = None
-    type: Literal["SELL", "BUY"]
+    sell_amount: str | None = None
+    buy_amount: str | None = None
 
     async def to_domain(self, id: IntendedOrderId, address: Address):
         sell_asset = None
@@ -690,13 +687,16 @@ class IntentOrderRequest(BaseModel):
             if not buy_asset:
                 raise ValueError(f"Asset id {self.buy_asset_id} not found")
 
+        type = "SELL" if self.sell_amount else "BUY"
+        amount = self.sell_amount or self.buy_amount
+
         return IntendedOrder(
             id=id,
             address=address,
             sell_asset=sell_asset,
             buy_asset=buy_asset,
-            amount=Decimal(self.amount) if self.amount else None,
-            type=self.type,
+            amount=Decimal(amount) if amount else None,
+            type=type,
         )
 
 
@@ -849,7 +849,7 @@ async def plan_and_execute_swap_order(
     Pass asset_id as they are don't change them.
     IMPORTANT: You can make a swap by providing both a buy_asset_id and a sell_asset_id.
     IMPORTANT: You don't need to know the amount to buy, sell, swap an asset in advance. You can leave the amount fields empty (set to None) and the agent will decide the amount to buy or sell based on the available cash and holdings.
-    IMPORTANT: Amount should be related to the buy or sell asset only. If user wants to buy or sell from a dollars or euro amount you first have to convert it to the related asset amount using the get_asset_price tool.
+    IMPORTANT: Only provide sell_amount or buy_amount. If user wants to buy or sell from a dollars or euro amount you first have to convert it to the related asset amount using the get_asset_price tool.
     IMPORTANT: Do not call another tool if this returns results.
 
     Args:
@@ -862,8 +862,14 @@ async def plan_and_execute_swap_order(
         IntentOrderRequest(
             buy_asset_id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
             sell_asset_id="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-            amount="5.33",
-            type="BUY",
+            buy_amount="5.33",
+            sell_amount=None,
+        )
+        IntentOrderRequest(
+            buy_asset_id="2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
+            sell_asset_id="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+            sell_amount="9",
+            buy_amount=None,
         )
     """
     address = cast(Address, request_address_context.get())
@@ -935,7 +941,7 @@ coinbasket_tools = [
     get_available_cash,
     get_token_or_basket_or_asset_balance,
     get_asset_price,
-    # get_portfolio_summary,
+    get_portfolio_summary,
     get_executed_orders,
     get_executed_order,
     get_address,
@@ -1018,7 +1024,7 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
     request_address_context.set(address)
 
     async with AsyncPostgresSaver.from_conn_string(
-        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}_{configuration.app_env}"
+        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.database_name}"
     ) as checkpointer:
         agent_executor = await __create_agent_executor(checkpointer)
 
@@ -1054,11 +1060,11 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
             "\n".join(
                 [
                     "Your goal is to manage a portfolio made of assets on the BNB Chain. An asset is either a token or a basket.  ",
-                    "Users can buy, sell, or swap assets in their portfolio by placing orders.  ",
+                    "Users can place orders to buy, sell, or swap assets for their portfolio.  ",
                     "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'.  ",
                     "ALWAYS use a tool to fetch an asset address when you need it.  ",
                     "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
-                    "If the user provides an amount in dollars or euro, ALWAYS first convert it to the related asset amount using the get_asset_price tool and then provide the computed amount to the plan_and_execute_swap_order tool.  ",
+                    "The only way to place order is to use the plan_and_execute_swap_order tool.  ",
                     "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
                     "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
                     "Consider all tool parameters optional unless explicitly stated otherwise.",
@@ -1114,7 +1120,7 @@ async def get_conversation_messages(request: Request) -> MessagesResponse:
     address = Address(getattr(request.state, "address"))
     """Retrieve the conversation messages."""
     async with AsyncPostgresSaver.from_conn_string(
-        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}_{configuration.app_env}"
+        f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.database_name}"
     ) as checkpointer:
         agent_executor = await __create_agent_executor(checkpointer)
 

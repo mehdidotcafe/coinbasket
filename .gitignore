@@ -1,7 +1,7 @@
 # Global
 .env
 .env.local
-.env.production
+.env.production*
 .env.integration_test
 
 # NX

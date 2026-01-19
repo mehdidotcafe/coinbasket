@@ -30,6 +30,7 @@ class Configuration:
         self.database_password = env.str("DATABASE_PASSWORD")
         self.database_host = env.str("DATABASE_HOST")
         self.database_port = env.int("DATABASE_PORT")
+        self.database_name = env.str("DATABASE_NAME")
 
         self.qdrant_api_key = env.str("QDRANT_API_KEY")
         self.qdrant_collection = env.str("QDRANT_COLLECTION")

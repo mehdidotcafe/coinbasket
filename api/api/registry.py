@@ -85,7 +85,14 @@ date_time = PythonDateTime()
 
 configuration = Configuration()
 
-w3 = AsyncWeb3(AsyncHTTPProvider(configuration.bsc_rpc_url))
+w3 = AsyncWeb3(
+    AsyncHTTPProvider(
+        endpoint_uri=configuration.bsc_rpc_url,
+        request_kwargs={"headers": {"Origin": configuration.app_domain}}
+        if configuration.app_env == "production"
+        else None,
+    )
+)
 
 transaction_receipt_parser = (
     BscTransactionReceiptParser(w3=w3)
@@ -100,7 +107,9 @@ chain = BscChain(
 
 contract = BscContract(w3=w3)
 
-aiohttp_http_request = AiohttpHttpRequest()
+aiohttp_http_request = AiohttpHttpRequest(
+    configuration={"app_domain": configuration.app_domain}
+)
 
 id_generator = IdGenerator()
 
@@ -131,7 +140,7 @@ exchange = (
 )
 
 engine = create_async_engine(
-    f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.app_name}_{configuration.app_env}",
+    f"postgresql+asyncpg://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.database_name}",
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
@@ -168,7 +177,7 @@ conversation_repository = LangchainPostgresqlConversationRepository(
         "database_password": configuration.database_password,
         "database_host": configuration.database_host,
         "database_port": configuration.database_port,
-        "database_name": f"{configuration.app_name}_{configuration.app_env}",
+        "database_name": configuration.database_name,
     },
 )
 
