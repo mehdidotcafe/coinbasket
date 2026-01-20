@@ -1,55 +1,47 @@
 [<img src="./assets/coinbasket_banner_thin.png"/>](./assets/coinbasket_banner_thin.png)
 
-# coinbasket open source ![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3) ![tag:ASI](https://img.shields.io/badge/asi-3D8BD3)
-This mono-repository contains the code for the coinbasket open source offering, which includes one main component: the API. It is designed to manage and execute investment strategies based on data retrieved from various sources.
+# Coinbasket
 
-Please refer to the individual directories for more information on each component:
-- [api](./api/README.md): The API is responsible for managing and executing investment strategies based on data retrieved from different data sources. It uses the FastAPI framework to interact with the Frontend and perform trades on the BNB Chain using 0x Protocol API and Web3.py.
+Coinbasket is an open-source investment strategy management and execution platform for the BNB Chain. It provides AI-powered investment recommendations, portfolio management, and trade execution through an intuitive web interface.
 
+## Features
 
-## Running the entire stack
-Once the environment variables are set up for the API, you can choose to run the entire stack in either development or production mode.
+- **AI Investment Advisor** - LangGraph agents with OpenAI GPT integration for intelligent investment conversations
+- **Portfolio Management** - Real-time balance tracking across multiple assets
+- **Trade Execution** - Plan, sign, and execute swaps using 0x Protocol and PancakeSwap
+- **Asset Discovery** - Vector similarity search to find related tokens and investment baskets
+- **Web3 Authentication** - Sign In With Ethereum (SIWE) for secure wallet-based authentication
 
-### Development mode
-To run the entire stack in development mode, you can use the following quick start command:
+## Architecture
 
-```bash
-./nx dev:all
-```
+This monorepo contains two main components:
 
-This will start the API and API worker in development mode, along with their respective dependencies.
-Otherwise, you can choose to start each component separately using the following commands:
+| Component | Description |
+|-----------|-------------|
+| [api](./api) | Python/FastAPI backend for investment strategy execution |
+| [app](./app) | Next.js frontend with React and TypeScript |
 
-```bash
-./nx dev api
-./nx dev:worker api
-```
+## Tech Stack
 
-⚠️ Note: If you don't start the worker, Orders won't be executed.
+**Backend**: Python, FastAPI, Web3.py, SQLAlchemy, PostgreSQL, Qdrant, LangGraph
 
-This will start the API and API worker in development mode, along with their respective dependencies.
+**Frontend**: Next.js, TypeScript, Tailwind CSS, Wagmi, RainbowKit, React Query
 
-### Production mode
-To run the entire stack in production mode, you can use the following quick start command:
+**Blockchain**: BNB Chain, 0x Protocol, PancakeSwap
 
-```bash
-./nx start:all
-```
+## Prerequisites
 
-This will start the API and API worker in production mode, along with their respective dependencies.
+- Python 3.10+
+- Node.js 22+
+- Docker & Docker Compose
 
-Otherwise, you can choose to start each component separately using the following commands:
+## Getting Started
 
-```bash
-./nx start api
-./nx start:worker api
-```
+See the individual project READMEs for detailed setup instructions:
 
-⚠️ Note: If you don't start the worker, Orders won't be executed.
+- [API Setup](./api/README.md)
+- [App Setup](./app/README.md)
 
-This will start the API and API worker in production mode, along with their respective dependencies.
+## License
 
-## Interacting with the API
-You can use the [Coinbasket online Frontend](https://app.coinbasket.ai) to register and interact with your API. The frontend provides a user-friendly interface to manage your investment strategies and monitor the performance of your portfolio.
-
-⚠️ Note: Your API needs to be publicly accessible for the frontend to interact with it.
+[GNU Affero General Public License v3.0](./LICENSE)

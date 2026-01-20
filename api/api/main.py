@@ -1169,6 +1169,7 @@ class ConvertedBalanceResponse(BaseModel):
         BasketResponse,
         BalanceResponse,
         ConvertedBalanceResponse,
+        FeesResponse,
     ],
     path="/asset/swap/price",
     operations={

@@ -1,73 +1,81 @@
 [<img src="../assets/coinbasket_banner_thin.png"/>](../assets/coinbasket_banner_thin.png)
 
-# coinbasket API
+# Coinbasket API
 
-The coinbasket API is designed to manage and execute investment strategies based on data retrieved from different data sources. It uses the FastAPI framework to interact with the Frontend and perform trades on the BNB Chain using 0x Protocol API and Web3.py.
+The Coinbasket API is a FastAPI backend for managing and executing investment strategies on the BNB Chain. It handles portfolio management, order execution via 0x Protocol, and AI-powered investment conversations using LangGraph.
+
+## Prerequisites
+
+- Python 3.10+
+- Node.js 22+
+- Docker & Docker Compose
 
 ## Installation
-### Prerequisites
-Ensure you have the following dependencies installed:
-- Python (>= 3.10)
-- Node.js (>= 22.0.0)
 
-Before the first run and from the root of the repository, run:
+From the **root of the repository**, install dependencies:
+
 ```bash
 npm install
 ./nx install api
 ```
-This installs Python and Javascript dependencies (if needed).
 
-### Environment variables
-#### Development mode
-In the `api` directory, copy `.env.example` to `.env.local` and fill in the required environment variables. Once configured, the API is ready to run in development mode.
+## Environment Configuration
 
-#### Production mode
-In the `api` directory, copy `.env.example` to `.env.production` and fill in the required environment variables. Once configured, the API is ready to run in production mode.
+Copy `.env.example` to the appropriate environment file:
 
-## Development Mode
-In development mode, the commands will launch:
-- an anvil container (a local BNB Chain clone)
-- a redoc container (for API documentation)
-- a postgresql container (for storing portfolio and orders)
-- a qdrant vector database container (for storing tokens and baskets)
+| Environment | File |
+|------------|------|
+| Development | `.env.local` |
+| Production | `.env.production` |
 
-- the API itself
+Fill in the required environment variables in the copied file.
 
-This setup enables easy local development and testing, without needing to connect to a real blockchain.
+## Development
 
-You’ll also need:
-- Docker
-- Docker Compose
+Development mode starts the following Docker containers:
+- **Anvil** - Local BNB Chain fork for testing
+- **PostgreSQL** - Database for portfolio and orders
+- **Qdrant** - Vector database for tokens and baskets
+- **ReDoc** - API documentation
 
-### Running in Dev Mode
-From the root of the repository, run:
+### Start Development
+
+From the root of the repository:
 
 ```bash
+# Start infrastructure containers
 ./nx infra api
+
+# Run database migrations
 ./nx migration:run api
+
+# Start the API server (http://localhost:11111)
 ./nx dev api
-./nx dev:worker api
+
 ```
-This will install any required Python dependencies, start the necessary dev containers, run the migrations and launch the API.
 
-⚠️ Note: If you don't start the worker, Orders won't be executed.
-⚠️ Note: For quota reasons from 0x Protocol, the orders won't be actually executed on Anvil. Orders are nonetheless created and stored in the database.
+> **Note**: Executing 0x PROTOCOL transaction on Anvil chain will result in your key being banned. Prefer using the real BNB Chain in production mode for testing trade execution.
 
-## Production Mode
-Use this mode to connect the API to a live blockchain for deployment.
+### API Documentation
 
-### Running in Production
+- ReDoc: http://localhost:11112/
+- OpenAPI spec: http://localhost:11111/openapi
 
-From the root of the repository, run:
+## Production
+
+Production mode connects to the live BNB Chain.
+
+### Start Production
 
 ```bash
+# Start production containers
 ./nx infra:production api
+
+# Run database migrations
 ./nx migration:production:run api
+
+# Start the API server
 ./nx start api
-./nx start:worker api
 ```
-This will install Python dependencies, start the necessary production containers, run the migrations and start the API.
 
-⚠️ Note: If you don't start the worker, Orders won't be executed.
-
-Note: By updating the database variables of the `.env.production` file, you are able to connect the API to any postgresql database / qdrant store of your choice.
+> **Note**: You can connect to an external PostgreSQL/Qdrant by updating the database variables in `.env.production`.
