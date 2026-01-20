@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+[<img src="../assets/coinbasket_banner_thin.png"/>](../assets/coinbasket_banner_thin.png)
 
-## Getting Started
+# Coinbasket App
 
-First, run the development server:
+The Coinbasket App is a Next.js frontend for interacting with the Coinbasket API. It provides a web interface for AI-powered investment conversations, portfolio management, and trade execution on the BNB Chain.
+
+## Prerequisites
+
+- Node.js 22+
+
+## Installation
+
+From the **root of the repository**, install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+./nx install app
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` to `.env` and configure the variables.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env
+```
 
-## Learn More
+## Start Development
 
-To learn more about Next.js, take a look at the following resources:
+From the root of the repository:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+./nx dev app
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open http://localhost:3000 in your browser.
 
-## Deploy on Vercel
+## Start Production
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+From the root of the repository:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+./nx start app
+```
+
+## Storybook
+
+The app includes Storybook for component development and documentation.
+
+```bash
+# Start Storybook dev server
+./nx storybook app
+```
+
+Open http://localhost:6006 for Storybook.
+
+## Testing
+
+```bash
+# Run tests with Vitest
+./nx test app
+```
+
+## Tech Stack
+
+- **Next.js 15** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS v4** - Styling
+- **Wagmi + Viem** - Web3 wallet integration
+- **RainbowKit** - Wallet connection UI
+- **React Query** - Data fetching and caching
+- **React Hook Form + Zod** - Form handling and validation
+- **Radix UI** - Accessible components
+- **Vitest** - Testing
+- **Storybook** - Component documentation
