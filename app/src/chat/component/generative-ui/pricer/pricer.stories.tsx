@@ -1,4 +1,4 @@
-'use-client'
+'use client'
 
 import type { Meta, StoryObj } from '@storybook/react'
 import Big from 'big.js'
