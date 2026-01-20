@@ -80,8 +80,6 @@ from api.token.infrastructure.coingecko.coingecko_token_repository import (
 
 date_time = PythonDateTime()
 
-date_time = PythonDateTime()
-
 
 configuration = Configuration()
 
