@@ -1,0 +1,113 @@
+# serializer version: 1
+# name: test_integration_conversation_success[ethereum]
+  dict({
+    'args': dict({
+      'planned_order': dict({
+        'address': '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+        'buy_asset_with_amount': dict({
+          'asset': dict({
+            'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+            'categories': list([
+              'Crypto-Backed Tokens',
+              'BNB Chain Ecosystem',
+              'Harmony Ecosystem',
+              'Bitcoin Ecosystem',
+            ]),
+            'decimals': 18,
+            'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",
+            'display_name': 'Bitcoin',
+            'id': 'bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c',
+            'logo_uri': 'https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png',
+            'name': 'Binance Bitcoin',
+            'ticker': 'BTC',
+            'type': 'TOKEN',
+          }),
+        }),
+        'fees': dict({
+          'gas_fee': dict({
+            'amount': '0.00015',
+            'amount_atomic': '15000',
+            'asset': dict({
+              'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+              'categories': list([
+                'Crypto-Backed Tokens',
+                'BNB Chain Ecosystem',
+                'Wrapped-Tokens',
+              ]),
+              'decimals': 18,
+              'description': 'Binance native token',
+              'display_name': 'Binance Coin',
+              'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+              'logo_uri': 'https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+              'name': 'Binance Coin',
+              'ticker': 'BNB',
+              'type': 'TOKEN',
+            }),
+            'decimals': 18,
+          }),
+          'platform_fee': dict({
+            'amount': '0.0001',
+            'amount_atomic': '10000',
+            'asset': dict({
+              'address': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+              'categories': list([
+                'Crypto-Backed Tokens',
+                'BNB Chain Ecosystem',
+                'Wrapped-Tokens',
+              ]),
+              'decimals': 18,
+              'description': 'Wrapped BNB a wrapped version of the BNB native tokens on the BEP-20 standard on the Binance Smart Chain and other EVM-compatible chains. Not to be confused with BNB Native Token on the BSC Chain.',
+              'display_name': 'Wrapped BNB',
+              'id': 'bsc:0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c',
+              'logo_uri': 'https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+              'name': 'Wrapped BNB',
+              'ticker': 'WBNB',
+              'type': 'TOKEN',
+            }),
+            'decimals': 18,
+          }),
+          'provider_fee': dict({
+            'amount': '0.0003',
+            'amount_atomic': '30000',
+            'asset': dict({
+              'address': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+              'categories': list([
+                'Crypto-Backed Tokens',
+                'BNB Chain Ecosystem',
+                'Wrapped-Tokens',
+              ]),
+              'decimals': 18,
+              'description': 'Wrapped BNB a wrapped version of the BNB native tokens on the BEP-20 standard on the Binance Smart Chain and other EVM-compatible chains. Not to be confused with BNB Native Token on the BSC Chain.',
+              'display_name': 'Wrapped BNB',
+              'id': 'bsc:0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c',
+              'logo_uri': 'https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+              'name': 'Wrapped BNB',
+              'ticker': 'WBNB',
+              'type': 'TOKEN',
+            }),
+            'decimals': 18,
+          }),
+        }),
+        'sell_asset_with_amount': dict({
+          'asset': dict({
+            'address': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            'categories': list([
+              'Crypto-Backed Tokens',
+              'BNB Chain Ecosystem',
+              'Wrapped-Tokens',
+            ]),
+            'decimals': 18,
+            'description': 'Wrapped BNB a wrapped version of the BNB native tokens on the BEP-20 standard on the Binance Smart Chain and other EVM-compatible chains. Not to be confused with BNB Native Token on the BSC Chain.',
+            'display_name': 'Wrapped BNB',
+            'id': 'bsc:0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c',
+            'logo_uri': 'https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+            'name': 'Wrapped BNB',
+            'ticker': 'WBNB',
+            'type': 'TOKEN',
+          }),
+        }),
+      }),
+    }),
+    'id': 'confirm_planned_order',
+  })
+# ---

@@ -9,29 +9,18 @@ echo "Waiting Database..."
 sleep 5
 
 
-if [ "$PROJECT" = "invest_agent" ]; then
-	(cd .. && ./nx migration:test:run $PROJECT)
-	env-cmd -f .env.test poetry run python -m $PROJECT.worker &
-	WORKER_PID=$!
-fi
+(cd .. && ./nx migration:test:run $PROJECT)
 
-env-cmd -f .env.test poetry run python -m $PROJECT.main &
-API_PID=$!
+(cd .. && ./nx cli:test $PROJECT seed_assets)
 
-../script/wait_agent_start.sh
+(cd .. && ./nx start:test $PROJECT &)
+
+../script/wait_api_start.sh
 
 env-cmd -f .env.test poetry run pytest -k "test_integration" "$@"
 TEST_RESULT=$?
 
 
 (cd .. && ./nx infra:test:down $PROJECT)
-
-if [ "$PROJECT" = "invest_agent" ]; then
-	# Kill Worker
-	kill $WORKER_PID
-fi
-
-# Kill API
-kill $API_PID
 
 exit $TEST_RESULT

@@ -1,0 +1,96 @@
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, Literal
+
+from api.address.address import Address
+from api.chain.balance import BalanceAtomic
+
+from api.chain.chain import Gas
+from api.investment.fees import Fees
+from api.investment.investment_parameters import InvestmentParameters
+
+from api.chain.balance import Balance
+from api.protocol.asset import Asset
+
+
+@dataclass
+class ExchangeConvertedBalance:
+    sell_balance: BalanceAtomic[Asset]
+    buy_balance: BalanceAtomic[Asset]
+    fees: Fees
+
+
+@dataclass
+class SignableTransaction:
+    type: Literal["SIGN", "SEND"]
+    amount: int
+    data: Any
+    gas: Gas | None = None
+    to_address: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the TransactionData to a dictionary."""
+        return {
+            "type": self.type,
+            "amount": self.amount,
+            "data": self.data,
+            "gas": self.gas.to_dict() if self.gas else None,
+            "to_address": self.to_address,
+        }
+
+
+@dataclass
+class ApprovalTransaction:
+    """Transaction to approve token spending by the Permit2 contract."""
+
+    token_address: str
+    spender_address: str
+    data: str
+    amount: int
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the ApprovalTransaction to a dictionary."""
+        return {
+            "token_address": self.token_address,
+            "spender_address": self.spender_address,
+            "data": self.data,
+            "amount": self.amount,
+        }
+
+
+@dataclass
+class ExchangeSignableSwap:
+    sell_balance: BalanceAtomic[Asset]
+    buy_balance: BalanceAtomic[Asset]
+    signature_payload: dict[str, Any] | None
+    transaction: SignableTransaction
+    approval_transaction: ApprovalTransaction | None = None
+
+
+class Exchange(ABC):
+    @abstractmethod
+    async def get_signable_swap(
+        self,
+        taker: Address,
+        sell_balance: Balance[Asset],
+        buy_balance: Balance[Asset],
+        investment_parameters: InvestmentParameters,
+    ) -> ExchangeSignableSwap:
+        """Creates transaction data to be sent on-chain for the given order."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def convert_balance_to_asset(
+        self,
+        taker: Address,
+        balance: BalanceAtomic[Asset],
+        asset: Asset,
+        investment_parameters: InvestmentParameters,
+    ) -> ExchangeConvertedBalance:
+        """Converts an asset balance to an asset."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_name(self) -> str:
+        """Returns the name of the exchange."""
+        raise NotImplementedError

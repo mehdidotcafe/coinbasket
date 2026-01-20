@@ -1,0 +1,1 @@
+Credential = str

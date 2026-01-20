@@ -1,0 +1,599 @@
+from decimal import Decimal
+from unittest import mock
+from api.address.address import Address
+from api.chain.balance import Balance, BalanceAtomic
+from api.chain.chain import Chain, Gas
+from api.chain.contract import Contract
+
+from api.investment.infrastructure.zero_x.exception.swap_insufficient_liquidity import (
+    SwapInsufficientLiquidity,
+)
+from api.investment.infrastructure.zero_x.fee import Fee, Fees
+from api.investment.infrastructure.zero_x.price import Allowance, Issues, Price
+from api.investment.infrastructure.zero_x.quote import (
+    InsufficientLiquidityQuote,
+    Permit2,
+    Quote,
+    QuoteResult,
+    Transaction,
+)
+from api.investment.exchange.exchange import (
+    ApprovalTransaction,
+    ExchangeConvertedBalance,
+    SignableTransaction,
+)
+from api.investment.infrastructure.zero_x.zero_x_api_client import (
+    ZeroXApiClient,
+)
+from api.investment.infrastructure.zero_x.zero_x_swapper import (
+    Configuration,
+    ZeroXSwapper,
+)
+from api.investment.investment_parameters import InvestmentParameters
+from api.investment.infrastructure.zero_x.exception.swap_validation_failed import (
+    SwapValidationFailed,
+)
+from api.investment.exchange.exchange import (
+    ExchangeSignableSwap,
+)
+
+from api.protocol.token import Token
+from pytest import fixture, mark, raises
+from api.protocol.fixture.token import bnb_token, eth_token
+
+from web3 import AsyncWeb3
+from web3.eth import Eth
+from eth_account.signers.local import LocalAccount
+from api.investment.fees import Fees as InvestmentFees
+
+
+@fixture
+def w3():
+    w3 = mock.Mock(spec=AsyncWeb3)
+
+    w3.eth = mock.Mock(spec=Eth)
+
+    account = mock.Mock(spec=LocalAccount)
+    account.address = "0x1234567890abcdef1234567890abcdef12345678"
+
+    w3.eth.account.from_key.return_value = account
+    w3.to_checksum_address.side_effect = lambda x: x
+    w3.to_wei.return_value = 1000000000000000000
+
+    return w3
+
+
+@fixture
+def zero_x_api_client():
+    return mock.Mock(spec=ZeroXApiClient)
+
+
+@fixture
+def chain():
+    chain = mock.Mock(spec=Chain)
+
+    chain.get_base_token.return_value = bnb_token
+
+    return chain
+
+
+@fixture
+def contract():
+    return mock.Mock(spec=Contract)
+
+
+@fixture
+def configuration() -> dict[str, Decimal | str]:
+    return {
+        "bsc_rpc_url": "https://bsc-dataseed.binance.org/",
+        "fee_integrator_address": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        "fee_value_in_percentage": Decimal("0.15"),
+    }
+
+
+@fixture
+def investment_parameters():
+    return InvestmentParameters(
+        slippage_tolerance_in_percentage=Decimal("1"),
+    )
+
+
+@fixture
+def sell_balance():
+    return BalanceAtomic(
+        asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+    )
+
+
+@fixture
+def buy_balance():
+    return BalanceAtomic(
+        asset=eth_token,
+        amount=Decimal(0.2),
+        amount_atomic=int(0.2 * 10**18),
+        decimals=18,
+    )
+
+
+@fixture
+def address():
+    return Address("0x1234567890abcdef1234567890abcdef12345678")
+
+
+@fixture
+def zero_x_swapper(
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    contract: Contract,
+    configuration: Configuration,
+    w3: AsyncWeb3,
+):
+    return ZeroXSwapper(
+        api_client=zero_x_api_client,
+        chain=chain,
+        contract=contract,
+        configuration=configuration,
+        w3=w3,
+    )
+
+
+@mark.asyncio
+async def test_zero_x_swapper_get_signable_swap_data_no_liquidity(
+    zero_x_api_client: ZeroXApiClient,
+    zero_x_swapper: ZeroXSwapper,
+    investment_parameters: InvestmentParameters,
+    sell_balance: BalanceAtomic,
+    buy_balance: BalanceAtomic,
+    address: Address,
+):
+    """Test that an SwapInsufficientLiquidity is raised when there is no liquidity."""
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=InsufficientLiquidityQuote(
+            liquidityAvailable=False,
+        )
+    )
+
+    with raises(SwapInsufficientLiquidity):
+        await zero_x_swapper.get_signable_swap(
+            sell_balance=sell_balance,
+            buy_balance=buy_balance,
+            investment_parameters=investment_parameters,
+            taker=address,
+        )
+
+
+@mark.asyncio
+async def test_zero_x_swapper_get_signable_swap_data_success(
+    zero_x_api_client: ZeroXApiClient,
+    zero_x_swapper: ZeroXSwapper,
+    investment_parameters: InvestmentParameters,
+    sell_balance: BalanceAtomic,
+    buy_balance: BalanceAtomic,
+    address: Address,
+):
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken=eth_token.address,
+        sellToken=bnb_token.address,
+        fees=Fees(),
+        totalNetworkFee="21000000000000",
+    )
+
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            liquidityAvailable=True,
+            permit2=None,
+            issues=Issues(),
+            transaction=Transaction(
+                to="0x779a74436eda060911b2c4f209d34ea155f3df09",
+                data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                gas="322930",
+                gasPrice="100000000",
+                value="1000000000000000000",
+            ),
+            buyAmount="254000000000000000000",
+            buyToken=eth_token.address,
+            sellAmount="1000000000000000000",
+            sellToken=bnb_token.address,
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+            totalNetworkFee="21000000000000",
+        )
+    )
+
+    signable_swap = await zero_x_swapper.get_signable_swap(
+        sell_balance=sell_balance,
+        buy_balance=buy_balance,
+        investment_parameters=investment_parameters,
+        taker=address,
+    )
+
+    assert signable_swap == ExchangeSignableSwap(
+        buy_balance=BalanceAtomic(
+            asset=eth_token,
+            amount=Decimal("254"),
+            amount_atomic=254000000000000000000,
+            decimals=18,
+        ),
+        sell_balance=BalanceAtomic(
+            asset=bnb_token,
+            amount=Decimal("1"),
+            amount_atomic=1000000000000000000,
+            decimals=18,
+        ),
+        signature_payload=None,
+        transaction=SignableTransaction(
+            type="SEND",
+            amount=1000000000000000000,
+            gas=Gas(gas=322930, gas_price=100000000),
+            to_address="0x779a74436eda060911b2c4f209d34ea155f3df09",
+            data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        ),
+    )
+
+
+@mark.asyncio
+async def test_zero_x_swapper_get_signable_swap_data_no_transaction_value(
+    zero_x_api_client: ZeroXApiClient,
+    zero_x_swapper: ZeroXSwapper,
+    investment_parameters: InvestmentParameters,
+    sell_balance: BalanceAtomic,
+    buy_balance: BalanceAtomic,
+    address: Address,
+):
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254516995428172740",
+        sellAmount="1000000000000000000",
+        buyToken=eth_token.address,
+        sellToken=bnb_token.address,
+        fees=Fees(),
+        totalNetworkFee="21000000000000",
+    )
+
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            liquidityAvailable=True,
+            permit2=None,
+            issues=Issues(),
+            transaction=Transaction(
+                to="0x779a74436eda060911b2c4f209d34ea155f3df09",
+                data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                gas="322930",
+                gasPrice="100000000",
+                value="",
+            ),
+            buyAmount="254516995428172740",
+            buyToken=eth_token.address,
+            sellAmount="1000000000000000000",
+            sellToken=bnb_token.address,
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+            totalNetworkFee="21000000000000",
+        )
+    )
+
+    signable_swap = await zero_x_swapper.get_signable_swap(
+        sell_balance=sell_balance,
+        buy_balance=buy_balance,
+        investment_parameters=investment_parameters,
+        taker=address,
+    )
+
+    assert signable_swap.transaction.amount == 0
+
+
+@mark.asyncio
+async def test_zero_x_swapper_get_signable_swap_data_with_permit2(
+    zero_x_api_client: ZeroXApiClient,
+    zero_x_swapper: ZeroXSwapper,
+    chain: Chain,
+    investment_parameters: InvestmentParameters,
+    address: Address,
+):
+    chain.is_native_token.return_value = False
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(allowance=None),
+        sellAmount="254516995428172740",
+        buyAmount="1000000000000000000",
+        buyToken=bnb_token.address,
+        sellToken=eth_token.address,
+        fees=Fees(),
+        totalNetworkFee="21000000000000",
+    )
+
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            liquidityAvailable=True,
+            permit2=Permit2(
+                eip712={
+                    "types": {},
+                    "domain": {},
+                    "primaryType": "PermitTransferFrom",
+                    "message": {},
+                }
+            ),
+            issues=Issues(),
+            transaction=Transaction(
+                to="0x779a74436eda060911b2c4f209d34ea155f3df09",
+                data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                gas="322930",
+                gasPrice="100000000",
+                value="1000000000000000000",
+            ),
+            sellAmount="254516995428172740",
+            sellToken=eth_token.address,
+            buyAmount="1000000000000000000",
+            buyToken=bnb_token.address,
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+            totalNetworkFee="21000000000000",
+        )
+    )
+
+    signable_swap = await zero_x_swapper.get_signable_swap(
+        taker=address,
+        buy_balance=Balance[Token](
+            asset=bnb_token,
+            amount=Decimal(1),
+        ),
+        sell_balance=Balance[Token](
+            asset=eth_token,
+            amount=Decimal(0.2),
+        ),
+        investment_parameters=investment_parameters,
+    )
+
+    assert signable_swap.signature_payload == {
+        "types": {},
+        "domain": {},
+        "primaryType": "PermitTransferFrom",
+        "message": {},
+    }
+    assert signable_swap.transaction.type == "SEND"
+
+
+@mark.asyncio
+async def test_zero_x_swapper_get_signable_swap_data_with_allowance(
+    zero_x_api_client: ZeroXApiClient,
+    zero_x_swapper: ZeroXSwapper,
+    chain: Chain,
+    investment_parameters: InvestmentParameters,
+    address: Address,
+):
+    chain.is_native_token.return_value = False
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(
+            allowance=Allowance(spender="0xdefdefdefdefdefdefdefdefdefdefdefdefdefd")
+        ),
+        sellAmount="254516995428172740",
+        buyAmount="1000000000000000000",
+        buyToken=bnb_token.address,
+        sellToken=eth_token.address,
+        fees=Fees(),
+        totalNetworkFee="21000000000000",
+    )
+
+    zero_x_api_client.get_quote.return_value = QuoteResult(
+        root=Quote(
+            liquidityAvailable=True,
+            permit2=None,
+            issues=Issues(
+                allowance=Allowance(
+                    spender="0xdefdefdefdefdefdefdefdefdefdefdefdefdefd"
+                )
+            ),
+            transaction=Transaction(
+                to="0x779a74436eda060911b2c4f209d34ea155f3df09",
+                data="0x1fff991f000000000000000000000000b404993a0129379d1d90e5a52d06652ffd0ae7c30000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000037f2b9015013b3400000000000000000000000000000000000000000000000000000000000000a0b64bb5e2694f3cb22e67414200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000010438c9c147000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000002710000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e48d68a156000000000000000000000000779a74436eda060911b2c4f209d34ea155f3df09000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c010000642170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064c876d21d000000000000000000000000f5c4f3dc02c3fb9279495a8fef7b0741da9561570000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f80000000000000000000000000000000000000000000000000389959a869b450100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012438c9c1470000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f8000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000ad01c20d5886137e056775af56915de824c8fce500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                gas="322930",
+                gasPrice="100000000",
+                value="1000000000000000000",
+            ),
+            sellAmount="254516995428172740",
+            sellToken=eth_token.address,
+            buyAmount="1000000000000000000",
+            buyToken=bnb_token.address,
+            fees=Fees(
+                integratorFee=None,
+                zeroExFee=Fee(
+                    amount="382349016667264",
+                    token="0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+                    type="volume",
+                ),
+                gasFee=None,
+            ),
+            totalNetworkFee="21000000000000",
+        )
+    )
+
+    signable_swap = await zero_x_swapper.get_signable_swap(
+        taker=address,
+        buy_balance=Balance[Token](
+            asset=bnb_token,
+            amount=Decimal(1),
+        ),
+        sell_balance=Balance[Token](
+            asset=eth_token,
+            amount=Decimal(0.2),
+        ),
+        investment_parameters=investment_parameters,
+    )
+
+    assert signable_swap.approval_transaction == ApprovalTransaction(
+        token_address=eth_token.address,
+        spender_address="0xdefdefdefdefdefdefdefdefdefdefdefdefdefd",
+        data=mock.ANY,
+        amount=0,
+    )
+
+
+@mark.asyncio
+async def test_zero_x_swapper_convert_balance_to_token_swap_validation_failed(
+    zero_x_api_client: ZeroXApiClient,
+    zero_x_swapper: ZeroXSwapper,
+    chain: Chain,
+    address: Address,
+):
+    chain.is_native_token.return_value = False
+    chain.get_token_decimals.return_value = 10
+    zero_x_api_client.get_price.side_effect = SwapValidationFailed()
+
+    exchange_converted_balance = await zero_x_swapper.convert_balance_to_asset(
+        taker=address,
+        balance=BalanceAtomic(
+            asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        asset=eth_token,
+        investment_parameters=InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+        ),
+    )
+
+    assert exchange_converted_balance == ExchangeConvertedBalance(
+        sell_balance=BalanceAtomic(
+            asset=bnb_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        buy_balance=BalanceAtomic(
+            asset=eth_token,
+            amount=Decimal("0"),
+            amount_atomic=0,
+            decimals=10,
+        ),
+        fees=InvestmentFees(),
+    )
+
+    chain.get_token_decimals.assert_awaited_once_with(eth_token.address)
+
+
+@mark.asyncio
+async def test_zero_x_swapper_convert_balance_to_token_same_token(
+    zero_x_swapper: ZeroXSwapper,
+    chain: Chain,
+    address: Address,
+):
+    exchange_converted_balance = await zero_x_swapper.convert_balance_to_asset(
+        taker=address,
+        balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        asset=eth_token,
+        investment_parameters=InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+        ),
+    )
+
+    assert exchange_converted_balance == ExchangeConvertedBalance(
+        sell_balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        buy_balance=BalanceAtomic(
+            asset=eth_token,
+            amount=Decimal(1),
+            amount_atomic=1 * 10**18,
+            decimals=18,
+        ),
+        fees=InvestmentFees(),
+    )
+
+
+@mark.asyncio
+async def test_zero_x_swapper_convert_balance_to_token_success(
+    zero_x_swapper: ZeroXSwapper,
+    zero_x_api_client: ZeroXApiClient,
+    chain: Chain,
+    address: Address,
+):
+    chain.is_native_token.return_value = False
+
+    zero_x_api_client.get_price.return_value = Price(
+        issues=Issues(),
+        buyAmount="254000000000000000",
+        sellAmount="1000000000000000000",
+        buyToken=eth_token.address,
+        sellToken=bnb_token.address,
+        fees=Fees(
+            integratorFee=Fee(
+                amount="1000000000000000",
+                token=eth_token.address,
+                type="volume",
+            ),
+            zeroExFee=Fee(
+                amount="500000000000000",
+                token=eth_token.address,
+                type="volume",
+            ),
+            gasFee=Fee(
+                amount="900000000000000",
+                token=eth_token.address,
+                type="fixed",
+            ),
+        ),
+        totalNetworkFee="21000000000000",
+    )
+
+    exchange_converted_balance = await zero_x_swapper.convert_balance_to_asset(
+        taker=address,
+        balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        asset=bnb_token,
+        investment_parameters=InvestmentParameters(
+            slippage_tolerance_in_percentage=Decimal("1"),
+        ),
+    )
+
+    assert exchange_converted_balance == ExchangeConvertedBalance(
+        sell_balance=BalanceAtomic(
+            asset=eth_token, amount=Decimal(1), amount_atomic=1 * 10**18, decimals=18
+        ),
+        buy_balance=BalanceAtomic(
+            asset=bnb_token,
+            amount=Decimal("0.254"),
+            amount_atomic=254000000000000000,
+            decimals=18,
+        ),
+        fees=InvestmentFees(
+            provider_fee=BalanceAtomic(
+                amount=Decimal("0.0005"),
+                amount_atomic=500000000000000,
+                decimals=18,
+                asset=eth_token,
+            ),
+            platform_fee=BalanceAtomic(
+                amount=Decimal("0.001"),
+                amount_atomic=1000000000000000,
+                decimals=18,
+                asset=eth_token,
+            ),
+            gas_fee=BalanceAtomic(
+                amount=Decimal("0.000021"),
+                amount_atomic=21000000000000,
+                decimals=18,
+                asset=bnb_token,
+            ),
+        ),
+    )

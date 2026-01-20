@@ -1,0 +1,413 @@
+# serializer version: 1
+# name: test_integration_asset_swap_price_sell_basket_buy_basket
+  dict({
+    'buy_balance': dict({
+      'asset': dict({
+        'address': '0x2f8A339B5889FfaC4c5A956787cdA593b3c36867',
+        'categories': list([
+          'market-cap',
+          'diversified',
+        ]),
+        'decimals': 18,
+        'description': 'Top 20 tokens by market cap',
+        'display_name': 'CMC20 Basket',
+        'id': '0x2f8a339b5889ffac4c5a956787cda593b3c36867',
+        'logo_uri': None,
+        'name': 'CMC20 Basket',
+        'ticker': 'CMC20',
+        'type': 'BASKET',
+      }),
+    }),
+    'fees': dict({
+      'gas_fee': dict({
+        'amount': '0.00015',
+        'amount_atomic': '15000',
+        'asset': dict({
+          'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+          'categories': list([
+            'Crypto-Backed Tokens',
+            'BNB Chain Ecosystem',
+            'Wrapped-Tokens',
+          ]),
+          'decimals': 18,
+          'description': 'Binance native token',
+          'display_name': 'Binance Coin',
+          'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          'logo_uri': 'https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+          'name': 'Binance Coin',
+          'ticker': 'BNB',
+          'type': 'TOKEN',
+        }),
+        'decimals': 18,
+      }),
+      'platform_fee': dict({
+        'amount': '0.0001',
+        'amount_atomic': '10000',
+        'asset': dict({
+          'address': '0x2f8A339B5889FfaC4c5A956787cdA593b3c36867',
+          'categories': list([
+            'market-cap',
+            'diversified',
+          ]),
+          'decimals': 18,
+          'description': 'Top 20 tokens by market cap',
+          'display_name': 'CMC20 Basket',
+          'id': '0x2f8a339b5889ffac4c5a956787cda593b3c36867',
+          'logo_uri': None,
+          'name': 'CMC20 Basket',
+          'ticker': 'CMC20',
+          'type': 'BASKET',
+        }),
+        'decimals': 18,
+      }),
+      'provider_fee': dict({
+        'amount': '0.0003',
+        'amount_atomic': '30000',
+        'asset': dict({
+          'address': '0x2f8A339B5889FfaC4c5A956787cdA593b3c36867',
+          'categories': list([
+            'market-cap',
+            'diversified',
+          ]),
+          'decimals': 18,
+          'description': 'Top 20 tokens by market cap',
+          'display_name': 'CMC20 Basket',
+          'id': '0x2f8a339b5889ffac4c5a956787cda593b3c36867',
+          'logo_uri': None,
+          'name': 'CMC20 Basket',
+          'ticker': 'CMC20',
+          'type': 'BASKET',
+        }),
+        'decimals': 18,
+      }),
+    }),
+    'sell_balance': dict({
+      'amount': '1',
+      'asset': dict({
+        'address': '0x0000000000000000000000000000000000000000',
+        'categories': list([
+          'test',
+          'demo',
+        ]),
+        'decimals': 18,
+        'description': 'A basket for testing purposes',
+        'display_name': 'Test Basket',
+        'id': '0d83917d-a2bd-4482-83e6-68d52c8f293a',
+        'logo_uri': None,
+        'name': 'Test Basket',
+        'ticker': 'TEST',
+        'type': 'BASKET',
+      }),
+    }),
+  })
+# ---
+# name: test_integration_asset_swap_price_sell_basket_buy_token
+  dict({
+    'buy_balance': dict({
+      'asset': dict({
+        'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+        'categories': list([
+          'BNB Chain Ecosystem',
+          'Binance-Peg Tokens',
+        ]),
+        'decimals': 18,
+        'description': 'Binance pegged Ethereum token',
+        'display_name': 'Ethereum',
+        'id': 'bsc:0x2170ed0880ac9a755fd29b2688956bd959f933f8',
+        'logo_uri': 'https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
+        'name': 'Binance Ethereum',
+        'ticker': 'ETH',
+        'type': 'TOKEN',
+      }),
+    }),
+    'fees': dict({
+      'gas_fee': dict({
+        'amount': '0.00015',
+        'amount_atomic': '15000',
+        'asset': dict({
+          'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+          'categories': list([
+            'Crypto-Backed Tokens',
+            'BNB Chain Ecosystem',
+            'Wrapped-Tokens',
+          ]),
+          'decimals': 18,
+          'description': 'Binance native token',
+          'display_name': 'Binance Coin',
+          'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          'logo_uri': 'https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+          'name': 'Binance Coin',
+          'ticker': 'BNB',
+          'type': 'TOKEN',
+        }),
+        'decimals': 18,
+      }),
+      'platform_fee': dict({
+        'amount': '0.0001',
+        'amount_atomic': '10000',
+        'asset': dict({
+          'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+          'categories': list([
+            'BNB Chain Ecosystem',
+            'Binance-Peg Tokens',
+          ]),
+          'decimals': 18,
+          'description': 'Binance pegged Ethereum token',
+          'display_name': 'Ethereum',
+          'id': 'bsc:0x2170ed0880ac9a755fd29b2688956bd959f933f8',
+          'logo_uri': 'https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
+          'name': 'Binance Ethereum',
+          'ticker': 'ETH',
+          'type': 'TOKEN',
+        }),
+        'decimals': 18,
+      }),
+      'provider_fee': dict({
+        'amount': '0.0003',
+        'amount_atomic': '30000',
+        'asset': dict({
+          'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+          'categories': list([
+            'BNB Chain Ecosystem',
+            'Binance-Peg Tokens',
+          ]),
+          'decimals': 18,
+          'description': 'Binance pegged Ethereum token',
+          'display_name': 'Ethereum',
+          'id': 'bsc:0x2170ed0880ac9a755fd29b2688956bd959f933f8',
+          'logo_uri': 'https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
+          'name': 'Binance Ethereum',
+          'ticker': 'ETH',
+          'type': 'TOKEN',
+        }),
+        'decimals': 18,
+      }),
+    }),
+    'sell_balance': dict({
+      'amount': '1',
+      'asset': dict({
+        'address': '0x0000000000000000000000000000000000000000',
+        'categories': list([
+          'test',
+          'demo',
+        ]),
+        'decimals': 18,
+        'description': 'A basket for testing purposes',
+        'display_name': 'Test Basket',
+        'id': '0d83917d-a2bd-4482-83e6-68d52c8f293a',
+        'logo_uri': None,
+        'name': 'Test Basket',
+        'ticker': 'TEST',
+        'type': 'BASKET',
+      }),
+    }),
+  })
+# ---
+# name: test_integration_asset_swap_price_sell_token_buy_basket
+  dict({
+    'buy_balance': dict({
+      'asset': dict({
+        'address': '0x0000000000000000000000000000000000000000',
+        'categories': list([
+          'test',
+          'demo',
+        ]),
+        'decimals': 18,
+        'description': 'A basket for testing purposes',
+        'display_name': 'Test Basket',
+        'id': '0d83917d-a2bd-4482-83e6-68d52c8f293a',
+        'logo_uri': None,
+        'name': 'Test Basket',
+        'ticker': 'TEST',
+        'type': 'BASKET',
+      }),
+    }),
+    'fees': dict({
+      'gas_fee': dict({
+        'amount': '0.00015',
+        'amount_atomic': '15000',
+        'asset': dict({
+          'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+          'categories': list([
+            'Crypto-Backed Tokens',
+            'BNB Chain Ecosystem',
+            'Wrapped-Tokens',
+          ]),
+          'decimals': 18,
+          'description': 'Binance native token',
+          'display_name': 'Binance Coin',
+          'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          'logo_uri': 'https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+          'name': 'Binance Coin',
+          'ticker': 'BNB',
+          'type': 'TOKEN',
+        }),
+        'decimals': 18,
+      }),
+      'platform_fee': dict({
+        'amount': '0.0001',
+        'amount_atomic': '10000',
+        'asset': dict({
+          'address': '0x0000000000000000000000000000000000000000',
+          'categories': list([
+            'test',
+            'demo',
+          ]),
+          'decimals': 18,
+          'description': 'A basket for testing purposes',
+          'display_name': 'Test Basket',
+          'id': '0d83917d-a2bd-4482-83e6-68d52c8f293a',
+          'logo_uri': None,
+          'name': 'Test Basket',
+          'ticker': 'TEST',
+          'type': 'BASKET',
+        }),
+        'decimals': 18,
+      }),
+      'provider_fee': dict({
+        'amount': '0.0003',
+        'amount_atomic': '30000',
+        'asset': dict({
+          'address': '0x0000000000000000000000000000000000000000',
+          'categories': list([
+            'test',
+            'demo',
+          ]),
+          'decimals': 18,
+          'description': 'A basket for testing purposes',
+          'display_name': 'Test Basket',
+          'id': '0d83917d-a2bd-4482-83e6-68d52c8f293a',
+          'logo_uri': None,
+          'name': 'Test Basket',
+          'ticker': 'TEST',
+          'type': 'BASKET',
+        }),
+        'decimals': 18,
+      }),
+    }),
+    'sell_balance': dict({
+      'amount': '1',
+      'asset': dict({
+        'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+        'categories': list([
+          'Crypto-Backed Tokens',
+          'BNB Chain Ecosystem',
+          'Harmony Ecosystem',
+          'Bitcoin Ecosystem',
+        ]),
+        'decimals': 18,
+        'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",
+        'display_name': 'Bitcoin',
+        'id': 'bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c',
+        'logo_uri': 'https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png',
+        'name': 'Binance Bitcoin',
+        'ticker': 'BTC',
+        'type': 'TOKEN',
+      }),
+    }),
+  })
+# ---
+# name: test_integration_asset_swap_price_sell_token_buy_token
+  dict({
+    'buy_balance': dict({
+      'asset': dict({
+        'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+        'categories': list([
+          'BNB Chain Ecosystem',
+          'Binance-Peg Tokens',
+        ]),
+        'decimals': 18,
+        'description': 'Binance pegged Ethereum token',
+        'display_name': 'Ethereum',
+        'id': 'bsc:0x2170ed0880ac9a755fd29b2688956bd959f933f8',
+        'logo_uri': 'https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
+        'name': 'Binance Ethereum',
+        'ticker': 'ETH',
+        'type': 'TOKEN',
+      }),
+    }),
+    'fees': dict({
+      'gas_fee': dict({
+        'amount': '0.00015',
+        'amount_atomic': '15000',
+        'asset': dict({
+          'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+          'categories': list([
+            'Crypto-Backed Tokens',
+            'BNB Chain Ecosystem',
+            'Wrapped-Tokens',
+          ]),
+          'decimals': 18,
+          'description': 'Binance native token',
+          'display_name': 'Binance Coin',
+          'id': 'bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          'logo_uri': 'https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+          'name': 'Binance Coin',
+          'ticker': 'BNB',
+          'type': 'TOKEN',
+        }),
+        'decimals': 18,
+      }),
+      'platform_fee': dict({
+        'amount': '0.0001',
+        'amount_atomic': '10000',
+        'asset': dict({
+          'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+          'categories': list([
+            'BNB Chain Ecosystem',
+            'Binance-Peg Tokens',
+          ]),
+          'decimals': 18,
+          'description': 'Binance pegged Ethereum token',
+          'display_name': 'Ethereum',
+          'id': 'bsc:0x2170ed0880ac9a755fd29b2688956bd959f933f8',
+          'logo_uri': 'https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
+          'name': 'Binance Ethereum',
+          'ticker': 'ETH',
+          'type': 'TOKEN',
+        }),
+        'decimals': 18,
+      }),
+      'provider_fee': dict({
+        'amount': '0.0003',
+        'amount_atomic': '30000',
+        'asset': dict({
+          'address': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+          'categories': list([
+            'BNB Chain Ecosystem',
+            'Binance-Peg Tokens',
+          ]),
+          'decimals': 18,
+          'description': 'Binance pegged Ethereum token',
+          'display_name': 'Ethereum',
+          'id': 'bsc:0x2170ed0880ac9a755fd29b2688956bd959f933f8',
+          'logo_uri': 'https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
+          'name': 'Binance Ethereum',
+          'ticker': 'ETH',
+          'type': 'TOKEN',
+        }),
+        'decimals': 18,
+      }),
+    }),
+    'sell_balance': dict({
+      'amount': '1',
+      'asset': dict({
+        'address': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
+        'categories': list([
+          'Crypto-Backed Tokens',
+          'BNB Chain Ecosystem',
+          'Harmony Ecosystem',
+          'Bitcoin Ecosystem',
+        ]),
+        'decimals': 18,
+        'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",
+        'display_name': 'Bitcoin',
+        'id': 'bsc:0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c',
+        'logo_uri': 'https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png',
+        'name': 'Binance Bitcoin',
+        'ticker': 'BTC',
+        'type': 'TOKEN',
+      }),
+    }),
+  })
+# ---

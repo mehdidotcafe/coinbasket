@@ -1,0 +1,71 @@
+{
+  "name": "app",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "app/src",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "next dev"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "next build"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "next lint"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "next lint --fix"
+      }
+    },
+    "install": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "npm install"
+      }
+    },
+    "install:dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "npm install -D"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "vitest"
+      }
+    },
+    "test:watch": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "vitest --watch"
+      }
+    },
+    "storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "app",
+        "command": "NEXT_PUBLIC_APP_MODE=demo npm run storybook"
+      }
+    }
+  }
+}

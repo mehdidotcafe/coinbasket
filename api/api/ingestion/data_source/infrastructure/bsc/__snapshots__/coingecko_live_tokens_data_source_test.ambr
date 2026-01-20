@@ -1,0 +1,52 @@
+# serializer version: 1
+# name: test_coingecko_live_tokens_data_source_get
+  list([
+    Token(
+      address='0x570A5D26f7765Ecb712C0924E4De545B89fD43dF',
+      categories=list([
+        'BNB Chain Ecosystem',
+        'Binance-Peg Tokens',
+      ]),
+      decimals=18,
+      description='Solana token',
+      display_name='Solana',
+      id='bsc:0x570a5d26f7765ecb712c0924e4de545b89fd43df',
+      logo_uri='https://coin-images.coingecko.com/coins/images/54582/thumb/wsol.png',
+      name='SOLANA',
+      ticker='SOL',
+      type='TOKEN',
+    ),
+    Token(
+      address='0x55d398326f99059ff775485246999027b3197955',
+      categories=list([
+        'BNB Chain Ecosystem',
+        'Bridged USDT',
+        'Bridged-Tokens',
+        'Bridged Stablecoin',
+      ]),
+      decimals=18,
+      description='Tether USD stablecoin',
+      display_name='Tether USD',
+      id='bsc:0x55d398326f99059ff775485246999027b3197955',
+      logo_uri='https://coin-images.coingecko.com/coins/images/35021/thumb/USDT.png',
+      name='Tether USD',
+      ticker='USDT',
+      type='TOKEN',
+    ),
+    Token(
+      address='0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+      categories=list([
+        'BNB Chain Ecosystem',
+        'Binance-Peg Tokens',
+      ]),
+      decimals=18,
+      description='Binance pegged Ethereum token',
+      display_name='Ethereum',
+      id='bsc:0x2170ed0880ac9a755fd29b2688956bd959f933f8',
+      logo_uri='https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
+      name='Binance Ethereum',
+      ticker='ETH',
+      type='TOKEN',
+    ),
+  ])
+# ---

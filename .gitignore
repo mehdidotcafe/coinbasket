@@ -1,7 +1,8 @@
 # Global
 .env
 .env.local
-.env.production
+.env.production*
+.env.integration_test
 
 # NX
 node_modules
@@ -18,17 +19,20 @@ package-lock.json
 .venv
 __pycache__
 
-# Invest Agent database. Keep the structure but ignore contents.
-invest_agent/database/*
+# API database. Keep the structure but ignore contents.
+api/database/*
 
-!invest_agent/database/production/
-!invest_agent/database/development/
-!invest_agent/database/test/
+!api/database/production/
+!api/database/development/
+!api/database/test/
 
-invest_agent/database/production/*
-invest_agent/database/development/*
-invest_agent/database/test/*
+api/database/production/*
+api/database/development/*
+api/database/test/*
 
-!invest_agent/database/production/.gitkeep
-!invest_agent/database/development/.gitkeep
-!invest_agent/database/test/.gitkeep
+!api/database/production/.gitkeep
+!api/database/development/.gitkeep
+!api/database/test/.gitkeep
+
+api/data/*
+!api/data/.gitkeep

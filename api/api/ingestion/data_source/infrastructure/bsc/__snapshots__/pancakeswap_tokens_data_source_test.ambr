@@ -1,0 +1,20 @@
+# serializer version: 1
+# name: test_pancakeswap_tokens_data_source_get
+  list([
+    TokenSimilarity(
+      address='0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93',
+      categories=list([
+      ]),
+      decimals=18,
+      description='',
+      display_name='Lithosphere',
+      id='bsc:0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93',
+      is_canonical=0,
+      logo_uri='https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0x61909950e1bfb5d567c5463cbd33dc1cdc85ee93.png',
+      market_cap_usd=0,
+      name='Lithosphere',
+      ticker='LITHO',
+      type='TOKEN',
+    ),
+  ])
+# ---

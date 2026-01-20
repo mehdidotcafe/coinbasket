@@ -2,7 +2,6 @@
   "cSpell.words": [
     "coinbasket",
     "qdrant",
-    "uagents",
     "pancakeswap",
     "langsmith",
     "langchain"
@@ -23,4 +22,9 @@
   ],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
+  "eslint.format.enable": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always",
+  },
+  "editor.formatOnSave": true
 }
