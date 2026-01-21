@@ -50,7 +50,7 @@ class IngestDataUseCase:
                         [
                             SimilarityDocument(
                                 id=asset_id,
-                                page_content=str(asset),
+                                page_content=asset.to_document(),
                                 metadata={
                                     "source": asset.to_dict(),
                                     "type": "token"

@@ -61,29 +61,3 @@ def test_token_eq_non_token() -> None:
         categories=[],
     )
     assert token != "not a token"
-
-
-def test_token__str__():
-    token = Token(
-        id="1234",
-        name="Wrapped BNB",
-        display_name="Wrapped BNB",
-        ticker="WBNB",
-        address="0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
-        description="Wrapped BNB token for testing",
-        decimals=18,
-        categories=["Aave Tokens", "4chan-Themed"],
-        logo_uri="https://example.com/logo.png",
-    )
-
-    assert (
-        str(token)
-        == """
-name: Wrapped BNB
-display_name: Wrapped BNB
-description: Wrapped BNB token for testing
-ticker: WBNB
-address: 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7
-categories: Aave Tokens, 4chan-Themed
-"""
-    )

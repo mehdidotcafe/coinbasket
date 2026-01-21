@@ -115,15 +115,6 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
         return_limit = 5
         must_conditions: list[Condition] = []
 
-        if categories:
-            must_conditions.extend(
-                FieldCondition(
-                    key="metadata.source.categories",
-                    match=MatchValue(value=category),
-                )
-                for category in categories
-            )
-
         if type:
             must_conditions.append(
                 FieldCondition(
@@ -175,6 +166,15 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
             )
 
         else:
+            if categories:
+                must_conditions.extend(
+                    FieldCondition(
+                        key="metadata.source.categories",
+                        match=MatchValue(value=category),
+                    )
+                    for category in categories
+                )
+
             results = await asyncio.gather(
                 *[
                     # Fetch non-canonical assets ordered by market cap descending

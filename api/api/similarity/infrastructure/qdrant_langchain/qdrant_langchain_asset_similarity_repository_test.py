@@ -247,10 +247,12 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_categori
     bnb_token_similarity = bnb_token.to_dict() | {
         "market_cap_usd": 0,
         "is_canonical": 1,
+        "trust_score": 85,
     }
     eth_token_similarity = eth_token.to_dict() | {
         "market_cap_usd": 0,
         "is_canonical": 1,
+        "trust_score": 90,
     }
 
     qdrant_async_client.scroll.side_effect = [
@@ -314,16 +316,16 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_categori
                 scroll_filter=Filter(
                     must=[
                         FieldCondition(
+                            key="metadata.type",
+                            match=MatchValue(value="token"),
+                        ),
+                        FieldCondition(
                             key="metadata.source.categories",
                             match=MatchValue(value="Decentralized Finance (DeFi)"),
                         ),
                         FieldCondition(
                             key="metadata.source.categories",
                             match=MatchValue(value="Dogechain Ecosystem"),
-                        ),
-                        FieldCondition(
-                            key="metadata.type",
-                            match=MatchValue(value="token"),
                         ),
                         FieldCondition(
                             key="metadata.source.is_canonical",
@@ -342,16 +344,16 @@ async def test_qdrant_langchain_asset_similarity_repository_search_with_categori
                 scroll_filter=Filter(
                     must=[
                         FieldCondition(
+                            key="metadata.type",
+                            match=MatchValue(value="token"),
+                        ),
+                        FieldCondition(
                             key="metadata.source.categories",
                             match=MatchValue(value="Decentralized Finance (DeFi)"),
                         ),
                         FieldCondition(
                             key="metadata.source.categories",
                             match=MatchValue(value="Dogechain Ecosystem"),
-                        ),
-                        FieldCondition(
-                            key="metadata.type",
-                            match=MatchValue(value="token"),
                         ),
                         FieldCondition(
                             key="metadata.source.is_canonical",

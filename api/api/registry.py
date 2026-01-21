@@ -30,6 +30,10 @@ from api.investment.order.infrastructure.sql_alchemy_executed_order_repository i
 from api.portfolio.holding.infrastructure.bsc_chain_holding_repository import (
     BscChainHoldingRepository,
 )
+
+from api.similarity.trust_scorer.infrastructure.math_asset_trust_scorer_strategy import (
+    MathAssetTrustScorerStrategy,
+)
 from pydantic import SecretStr
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient, AsyncQdrantClient
@@ -217,3 +221,5 @@ token_repository = CoingeckoTokenRepository(
 siwe_manager = SiwePySiweManager()
 
 credential_generator = PyJwtCredentialGenerator(secret_key=configuration.app_secret_key)
+
+asset_trust_scorer_strategy = MathAssetTrustScorerStrategy()

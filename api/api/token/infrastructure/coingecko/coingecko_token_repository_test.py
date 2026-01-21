@@ -1,5 +1,4 @@
 from unittest import mock
-from api.protocol.token import Token
 from pytest import fixture, mark, raises
 from api.shared.http_request.exception.failed_request import FailedRequest
 from api.shared.http_request.http_request import HttpRequest
@@ -7,11 +6,15 @@ from api.token.infrastructure.coingecko.coingecko_token_repository import (
     CoingeckoTokenRepository,
     Configuration,
     GetFromAddressToken,
-    GetFromAddressTokenDetailMarketCap,
-    GetFromAddressTokenDetailMarketData,
+    GetFromAddressTokenMarketData,
     GetFromAddressTokenDetailPlatform,
     GetFromAddressTokenDetailPlatformImage,
     GetFromAddressTokenDetailPlatforms,
+    GetFromAddressTokenUsdValue,
+    CoinGeckoTokenUsdDateValue,
+    GetFromAddressTokenEnText,
+    GetFromAddressTokenLinks,
+    GetFromAddressTokenDeveloperData,
 )
 
 
@@ -65,7 +68,7 @@ async def test_coingecko_token_repository_get_from_address_success(
 ):
     address = "0x1234567890abcdef1234567890abcdef12345678"
 
-    http_request.get.return_value = GetFromAddressToken(
+    token_model = GetFromAddressToken(
         id="test_token",
         symbol="ttk",
         name="Test Token",
@@ -75,28 +78,40 @@ async def test_coingecko_token_repository_get_from_address_success(
             )
         ),
         categories=["category1", "category2"],
-        description={"en": "This is a test token."},
+        localization=GetFromAddressTokenEnText(en="Test Token"),
+        description=GetFromAddressTokenEnText(en="This is a test token."),
+        links=GetFromAddressTokenLinks(),
         image=GetFromAddressTokenDetailPlatformImage(
             small="https://testtoken.org/logo.png"
         ),
-        market_data=GetFromAddressTokenDetailMarketData(
-            market_cap=GetFromAddressTokenDetailMarketCap(usd=1000000),
+        market_data=GetFromAddressTokenMarketData(
+            market_cap=GetFromAddressTokenUsdValue(usd=1000000),
+            ath_change_percentage=GetFromAddressTokenUsdValue(usd=-50.0),
+            ath_date=CoinGeckoTokenUsdDateValue(usd="2021-05-10T00:00:00.000Z"),
+            atl_change_percentage=GetFromAddressTokenUsdValue(usd=1000.0),
+            atl_date=CoinGeckoTokenUsdDateValue(usd="2020-03-13T00:00:00.000Z"),
+            fully_diluted_valuation=GetFromAddressTokenUsdValue(usd=2000000),
+            total_volume=GetFromAddressTokenUsdValue(usd=500000),
         ),
+        developer_data=GetFromAddressTokenDeveloperData(),
+        tickers=[],
     )
+
+    http_request.get.return_value = token_model
 
     result = await repository.get_by_address(address)
 
-    assert result == Token(
-        id=f"bsc:{address}",
-        name="Test Token",
-        display_name="Test Token",
-        ticker="TTK",
-        address=address,
-        description="This is a test token.",
-        decimals=18,
-        categories=["Decentralized Finance (DeFi)", "Dog-Themed"],
-        logo_uri="https://testtoken.org/logo.png",
-    )
+    assert result is not None
+    token_similarity, model = result
+    assert token_similarity.id == f"bsc:{address}"
+    assert token_similarity.name == "Test Token"
+    assert token_similarity.display_name == "Test Token"
+    assert token_similarity.ticker == "TTK"
+    assert token_similarity.address == address
+    assert token_similarity.description == "This is a test token."
+    assert token_similarity.decimals == 18
+
+    assert model == token_model
 
     http_request.get.assert_called_once_with(
         {
@@ -127,19 +142,30 @@ async def test_coingecko_token_repository_get_from_address_display_name_format(
             )
         ),
         categories=["category1", "category2"],
-        description={"en": "This is a test token."},
+        localization=GetFromAddressTokenEnText(en="Test Token"),
+        description=GetFromAddressTokenEnText(en="This is a test token."),
+        links=GetFromAddressTokenLinks(),
         image=GetFromAddressTokenDetailPlatformImage(
             small="https://testtoken.org/logo.png"
         ),
-        market_data=GetFromAddressTokenDetailMarketData(
-            market_cap=GetFromAddressTokenDetailMarketCap(usd=1000000),
+        market_data=GetFromAddressTokenMarketData(
+            market_cap=GetFromAddressTokenUsdValue(usd=1000000),
+            ath_change_percentage=GetFromAddressTokenUsdValue(usd=-50.0),
+            ath_date=CoinGeckoTokenUsdDateValue(usd="2021-05-10T00:00:00.000Z"),
+            atl_change_percentage=GetFromAddressTokenUsdValue(usd=1000.0),
+            atl_date=CoinGeckoTokenUsdDateValue(usd="2020-03-13T00:00:00.000Z"),
+            fully_diluted_valuation=GetFromAddressTokenUsdValue(usd=2000000),
+            total_volume=GetFromAddressTokenUsdValue(usd=500000),
         ),
+        developer_data=GetFromAddressTokenDeveloperData(),
+        tickers=[],
     )
 
     result = await repository.get_by_address(address)
 
     assert result
-    assert result.display_name == "Test Token"
+    token_similarity, _ = result
+    assert token_similarity.display_name == "Test Token"
 
 
 @mark.asyncio
@@ -159,16 +185,27 @@ async def test_coingecko_token_repository_get_from_address_is_canonical(
             )
         ),
         categories=["category1", "category2"],
-        description={"en": "This is a test token."},
+        localization=GetFromAddressTokenEnText(en="Test Token"),
+        description=GetFromAddressTokenEnText(en="This is a test token."),
+        links=GetFromAddressTokenLinks(),
         image=GetFromAddressTokenDetailPlatformImage(
             small="https://testtoken.org/logo.png"
         ),
-        market_data=GetFromAddressTokenDetailMarketData(
-            market_cap=GetFromAddressTokenDetailMarketCap(usd=1000000),
+        market_data=GetFromAddressTokenMarketData(
+            market_cap=GetFromAddressTokenUsdValue(usd=1000000),
+            ath_change_percentage=GetFromAddressTokenUsdValue(usd=-50.0),
+            ath_date=CoinGeckoTokenUsdDateValue(usd="2021-05-10T00:00:00.000Z"),
+            atl_change_percentage=GetFromAddressTokenUsdValue(usd=1000.0),
+            atl_date=CoinGeckoTokenUsdDateValue(usd="2020-03-13T00:00:00.000Z"),
+            fully_diluted_valuation=GetFromAddressTokenUsdValue(usd=2000000),
+            total_volume=GetFromAddressTokenUsdValue(usd=500000),
         ),
+        developer_data=GetFromAddressTokenDeveloperData(),
+        tickers=[],
     )
 
     result = await repository.get_by_address(address)
 
     assert result
-    assert result.is_canonical == 1
+    token_similarity, _ = result
+    assert token_similarity.is_canonical == 1

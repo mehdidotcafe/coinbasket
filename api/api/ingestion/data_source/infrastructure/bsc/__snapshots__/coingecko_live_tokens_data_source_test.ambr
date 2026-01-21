@@ -14,6 +14,7 @@
       logo_uri='https://coin-images.coingecko.com/coins/images/54582/thumb/wsol.png',
       name='SOLANA',
       ticker='SOL',
+      trust_score=80,
       type='TOKEN',
     ),
     Token(
@@ -31,6 +32,7 @@
       logo_uri='https://coin-images.coingecko.com/coins/images/35021/thumb/USDT.png',
       name='Tether USD',
       ticker='USDT',
+      trust_score=50,
       type='TOKEN',
     ),
     Token(
@@ -46,6 +48,7 @@
       logo_uri='https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png',
       name='Binance Ethereum',
       ticker='ETH',
+      trust_score=10,
       type='TOKEN',
     ),
   ])

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import re
@@ -6,6 +7,12 @@ from api.shared.id_generator.id_generator import IdGenerator
 from api.similarity.asset_similarity import AssetSimilarity, TokenSimilarity
 from api.ingestion.data_source.data_source import DataSource
 from api.protocol.asset_category import AssetCategory
+from api.similarity.trust_scorer.asset_trust_scorer_strategy import (
+    AssetTrustScorerStrategy,
+)
+from api.token.infrastructure.coingecko.coingecko_token_repository import (
+    GetFromAddressToken,
+)
 
 
 class DevDataSource(DataSource):
@@ -14,8 +21,10 @@ class DevDataSource(DataSource):
     def __init__(
         self,
         id_generator: IdGenerator,
+        asset_trust_scorer_strategy: AssetTrustScorerStrategy,
     ):
         self.id_generator = id_generator
+        self.asset_trust_scorer_strategy = asset_trust_scorer_strategy
 
     async def get(self) -> list[AssetSimilarity]:
         file_path = "data/dev_data_source_assets.json"
@@ -31,35 +40,73 @@ class DevDataSource(DataSource):
         ) as f:
             raw_tokens = json.load(f)
 
-        return [
-            self._map_raw_token_to_token_similarity(raw_token)
-            for raw_token in raw_tokens
-            if raw_token["platforms"]["binance-smart-chain"].lower()
-            not in self.blacklist_tokens
+        raw_tokens = [
+            token
+            for token in raw_tokens
+            if token["platforms"]["binance-smart-chain"] not in self.blacklist_tokens
         ]
 
-    def version(self) -> int:
-        return 4
+        tokens: list[AssetSimilarity] = []
+        i = 0
 
-    def _map_raw_token_to_token_similarity(
-        self, raw_token: dict[str, Any]
+        batch_size = 50
+
+        batched_tokens = [
+            raw_tokens[i : i + batch_size]
+            for i in range(0, len(raw_tokens), batch_size)
+        ]
+
+        for raw_token_batch in batched_tokens:
+            try:
+                batch_tokens = await asyncio.gather(
+                    *[
+                        self._score_and_map_token(raw_token)
+                        for raw_token in raw_token_batch
+                    ]
+                )
+                tokens.extend(batch_tokens)
+                print(f"Processing token batch {i}/{len(batched_tokens)}")
+                i += 1
+            except Exception as e:
+                print(f"  Error processing token batch {i}: {e}")
+                await asyncio.sleep(1)
+        return tokens
+
+    def version(self) -> int:
+        return 5
+
+    async def _score_and_map_token(self, raw_token: dict[str, Any]) -> TokenSimilarity:
+        validated_token = GetFromAddressToken.model_validate(raw_token)
+
+        trust_score = await self.asset_trust_scorer_strategy.score(
+            validated_token.model_dump()
+        )
+        token_similarity = self._map_validated_token_to_token_similarity(
+            validated_token, trust_score
+        )
+
+        return token_similarity
+
+    def _map_validated_token_to_token_similarity(
+        self, token: GetFromAddressToken, trust_score: int
     ) -> TokenSimilarity:
-        address = raw_token["platforms"]["binance-smart-chain"]
+        address = token.platforms["binance-smart-chain"] if token.platforms else ""
 
         return TokenSimilarity(
-            address=address,
+            address=address.lower(),
             id=f"bsc:{address}".lower(),
-            name=raw_token["name"],
-            display_name=self._clean_display_name(raw_token["name"]),
-            ticker=raw_token["symbol"].upper(),
-            description=raw_token["description"]["en"],
-            decimals=int(
-                raw_token["detail_platforms"]["binance-smart-chain"]["decimal_place"]
-            ),
-            categories=self._make_categories(raw_token.get("categories")),
+            name=token.name,
+            display_name=self._clean_display_name(token.name),
+            ticker=token.symbol.upper(),
+            description=token.description.en if token.description else "",
+            decimals=token.detail_platforms.binance_smart_chain.decimal_place,
+            categories=self._make_categories(token.categories),
             logo_uri=f"https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/{address}.png",
-            is_canonical=self._is_canonical(raw_token),
-            market_cap_usd=int(raw_token["market_data"]["market_cap"].get("usd", 0)),
+            is_canonical=self._is_canonical_from_token(token),
+            market_cap_usd=int(token.market_data.market_cap.usd or 0)
+            if token.market_data.market_cap
+            else 0,
+            trust_score=trust_score,
         )
 
     def _make_categories(self, categories: list[str] | None) -> list[str]:
@@ -81,16 +128,16 @@ class DevDataSource(DataSource):
 
         return list(set(categories))
 
-    def _is_canonical(self, token: dict[str, Any]) -> int:
+    def _is_canonical_from_token(self, token: GetFromAddressToken) -> int:
         patterns = [
             r"(?i)\b(Binance Pegged|Binance Bridged|Binance-Peg)\b",
         ]
 
-        if token["categories"] and "Binance Bridged" in token["categories"]:
+        if token.categories and "Binance Bridged" in token.categories:
             return 1
 
         for pattern in patterns:
-            if re.search(pattern, token["name"]):
+            if re.search(pattern, token.name):
                 return 1
         return 0
 

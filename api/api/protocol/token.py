@@ -38,16 +38,6 @@ class Token:
         self.logo_uri = logo_uri
         self.type = "TOKEN"
 
-    def __str__(self) -> str:
-        return f"""
-name: {self.name}
-display_name: {self.display_name}
-description: {self.description}
-ticker: {self.ticker}
-address: {self.address}
-categories: {", ".join(str(category) for category in self.categories)}
-"""
-
     def to_dict(self) -> dict[str, str | int | list[AssetCategory] | None]:
         return {
             "id": self.id,

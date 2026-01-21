@@ -17,6 +17,7 @@
       market_cap_usd=6773392,
       name='CoinMarketCap 20 Index DTF',
       ticker='CMC20',
+      trust_score=90,
       type='BASKET',
     ),
   ])

@@ -1,5 +1,5 @@
 import re
-from typing import Any, TypedDict, cast
+from typing import Any, Literal, TypedDict, cast
 from api.protocol.asset_category import AssetCategory
 from api.similarity.asset_similarity import TokenSimilarity
 from api.token.token_repository import TokenRepository
@@ -35,19 +35,78 @@ class GetFromAddressTokenDetailMarketCap(BaseModel):
     usd: float
 
 
-class GetFromAddressTokenDetailMarketData(BaseModel):
-    market_cap: GetFromAddressTokenDetailMarketCap
+class GetFromAddressTokenUsdValue(BaseModel):
+    usd: float | None = None
+
+
+class CoinGeckoTokenUsdDateValue(BaseModel):
+    usd: str | None = None
+
+
+class GetFromAddressTokenLinks(BaseModel):
+    homepage: list[str] | None = None
+    whitepaper: str | None = None
+
+
+class GetFromAddressTokenMarketData(BaseModel):
+    mcap_to_tvl_ratio: float | Literal["-"] | None = None
+    fdv_to_tvl_ratio: float | Literal["-"] | None = None
+    ath_change_percentage: GetFromAddressTokenUsdValue
+    ath_date: CoinGeckoTokenUsdDateValue
+    atl_change_percentage: GetFromAddressTokenUsdValue
+    atl_date: CoinGeckoTokenUsdDateValue
+    market_cap: GetFromAddressTokenUsdValue
+    market_cap_rank: int | None = None
+    fully_diluted_valuation: GetFromAddressTokenUsdValue
+    total_volume: GetFromAddressTokenUsdValue
+    price_change_percentage_24h: float | None = None
+    price_change_percentage_7d: float | None = None
+    price_change_percentage_30d: float | None = None
+    price_change_percentage_60d: float | None = None
+    price_change_percentage_200d: float | None = None
+    price_change_percentage_1y: float | None = None
+    total_supply: float | None = None
+    max_supply: float | None = None
+    circulating_supply: float | None = None
+    total_value_locked: GetFromAddressTokenUsdValue | None = None
+
+
+class GetFromAddressTokenDeveloperData(BaseModel):
+    forks: int | None = None
+    stars: int | None = None
+
+
+class GetFromAddressTokenTicker(BaseModel):
+    trust_score: str | None = None
+    market: dict[str, Any] | None = None
+    base: str | None = None
+    target: str | None = None
+    volume: float | None = None
+
+
+class GetFromAddressTokenEnText(BaseModel):
+    en: str | None = None
 
 
 class GetFromAddressToken(BaseModel):
     id: str
-    symbol: str
     name: str
-    detail_platforms: GetFromAddressTokenDetailPlatforms
+    symbol: str
     categories: list[str]
-    description: dict[str, str]
+    localization: GetFromAddressTokenEnText
+    description: GetFromAddressTokenEnText
+    links: GetFromAddressTokenLinks
+    detail_platforms: GetFromAddressTokenDetailPlatforms
+    sentiment_votes_up_percentage: float | None = None
+    sentiment_votes_down_percentage: float | None = None
+    watchlist_portfolio_users: int | None = None
+    market_cap_rank: int | None = None
     image: GetFromAddressTokenDetailPlatformImage
-    market_data: GetFromAddressTokenDetailMarketData
+    market_data: GetFromAddressTokenMarketData
+    developer_data: GetFromAddressTokenDeveloperData
+    tickers: list[GetFromAddressTokenTicker]
+    platforms: dict[str, str] | None = None
+    logoURI: str | None = None
 
 
 class CoinGeckoToken(BaseModel):
@@ -98,7 +157,9 @@ class CoingeckoTokenRepository(TokenRepository):
 
         return [token.to_domain() for token in token_list.tokens]
 
-    async def get_by_address(self, address: str) -> TokenSimilarity | None:
+    async def get_by_address(
+        self, address: str
+    ) -> tuple[TokenSimilarity, BaseModel] | None:
         try:
             token = await self.http_request.get(
                 {
@@ -113,18 +174,23 @@ class CoingeckoTokenRepository(TokenRepository):
                 return None
             raise e
 
-        return TokenSimilarity(
-            id=f"bsc:{address}".lower(),
-            name=token.name,
-            display_name=self._clean_display_name(token.name),
-            ticker=token.symbol.upper(),
-            address=address,
-            description=token.description["en"],
-            decimals=token.detail_platforms.binance_smart_chain.decimal_place,
-            categories=self._make_categories(token.categories),
-            logo_uri=f"https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/{address}.png",
-            market_cap_usd=int(token.market_data.market_cap.usd),
-            is_canonical=self._is_canonical(token),
+        return (
+            TokenSimilarity(
+                id=f"bsc:{address}".lower(),
+                name=token.name,
+                display_name=self._clean_display_name(token.name),
+                ticker=token.symbol.upper(),
+                address=address,
+                description=token.description.en or "",
+                decimals=token.detail_platforms.binance_smart_chain.decimal_place,
+                categories=self._make_categories(token.categories),
+                logo_uri=f"https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/{address}.png",
+                market_cap_usd=int(token.market_data.market_cap.usd or 0),
+                is_canonical=self._is_canonical(token),
+                # Override later with real trust score
+                trust_score=0,
+            ),
+            token,
         )
 
     async def get_by_address_raw(self, address: str) -> Any | None:

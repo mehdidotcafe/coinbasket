@@ -19,6 +19,7 @@ class CmcTop20BasketDataSource(DataSource):
             decimals=18,
             market_cap_usd=6_773_392,
             is_canonical=1,
+            trust_score=90,
         )
 
     async def get(self) -> list[AssetSimilarity]:
