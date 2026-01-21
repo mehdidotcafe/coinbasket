@@ -26,7 +26,12 @@ from web3 import AsyncWeb3, AsyncHTTPProvider
 
 from api.configuration import Configuration
 from api.chain.infrastructure.bsc.bsc_chain import BscChain
-from api.registry import id_generator, similarity_storage, token_repository
+from api.registry import (
+    id_generator,
+    similarity_storage,
+    token_repository,
+    asset_trust_scorer_strategy,
+)
 
 
 configuration = Configuration()
@@ -124,7 +129,10 @@ async def seed_assets():
             data_sources = [TestDataSource(id_generator)]
         case "development":
             data_sources = [
-                DevDataSource(id_generator),
+                DevDataSource(
+                    id_generator=id_generator,
+                    asset_trust_scorer_strategy=asset_trust_scorer_strategy,
+                ),
                 CmcTop20BasketDataSource(
                     id_generator,
                 ),
@@ -132,8 +140,9 @@ async def seed_assets():
         case _:
             data_sources = [
                 CoingeckoLiveTokenListDataSource(
-                    id_generator,
-                    token_repository,
+                    id_generator=id_generator,
+                    token_repository=token_repository,
+                    asset_trust_scorer_strategy=asset_trust_scorer_strategy,
                 ),
                 CmcTop20BasketDataSource(
                     id_generator,

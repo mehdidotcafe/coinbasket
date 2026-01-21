@@ -12,8 +12,8 @@ class Basket:
     decimals: int
     address: str
     categories: list[AssetCategory]
-    logo_uri: str | None = None
     type: Literal["BASKET"]
+    logo_uri: str | None = None
 
     def __init__(
         self,
@@ -35,18 +35,8 @@ class Basket:
         self.description = description
         self.decimals = decimals
         self.categories = categories
-        self.logo_uri = logo_uri
         self.type = "BASKET"
-
-    def __str__(self) -> str:
-        return f"""
-name: {self.name}
-display_name: {self.display_name}
-description: {self.description}
-ticker: {self.ticker}
-address: {self.address}
-categories: {", ".join(self.categories)}
-"""
+        self.logo_uri = logo_uri
 
     def to_dict(self) -> dict[str, str | int | list[AssetCategory] | None]:
         return {

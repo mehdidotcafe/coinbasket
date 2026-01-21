@@ -74,4 +74,5 @@ class PancakeswapTokenListDataSource(DataSource):
             logo_uri=f"https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/{pancakeswap_token.address}.png",
             market_cap_usd=0,
             is_canonical=0,
+            trust_score=100,
         )

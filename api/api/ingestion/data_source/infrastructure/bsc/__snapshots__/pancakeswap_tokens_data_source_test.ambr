@@ -14,6 +14,7 @@
       market_cap_usd=0,
       name='Lithosphere',
       ticker='LITHO',
+      trust_score=100,
       type='TOKEN',
     ),
   ])

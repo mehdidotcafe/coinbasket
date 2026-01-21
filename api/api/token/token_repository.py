@@ -6,7 +6,9 @@ from pydantic import BaseModel
 
 class TokenRepository(ABC):
     @abstractmethod
-    async def get_by_address(self, address: str) -> TokenSimilarity | None:
+    async def get_by_address(
+        self, address: str
+    ) -> tuple[TokenSimilarity, BaseModel] | None:
         raise NotImplementedError
 
     @abstractmethod
