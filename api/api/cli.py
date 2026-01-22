@@ -70,6 +70,7 @@ async def get_address_balances():
                 description="",
                 decimals=0,
                 categories=[],
+                trust_score=0,
             ),
         )
         print(f"{arg} Balance: {balance_amount}")

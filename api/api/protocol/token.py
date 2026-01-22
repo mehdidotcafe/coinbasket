@@ -12,8 +12,9 @@ class Token:
     decimals: int
     address: str
     categories: list[AssetCategory]
-    logo_uri: str | None = None
+    trust_score: int
     type: Literal["TOKEN"]
+    logo_uri: str | None = None
 
     def __init__(
         self,
@@ -25,6 +26,7 @@ class Token:
         description: str,
         decimals: int,
         categories: list[AssetCategory],
+        trust_score: int,
         logo_uri: str | None = None,
     ):
         self.id = id.lower()
@@ -35,6 +37,7 @@ class Token:
         self.description = description
         self.decimals = decimals
         self.categories = categories
+        self.trust_score = trust_score
         self.logo_uri = logo_uri
         self.type = "TOKEN"
 
@@ -47,6 +50,7 @@ class Token:
             "address": self.address,
             "description": self.description,
             "decimals": int(self.decimals),
+            "trust_score": self.trust_score,
             "logo_uri": self.logo_uri,
             "categories": self.categories,
             "type": self.type,

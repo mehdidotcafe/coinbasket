@@ -127,6 +127,7 @@ class CoinGeckoToken(BaseModel):
             address=self.address,
             description="",
             decimals=self.decimals,
+            trust_score=0,
             categories=[
                 cast(AssetCategory, category) for category in self.categories or []
             ],

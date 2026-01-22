@@ -16,8 +16,9 @@ import { useDebouncedCallback } from 'use-debounce'
 import { concat, numberToHex, size, TransactionExecutionError } from 'viem'
 import { useAccount, useSignTypedData, useWaitForTransactionReceipt, useWalletClient } from 'wagmi'
 import * as z from 'zod'
-import { AssetLogo } from '@/asset/asset-logo'
-import { AssetName } from '@/asset/asset-name'
+import { AssetCategories } from '@/asset/asset-categories'
+import { AssetChip } from '@/asset/asset-chip'
+import { AssetTrustScore } from '@/asset/asset-trust-score'
 import { useResettableInterval } from '@/chat/use-resettable-interval'
 import { SwapDisclaimer } from '@/components/disclaimer'
 import { Button } from '@/components/ui/button'
@@ -39,6 +40,7 @@ const tokenFormSchema = z.object({
   description: z.string(),
   decimals: z.number(),
   categories: z.array(z.string()),
+  trustScore: z.number(),
   type: z.literal('TOKEN'),
   logoUri: z.string().optional(),
 })
@@ -52,6 +54,7 @@ const basketFormSchema = z.object({
   description: z.string(),
   decimals: z.number(),
   categories: z.array(z.string()),
+  trustScore: z.number(),
   type: z.literal('BASKET'),
   logoUri: z.string().optional(),
 })
@@ -211,13 +214,10 @@ function AssetInput<T extends FieldValues>({ asset, availableAmount, control, na
             )}
           />
         </div>
-        <div className="flex items-center gap-2 ml-4 border rounded-full p-1 pr-2 bg-secondary/10">
-          <AssetLogo asset={asset} />
-          <AssetName asset={asset} />
-        </div>
+        <AssetChip asset={asset} />
       </div>
 
-      <div className="flex mt-4 text-right justify-end">
+      <div className="flex mt-6 items-end">
         {
           availableAmount
             ? (
@@ -238,6 +238,12 @@ function AssetInput<T extends FieldValues>({ asset, availableAmount, control, na
             )
             : null
         }
+        <div className="ml-auto flex gap-1">
+          <AssetTrustScore asset={asset} />
+          {asset.categories.length > 0
+            ? <AssetCategories asset={asset} />
+            : null}
+        </div>
       </div>
     </section>
   )
@@ -957,7 +963,7 @@ export function Pricer({ plannedOrder, onSubmit }: Props) {
   const isFormDisabled = currentStep !== 'idle'
 
   return (
-    <Card>
+    <Card className="bg-primary">
       <CardHeader>
         <CardTitle className="mb-4 font-sofia-sans text-2xl">Place Order</CardTitle>
         <Separator />

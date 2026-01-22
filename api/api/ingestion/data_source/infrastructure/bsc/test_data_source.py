@@ -19,6 +19,7 @@ from api.protocol.fixture.token import (
 )
 from api.protocol.fixture.basket import (
     cmc20_basket,
+    test_basket,
 )
 
 
@@ -42,7 +43,10 @@ class TestDataSource(DataSource):
                 cake_token,
             ]
         ]
-        baskets = [self._map_basket_to_basket_similarity(cmc20_basket, 5_000_000_000)]
+        baskets = [
+            self._map_basket_to_basket_similarity(cmc20_basket, 5_000_000_000),
+            self._map_basket_to_basket_similarity(test_basket, 1_000_000_000),
+        ]
 
         return tokens + baskets
 

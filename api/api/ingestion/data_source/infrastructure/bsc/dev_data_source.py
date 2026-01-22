@@ -47,7 +47,6 @@ class DevDataSource(DataSource):
         ]
 
         tokens: list[AssetSimilarity] = []
-        i = 0
 
         batch_size = 50
 
@@ -56,6 +55,7 @@ class DevDataSource(DataSource):
             for i in range(0, len(raw_tokens), batch_size)
         ]
 
+        i = 0
         for raw_token_batch in batched_tokens:
             try:
                 batch_tokens = await asyncio.gather(

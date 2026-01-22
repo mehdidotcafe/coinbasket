@@ -42,11 +42,11 @@ from api.portfolio.get_portfolio_use_case import (
     Portfolio,
     PortfolioBalance,
 )
+from api.protocol.asset import Asset
 from api.protocol.asset_category import AssetCategory
 from api.shared.app_exception import AppException
 from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from api.similarity.get_similar_assets_use_case import GetSimilarAssetsUseCase
-from api.protocol.basket import Basket
 
 from apispec import APISpec
 from api.registry import (
@@ -242,93 +242,24 @@ async def app_exception_handler(_request: Request, exception: AppException):
     )
 
 
-class TokenRequest(BaseModel):
+class AssetRequest(BaseModel):
     id: str
-    name: str
-    display_name: str
-    ticker: str
-    address: str
-    decimals: int
-    categories: list[str]
-    description: str
-    type: Literal["TOKEN"]
-    logo_uri: str | None = None
 
     @staticmethod
-    def from_domain(token: Token) -> "TokenRequest":
-        """Convert a Token to a TokenRequest."""
-        return TokenRequest(
-            id=token.id,
-            name=token.name,
-            display_name=token.display_name,
-            ticker=token.ticker,
-            address=token.address,
-            decimals=token.decimals,
-            categories=token.categories,
-            description=token.description,
-            type="TOKEN",
-            logo_uri=token.logo_uri,
+    def from_domain(asset: Asset) -> "AssetRequest":
+        """Convert an Asset to an AssetRequest."""
+        return AssetRequest(
+            id=asset.id,
         )
 
-    def to_domain(self) -> Token:
-        """Convert the request to a Token."""
-        return Token(
-            id=self.id,
-            name=self.name,
-            display_name=self.display_name,
-            ticker=self.ticker,
-            address=self.address,
-            description=self.description,
-            decimals=self.decimals,
-            categories=self.categories,
-            logo_uri=self.logo_uri,
-        )
+    async def to_domain(self) -> Asset:
+        """Convert the request to an Asset."""
+        asset = await get_asset_by_id_use_case.execute(self.id)
 
+        if not asset:
+            raise ValueError(f"Asset id {self.id} not found")
 
-class BasketRequest(BaseModel):
-    id: str
-    name: str
-    display_name: str
-    ticker: str
-    address: str
-    decimals: int
-    categories: list[str]
-    description: str
-    type: Literal["BASKET"]
-    logo_uri: str | None = None
-
-    @staticmethod
-    def from_domain(basket: Basket) -> "BasketRequest":
-        """Convert a Token to a BasketRequest."""
-        return BasketRequest(
-            id=basket.id,
-            name=basket.name,
-            display_name=basket.display_name,
-            ticker=basket.ticker,
-            address=basket.address,
-            decimals=basket.decimals,
-            categories=basket.categories,
-            description=basket.description,
-            type="BASKET",
-            logo_uri=basket.logo_uri,
-        )
-
-    def to_domain(self) -> Basket:
-        """Convert the request to a Basket."""
-        return Basket(
-            id=self.id,
-            name=self.name,
-            display_name=self.display_name,
-            ticker=self.ticker,
-            address=self.address,
-            description=self.description,
-            decimals=self.decimals,
-            categories=self.categories,
-            logo_uri=self.logo_uri,
-        )
-
-
-AssetRequest = BasketRequest | TokenRequest
+        return asset
 
 
 class ToolAssetRequest(BaseModel):
@@ -635,10 +566,10 @@ class BalanceRequest(BaseModel):
     asset: AssetRequest
     amount: str
 
-    def to_domain(self) -> Balance:
+    async def to_domain(self) -> Balance:
         """Convert the request to a Balance."""
         return Balance(
-            asset=self.asset.to_domain(),
+            asset=await self.asset.to_domain(),
             amount=Decimal(self.amount),
         )
 
@@ -648,13 +579,13 @@ class ConfirmedOrderRequest(BaseModel):
     buy_balance: BalanceRequest
     sell_balance: BalanceRequest
 
-    def to_domain(self, id: ConfirmedOrderId, address: Address) -> ConfirmedOrder:
+    async def to_domain(self, id: ConfirmedOrderId, address: Address) -> ConfirmedOrder:
         return ConfirmedOrder(
             id=id,
             planned_order_id=self.planned_order_id,
             address=address,
-            buy_balance=self.buy_balance.to_domain(),
-            sell_balance=self.sell_balance.to_domain(),
+            buy_balance=await self.buy_balance.to_domain(),
+            sell_balance=await self.sell_balance.to_domain(),
         )
 
 
@@ -1065,6 +996,7 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
                     "ALWAYS use a tool to fetch an asset address when you need it.  ",
                     "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
                     "The only way to place order is to use the plan_and_execute_swap_order tool.  ",
+                    "You don't need to know the asset prices before calling the plan_and_execute_swap_order tool, the tool will handle it for you.  ",
                     "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
                     "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
                     "Consider all tool parameters optional unless explicitly stated otherwise.",
@@ -1132,16 +1064,16 @@ async def get_conversation_messages(request: Request) -> MessagesResponse:
 
 
 class AssetSwapPriceInfoRequest(BaseModel):
-    sell_asset: TokenRequest | BasketRequest
+    sell_asset: AssetRequest
     sell_asset_amount: str
-    buy_asset: TokenRequest | BasketRequest
+    buy_asset: AssetRequest
 
-    def to_domain(self) -> AssetSwapPriceInfo:
+    async def to_domain(self) -> AssetSwapPriceInfo:
         """Convert the request to an AssetSwapPriceInfo."""
         return AssetSwapPriceInfo(
-            sell_asset=self.sell_asset.to_domain(),
+            sell_asset=await self.sell_asset.to_domain(),
             sell_asset_amount=Decimal(self.sell_asset_amount),
-            buy_asset=self.buy_asset.to_domain(),
+            buy_asset=await self.buy_asset.to_domain(),
         )
 
 
@@ -1210,7 +1142,7 @@ async def get_asset_swap_price(request: Request, req: AssetSwapPriceInfoRequest)
     address = cast(Address, request.state.address)
 
     converted_balance = await get_asset_swap_price_use_case.execute(
-        address, req.to_domain()
+        address, await req.to_domain()
     )
     return ConvertedBalanceResponse.from_domain(converted_balance)
 
@@ -1218,7 +1150,6 @@ async def get_asset_swap_price(request: Request, req: AssetSwapPriceInfoRequest)
 @openapi(
     spec=spec,
     schemas=[
-        BasketRequest,
         BalanceRequest,
         ConfirmedOrderRequest,
         SignableTransactionResponse,
@@ -1257,7 +1188,7 @@ async def get_asset_swap_price(request: Request, req: AssetSwapPriceInfoRequest)
 async def build_signable_order(request: Request, req: ConfirmedOrderRequest):
     """Build a signable order from a confirmed order."""
     address = cast(Address, request.state.address)
-    confirmed_order = req.to_domain(id_generator.generate_random_id(), address)
+    confirmed_order = await req.to_domain(id_generator.generate_random_id(), address)
 
     await confirmed_order_repository.save(confirmed_order)
 
@@ -1505,19 +1436,10 @@ async def health_check() -> HealthResponse:
 
 
 class PortfolioRequest(BaseModel):
-    token: TokenRequest
+    token: AssetRequest
 
-    def to_domain(self):
-        return Token(
-            id=self.token.id,
-            name=self.token.name,
-            display_name=self.token.display_name,
-            ticker=self.token.ticker,
-            address=self.token.address,
-            decimals=self.token.decimals,
-            categories=self.token.categories,
-            description=self.token.description,
-        )
+    async def to_domain(self):
+        return await AssetRequest.to_domain(self.token)
 
 
 class PortfolioBalanceResponse(BaseModel):
@@ -1572,7 +1494,7 @@ class PortfolioAssetBalanceResponse(BaseModel):
 @openapi(
     spec=spec,
     schemas=[
-        TokenRequest,
+        AssetRequest,
         BalanceAtomicResponse,
         PortfolioBalanceResponse,
         PortfolioRequest,
@@ -1614,7 +1536,7 @@ class PortfolioAssetBalanceResponse(BaseModel):
 async def get_converted_portfolio(request: Request, req: PortfolioRequest):
     address = Address(getattr(request.state, "address"))
     converted_token_balances = await get_portfolio_use_case.execute(
-        address, req.to_domain()
+        address, await req.to_domain()
     )
 
     return PortfolioResponse.from_domain(converted_token_balances)

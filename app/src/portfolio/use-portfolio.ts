@@ -38,6 +38,7 @@ export function usePortfolio() {
         description: '',
         type: 'TOKEN',
         logoUri: undefined,
+        trustScore: 0,
       })
     },
     refetchInterval: 60_000,

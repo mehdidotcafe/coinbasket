@@ -7,6 +7,7 @@ export interface Basket {
   categories: string[]
   decimals: number
   description: string
+  trustScore: number
   type: 'BASKET'
   logoUri?: string
 }

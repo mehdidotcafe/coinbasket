@@ -1,7 +1,7 @@
 from api.protocol.basket import Basket
 
 test_basket = Basket(
-    id="0d83917d-a2bd-4482-83e6-68d52c8f293a",
+    id="bsc:0x0000000000000000000000000000000000000000",
     name="Test Basket",
     display_name="Test Basket",
     ticker="TEST",
@@ -9,10 +9,11 @@ test_basket = Basket(
     decimals=18,
     address="0x0000000000000000000000000000000000000000",
     categories=["test", "demo"],
+    trust_score=100,
 )
 
 cmc20_basket = Basket(
-    id="0x2f8A339B5889FfaC4c5A956787cdA593b3c36867",
+    id="bsc:0x2f8A339B5889FfaC4c5A956787cdA593b3c36867",
     name="CMC20 Basket",
     display_name="CMC20 Basket",
     ticker="CMC20",
@@ -20,4 +21,5 @@ cmc20_basket = Basket(
     decimals=18,
     address="0x2f8A339B5889FfaC4c5A956787cdA593b3c36867",
     categories=["market-cap", "diversified"],
+    trust_score=100,
 )

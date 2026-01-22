@@ -7,6 +7,7 @@ export interface Token {
   categories: string[]
   decimals: number
   description: string
+  trustScore: number
   type: 'TOKEN'
   logoUri?: string
 }

@@ -10,17 +10,24 @@ export const TokenResponseSchema = z.object({
   categories: z.array(z.string()),
   decimals: z.number(),
   description: z.string(),
+  trust_score: z.number(),
   type: z.literal('TOKEN'),
   logo_uri: z.string().nullable(),
 })
 
 type TokenResponse = z.infer<typeof TokenResponseSchema>
 
-export type TokenRequest = TokenResponse
+export const TokenRequestSchema = z.object({
+  id: z.string(),
+})
+
+export type TokenRequest = z.infer<typeof TokenRequestSchema>
 
 export class TokenDto {
   static toRequest(token: Token): TokenRequest {
-    return this.toResponse(token)
+    return {
+      id: token.id,
+    }
   }
 
   static toResponse(token: Token): TokenResponse {
@@ -33,6 +40,7 @@ export class TokenDto {
       categories: token.categories,
       decimals: token.decimals,
       description: token.description,
+      trust_score: token.trustScore,
       type: 'TOKEN',
       logo_uri: token.logoUri ?? null,
     }
@@ -48,6 +56,7 @@ export class TokenDto {
       categories: tokenResponse.categories,
       decimals: tokenResponse.decimals,
       description: tokenResponse.description,
+      trustScore: tokenResponse.trust_score,
       type: 'TOKEN',
       logoUri: tokenResponse.logo_uri ?? undefined,
     }

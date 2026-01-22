@@ -10,6 +10,7 @@ bnb_token = Token(
     decimals=18,
     categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Wrapped-Tokens"],
     logo_uri="https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png",
+    trust_score=100,
 )
 
 
@@ -23,6 +24,7 @@ wbnb_token = Token(
     decimals=18,
     categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Wrapped-Tokens"],
     logo_uri="https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png",
+    trust_score=100,
 )
 
 eth_token = Token(
@@ -35,6 +37,7 @@ eth_token = Token(
     decimals=18,
     categories=["BNB Chain Ecosystem", "Binance-Peg Tokens"],
     logo_uri="https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png",
+    trust_score=100,
 )
 
 btc_token = Token(
@@ -52,6 +55,7 @@ btc_token = Token(
         "Bitcoin Ecosystem",
     ],
     logo_uri="https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png",
+    trust_score=100,
 )
 
 sol_token = Token(
@@ -64,6 +68,7 @@ sol_token = Token(
     decimals=18,
     categories=["BNB Chain Ecosystem", "Binance-Peg Tokens"],
     logo_uri="https://coin-images.coingecko.com/coins/images/54582/thumb/wsol.png",
+    trust_score=100,
 )
 
 usdt_token = Token(
@@ -81,6 +86,7 @@ usdt_token = Token(
         "Bridged Stablecoin",
     ],
     logo_uri="https://coin-images.coingecko.com/coins/images/35021/thumb/USDT.png",
+    trust_score=100,
 )
 
 shib_token = Token(
@@ -93,6 +99,7 @@ shib_token = Token(
     decimals=18,
     categories=["BNB Chain Ecosystem", "Meme", "Dog-Themed", "Binance-Peg Tokens"],
     logo_uri="https://coin-images.coingecko.com/coins/images/50193/thumb/shib.png",
+    trust_score=100,
 )
 
 cake_token = Token(
@@ -127,6 +134,7 @@ cake_token = Token(
         "Governance",
     ],
     logo_uri="https://coin-images.coingecko.com/coins/images/12632/thumb/pancakeswap-cake-logo_%281%29.png",
+    trust_score=100,
 )
 
 doge_token = Token(
@@ -144,6 +152,7 @@ doge_token = Token(
     ],
     description="Tokens that are wrapped and pegged by Binance on a 1:1 ratio to the corresponding native token. Also supports BEP20 token deposits and withdrawals at Binance.com",
     logo_uri="https://coin-images.coingecko.com/coins/images/15768/thumb/dogecoin.png",
+    trust_score=100,
 )
 
 pepe_token = Token(
@@ -166,6 +175,7 @@ pepe_token = Token(
         "4chan-Themed",
     ],
     decimals=18,
+    trust_score=100,
 )
 
 
@@ -178,6 +188,7 @@ xrp_token = Token(
     decimals=18,
     description="Tokens that are wrapped and pegged by Binance on a 1:1 ratio to the corresponding native token. Also supports BEP20 token deposits and withdrawals at Binance.com",
     categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Binance-Peg Tokens"],
+    trust_score=100,
 )
 
 ada_token = Token(
@@ -194,6 +205,7 @@ ada_token = Token(
         "Harmony Ecosystem",
         "Binance-Peg Tokens",
     ],
+    trust_score=100,
 )
 
 trx_token = Token(
@@ -205,4 +217,5 @@ trx_token = Token(
     decimals=6,
     description="",
     categories=["BNB Chain Ecosystem", "Bridged-Tokens"],
+    trust_score=100,
 )

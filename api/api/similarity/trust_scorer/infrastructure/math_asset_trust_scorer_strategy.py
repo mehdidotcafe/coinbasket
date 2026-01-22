@@ -22,9 +22,11 @@ class MathAssetTrustScorerStrategy(AssetTrustScorerStrategy):
     # Major DEXes with good reputation
     MAJOR_DEXES = {
         "pancakeswap-v3-bsc",
+        "pancakeswap-new",
         "uniswap-bsc",
         "uniswap_v3",
         "uniswap-v4-bsc",
+        "uniswap-bsc",
         "thena-v3",
         "thena-fusion",
         "pancakeswap-infinity-clmm",
@@ -32,6 +34,11 @@ class MathAssetTrustScorerStrategy(AssetTrustScorerStrategy):
 
     async def score(self, raw_asset: dict[str, Any]) -> int:
         score = 0.0
+
+        # --- Binance-Peg ID bonus (15 points) ---
+        asset_id = raw_asset.get("id", "")
+        if asset_id.startswith("binance-peg-"):
+            score += 15
 
         # --- Description (up to 10 points) ---
         description = raw_asset.get("description", {}).get("en", "")

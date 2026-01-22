@@ -112,6 +112,7 @@ async def test_get_asset_by_id_use_case_found_token(
                     "decimals": 18,
                     "logo_uri": "https://example.com/btc-logo.png",
                     "type": "TOKEN",
+                    "trust_score": 90,
                 },
                 "_id": "2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
                 "_collection_name": "datasets",
@@ -132,6 +133,7 @@ async def test_get_asset_by_id_use_case_found_token(
         categories=["peg", "bitcoin"],
         decimals=18,
         logo_uri="https://example.com/btc-logo.png",
+        trust_score=90,
     )
 
     asset_repository.get_by_field.assert_called_once_with(
