@@ -40,6 +40,7 @@ class GetAllBasketsUseCase:
             description=metadata["source"]["description"],
             address=metadata["source"]["address"],
             decimals=int(metadata["source"]["decimals"]),
+            trust_score=int(metadata["source"]["trust_score"]),
             categories=metadata["source"]["categories"],
             logo_uri=metadata["source"].get("logo_uri"),
         )

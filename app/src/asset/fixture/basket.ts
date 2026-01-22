@@ -11,4 +11,5 @@ export const aiBasket: Basket = {
   decimals: 18,
   type: 'BASKET',
   logoUri: 'https://example.com/logos/ai-basket.png',
+  trustScore: 80,
 }

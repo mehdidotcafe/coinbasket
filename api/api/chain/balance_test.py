@@ -17,6 +17,7 @@ def token():
         decimals=18,
         logo_uri=None,
         categories=["test", "token"],
+        trust_score=85,
     )
 
 
@@ -32,6 +33,7 @@ def basket():
         decimals=18,
         logo_uri=None,
         categories=["test", "basket"],
+        trust_score=90,
     )
 
 

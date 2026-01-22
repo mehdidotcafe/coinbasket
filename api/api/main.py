@@ -996,6 +996,7 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
                     "ALWAYS use a tool to fetch an asset address when you need it.  ",
                     "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
                     "The only way to place order is to use the plan_and_execute_swap_order tool.  ",
+                    "You don't need to know the asset prices before calling the plan_and_execute_swap_order tool, the tool will handle it for you.  ",
                     "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
                     "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
                     "Consider all tool parameters optional unless explicitly stated otherwise.",

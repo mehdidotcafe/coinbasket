@@ -9,6 +9,7 @@ test_basket = Basket(
     decimals=18,
     address="0x0000000000000000000000000000000000000000",
     categories=["test", "demo"],
+    trust_score=100,
 )
 
 cmc20_basket = Basket(
@@ -20,4 +21,5 @@ cmc20_basket = Basket(
     decimals=18,
     address="0x2f8A339B5889FfaC4c5A956787cdA593b3c36867",
     categories=["market-cap", "diversified"],
+    trust_score=100,
 )

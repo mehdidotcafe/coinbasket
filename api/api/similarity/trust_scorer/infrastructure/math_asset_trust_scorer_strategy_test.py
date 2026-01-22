@@ -3125,3 +3125,23 @@ async def test_math_asset_trust_scorer_strategy_score_2_medium(
     trust_score = await strategy.score(raw_asset=validated.model_dump())
 
     assert trust_score < 70 and trust_score >= 30
+
+
+@mark.asyncio
+async def test_math_asset_trust_scorer_strategy_score_4_high(
+    strategy: MathAssetTrustScorerStrategy, raw_tokens: list[dict[str, Any]]
+):
+    trx = next(
+        asset
+        for asset in raw_tokens
+        if asset["platforms"].get("binance-smart-chain")
+        == "0xce7de646e7208a4ef112cb6ed5038fa6cc6b12e3"
+    )
+
+    validated = GetFromAddressToken.model_validate(trx)
+
+    trust_score = await strategy.score(raw_asset=validated.model_dump())
+
+    print(trust_score)
+
+    assert trust_score >= 70

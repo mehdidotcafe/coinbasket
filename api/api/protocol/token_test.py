@@ -11,6 +11,7 @@ def test_token_eq_true() -> None:
         description="First test token",
         decimals=18,
         categories=[],
+        trust_score=80,
     )
     token2 = Token(
         id="token-1",
@@ -21,6 +22,7 @@ def test_token_eq_true() -> None:
         description="First test token",
         decimals=18,
         categories=[],
+        trust_score=80,
     )
     assert token1 == token2
 
@@ -35,6 +37,7 @@ def test_token_eq_false() -> None:
         description="First test token",
         decimals=18,
         categories=[],
+        trust_score=80,
     )
     token2 = Token(
         id="token-2",
@@ -45,6 +48,7 @@ def test_token_eq_false() -> None:
         description="Second test token",
         decimals=6,
         categories=[],
+        trust_score=80,
     )
     assert token1 != token2
 
@@ -59,5 +63,6 @@ def test_token_eq_non_token() -> None:
         description="Test token",
         decimals=18,
         categories=[],
+        trust_score=80,
     )
     assert token != "not a token"

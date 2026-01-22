@@ -72,6 +72,7 @@ async def test_get_all_baskets_use_case_success(
                     "address": "0xDUMMYADDRESS",
                     "decimals": 18,
                     "categories": ["basket"],
+                    "trust_score": 10,
                 },
                 "_id": "11111111-a9ee-4292-89c8-c1f0c7a5cb70",
                 "_collection_name": "datasets",
@@ -92,6 +93,7 @@ async def test_get_all_baskets_use_case_success(
                     "address": "0xBIG4ADDRESS",
                     "decimals": 18,
                     "categories": ["basket"],
+                    "trust_score": 95,
                 },
                 "_id": "2bb6425b-a9ee-4292-89c8-c1f0c7a5cb70",
                 "_collection_name": "datasets",
@@ -112,6 +114,7 @@ async def test_get_all_baskets_use_case_success(
             decimals=18,
             address="0xBIG4ADDRESS",
             categories=["basket"],
+            trust_score=95,
         ),
         Basket(
             id="11111111-a9ee-4292-89c8-c1f0c7a5cb70",
@@ -122,6 +125,7 @@ async def test_get_all_baskets_use_case_success(
             decimals=18,
             address="0xDUMMYADDRESS",
             categories=["basket"],
+            trust_score=10,
         ),
     ]
     basket_repository.get_by_field.assert_awaited_once_with(name="type", value="basket")

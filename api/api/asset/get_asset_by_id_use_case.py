@@ -50,5 +50,6 @@ class GetAssetByIdUseCase:
             description=document_metadata["source"]["description"],
             decimals=int(document_metadata["source"]["decimals"]),
             categories=document_metadata["source"]["categories"],
+            trust_score=int(document_metadata["source"]["trust_score"]),
             logo_uri=document_metadata["source"].get("logo_uri"),
         )

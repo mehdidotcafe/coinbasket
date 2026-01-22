@@ -12,6 +12,7 @@ class Basket:
     decimals: int
     address: str
     categories: list[AssetCategory]
+    trust_score: int
     type: Literal["BASKET"]
     logo_uri: str | None = None
 
@@ -25,6 +26,7 @@ class Basket:
         description: str,
         decimals: int,
         categories: list[AssetCategory],
+        trust_score: int,
         logo_uri: str | None = None,
     ):
         self.id = id.lower()
@@ -35,6 +37,7 @@ class Basket:
         self.description = description
         self.decimals = decimals
         self.categories = categories
+        self.trust_score = trust_score
         self.type = "BASKET"
         self.logo_uri = logo_uri
 
@@ -49,6 +52,7 @@ class Basket:
             "decimals": int(self.decimals),
             "logo_uri": self.logo_uri,
             "categories": self.categories,
+            "trust_score": self.trust_score,
             "type": self.type,
         }
 

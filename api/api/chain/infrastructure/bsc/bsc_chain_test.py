@@ -175,6 +175,7 @@ async def test_bsc_chain_get_asset_balance(bsc_chain: BscChain, w3: AsyncWeb3):
         decimals=18,
         categories=[],
         logo_uri=None,
+        trust_score=10,
     )
 
     token_contract = mock.Mock()
@@ -227,6 +228,7 @@ async def test_bsc_chain_get_address_token_balance(bsc_chain: BscChain, w3: Asyn
         decimals=18,
         categories=[],
         logo_uri=None,
+        trust_score=10,
     )
 
     token_contract = mock.Mock()

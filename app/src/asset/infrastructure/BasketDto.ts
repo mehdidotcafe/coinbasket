@@ -10,6 +10,7 @@ export const BasketResponseSchema = z.object({
   categories: z.array(z.string()),
   decimals: z.number(),
   description: z.string(),
+  trust_score: z.number(),
   type: z.literal('BASKET'),
   logo_uri: z.string().nullable(),
 })
@@ -27,6 +28,7 @@ export class BasketDto {
       categories: basket.categories,
       decimals: basket.decimals,
       description: basket.description,
+      trust_score: basket.trustScore,
       type: 'BASKET',
       logo_uri: basket.logoUri ?? null,
     }
@@ -42,6 +44,7 @@ export class BasketDto {
       categories: basketResponse.categories,
       decimals: basketResponse.decimals,
       description: basketResponse.description,
+      trustScore: basketResponse.trust_score,
       type: 'BASKET',
       logoUri: basketResponse.logo_uri ?? undefined,
     }

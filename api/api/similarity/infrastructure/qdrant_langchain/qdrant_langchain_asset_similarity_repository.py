@@ -366,6 +366,7 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
             description=asset["source"]["description"],
             decimals=int(asset["source"]["decimals"]),
             categories=asset["source"]["categories"],
+            trust_score=int(asset["source"]["trust_score"]),
             logo_uri=asset["source"].get("logo_uri"),
         )
 

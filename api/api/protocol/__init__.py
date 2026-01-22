@@ -13,6 +13,7 @@ class TokenResponse(BaseModel):
     description: str
     decimals: int
     categories: list[str]
+    trust_score: int
     type: Literal["TOKEN"]
     logo_uri: str | None = None
 
@@ -28,6 +29,7 @@ class TokenResponse(BaseModel):
             categories=token.categories,
             description=token.description,
             decimals=token.decimals,
+            trust_score=token.trust_score,
             type="TOKEN",
             logo_uri=token.logo_uri,
         )
@@ -43,6 +45,7 @@ class TokenResponse(BaseModel):
             description=self.description,
             decimals=self.decimals,
             categories=self.categories,
+            trust_score=self.trust_score,
             logo_uri=self.logo_uri,
         )
 
@@ -56,6 +59,7 @@ class BasketResponse(BaseModel):
     decimals: int
     address: str
     categories: list[str]
+    trust_score: int
     type: Literal["BASKET"]
     logo_uri: str | None = None
 
@@ -71,6 +75,7 @@ class BasketResponse(BaseModel):
             description=basket.description,
             decimals=basket.decimals,
             categories=basket.categories,
+            trust_score=basket.trust_score,
             logo_uri=basket.logo_uri,
             type="BASKET",
         )
@@ -85,6 +90,7 @@ class BasketResponse(BaseModel):
             description=self.description,
             decimals=self.decimals,
             categories=self.categories,
+            trust_score=self.trust_score,
             logo_uri=self.logo_uri,
             address=self.address,
         )
