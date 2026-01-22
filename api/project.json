@@ -104,7 +104,7 @@
     "cli:production": {
       "executor": "@nxlv/python:run-commands",
       "options": {
-        "command": "env-cmd -f .env.production_server --use-shell 'poetry run python -m api.cli'",
+        "command": "env-cmd -f .env.production --use-shell 'poetry run python -m api.cli'",
         "cwd": "{projectRoot}"
       },
       "cache": false

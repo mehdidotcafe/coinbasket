@@ -345,7 +345,7 @@ async def get_portfolio_summary(
     # return PortfolioResponse.from_domain(
     #     await get_portfolio_use_case.execute(address, conversion_asset)
     # ).model_dump_json()
-    return "Coming soon, not implemented yet."
+    return "The portfolio feature is not implemented yet and is coming soon."
 
 
 @tool(
