@@ -71,7 +71,7 @@ export function PromptForm({ onSubmit, status, size, placeholder = 'Ask somethin
   }
 
   const askPortfolio = () => {
-    form.setValue('content', 'What is my portfolio status?')
+    form.setValue('content', 'What is my portfolio?')
     form.trigger('content')
     form.handleSubmit(onSubmitForm)()
   }
