@@ -253,7 +253,7 @@ class AssetRequest(BaseModel):
         )
 
     async def to_domain(self) -> Asset:
-        """Convert the request to an Aset."""
+        """Convert the request to an Asset."""
         asset = await get_asset_by_id_use_case.execute(self.id)
 
         if not asset:
