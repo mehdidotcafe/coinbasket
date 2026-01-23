@@ -1,3 +1,4 @@
+/* eslint-disable node/prefer-global/process */
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '../providers'
@@ -17,11 +18,11 @@ export const metadata: Metadata = {
       url: 'favicon/apple-touch-icon.png',
     },
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_LIVE_URL!),
   openGraph: {
     title: 'coinbasket',
     description: 'AI-Powered Crypto Orders. One Prompt Away',
-    url: process.env.NEXT_PUBLIC_BASE_URL,
+    url: process.env.NEXT_PUBLIC_APP_LIVE_URL,
     siteName: 'coinbasket',
     images: [{ url: '/logo/coinbasket-og-banner.jpg', width: 1200, height: 630, alt: 'coinbasket banner' }],
     type: 'website',
