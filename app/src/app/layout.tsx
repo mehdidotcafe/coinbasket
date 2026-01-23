@@ -17,6 +17,24 @@ export const metadata: Metadata = {
       url: 'favicon/apple-touch-icon.png',
     },
   },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL),
+  openGraph: {
+    title: 'coinbasket',
+    description: 'AI-Powered Crypto Orders. One Prompt Away',
+    url: process.env.NEXT_PUBLIC_BASE_URL,
+    siteName: 'coinbasket',
+    images: [{ url: '/logo/coinbasket-og-banner.jpg', width: 1200, height: 630, alt: 'coinbasket banner' }],
+    type: 'website',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'coinbasket',
+    description: 'AI-Powered Crypto Orders. One Prompt Away',
+    images: ['/logo/coinbasket-og-banner.jpg'],
+    site: '@coinbasketai',
+    creator: '@coinbasketai',
+  },
 }
 
 export default function RootLayout({
