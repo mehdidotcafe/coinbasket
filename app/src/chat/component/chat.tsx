@@ -72,7 +72,7 @@ function MessageListContainer({ authentication, messages, addMessage, isWaitingM
           ? (<EmptyConversationScreen onSubmit={addMessage} />)
           : (
             <section className="relative flex align-center">
-              <div className="flex flex-col pt-16 w-6/7 md:w-2/3 xl:w-1/2 mx-auto max-w-6/7 md:max-w-2/3 xl:max-w-1/2 overflow-hidden break-all">
+              <div className="flex flex-col pt-16 w-6/7 md:w-2/3 xl:w-1/2 mx-auto max-w-6/7 md:max-w-2/3 xl:max-w-1/2 overflow-hidden">
                 <MessageList messages={messages} onMessage={addMessage} />
                 {
                   isWaitingMessage
