@@ -162,13 +162,14 @@ interface AssetInputProps<T extends FieldValues> {
   name: Path<T>
   preLabel: string
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void
+  onBalanceClick?: () => void
   disabled: boolean
   hasError: boolean
 }
 
 const NB_DECIMALS = 8
 
-function AssetInput<T extends FieldValues>({ asset, availableAmount, control, name, preLabel, onChange, disabled, hasError }: AssetInputProps<T>) {
+function AssetInput<T extends FieldValues>({ asset, availableAmount, control, name, preLabel, onChange, onBalanceClick, disabled, hasError }: AssetInputProps<T>) {
   const debouncedOnChange = useDebouncedCallback((e: ChangeEvent<HTMLInputElement>) => onChange?.(e), 300)
 
   return (
@@ -221,7 +222,13 @@ function AssetInput<T extends FieldValues>({ asset, availableAmount, control, na
         {
           availableAmount
             ? (
-              <span className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
+              <button
+                type="button"
+                className="text-sm text-muted-foreground flex items-center gap-1 justify-center hover:text-foreground transition-colors cursor-pointer"
+                id="balance"
+                onClick={onBalanceClick}
+                disabled={disabled}
+              >
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
@@ -234,7 +241,7 @@ function AssetInput<T extends FieldValues>({ asset, availableAmount, control, na
                 </Tooltip>
 
                 {Big(availableAmount).toFixed(NB_DECIMALS, Big.roundDown)}
-              </span>
+              </button>
             )
             : null
         }
@@ -745,6 +752,14 @@ function OrderPricer({ form, order, disabled, setFormLoading }: OrderPricerProps
 
           updateFromSellAsset(Big(e.target.value), true)
         }}
+        onBalanceClick={() => {
+          const availableAmount = order.sellAssetWithAmount.availableAmount
+          if (availableAmount) {
+            form.setValue('sellAssetWithAmount.amount', Big(availableAmount).toFixed(NB_DECIMALS, Big.roundDown))
+            resetInterval()
+            updateFromSellAsset(Big(availableAmount), true)
+          }
+        }}
         hasError={hasFieldError}
       />
       <BottomSwapArrow />
@@ -760,6 +775,14 @@ function OrderPricer({ form, order, disabled, setFormLoading }: OrderPricerProps
             return
           resetInterval()
           updateFromBuyAsset(Big(e.target.value), true)
+        }}
+        onBalanceClick={() => {
+          const availableAmount = order.buyAssetWithAmount.availableAmount
+          if (availableAmount) {
+            form.setValue('buyAssetWithAmount.amount', Big(availableAmount).toFixed(NB_DECIMALS, Big.roundDown))
+            resetInterval()
+            updateFromBuyAsset(Big(availableAmount), true)
+          }
         }}
         hasError={false}
       />

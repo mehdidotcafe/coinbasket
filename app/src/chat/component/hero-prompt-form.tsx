@@ -2,6 +2,7 @@
 
 import type { Props } from './prompt-form'
 import { useTypingPlaceholder } from '@/app/landing/use-typing-placeholder'
+import precraftPrompts from '../precraft-prompts'
 import { PromptForm } from './prompt-form'
 
 export function HeroPromptForm({
@@ -9,13 +10,7 @@ export function HeroPromptForm({
   onSubmit,
 }: Pick<Props, 'size'> & { onSubmit?: Props['onSubmit'] }) {
   const placeholder = useTypingPlaceholder({
-    placeholders: [
-      'Buy 0.1 BTC',
-      'Sell all my tokens and baskets',
-      'Swap half of my ETH to DOGE',
-      'Buy 1 share of the CMC20 basket',
-      'Show my global portfolio in dollars',
-    ],
+    placeholders: precraftPrompts.flatMap(group => group.prompts),
   })
 
   return (
