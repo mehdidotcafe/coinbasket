@@ -14,7 +14,7 @@ export default [
     category: 'Portfolio prompts',
     prompts: [
       'What is the price of Bitcoin?',
-      'How much BNB my wallet has?',
+      'How much BNB does my wallet have?',
       'What memecoins are available?',
       'Give me information about Bitcoin',
     ],
