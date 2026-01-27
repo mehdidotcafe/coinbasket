@@ -8,6 +8,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { QueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import merge from 'lodash.merge'
+import { useSearchParams } from 'next/navigation'
 import { http } from 'viem'
 import { bsc } from 'viem/chains'
 import { WagmiProvider } from 'wagmi'
@@ -97,6 +98,18 @@ export const theme = merge(darkTheme(), {
 
 const queryClient = new QueryClient()
 
+function AutoFilledPromptInput({ children }: { children: React.ReactNode }) {
+  const searchParams = useSearchParams()
+
+  const input = searchParams.get('i')
+
+  return (
+    <PromptInputProvider defaultValue={input ? decodeURIComponent(input) : undefined}>
+      {children}
+    </PromptInputProvider>
+  )
+}
+
 function NestedProviders({ children }: { children: React.ReactNode }) {
   const { mode } = useMode()
 
@@ -115,9 +128,9 @@ function NestedProviders({ children }: { children: React.ReactNode }) {
           <AuthenticationProvider>
             <TooltipProvider>
               <RainbowKitProvider locale="en-US" theme={theme}>
-                <PromptInputProvider>
+                <AutoFilledPromptInput>
                   {children}
-                </PromptInputProvider>
+                </AutoFilledPromptInput>
               </RainbowKitProvider>
             </TooltipProvider>
           </AuthenticationProvider>

@@ -21,9 +21,6 @@ export function Footer() {
           <a href={process.env.NEXT_PUBLIC_APP_LIVE_URL!} target="_blank" rel="noopener noreferrer" className="opacity-75 col-start-1 row-start-2">
             Coinbasket App
           </a>
-          <a href={process.env.NEXT_PUBLIC_APP_DEMO_URL!} target="_blank" rel="noopener noreferrer" className="opacity-75 col-start-1 row-start-3">
-            Coinbasket Live Demo
-          </a>
           <a href={process.env.NEXT_PUBLIC_GITHUB_URL!} target="_blank" rel="noopener noreferrer" className="opacity-75 col-start-1 row-start-4">
             Github
           </a>

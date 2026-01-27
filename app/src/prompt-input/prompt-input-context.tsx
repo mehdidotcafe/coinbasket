@@ -10,8 +10,8 @@ interface PromptInputContextType {
 
 const PromptInputContext = createContext<PromptInputContextType | undefined>(undefined)
 
-export function PromptInputProvider({ children }: { children: ReactNode }) {
-  const [promptInput, setPromptInput] = useState('')
+export function PromptInputProvider({ children, defaultValue }: { children: ReactNode, defaultValue?: string }) {
+  const [promptInput, setPromptInput] = useState(defaultValue ?? '')
 
   return (
     <PromptInputContext.Provider value={{ promptInput, setPromptInput }}>
