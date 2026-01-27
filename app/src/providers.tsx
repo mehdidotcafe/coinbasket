@@ -9,6 +9,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import merge from 'lodash.merge'
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import { http } from 'viem'
 import { bsc } from 'viem/chains'
 import { WagmiProvider } from 'wagmi'
@@ -103,8 +104,19 @@ function AutoFilledPromptInput({ children }: { children: React.ReactNode }) {
 
   const input = searchParams.get('i')
 
+  let decodedInput: string | undefined
+
+  if (input != null) {
+    try {
+      decodedInput = decodeURIComponent(input)
+    }
+    catch {
+      decodedInput = ''
+    }
+  }
+
   return (
-    <PromptInputProvider defaultValue={input ? decodeURIComponent(input) : undefined}>
+    <PromptInputProvider defaultValue={decodedInput}>
       {children}
     </PromptInputProvider>
   )
@@ -128,9 +140,11 @@ function NestedProviders({ children }: { children: React.ReactNode }) {
           <AuthenticationProvider>
             <TooltipProvider>
               <RainbowKitProvider locale="en-US" theme={theme}>
-                <AutoFilledPromptInput>
-                  {children}
-                </AutoFilledPromptInput>
+                <Suspense>
+                  <AutoFilledPromptInput>
+                    {children}
+                  </AutoFilledPromptInput>
+                </Suspense>
               </RainbowKitProvider>
             </TooltipProvider>
           </AuthenticationProvider>
