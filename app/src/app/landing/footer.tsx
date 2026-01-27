@@ -21,6 +21,9 @@ export function Footer() {
           <a href={process.env.NEXT_PUBLIC_APP_LIVE_URL!} target="_blank" rel="noopener noreferrer" className="opacity-75 col-start-1 row-start-2">
             Coinbasket App
           </a>
+          <a href={process.env.NEXT_PUBLIC_DISCORD_URL!} target="_blank" rel="noopener noreferrer" className="opacity-75 col-start-1 row-start-3">
+            Discord
+          </a>
           <a href={process.env.NEXT_PUBLIC_GITHUB_URL!} target="_blank" rel="noopener noreferrer" className="opacity-75 col-start-1 row-start-4">
             Github
           </a>
@@ -51,11 +54,14 @@ export function Footer() {
         <div className="flex mt-auto pt-4 items-end">
           © 2026 coinbasket. All rights reserved.
           <div className="ml-auto grid grid-flow-col gap-4">
-            <a href={process.env.NEXT_PUBLIC_GITHUB_URL!} target="_blank" rel="noopener noreferrer" className="hover:brightness-125 transition-all duration-300">
-              <Image src="/github.svg" alt="GitHub logo" width={32} height={32} />
+            <a href={process.env.NEXT_PUBLIC_DISCORD_URL!} target="_blank" rel="noopener noreferrer" className="hover:brightness-125 transition-all duration-300">
+              <Image src="/discord.svg" alt="Discord logo" width={32} height={32} />
             </a>
             <a href={process.env.NEXT_PUBLIC_X_URL!} target="_blank" rel="noopener noreferrer" className="hover:brightness-125 transition-all duration-300">
               <Image src="/x.svg" alt="X logo" width={32} height={32} />
+            </a>
+            <a href={process.env.NEXT_PUBLIC_GITHUB_URL!} target="_blank" rel="noopener noreferrer" className="hover:brightness-125 transition-all duration-300">
+              <Image src="/github.svg" alt="GitHub logo" width={32} height={32} />
             </a>
             <a href={process.env.NEXT_PUBLIC_MEHDIDOTCAFE_URL!} target="_blank" rel="noopener noreferrer" className="hover:brightness-125 transition-all duration-300">
               <Image src="/mehdidotcafe.svg" alt="mehdidotcafe logo" width={32} height={32} />

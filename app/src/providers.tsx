@@ -76,6 +76,7 @@ const rawEnv = {
   '0X_PROTOCOL_URL': process.env.NEXT_PUBLIC_0X_PROTOCOL_URL!,
   'GITHUB_URL': process.env.NEXT_PUBLIC_GITHUB_URL!,
   'X_URL': process.env.NEXT_PUBLIC_X_URL!,
+  'DISCORD_URL': process.env.NEXT_PUBLIC_DISCORD_URL!,
   'BNB_CHAIN_URL': process.env.NEXT_PUBLIC_BNB_CHAIN_URL!,
   'MEHDIDOTCAFE_URL': process.env.NEXT_PUBLIC_MEHDIDOTCAFE_URL!,
 }
@@ -102,7 +103,8 @@ const queryClient = new QueryClient()
 function AutoFilledPromptInput({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams()
 
-  const input = searchParams.get('i')
+  // In Storybook, searchParams is null
+  const input = searchParams?.get('i')
 
   let decodedInput: string | undefined
 
@@ -124,7 +126,6 @@ function AutoFilledPromptInput({ children }: { children: React.ReactNode }) {
 
 function NestedProviders({ children }: { children: React.ReactNode }) {
   const { mode } = useMode()
-
   return (
     <WagmiProvider config={wagmiConfig}>
       <PersistQueryClientProvider

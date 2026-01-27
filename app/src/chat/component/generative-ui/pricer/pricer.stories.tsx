@@ -39,17 +39,17 @@ export const BuyTokenWithSellToken: Story = {
         gasFee: {
           amount: Big('0.0005'),
           asset: bnbToken,
-          amountAtomic: BigInt(50000),
+          amountAtomic: 50000 as any,
         },
         providerFee: {
           amount: Big('0.25'),
           asset: btcToken,
-          amountAtomic: BigInt(25000000),
+          amountAtomic: 25000000 as any,
         },
         platformFee: {
           amount: Big('1.5'),
           asset: btcToken,
-          amountAtomic: BigInt(150000000),
+          amountAtomic: 150000000 as any,
         },
       },
     },
@@ -81,17 +81,17 @@ export const BuyTokenWithSellTokenErrorSubmitting: Story = {
         gasFee: {
           amount: Big('0.0005'),
           asset: bnbToken,
-          amountAtomic: BigInt(50000),
+          amountAtomic: 50000 as any,
         },
         providerFee: {
           amount: Big('0.25'),
           asset: btcToken,
-          amountAtomic: BigInt(25000000),
+          amountAtomic: 25000000 as any,
         },
         platformFee: {
           amount: Big('1.5'),
           asset: btcToken,
-          amountAtomic: BigInt(150000000),
+          amountAtomic: 150000000 as any,
         },
       },
     },
