@@ -8,6 +8,8 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { QueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import merge from 'lodash.merge'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import { http } from 'viem'
 import { bsc } from 'viem/chains'
 import { WagmiProvider } from 'wagmi'
@@ -97,6 +99,29 @@ export const theme = merge(darkTheme(), {
 
 const queryClient = new QueryClient()
 
+function AutoFilledPromptInput({ children }: { children: React.ReactNode }) {
+  const searchParams = useSearchParams()
+
+  const input = searchParams.get('i')
+
+  let decodedInput: string | undefined
+
+  if (input != null) {
+    try {
+      decodedInput = decodeURIComponent(input)
+    }
+    catch {
+      decodedInput = ''
+    }
+  }
+
+  return (
+    <PromptInputProvider defaultValue={decodedInput}>
+      {children}
+    </PromptInputProvider>
+  )
+}
+
 function NestedProviders({ children }: { children: React.ReactNode }) {
   const { mode } = useMode()
 
@@ -115,9 +140,11 @@ function NestedProviders({ children }: { children: React.ReactNode }) {
           <AuthenticationProvider>
             <TooltipProvider>
               <RainbowKitProvider locale="en-US" theme={theme}>
-                <PromptInputProvider>
-                  {children}
-                </PromptInputProvider>
+                <Suspense>
+                  <AutoFilledPromptInput>
+                    {children}
+                  </AutoFilledPromptInput>
+                </Suspense>
               </RainbowKitProvider>
             </TooltipProvider>
           </AuthenticationProvider>
