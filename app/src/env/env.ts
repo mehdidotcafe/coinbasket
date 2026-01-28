@@ -20,6 +20,7 @@ const envSchema = z.object({
   '0X_PROTOCOL_URL': z.url(),
   'GITHUB_URL': z.url(),
   'X_URL': z.url(),
+  'DISCORD_URL': z.url(),
   'BNB_CHAIN_URL': z.url(),
   'MEHDIDOTCAFE_URL': z.url(),
 })
