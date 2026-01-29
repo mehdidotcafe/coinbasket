@@ -97,7 +97,12 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
         )
         self.client.create_payload_index(
             collection_name=self.configuration["qdrant_collection"],
-            field_name="metadata.categories",
+            field_name="metadata.source.categories",
+            field_schema=PayloadSchemaType.KEYWORD,
+        )
+        self.client.create_payload_index(
+            collection_name=self.configuration["qdrant_collection"],
+            field_name="metadata.source.address",
             field_schema=PayloadSchemaType.KEYWORD,
         )
         self.client.create_payload_index(
