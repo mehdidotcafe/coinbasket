@@ -37,7 +37,7 @@ class MathAssetTrustScorerStrategy(AssetTrustScorerStrategy):
 
         # --- Binance-Peg ID bonus (15 points) ---
         asset_id = raw_asset.get("id", "")
-        if asset_id.startswith("binance-peg-"):
+        if asset_id.startswith("binance-"):
             score += 15
 
         # --- Description (up to 10 points) ---
