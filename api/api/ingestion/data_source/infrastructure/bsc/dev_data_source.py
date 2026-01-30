@@ -16,7 +16,12 @@ from api.token.infrastructure.coingecko.coingecko_token_repository import (
 
 
 class DevDataSource(DataSource):
-    blacklist_tokens = ["0x2f8a339b5889ffac4c5a956787cda593b3c36867"]
+    blacklist_tokens = [
+        # CMC20 basket
+        "0x2f8a339b5889ffac4c5a956787cda593b3c36867",
+        # "Wrapped BNB"
+        "0x0555e30da8f98308edb960aa94c0db47230d2b9c",
+    ]
 
     def __init__(
         self,
@@ -73,7 +78,7 @@ class DevDataSource(DataSource):
         return tokens
 
     def version(self) -> int:
-        return 5
+        return 6
 
     async def _score_and_map_token(self, raw_token: dict[str, Any]) -> TokenSimilarity:
         validated_token = GetFromAddressToken.model_validate(raw_token)
@@ -132,6 +137,8 @@ class DevDataSource(DataSource):
         patterns = [
             r"(?i)\b(Binance Pegged|Binance Bridged|Binance-Peg)\b",
         ]
+        if token.id.startswith("binance-"):
+            return 1
 
         if token.categories and "Binance Bridged" in token.categories:
             return 1

@@ -22,6 +22,7 @@ from qdrant_client.models import (
     Condition,
     OrderBy,
     Direction,
+    StrictModeConfig,
 )
 from qdrant_client.http.models import PayloadSchemaType
 from api.similarity.similarity_document import SimilarityDocument
@@ -74,6 +75,11 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
             self.client.create_collection(
                 collection_name=self.configuration["qdrant_collection"],
                 vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+                strict_mode_config=StrictModeConfig(
+                    enabled=True,
+                    unindexed_filtering_retrieve=False,
+                    unindexed_filtering_update=False,
+                ),
             )
         self.client.create_payload_index(
             collection_name=self.configuration["qdrant_collection"],
@@ -103,11 +109,6 @@ class QdrantLangChainAssetSimilarityRepository(AssetSimilarityRepository):
         self.client.create_payload_index(
             collection_name=self.configuration["qdrant_collection"],
             field_name="metadata.source.address",
-            field_schema=PayloadSchemaType.KEYWORD,
-        )
-        self.client.create_payload_index(
-            collection_name=self.configuration["qdrant_collection"],
-            field_name="metadata.address",
             field_schema=PayloadSchemaType.KEYWORD,
         )
         self.qdrant = self.qdrant_vector_store(
