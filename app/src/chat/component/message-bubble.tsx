@@ -1,9 +1,11 @@
 import type { Message } from '../message/Message'
 import type { MessageUi } from '../message/MessageUi'
 import type { QueryMessage } from '../message/QueryMessage'
+import type { Asset } from '@/asset/Asset'
 import Markdown from 'markdown-to-jsx'
 import Image from 'next/image'
 import { useEnsAvatar } from 'wagmi'
+import { AssetChip } from '@/asset/asset-chip'
 import { useAccountEns } from '@/chain/use-account-ens'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -17,6 +19,25 @@ interface Props {
 
 const markdownOptions = {
   overrides: {
+    token: {
+      component: ({ name, ticker, address, logo_uri, description, decimals }: { name: string, ticker: string, address: string, logo_uri?: string, description?: string, decimals: string }) => {
+        const asset: Asset = {
+          id: `bsc:${address.toLowerCase()}`,
+          name,
+          displayName: name,
+          ticker,
+          address,
+          logoUri: logo_uri,
+          description: description || '',
+          decimals: Number.parseInt(decimals, 10),
+          trustScore: 100,
+          categories: [],
+          type: 'TOKEN',
+        }
+
+        return (<AssetChip asset={asset} />)
+      },
+    },
     a: {
       component: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
         <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-secondary font-sofia-sans">

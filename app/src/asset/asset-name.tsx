@@ -1,7 +1,7 @@
 import type { Asset } from './Asset'
 
 function isNativeToken(asset: Asset) {
-  return 'address' in asset && asset.address.toLowerCase() === '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
+  return asset.address.toLowerCase() === '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
 }
 
 export function AssetName({ asset }: { asset: Asset }) {

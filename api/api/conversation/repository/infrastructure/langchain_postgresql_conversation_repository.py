@@ -62,11 +62,16 @@ class LangchainPostgresqlConversationRepository(ConversationRepository):
 
             messages = checkpoint_data["channel_values"]["messages"]
 
-            return [
+            mapped_messages = [
                 self.__map_langchain_message_to_message(m)
                 for m in messages
                 if (isinstance(m, HumanMessage) or isinstance(m, AIMessage))
-                and m.content not in ["", " "]
+            ]
+
+            return [
+                mapped_message
+                for mapped_message in mapped_messages
+                if mapped_message.content.strip() != ""
             ]
 
     async def get_interrupts(
