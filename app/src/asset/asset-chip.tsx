@@ -10,7 +10,7 @@ export function AssetChip({
   asset,
 }: Props) {
   return (
-    <div className="flex items-center gap-2 ml-4 border rounded-full p-1 pr-2 bg-secondary/10">
+    <div className="flex items-center gap-2 ml-4 border rounded-full p-1 pr-2 bg-secondary/10 w-fit">
       <AssetLogo asset={asset} />
       <AssetName asset={asset} />
     </div>

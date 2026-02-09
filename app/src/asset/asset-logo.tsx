@@ -12,7 +12,7 @@ export function AssetLogo({
   }
 
   return (
-    <div className="rounded-full bg-primary border overflow-hidden">
+    <div className="rounded-full bg-primary overflow-hidden max-w-[24px] max-h-[24px] w-[24px] h-[24px] flex items-center justify-center">
       <Image
         src={logoUri}
         alt={asset.ticker}

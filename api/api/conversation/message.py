@@ -14,7 +14,7 @@ class Message:
     role: Literal["user", "assistant"]
     is_interrupting: bool
     ui: MessageUi | None
-    content: str | None
+    content: str
     created_at: str
 
 

@@ -29,9 +29,9 @@ readme = "README.md"
   [tool.poetry.dependencies]
   python = ">=3.10,<4.0"
   python-dotenv = ">=1.1.0,<2.0.0"
-  langchain-openai = "^1.0.1"
-  langchain-core = "^1.0.1"
-  langgraph = "^1.0.1"
+  langchain-openai = "^1.1.7"
+  langchain-core = "^1.2.9"
+  langgraph = "^1.0.8"
   web3 = ">=7.10.0,<8.0.0"
   environs = ">=14.1.1,<15.0.0"
   anyio = "^4.9.0"
@@ -45,7 +45,7 @@ readme = "README.md"
   psycopg2-binary = "^2.9.10"
   langchain-qdrant = "^1.1.0"
   qdrant-client = "^1.14.2"
-  langchain-mcp-adapters = "^0.1.13"
+  langchain-mcp-adapters = "^0.2.1"
   fastapi = {extras = ["standard"], version = "^0.124.4"}
   siwe = "^4.4.0"
   pyjwt = "^2.10.1"
@@ -55,7 +55,7 @@ readme = "README.md"
   psycopg = {extras = ["binary", "pool"], version = "^3.3.2"}
     [tool.poetry.dependencies.langchain]
     extras = [ "openai" ]
-    version = "^1.0.2"
+    version = "^1.2.9"
 
 [tool.poetry.group.dev.dependencies]
 eth-typing = "^5.2.1"

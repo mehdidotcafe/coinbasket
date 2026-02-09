@@ -50,8 +50,8 @@ class ConversationUseCase:
             config=graph_config,
         ):
             print(f"Step: {step}")
-            if "agent" in step:
-                step["agent"]["messages"][-1].pretty_print()
+            if "model" in step:
+                step["model"]["messages"][-1].pretty_print()
             elif "tools" in step:
                 step["tools"]["messages"][-1].pretty_print()
 
@@ -65,7 +65,7 @@ class ConversationUseCase:
         if not step:
             raise ValueError("No steps returned from the agent executor.")
 
-        last_message = cast(AIMessage | HumanMessage, step["agent"]["messages"][-1])
+        last_message = cast(AIMessage | HumanMessage, step["model"]["messages"][-1])
         last_message_text = cast(
             str,
             next((c["text"] for c in last_message.content if c["type"] == "text"), ""),

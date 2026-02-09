@@ -57,7 +57,7 @@ async def test_conversation_use_case_execute_agent_last_step(
     )
 
     step = {
-        "agent": {
+        "model": {
             "messages": [
                 mock.Mock(
                     id="1",

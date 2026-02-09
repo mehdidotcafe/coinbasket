@@ -47,6 +47,8 @@ from api.protocol.asset_category import AssetCategory
 from api.shared.app_exception import AppException
 from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from api.similarity.get_similar_assets_use_case import GetSimilarAssetsUseCase
+from langchain.agents import create_agent
+
 
 from apispec import APISpec
 from api.registry import (
@@ -82,7 +84,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, RootModel
 
 from langchain_core.tools import tool
-from langchain_core.messages import SystemMessage
 
 from api.protocol import (
     AssetResponse,
@@ -93,7 +94,6 @@ from api.protocol.fixture.token import usdt_token
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langchain.chat_models import init_chat_model
-from langgraph.prebuilt import create_react_agent
 from langgraph.types import interrupt
 
 print(f"Agent Env: {configuration.app_env}")
@@ -975,34 +975,29 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
 
 
 async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
-    mcp_clients_tools = []
-    # mcp_clients_tools = await mcp_clients.get_tools()
-
-    agent_executor = create_react_agent(
+    agent_executor = create_agent(
         init_chat_model(
             model=configuration.chat_model,
             model_provider=configuration.chat_provider,
             api_key=configuration.chat_provider_api_key,
             reasoning={"effort": "minimal"},
         ),
-        tools=coinbasket_tools + mcp_clients_tools,
+        tools=coinbasket_tools,
         checkpointer=checkpointer,
-        prompt=SystemMessage(
-            "\n".join(
-                [
-                    "Your goal is to manage a portfolio made of assets on the BNB Chain. An asset is either a token or a basket.  ",
-                    "Users can place orders to buy, sell, or swap assets for their portfolio.  ",
-                    "When you display a token, ALWAYS display its display name, ticker and address by using this link 'https://bscscan.com/token/[token_address]'.  ",
-                    "ALWAYS use a tool to fetch an asset address when you need it.  ",
-                    "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
-                    "The only way to place order is to use the plan_and_execute_swap_order tool.  ",
-                    "You don't need to know the asset prices before calling the plan_and_execute_swap_order tool, the tool will handle it for you.  ",
-                    "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
-                    "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
-                    "Consider all tool parameters optional unless explicitly stated otherwise.",
-                    "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  ",
-                ]
-            )
+        system_prompt="\n".join(
+            [
+                "Your goal is to manage a portfolio made of assets on the BNB Chain. An asset is either a token or a basket.  ",
+                "Users can place orders to buy, sell, or swap assets for their portfolio.  ",
+                'When you display a token, ALWAYS display using this format: <token name="{token.display_name}" ticker="{token.ticker}" address="{token.address}" logo_uri="{token.logo_uri}"  description="{token.description}" decimals="{token.decimals}" />.  ',
+                "ALWAYS use a tool to fetch an asset address when you need it.  ",
+                "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
+                "The only way to place order is to use the plan_and_execute_swap_order tool.  ",
+                "You don't need to know the asset prices before calling the plan_and_execute_swap_order tool, the tool will handle it for you.  ",
+                "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
+                "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
+                "Consider all tool parameters optional unless explicitly stated otherwise.",
+                "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  ",
+            ]
         ),
     )
 
