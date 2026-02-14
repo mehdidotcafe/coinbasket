@@ -10,7 +10,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt as LanggraphInterrupt
 
-from api.conversation.message import Message, QueryMessage
+from api.conversation.message import Message, MessageUi, QueryMessage
 from api.shared.id_generator.id_generator import IdGenerator
 from api.conversation.interrupt import Interrupt
 
@@ -42,6 +42,8 @@ class ConversationUseCase:
         if snap.interrupts and not message.is_resuming:
             raise WaitingInterrupt()
 
+        last_ui: MessageUi | None = None
+
         async for step in agent_executor.astream(
             {"messages": [{"role": "user", "content": message.content}]}
             if not message.is_resuming
@@ -54,6 +56,11 @@ class ConversationUseCase:
                 step["model"]["messages"][-1].pretty_print()
             elif "tools" in step:
                 step["tools"]["messages"][-1].pretty_print()
+                if "ui" in step["tools"]:
+                    last_ui = MessageUi(
+                        id=cast(str, step["tools"]["ui"]["name"]),
+                        args=cast(dict[str, Any], step["tools"]["ui"]["props"]),
+                    )
 
             if Interrupt.is_step_interrupt(step):
                 return Interrupt.to_message(
@@ -75,7 +82,7 @@ class ConversationUseCase:
             id=cast(str, last_message.id),
             role=isinstance(last_message, HumanMessage) and "user" or "assistant",
             is_interrupting=False,
-            ui=None,
+            ui=last_ui,
             content=last_message_text,
             created_at=self.date_time.now_str(),
         )

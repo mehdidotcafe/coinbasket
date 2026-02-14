@@ -2,7 +2,8 @@ import type { MessageUi } from '../MessageUi'
 import Big from 'big.js'
 import * as z from 'zod'
 import { AssetDto, AssetResponseSchema } from '@/asset/infrastructure/AssetDto'
-import { BalanceAtomicDto, BalanceAtomicSchema } from '@/balance/infrastructure/BalanceAtomicDto'
+import { BalanceAtomicDto, BalanceAtomicSchema, BalanceResponseSchema } from '@/balance/infrastructure/BalanceAtomicDto'
+import { BalanceDto } from '@/balance/infrastructure/BalanceDto'
 
 const AssetWithAmountResponseSchema = z.object({
   asset: AssetResponseSchema,
@@ -28,7 +29,15 @@ const MessageUiConfirmPlannedOrderResponseSchema = z.object({
   }),
 })
 
-export const MessageUiResponseSchema = z.union([MessageUiConfirmPlannedOrderResponseSchema])
+const MessageUiAssetPriceCardResponseSchema = z.object({
+  id: z.literal('asset_price_card'),
+  args: z.object({
+    sell_balance: BalanceResponseSchema,
+    buy_balance: BalanceResponseSchema,
+  }),
+})
+
+export const MessageUiResponseSchema = z.union([MessageUiConfirmPlannedOrderResponseSchema, MessageUiAssetPriceCardResponseSchema])
 
 const isDefined = (value: string | null | undefined): value is string => value !== undefined && value !== null
 
@@ -58,6 +67,15 @@ export class MessageUiDto {
               platformFee: messageUi.args.planned_order.fees.platform_fee ? BalanceAtomicDto.fromResponse(messageUi.args.planned_order.fees.platform_fee) : undefined,
             },
           },
+        },
+      }
+    }
+    else if (messageUi.id === 'asset_price_card') {
+      return {
+        id: messageUi.id,
+        args: {
+          sellBalance: BalanceDto.fromResponse(messageUi.args.sell_balance),
+          buyBalance: BalanceDto.fromResponse(messageUi.args.buy_balance),
         },
       }
     }

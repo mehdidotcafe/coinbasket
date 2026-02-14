@@ -14,7 +14,7 @@ export function MessageList({
   return (
     <>
       {messages.map(message => (
-        <div className="my-8" key={message.id}>
+        <div key={message.id}>
           <MessageBubble message={message} onMessage={onMessage} />
         </div>
       ))}

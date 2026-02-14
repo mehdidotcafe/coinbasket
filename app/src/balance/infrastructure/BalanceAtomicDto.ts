@@ -16,6 +16,8 @@ export const BalanceAtomicSchema = z.object({
   }),
 })
 
+export type BalanceResponse = z.infer<typeof BalanceResponseSchema>
+
 type BalanceAtomicResponse = z.infer<typeof BalanceAtomicSchema>
 
 export class BalanceAtomicDto {

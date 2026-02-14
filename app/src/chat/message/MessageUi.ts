@@ -1,4 +1,5 @@
 import type { Asset } from '@/asset/Asset'
+import type { Balance } from '@/balance/Balance'
 import type { Fees } from '@/fee/fees'
 
 interface AssetWithAmount {
@@ -19,4 +20,12 @@ export interface MessageUiConfirmPlannedOrder {
   }
 }
 
-export type MessageUi = MessageUiConfirmPlannedOrder
+export interface MessageUiAssetPriceCard {
+  id: 'asset_price_card'
+  args: {
+    sellBalance: Balance
+    buyBalance: Balance
+  }
+}
+
+export type MessageUi = MessageUiConfirmPlannedOrder | MessageUiAssetPriceCard
