@@ -119,7 +119,6 @@ get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
 
 conversation_use_case = ConversationUseCase(
     date_time=date_time,
-    id_generator=id_generator,
 )
 
 get_conversation_messages_use_case = GetConversationMessagesUseCase(
@@ -948,9 +947,26 @@ class MessageResponse(BaseModel):
         )
 
 
+class MessagesResponse(BaseModel):
+    messages: list[MessageResponse]
+
+    @staticmethod
+    def from_domain(messages: list[Message]) -> "MessagesResponse":
+        """Convert a list of Message domain objects to a MessagesResponse."""
+        return MessagesResponse(
+            messages=[MessageResponse.from_domain(message) for message in messages]
+        )
+
+
 @openapi(
     spec=spec,
-    schemas=[QueryMessageRequest, PromptRequest, MessageUiResponse, MessageResponse],
+    schemas=[
+        QueryMessageRequest,
+        PromptRequest,
+        MessageUiResponse,
+        MessageResponse,
+        MessagesResponse,
+    ],
     path="/conversation",
     operations={
         "post": {
@@ -969,7 +985,7 @@ class MessageResponse(BaseModel):
                     "description": "Agent response message",
                     "content": {
                         "application/json": {
-                            "schema": {"$ref": "#/components/schemas/MessageResponse"},
+                            "schema": {"$ref": "#/components/schemas/MessagesResponse"},
                         }
                     },
                 },
@@ -979,7 +995,7 @@ class MessageResponse(BaseModel):
     },
 )
 @app.post("/conversation")
-async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
+async def conversation(request: Request, req: PromptRequest) -> MessagesResponse:
     address = Address(getattr(request.state, "address"))
     request_address_context.set(address)
 
@@ -988,7 +1004,7 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
     ) as checkpointer:
         agent_executor = await __create_agent_executor(checkpointer)
 
-        message = await conversation_use_case.execute(
+        messages = await conversation_use_case.execute(
             thread_id=address,
             agent_executor=agent_executor,
             message=QueryMessage(
@@ -1000,7 +1016,7 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
             ),
         )
 
-    return MessageResponse.from_domain(message)
+    return MessagesResponse.from_domain(messages)
 
 
 class StateSchema(AgentState):  # noqa: D101
@@ -1036,17 +1052,6 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
     )
 
     return agent_executor
-
-
-class MessagesResponse(BaseModel):
-    messages: list[MessageResponse]
-
-    @staticmethod
-    def from_domain(messages: list[Message]) -> "MessagesResponse":
-        """Convert a list of Message domain objects to a MessagesResponse."""
-        return MessagesResponse(
-            messages=[MessageResponse.from_domain(message) for message in messages]
-        )
 
 
 @openapi(

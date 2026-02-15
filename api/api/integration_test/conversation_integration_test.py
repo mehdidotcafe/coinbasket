@@ -169,10 +169,12 @@ def test_integration_conversation_success(
 
     assert response_1.status_code == 200
 
+    assert len(response_1_json["messages"]) == 1
+
     # The agent may either respond with an interrupting UI or with a content message asking for confirmation
-    if not response_1_json["is_interrupting"]:
-        assert response_1_json["ui"] is None
-        assert response_1_json["content"] is not None
+    if not response_1_json["messages"][0]["is_interrupting"]:
+        assert response_1_json["messages"][0]["ui"] is None
+        assert response_1_json["messages"][0]["content"] is not None
 
         response_2 = requests.post(
             f"http://localhost:{app_port}/conversation",
@@ -194,10 +196,11 @@ def test_integration_conversation_success(
         response_2_json = response_2.json()
 
         assert response_2.status_code == 200
-        assert response_2_json["is_interrupting"] is True
-        assert response_2_json["content"] is None
+        assert len(response_2_json["messages"]) == 1
+        assert response_2_json["messages"][0]["is_interrupting"] is True
+        assert response_2_json["messages"][0]["content"] is None
 
-        assert response_2_json["ui"] == snapshot(
+        assert response_2_json["messages"][0]["ui"] == snapshot(
             name="ethereum",
             exclude=paths(
                 "args.planned_order.id",
@@ -208,8 +211,8 @@ def test_integration_conversation_success(
             ),
         )
     else:
-        assert response_1_json["content"] is None
-        assert response_1_json["ui"] == snapshot(
+        assert response_1_json["messages"][0]["content"] is None
+        assert response_1_json["messages"][0]["ui"] == snapshot(
             name="ethereum",
             exclude=paths(
                 "args.planned_order.id",
@@ -240,6 +243,7 @@ def test_integration_conversation_success(
     response_3_json = response_3.json()
 
     assert response_3.status_code == 200
-    assert response_3_json["is_interrupting"] is False
-    assert response_3_json["ui"] is None
-    assert response_3_json["content"] is not None
+    assert len(response_3_json["messages"]) == 1
+    assert response_3_json["messages"][0]["is_interrupting"] is False
+    assert response_3_json["messages"][0]["ui"] is None
+    assert response_3_json["messages"][0]["content"] is not None

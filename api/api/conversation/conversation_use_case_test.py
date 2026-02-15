@@ -9,7 +9,6 @@ from api.conversation.conversation_use_case import (
 from api.datetime.date_time import DateTime
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt
-from api.shared.id_generator.id_generator import IdGenerator
 
 
 @fixture
@@ -23,25 +22,19 @@ def agent_executor():
 
 
 @fixture
-def id_generator():
-    return mock.Mock(spec=IdGenerator)
-
-
-@fixture
 def thread_id():
     return "63"
 
 
 @fixture
-def use_case(date_time: DateTime, id_generator: IdGenerator):
+def use_case(date_time: DateTime):
     return ConversationUseCase(
         date_time=date_time,
-        id_generator=id_generator,
     )
 
 
 @mark.asyncio
-async def test_conversation_use_case_execute_agent_last_step(
+async def test_conversation_use_case_execute_agent_last_step_no_ui(
     date_time: DateTime,
     use_case: ConversationUseCase,
     thread_id: str,
@@ -72,14 +65,82 @@ async def test_conversation_use_case_execute_agent_last_step(
 
     message = await use_case.execute(agent_executor, thread_id, message)
 
-    assert message == Message(
-        id="1",
-        role="assistant",
-        is_interrupting=False,
-        ui=None,
-        content="Hello, how can I help you?",
+    assert message == [
+        Message(
+            id="1",
+            role="assistant",
+            is_interrupting=False,
+            ui=None,
+            content="Hello, how can I help you?",
+            created_at="2023-10-01",
+        )
+    ]
+
+
+@mark.asyncio
+async def test_conversation_use_case_execute_agent_last_step_ui(
+    date_time: DateTime,
+    use_case: ConversationUseCase,
+    thread_id: str,
+    agent_executor: CompiledStateGraph,
+):
+    date_time.now_str = mock.Mock(return_value="2023-10-01")
+    message = QueryMessage(
+        id="42",
+        is_resuming=False,
+        role="user",
+        content="Hello?",
         created_at="2023-10-01",
     )
+
+    steps = [
+        {
+            "tools": {
+                "messages": [mock.Mock()],
+                "ui": {
+                    "id": "tool_ui_1",
+                    "name": "tool_ui",
+                    "props": {"key": "value"},
+                },
+            }
+        },
+        {
+            "model": {
+                "messages": [
+                    mock.Mock(
+                        id="1",
+                        content=[
+                            {"text": "Hello, how can I help you?", "type": "text"}
+                        ],
+                    )
+                ]
+            },
+        },
+    ]
+    agent_executor.aget_state = mock.AsyncMock(return_value=mock.Mock(interrupts=[]))
+    agent_executor.astream = mock.MagicMock()
+    agent_executor.astream.return_value.__aiter__.return_value = steps
+
+    message = await use_case.execute(agent_executor, thread_id, message)
+
+    assert message == [
+        Message(
+            id="tool_ui_1",
+            role="assistant",
+            is_interrupting=False,
+            ui=MessageUi(id="tool_ui", args={"key": "value"}),
+            content=None,
+            created_at="2023-10-01",
+        ),
+        Message(
+            id="1",
+            role="assistant",
+            is_interrupting=False,
+            ui=None,
+            content="Hello, how can I help you?",
+            created_at="2023-10-01",
+        ),
+    ]
 
 
 @mark.asyncio
@@ -87,10 +148,8 @@ async def test_conversation_use_case_execute_interrupt_last_step(
     date_time: DateTime,
     use_case: ConversationUseCase,
     agent_executor: CompiledStateGraph,
-    id_generator: IdGenerator,
     thread_id: str,
 ):
-    id_generator.generate_random_id = mock.Mock(return_value="99")
     date_time.now_str = mock.Mock(return_value="2023-10-01")
     message = QueryMessage(
         id="42",
@@ -117,6 +176,7 @@ async def test_conversation_use_case_execute_interrupt_last_step(
                     },
                     "content": None,
                 },
+                id="99",
                 resumable=True,
                 ns=["tools:43e88f20-5846-1931-5515-951101740e44"],
             ),
@@ -129,24 +189,26 @@ async def test_conversation_use_case_execute_interrupt_last_step(
 
     message = await use_case.execute(agent_executor, thread_id, message)
 
-    assert message == Message(
-        id="99",
-        role="assistant",
-        content=None,
-        is_interrupting=True,
-        ui=MessageUi(
-            id="prepare_investment_plan",
-            args={
-                "intent_investment_plan": {
-                    "steps": [
-                        {"buy_balance": None, "sell_balance": None},
-                        {"buy_balance": None, "sell_balance": None},
-                    ]
-                }
-            },
-        ),
-        created_at="2023-10-01",
-    )
+    assert message == [
+        Message(
+            id="99",
+            role="assistant",
+            content=None,
+            is_interrupting=True,
+            ui=MessageUi(
+                id="prepare_investment_plan",
+                args={
+                    "intent_investment_plan": {
+                        "steps": [
+                            {"buy_balance": None, "sell_balance": None},
+                            {"buy_balance": None, "sell_balance": None},
+                        ]
+                    }
+                },
+            ),
+            created_at="2023-10-01",
+        )
+    ]
 
 
 async def test_conversation_use_case_execute_with_active_interrupt_raises(

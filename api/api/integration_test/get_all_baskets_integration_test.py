@@ -49,9 +49,9 @@ def test_integration_get_all_baskets():
     response_1_json = response_1.json()
 
     assert response_1.status_code == 200
-    assert response_1_json["is_interrupting"] is False
-    assert response_1_json["ui"] is None
+    assert response_1_json["messages"][0]["is_interrupting"] is False
+    assert response_1_json["messages"][0]["ui"] is None
     assert (
         "0x2f8a339b5889ffac4c5a956787cda593b3c36867".lower()
-        in response_1_json["content"].lower()
+        in response_1_json["messages"][0]["content"].lower()
     )

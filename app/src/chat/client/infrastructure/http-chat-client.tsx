@@ -32,7 +32,7 @@ export function httpChatClient(baseUrl: string): ChatClient {
         return res.json()
       }).then((maybeMessagesResponse) => {
         return MessagesResponseSchema.parseAsync(maybeMessagesResponse)
-      }).then(async (messagesResponse: MessagesResponse) => {
+      }).then((messagesResponse: MessagesResponse) => {
         return messagesResponse.messages.map((message) => {
           return MessageDto.fromResponse(message)
         })
@@ -57,8 +57,12 @@ export function httpChatClient(baseUrl: string): ChatClient {
           throw new Error('Network response was not ok')
         }
         return res.json()
-      }).then((data) => {
-        return MessageDto.fromResponse(data)
+      }).then((maybeMessagesResponse) => {
+        return MessagesResponseSchema.parseAsync(maybeMessagesResponse)
+      }).then((messagesResponse: MessagesResponse) => {
+        return messagesResponse.messages.map((message) => {
+          return MessageDto.fromResponse(message)
+        })
       })
     },
 
