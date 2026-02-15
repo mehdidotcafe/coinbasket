@@ -10,6 +10,7 @@ import { useAccountEns } from '@/chain/use-account-ens'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { makeQueryMessage } from '../message/make-query-message'
+import { AssetPriceCard } from './generative-ui/asset-price-card/asset-price-card'
 import { Pricer } from './generative-ui/pricer/pricer'
 
 interface Props {
@@ -35,7 +36,7 @@ const markdownOptions = {
           type: 'TOKEN',
         }
 
-        return (<AssetChip asset={asset} />)
+        return (<div className="inline-block align-middle mx-1"><AssetChip asset={asset} /></div>)
       },
     },
     a: {
@@ -79,7 +80,7 @@ function UserMessageBubble({
   })
 
   return (
-    <article className={cn('flex justify-end', avatar && 'md:-mr-[32px]')}>
+    <article className={cn('flex justify-end my-8', avatar && 'md:-mr-[32px]')}>
       <Card className="text-white p-1 rounded-xl shadow-sm bg-secondary/10">
         <CardContent>
           <MarkdownView>{message.content!}</MarkdownView>
@@ -109,15 +110,22 @@ function AssistantUiMessage({
 }: { ui: MessageUi, onMessage?: (message: QueryMessage) => void }) {
   if (ui.id === 'confirm_planned_order') {
     return (
-      <Pricer
-        plannedOrder={ui.args.plannedOrder}
-        onSubmit={async (result) => {
-          onMessage?.(makeQueryMessage(
-            result,
-            true,
-          ))
-        }}
-      />
+      <div className="w-fit">
+        <Pricer
+          plannedOrder={ui.args.plannedOrder}
+          onSubmit={async (result) => {
+            onMessage?.(makeQueryMessage(
+              result,
+              true,
+            ))
+          }}
+        />
+      </div>
+    )
+  }
+  else if (ui.id === 'asset_price_card') {
+    return (
+      <div className="w-fit"><AssetPriceCard sellBalance={ui.args.sellBalance} buyBalance={ui.args.buyBalance} /></div>
     )
   }
 
@@ -137,7 +145,7 @@ function AssistantMessageBubble({
   onMessage,
 }: { message: Message, onMessage?: (message: QueryMessage) => void }) {
   return (
-    <article className="flex justify-start leading-[1.75] m-w-full">
+    <article className="flex flex-col justify-start leading-[1.75]">
       {
         message.ui ? <AssistantUiMessage ui={message.ui} onMessage={onMessage} /> : null
       }

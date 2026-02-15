@@ -7,13 +7,13 @@ export const demoChatClient: ChatClient = {
   },
 
   addMessage: async (message) => {
-    return {
+    return [{
       id: message.id,
       role: message.role,
       isInterrupting: false,
       ui: undefined,
       content: message.content as string,
       createdAt: message.createdAt,
-    }
+    }]
   },
 }

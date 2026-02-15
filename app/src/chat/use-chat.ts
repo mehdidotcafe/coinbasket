@@ -37,8 +37,8 @@ export function useChat() {
       return { previousMessages }
     },
 
-    onSuccess: (newMessage) => {
-      queryClient.setQueryData<Message[]>(keys, old => [...(old || []), newMessage])
+    onSuccess: (newMessages) => {
+      queryClient.setQueryData<Message[]>(keys, old => [...(old || []), ...newMessages])
     },
     onError: (_err, _newMessage, context) => {
       if (context?.previousMessages) {

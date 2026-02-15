@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from decimal import Decimal
-from typing import Any, Dict, Literal, Optional, cast
+from typing import Annotated, Any, Dict, Literal, Optional, Sequence, cast
 
 from api.asset.get_asset_by_id_use_case import GetAssetByIdUseCase
 from api.asset.get_asset_swap_price_use_case import (
@@ -48,6 +48,7 @@ from api.shared.app_exception import AppException
 from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from api.similarity.get_similar_assets_use_case import GetSimilarAssetsUseCase
 from langchain.agents import create_agent
+from langchain.agents.middleware.types import AgentState
 
 
 from apispec import APISpec
@@ -83,7 +84,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, RootModel
 
-from langchain_core.tools import tool
+from langchain_core.tools import tool, InjectedToolCallId
 
 from api.protocol import (
     AssetResponse,
@@ -95,6 +96,7 @@ from api.protocol.fixture.token import usdt_token
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langchain.chat_models import init_chat_model
 from langgraph.types import interrupt
+from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
 
 print(f"Agent Env: {configuration.app_env}")
 
@@ -117,7 +119,6 @@ get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
 
 conversation_use_case = ConversationUseCase(
     date_time=date_time,
-    id_generator=id_generator,
 )
 
 get_conversation_messages_use_case = GetConversationMessagesUseCase(
@@ -432,10 +433,68 @@ class GetAssetPriceResponse(BaseModel):
         )
 
 
+class BalanceAtomicResponse(BaseModel):
+    asset: AssetResponse
+    amount: str
+    amount_atomic: str
+    decimals: int
+
+    @staticmethod
+    def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
+        """Convert the domain Balance to a BalanceResponse."""
+        return BalanceAtomicResponse(
+            amount=format(balance.amount, "f"),
+            amount_atomic=str(balance.amount_atomic),
+            asset=TokenResponse.from_domain(balance.asset)
+            if isinstance(balance.asset, Token)
+            else BasketResponse.from_domain(balance.asset),
+            decimals=balance.decimals,
+        )
+
+
+class FeesResponse(BaseModel):
+    gas_fee: BalanceAtomicResponse | None
+    provider_fee: BalanceAtomicResponse | None
+    platform_fee: BalanceAtomicResponse | None
+
+    @staticmethod
+    def from_domain(fees: Fees) -> "FeesResponse":
+        return FeesResponse(
+            gas_fee=BalanceAtomicResponse.from_domain(fees.gas_fee)
+            if fees.gas_fee
+            else None,
+            provider_fee=BalanceAtomicResponse.from_domain(fees.provider_fee)
+            if fees.provider_fee
+            else None,
+            platform_fee=BalanceAtomicResponse.from_domain(fees.platform_fee)
+            if fees.platform_fee
+            else None,
+        )
+
+
+class ConvertedBalanceResponse(BaseModel):
+    sell_balance: BalanceResponse
+    buy_balance: BalanceResponse
+    fees: FeesResponse
+
+    @staticmethod
+    def from_domain(
+        converted_balance: ConvertedBalance,
+    ) -> "ConvertedBalanceResponse":
+        return ConvertedBalanceResponse(
+            sell_balance=BalanceResponse.from_domain(converted_balance.sell_balance),
+            buy_balance=BalanceResponse.from_domain(converted_balance.buy_balance),
+            fees=FeesResponse.from_domain(converted_balance.fees),
+        )
+
+
 @tool(
     parse_docstring=True,
 )
-async def get_asset_price(request: GetAssetPriceRequest):
+async def get_asset_price(
+    request: GetAssetPriceRequest,
+    tool_call_id: Annotated[str, InjectedToolCallId],
+):
     """FAST. Retrieve the price of a specific asset converted to a conversion token.
     Use this tool when the user asks for the price of an asset.
 
@@ -462,26 +521,13 @@ async def get_asset_price(request: GetAssetPriceRequest):
         asset_swap_price_info=await request.to_domain(),
     )
 
+    push_ui_message(
+        name="asset_price_card",
+        props=ConvertedBalanceResponse.from_domain(balance).model_dump(),
+        metadata={"tool_call_id": tool_call_id},
+    )
+
     return GetAssetPriceResponse.from_domain(balance).model_dump_json()
-
-
-class BalanceAtomicResponse(BaseModel):
-    asset: AssetResponse
-    amount: str
-    amount_atomic: str
-    decimals: int
-
-    @staticmethod
-    def from_domain(balance: BalanceAtomic) -> "BalanceAtomicResponse":
-        """Convert the domain Balance to a BalanceResponse."""
-        return BalanceAtomicResponse(
-            amount=format(balance.amount, "f"),
-            amount_atomic=str(balance.amount_atomic),
-            asset=TokenResponse.from_domain(balance.asset)
-            if isinstance(balance.asset, Token)
-            else BasketResponse.from_domain(balance.asset),
-            decimals=balance.decimals,
-        )
 
 
 class ExecutedOrderResponse(BaseModel):
@@ -729,26 +775,6 @@ class PlannedOrderAssetWithAmountResponse(BaseModel):
         )
 
 
-class FeesResponse(BaseModel):
-    gas_fee: BalanceAtomicResponse | None
-    provider_fee: BalanceAtomicResponse | None
-    platform_fee: BalanceAtomicResponse | None
-
-    @staticmethod
-    def from_domain(fees: Fees) -> "FeesResponse":
-        return FeesResponse(
-            gas_fee=BalanceAtomicResponse.from_domain(fees.gas_fee)
-            if fees.gas_fee
-            else None,
-            provider_fee=BalanceAtomicResponse.from_domain(fees.provider_fee)
-            if fees.provider_fee
-            else None,
-            platform_fee=BalanceAtomicResponse.from_domain(fees.platform_fee)
-            if fees.platform_fee
-            else None,
-        )
-
-
 class PlannedOrderResponse(BaseModel):
     id: str
     address: str
@@ -919,9 +945,26 @@ class MessageResponse(BaseModel):
         )
 
 
+class MessagesResponse(BaseModel):
+    messages: list[MessageResponse]
+
+    @staticmethod
+    def from_domain(messages: list[Message]) -> "MessagesResponse":
+        """Convert a list of Message domain objects to a MessagesResponse."""
+        return MessagesResponse(
+            messages=[MessageResponse.from_domain(message) for message in messages]
+        )
+
+
 @openapi(
     spec=spec,
-    schemas=[QueryMessageRequest, PromptRequest, MessageUiResponse, MessageResponse],
+    schemas=[
+        QueryMessageRequest,
+        PromptRequest,
+        MessageUiResponse,
+        MessageResponse,
+        MessagesResponse,
+    ],
     path="/conversation",
     operations={
         "post": {
@@ -940,7 +983,7 @@ class MessageResponse(BaseModel):
                     "description": "Agent response message",
                     "content": {
                         "application/json": {
-                            "schema": {"$ref": "#/components/schemas/MessageResponse"},
+                            "schema": {"$ref": "#/components/schemas/MessagesResponse"},
                         }
                     },
                 },
@@ -950,7 +993,7 @@ class MessageResponse(BaseModel):
     },
 )
 @app.post("/conversation")
-async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
+async def conversation(request: Request, req: PromptRequest) -> MessagesResponse:
     address = Address(getattr(request.state, "address"))
     request_address_context.set(address)
 
@@ -959,7 +1002,7 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
     ) as checkpointer:
         agent_executor = await __create_agent_executor(checkpointer)
 
-        message = await conversation_use_case.execute(
+        messages = await conversation_use_case.execute(
             thread_id=address,
             agent_executor=agent_executor,
             message=QueryMessage(
@@ -971,7 +1014,11 @@ async def conversation(request: Request, req: PromptRequest) -> MessageResponse:
             ),
         )
 
-    return MessageResponse.from_domain(message)
+    return MessagesResponse.from_domain(messages)
+
+
+class StateSchema(AgentState):  # noqa: D101
+    ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
 
 async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
@@ -999,20 +1046,10 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
                 "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  ",
             ]
         ),
+        state_schema=StateSchema,
     )
 
     return agent_executor
-
-
-class MessagesResponse(BaseModel):
-    messages: list[MessageResponse]
-
-    @staticmethod
-    def from_domain(messages: list[Message]) -> "MessagesResponse":
-        """Convert a list of Message domain objects to a MessagesResponse."""
-        return MessagesResponse(
-            messages=[MessageResponse.from_domain(message) for message in messages]
-        )
 
 
 @openapi(
@@ -1069,22 +1106,6 @@ class AssetSwapPriceInfoRequest(BaseModel):
             sell_asset=await self.sell_asset.to_domain(),
             sell_asset_amount=Decimal(self.sell_asset_amount),
             buy_asset=await self.buy_asset.to_domain(),
-        )
-
-
-class ConvertedBalanceResponse(BaseModel):
-    sell_balance: BalanceResponse
-    buy_balance: BalanceResponse
-    fees: FeesResponse
-
-    @staticmethod
-    def from_domain(
-        converted_balance: ConvertedBalance,
-    ) -> "ConvertedBalanceResponse":
-        return ConvertedBalanceResponse(
-            sell_balance=BalanceResponse.from_domain(converted_balance.sell_balance),
-            buy_balance=BalanceResponse.from_domain(converted_balance.buy_balance),
-            fees=FeesResponse.from_domain(converted_balance.fees),
         )
 
 

@@ -28,7 +28,7 @@ function computePromptFormStatus(isWaitingMessage: boolean, isInterrupted: boole
 function FlashMessageHandler({
   addMessage,
 }: {
-  addMessage: (message: QueryMessage) => Promise<Message>
+  addMessage: (message: QueryMessage) => Promise<Message[]>
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -52,7 +52,7 @@ function FlashMessageHandler({
   return null
 }
 
-function MessageListContainer({ authentication, messages, addMessage, isWaitingMessage, isInterrupted }: { authentication: Authentication, messages: Message[], addMessage: (message: QueryMessage) => Promise<Message>, isWaitingMessage: boolean, isInterrupted: boolean }) {
+function MessageListContainer({ authentication, messages, addMessage, isWaitingMessage, isInterrupted }: { authentication: Authentication, messages: Message[], addMessage: (message: QueryMessage) => Promise<Message[]>, isWaitingMessage: boolean, isInterrupted: boolean }) {
   const messageEndAnchor = useRef<HTMLDivElement>(null)
 
   useEffect(() => {

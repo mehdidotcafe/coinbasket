@@ -10,8 +10,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt as LanggraphInterrupt
 
-from api.conversation.message import Message, QueryMessage
-from api.shared.id_generator.id_generator import IdGenerator
+from api.conversation.message import Message, MessageUi, QueryMessage
 from api.conversation.interrupt import Interrupt
 
 
@@ -19,17 +18,15 @@ class ConversationUseCase:
     def __init__(
         self,
         date_time: DateTime,
-        id_generator: IdGenerator,
     ):
         self.date_time = date_time
-        self.id_generator = id_generator
 
     async def execute(
         self,
         agent_executor: CompiledStateGraph[Any],
         thread_id: str,
         message: QueryMessage,
-    ):
+    ) -> list[Message]:
         step = None
         graph_config: RunnableConfig = {
             "configurable": {
@@ -41,6 +38,8 @@ class ConversationUseCase:
 
         if snap.interrupts and not message.is_resuming:
             raise WaitingInterrupt()
+
+        messages: list[Message] = []
 
         async for step in agent_executor.astream(
             {"messages": [{"role": "user", "content": message.content}]}
@@ -54,13 +53,32 @@ class ConversationUseCase:
                 step["model"]["messages"][-1].pretty_print()
             elif "tools" in step:
                 step["tools"]["messages"][-1].pretty_print()
+                if "ui" in step["tools"]:
+                    messages.append(
+                        Message(
+                            id=step["tools"]["ui"]["id"],
+                            role="assistant",
+                            is_interrupting=False,
+                            ui=MessageUi(
+                                id=cast(str, step["tools"]["ui"]["name"]),
+                                args=cast(dict[str, Any], step["tools"]["ui"]["props"]),
+                            ),
+                            content=None,
+                            created_at=self.date_time.now_str(),
+                        )
+                    )
 
             if Interrupt.is_step_interrupt(step):
-                return Interrupt.to_message(
-                    cast(LanggraphInterrupt, step["__interrupt__"][0]),
-                    self.id_generator.generate_random_id(),
-                    self.date_time.now_str(),
-                )
+                langgraph_interrupt = cast(LanggraphInterrupt, step["__interrupt__"][0])
+
+                return [
+                    *messages,
+                    Interrupt.to_message(
+                        langgraph_interrupt,
+                        langgraph_interrupt.id,
+                        self.date_time.now_str(),
+                    ),
+                ]
 
         if not step:
             raise ValueError("No steps returned from the agent executor.")
@@ -71,11 +89,14 @@ class ConversationUseCase:
             next((c["text"] for c in last_message.content if c["type"] == "text"), ""),
         )
 
-        return Message(
-            id=cast(str, last_message.id),
-            role=isinstance(last_message, HumanMessage) and "user" or "assistant",
-            is_interrupting=False,
-            ui=None,
-            content=last_message_text,
-            created_at=self.date_time.now_str(),
-        )
+        return [
+            *messages,
+            Message(
+                id=cast(str, last_message.id),
+                role=isinstance(last_message, HumanMessage) and "user" or "assistant",
+                is_interrupting=False,
+                ui=None,
+                content=last_message_text,
+                created_at=self.date_time.now_str(),
+            ),
+        ]

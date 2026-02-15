@@ -3,5 +3,5 @@ import type { QueryMessage } from '../message/QueryMessage'
 
 export interface ChatClient {
   fetchMessages: () => Promise<Message[]>
-  addMessage: (message: QueryMessage) => Promise<Message>
+  addMessage: (message: QueryMessage) => Promise<Message[]>
 }

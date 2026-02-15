@@ -179,7 +179,7 @@ function AssetInput<T extends FieldValues>({ asset, availableAmount, control, na
           {preLabel}
         </label>
       </div>
-      <div className="flex">
+      <div className="flex items-center">
         <div className="flex-1">
           <Controller
             control={control}
