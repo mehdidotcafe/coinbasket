@@ -60,8 +60,9 @@ class LangchainPostgresqlConversationRepository(ConversationRepository):
             if not checkpoint_data:
                 return []
 
-            messages = checkpoint_data["channel_values"]["messages"]
-            uis = checkpoint_data["channel_values"]["ui"]
+            channel_values = checkpoint_data["channel_values"]
+            messages = channel_values.get("messages", [])
+            uis = channel_values.get("ui", [])
 
             mapped_messages = [
                 self.__map_langchain_message_to_message(m, uis)

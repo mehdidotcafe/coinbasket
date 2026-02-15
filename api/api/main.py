@@ -506,8 +506,6 @@ async def get_asset_price(
     """
     address = cast(Address, request_address_context.get())
 
-    print(f"TOOL_CALL_ID: {tool_call_id}")
-
     asset = await get_asset_by_id_use_case.execute(request.asset_id)
     if not asset:
         raise ValueError(f"Asset id {request.asset_id} not found")
