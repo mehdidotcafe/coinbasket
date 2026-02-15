@@ -1,5 +1,7 @@
 from dataclasses import asdict
+
 from api.conversation.message import QueryMessage
+from api.test.parse_sse_events import parse_sse_events
 import requests
 from environs import env
 
@@ -46,12 +48,11 @@ def test_integration_get_all_baskets():
         timeout=60,
     )
 
-    response_1_json = response_1.json()
-
     assert response_1.status_code == 200
-    assert response_1_json["messages"][0]["is_interrupting"] is False
-    assert response_1_json["messages"][0]["ui"] is None
-    assert (
-        "0x2f8a339b5889ffac4c5a956787cda593b3c36867".lower()
-        in response_1_json["messages"][0]["content"].lower()
-    )
+
+    events = parse_sse_events(response_1)
+
+    text_deltas = [e for e in events if isinstance(e, dict) and e.get("type") == "text-delta"]
+    assert len(text_deltas) > 0
+    content = text_deltas[0]["delta"]
+    assert "0x2f8a339b5889ffac4c5a956787cda593b3c36867".lower() in content.lower()

@@ -1,23 +1,23 @@
-import type { Message } from '../message/Message'
-import type { QueryMessage } from '../message/QueryMessage'
+import type { UIMessage } from 'ai'
+import type { OrderConfirmation } from './generative-ui/pricer/pricer'
 import { MessageBubble } from './message-bubble'
 
 export interface Props {
-  messages: Message[]
-  onMessage?: (message: QueryMessage) => void
+  messages: UIMessage[]
+  onResume?: (result: OrderConfirmation) => void
 }
 
 export function MessageList({
   messages,
-  onMessage,
+  onResume,
 }: Props) {
   return (
     <>
-      {messages.map(message => (
-        <div key={message.id}>
-          <MessageBubble message={message} onMessage={onMessage} />
-        </div>
-      ))}
+      {messages.map(message => {
+        return message.parts.length > 0 ? (
+          <MessageBubble message={message} onResume={onResume} key={message.id} />
+        ) : null
+      })}
     </>
   )
 }

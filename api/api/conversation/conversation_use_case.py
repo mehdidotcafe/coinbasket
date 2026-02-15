@@ -1,45 +1,66 @@
 import json
+from collections.abc import AsyncGenerator
 from typing import Any, cast
-from api.conversation.exception.waiting_interrupt import WaitingInterrupt
+
 from langgraph.types import Command
 
-
+from api.conversation.exception.waiting_interrupt import WaitingInterrupt
 from api.datetime.date_time import DateTime
+from api.shared.id_generator.id_generator import IdGenerator
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt as LanggraphInterrupt
 
-from api.conversation.message import Message, MessageUi, QueryMessage
 from api.conversation.interrupt import Interrupt
+from api.conversation.message import QueryMessage
+
+
+def _sse(data: dict[str, Any] | str) -> str:
+    if isinstance(data, str):
+        return f"data: {data}\n\n"
+    return f"data: {json.dumps(data)}\n\n"
 
 
 class ConversationUseCase:
     def __init__(
         self,
         date_time: DateTime,
+        id_generator: IdGenerator,
     ):
         self.date_time = date_time
+        self.id_generator = id_generator
+
+    async def check_active_interrupt(
+        self,
+        agent_executor: CompiledStateGraph[Any],
+        thread_id: str,
+        is_resuming: bool,
+    ) -> None:
+        graph_config: RunnableConfig = {
+            "configurable": {
+                "thread_id": thread_id,
+            }
+        }
+        snap = await agent_executor.aget_state(graph_config)
+        if snap.interrupts and not is_resuming:
+            raise WaitingInterrupt()
 
     async def execute(
         self,
         agent_executor: CompiledStateGraph[Any],
         thread_id: str,
         message: QueryMessage,
-    ) -> list[Message]:
+    ) -> AsyncGenerator[str, None]:
         step = None
+        message_id = self.id_generator.generate_random_id()
         graph_config: RunnableConfig = {
             "configurable": {
                 "thread_id": thread_id,
             }
         }
 
-        snap = await agent_executor.aget_state(graph_config)
-
-        if snap.interrupts and not message.is_resuming:
-            raise WaitingInterrupt()
-
-        messages: list[Message] = []
+        yield _sse({"type": "start", "messageId": message_id})
 
         async for step in agent_executor.astream(
             {"messages": [{"role": "user", "content": message.content}]}
@@ -48,37 +69,48 @@ class ConversationUseCase:
             stream_mode="updates",
             config=graph_config,
         ):
-            print(f"Step: {step}")
-            if "model" in step:
-                step["model"]["messages"][-1].pretty_print()
-            elif "tools" in step:
-                step["tools"]["messages"][-1].pretty_print()
-                if "ui" in step["tools"]:
-                    messages.append(
-                        Message(
-                            id=step["tools"]["ui"]["id"],
-                            role="assistant",
-                            is_interrupting=False,
-                            ui=MessageUi(
-                                id=cast(str, step["tools"]["ui"]["name"]),
-                                args=cast(dict[str, Any], step["tools"]["ui"]["props"]),
-                            ),
-                            content=None,
-                            created_at=self.date_time.now_str(),
-                        )
-                    )
+            if "tools" in step and "ui" in step["tools"]:
+                ui = step["tools"]["ui"]
+                yield _sse({"type": "start-step"})
+                yield _sse(
+                    {
+                        "type": f"data-{ui['name']}",
+                        "data": {
+                            "id": ui["id"],
+                            "args": ui["props"],
+                        },
+                    }
+                )
+                yield _sse({"type": "finish-step"})
 
             if Interrupt.is_step_interrupt(step):
                 langgraph_interrupt = cast(LanggraphInterrupt, step["__interrupt__"][0])
-
-                return [
-                    *messages,
-                    Interrupt.to_message(
-                        langgraph_interrupt,
-                        langgraph_interrupt.id,
-                        self.date_time.now_str(),
-                    ),
-                ]
+                interrupt_msg = Interrupt.to_message(
+                    langgraph_interrupt,
+                    langgraph_interrupt.id,
+                    self.date_time.now_str(),
+                )
+                yield _sse({"type": "start-step"})
+                yield _sse(
+                    {
+                        "type": "data-interrupt",
+                        "data": {
+                            "id": interrupt_msg.id,
+                            "is_interrupting": interrupt_msg.is_interrupting,
+                            "ui": {
+                                "id": interrupt_msg.ui.id,
+                                "args": interrupt_msg.ui.args,
+                            }
+                            if interrupt_msg.ui
+                            else None,
+                            "content": interrupt_msg.content,
+                        },
+                    }
+                )
+                yield _sse({"type": "finish-step"})
+                yield _sse({"type": "finish"})
+                yield _sse("[DONE]")
+                return
 
         if not step:
             raise ValueError("No steps returned from the agent executor.")
@@ -89,14 +121,11 @@ class ConversationUseCase:
             next((c["text"] for c in last_message.content if c["type"] == "text"), ""),
         )
 
-        return [
-            *messages,
-            Message(
-                id=cast(str, last_message.id),
-                role=isinstance(last_message, HumanMessage) and "user" or "assistant",
-                is_interrupting=False,
-                ui=None,
-                content=last_message_text,
-                created_at=self.date_time.now_str(),
-            ),
-        ]
+        text_id = self.id_generator.generate_random_id()
+        yield _sse({"type": "start-step"})
+        yield _sse({"type": "text-start", "id": text_id})
+        yield _sse({"type": "text-delta", "id": text_id, "delta": last_message_text})
+        yield _sse({"type": "text-end", "id": text_id})
+        yield _sse({"type": "finish-step"})
+        yield _sse({"type": "finish"})
+        yield _sse("[DONE]")

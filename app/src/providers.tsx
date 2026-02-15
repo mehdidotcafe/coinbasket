@@ -19,8 +19,6 @@ import { httpSiweClient } from '@/authentication/infrastructure/http-siwe-client
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { demoApiClient } from './api/infrastructure/demo-api-client'
 import { httpApiClient } from './api/infrastructure/http-api-client'
-import { demoChatClient } from './chat/client/infrastructure/demo-chat-client'
-import { httpChatClient } from './chat/client/infrastructure/http-chat-client'
 import { Toaster } from './components/ui/sonner'
 import { EnvProvider } from './env/env-provider'
 import { useMode } from './mode/use-mode'
@@ -46,14 +44,12 @@ export const wagmiConfig = getDefaultConfig({
 
 const liveRegistry: Registry = {
   apiClient: httpApiClient(API_URL),
-  chatClient: httpChatClient(API_URL),
   pricerClient: httpPricerClient(API_URL),
   siweClient: httpSiweClient(API_URL),
 }
 
 const demoRegistry: Registry = {
   apiClient: demoApiClient,
-  chatClient: demoChatClient,
   pricerClient: demoPricerClient,
   siweClient: demoSiweClient,
 }

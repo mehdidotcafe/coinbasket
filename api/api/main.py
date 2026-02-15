@@ -3,6 +3,8 @@ from contextvars import ContextVar
 from decimal import Decimal
 from typing import Annotated, Any, Dict, Literal, Optional, Sequence, cast
 
+from starlette.responses import StreamingResponse
+
 from api.asset.get_asset_by_id_use_case import GetAssetByIdUseCase
 from api.asset.get_asset_swap_price_use_case import (
     AssetSwapPriceInfo,
@@ -119,6 +121,7 @@ get_portfolio_asset_balance_use_case = GetPortfolioAssetBalanceUseCase(
 
 conversation_use_case = ConversationUseCase(
     date_time=date_time,
+    id_generator=id_generator,
 )
 
 get_conversation_messages_use_case = GetConversationMessagesUseCase(
@@ -917,42 +920,52 @@ class PromptRequest(BaseModel):
     message: QueryMessageRequest
 
 
-class MessageUiResponse(BaseModel):
-    id: str
-    args: Dict[str, Any]
+class UIMessagePartResponse(BaseModel):
+    type: str
+    text: Optional[str] = None
+    id: Optional[str] = None
+    data: Optional[Dict[str, Any]] = None
 
 
-class MessageResponse(BaseModel):
+class UIMessageResponse(BaseModel):
     id: str
     role: Literal["user", "assistant"]
-    is_interrupting: bool
-    ui: MessageUiResponse | None
-    content: str | None
-    created_at: Optional[str]
+    parts: list[UIMessagePartResponse]
 
     @staticmethod
-    def from_domain(message: Message) -> "MessageResponse":
-        """Convert a Message to a MessageResponse."""
-        return MessageResponse(
+    def from_domain(message: Message) -> "UIMessageResponse":
+        parts: list[UIMessagePartResponse] = []
+
+        if message.ui and message.is_interrupting:
+            parts.append(
+                UIMessagePartResponse(
+                    type="data-interrupt",
+                    data={
+                        "id": message.id,
+                        "is_interrupting": True,
+                        "ui": {"id": message.ui.id, "args": message.ui.args},
+                        "content": message.content,
+                    },
+                )
+            )
+        elif message.ui:
+            parts.append(
+                UIMessagePartResponse(
+                    type=f"data-{message.ui.id}",
+                    data={
+                        "id": message.id,
+                        "args": message.ui.args,
+                    },
+                )
+            )
+
+        if message.content:
+            parts.append(UIMessagePartResponse(type="text", text=message.content))
+
+        return UIMessageResponse(
             id=message.id,
             role=message.role,
-            content=message.content,
-            created_at=message.created_at,
-            is_interrupting=message.is_interrupting,
-            ui=MessageUiResponse(id=message.ui.id, args=message.ui.args)
-            if message.ui
-            else None,
-        )
-
-
-class MessagesResponse(BaseModel):
-    messages: list[MessageResponse]
-
-    @staticmethod
-    def from_domain(messages: list[Message]) -> "MessagesResponse":
-        """Convert a list of Message domain objects to a MessagesResponse."""
-        return MessagesResponse(
-            messages=[MessageResponse.from_domain(message) for message in messages]
+            parts=parts,
         )
 
 
@@ -961,9 +974,8 @@ class MessagesResponse(BaseModel):
     schemas=[
         QueryMessageRequest,
         PromptRequest,
-        MessageUiResponse,
-        MessageResponse,
-        MessagesResponse,
+        UIMessagePartResponse,
+        UIMessageResponse,
     ],
     path="/conversation",
     operations={
@@ -980,12 +992,8 @@ class MessagesResponse(BaseModel):
             },
             "responses": {
                 "200": {
-                    "description": "Agent response message",
-                    "content": {
-                        "application/json": {
-                            "schema": {"$ref": "#/components/schemas/MessagesResponse"},
-                        }
-                    },
+                    "description": "Agent response (SSE stream)",
+                    "content": {"text/event-stream": {}},
                 },
                 "401": invalid_authentication_credential,
             },
@@ -993,28 +1001,45 @@ class MessagesResponse(BaseModel):
     },
 )
 @app.post("/conversation")
-async def conversation(request: Request, req: PromptRequest) -> MessagesResponse:
+async def conversation(request: Request, req: PromptRequest):
     address = Address(getattr(request.state, "address"))
     request_address_context.set(address)
+
+    query_message = QueryMessage(
+        id=req.message.id,
+        is_resuming=req.message.is_resuming,
+        role=req.message.role,
+        content=req.message.content,
+        created_at=req.message.created_at or date_time.now_str(),
+    )
 
     async with AsyncPostgresSaver.from_conn_string(
         f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.database_name}"
     ) as checkpointer:
         agent_executor = await __create_agent_executor(checkpointer)
-
-        messages = await conversation_use_case.execute(
-            thread_id=address,
+        await conversation_use_case.check_active_interrupt(
             agent_executor=agent_executor,
-            message=QueryMessage(
-                id=req.message.id,
-                is_resuming=req.message.is_resuming,
-                role=req.message.role,
-                content=req.message.content,
-                created_at=req.message.created_at or date_time.now_str(),
-            ),
+            thread_id=address,
+            is_resuming=query_message.is_resuming,
         )
 
-    return MessagesResponse.from_domain(messages)
+    async def stream():
+        async with AsyncPostgresSaver.from_conn_string(
+            f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.database_name}"
+        ) as checkpointer:
+            agent_executor = await __create_agent_executor(checkpointer)
+            async for chunk in conversation_use_case.execute(
+                thread_id=address,
+                agent_executor=agent_executor,
+                message=query_message,
+            ):
+                yield chunk
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"x-vercel-ai-ui-message-stream": "v1"},
+    )
 
 
 class StateSchema(AgentState):  # noqa: D101
@@ -1068,7 +1093,7 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
                             "schema": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/components/schemas/MessageResponse"
+                                    "$ref": "#/components/schemas/UIMessageResponse"
                                 },
                             },
                         }
@@ -1080,7 +1105,7 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
     },
 )
 @app.post("/conversation/messages")
-async def get_conversation_messages(request: Request) -> MessagesResponse:
+async def get_conversation_messages(request: Request) -> list[UIMessageResponse]:
     address = Address(getattr(request.state, "address"))
     """Retrieve the conversation messages."""
     async with AsyncPostgresSaver.from_conn_string(
@@ -1092,7 +1117,7 @@ async def get_conversation_messages(request: Request) -> MessagesResponse:
             thread_id=address, agent_executor=agent_executor
         )
 
-        return MessagesResponse.from_domain(messages)
+        return [UIMessageResponse.from_domain(m) for m in messages]
 
 
 class AssetSwapPriceInfoRequest(BaseModel):
