@@ -19,7 +19,7 @@ export function AssetName({ asset }: { asset: Asset }) {
     return assetNameWithTicker
   }
   return (
-    <a href={`https://bscscan.com/token/${asset.address}`} target="_blank" rel="noopener noreferrer" className="text-secondary font-sofia-sans">
+    <a href={`https://bscscan.com/token/${asset.address}`} target="_blank" rel="noopener noreferrer" className="text-secondary font-sofia-sans underline">
       {assetNameWithTicker}
     </a>
   )

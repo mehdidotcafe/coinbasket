@@ -36,7 +36,7 @@ const markdownOptions = {
           type: 'TOKEN',
         }
 
-        return (<AssetChip asset={asset} />)
+        return (<div className="inline-block align-middle mx-1"><AssetChip asset={asset} /></div>)
       },
     },
     a: {
