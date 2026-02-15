@@ -79,6 +79,6 @@ export class MessageUiDto {
         },
       }
     }
-    throw new Error(`Unsupported MessageUi id: ${messageUi.id}`)
+    throw new Error(`Unsupported MessageUi: ${JSON.stringify(messageUi)}`)
   }
 }
