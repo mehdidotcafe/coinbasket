@@ -3,7 +3,7 @@ import type { UIMessage } from 'ai'
 import type { OrderConfirmation } from './generative-ui/pricer/pricer'
 import type { Authentication } from '@/authentication/authentication'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
+import { Suspense, useCallback, useEffect, useRef } from 'react'
 import { useAuthentication } from '@/authentication/use-authentication'
 import { Disclaimer } from '@/components/disclaimer'
 import { EmptyConversationScreen } from '@/components/empty-conversation-screen'
@@ -64,7 +64,7 @@ function MessageListContainer({ authentication, messages, onSubmit, onResume, is
   useEffect(() => {
     if (messageEndAnchor.current) {
       messageEndAnchor.current.scrollIntoView({
-        behavior: 'smooth',
+        behavior: 'instant',
         block: 'end',
       })
     }
@@ -85,8 +85,8 @@ function MessageListContainer({ authentication, messages, onSubmit, onResume, is
                     ? (
                       <div className="mb-4">
                         <Loader
-                          width={36}
-                          height={36}
+                          width={24}
+                          height={24}
                         />
                       </div>
 

@@ -1,6 +1,6 @@
 import type { UIMessage } from 'ai'
 import type { OrderConfirmation } from './generative-ui/pricer/pricer'
-import { MessageBubble } from './message-bubble'
+import { MemoMessageBubble } from './message-bubble'
 
 export interface Props {
   messages: UIMessage[]
@@ -13,11 +13,9 @@ export function MessageList({
 }: Props) {
   return (
     <>
-      {messages.map(message => {
-        return message.parts.length > 0 ? (
-          <MessageBubble message={message} onResume={onResume} key={message.id} />
-        ) : null
-      })}
+      {messages.map(message => (
+        <div key={message.id}><MemoMessageBubble message={message} onResume={onResume} /></div>
+      ))}
     </>
   )
 }

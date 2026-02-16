@@ -1,7 +1,7 @@
 from dataclasses import asdict
 
 from api.conversation.message import QueryMessage
-from api.test.parse_sse_events import parse_sse_events
+from api.test.sse import concat_text_deltas, parse_sse_events
 import requests
 from environs import env
 
@@ -52,7 +52,5 @@ def test_integration_get_all_baskets():
 
     events = parse_sse_events(response_1)
 
-    text_deltas = [e for e in events if isinstance(e, dict) and e.get("type") == "text-delta"]
-    assert len(text_deltas) > 0
-    content = text_deltas[0]["delta"]
-    assert "0x2f8a339b5889ffac4c5a956787cda593b3c36867".lower() in content.lower()
+    concat_text = concat_text_deltas(events)
+    assert "0x2f8a339b5889ffac4c5a956787cda593b3c36867".lower() in concat_text.lower()

@@ -1,3 +1,4 @@
+import type { UIMessage } from '@ai-sdk/react'
 import type { Props } from './message-list'
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -6,7 +7,6 @@ import { bsc, mainnet } from 'viem/chains'
 import { expect, it } from 'vitest'
 import { WagmiProvider } from 'wagmi'
 import { MessageList } from './message-list'
-import { UIMessage } from '@ai-sdk/react'
 
 const queryClient = new QueryClient()
 

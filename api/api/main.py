@@ -1013,6 +1013,7 @@ async def conversation(request: Request, req: PromptRequest):
         created_at=req.message.created_at or date_time.now_str(),
     )
 
+    # TODO: Check if single connection is possible
     async with AsyncPostgresSaver.from_conn_string(
         f"postgres://{configuration.database_user}:{configuration.database_password}@{configuration.database_host}:{configuration.database_port}/{configuration.database_name}"
     ) as checkpointer:

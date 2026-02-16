@@ -53,11 +53,9 @@ export function useChat() {
     [API_URL],
   )
 
-  const chat = useAIChat({
+  const { messages, sendMessage, status, setMessages } = useAIChat({
     transport,
   })
-
-  const { messages, sendMessage, status, setMessages } = chat
 
   const hasFetchedRef = useRef(false)
 
@@ -67,9 +65,7 @@ export function useChat() {
     hasFetchedRef.current = true
 
     fetchInitialMessages(API_URL).then((initialMessages) => {
-      if (initialMessages.length > 0) {
-        setMessages(initialMessages)
-      }
+      setMessages(initialMessages)
     }).catch((err) => {
       console.error('Error fetching initial messages:', err)
     })
@@ -77,7 +73,7 @@ export function useChat() {
 
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : undefined
   const isInterrupted = lastMessage?.parts.some(p => p.type.startsWith('data-interrupt')) ?? false
-  const isWaitingMessage = status === 'submitted' || status === 'streaming'
+  const isWaitingMessage = status === 'submitted'
   const isFetching = !hasFetchedRef.current && isAuthenticated
 
   return {
@@ -86,7 +82,7 @@ export function useChat() {
     isFetching,
     isPending: isFetching,
     isEnabled: isAuthenticated,
-    messages,
+    messages: messages.map(message => structuredClone(message)),
     sendMessage,
     status,
   }

@@ -3,6 +3,7 @@ import type { OrderConfirmation } from './generative-ui/pricer/pricer'
 import type { Asset } from '@/asset/Asset'
 import Markdown from 'markdown-to-jsx'
 import Image from 'next/image'
+import React from 'react'
 import { useEnsAvatar } from 'wagmi'
 import { AssetChip } from '@/asset/asset-chip'
 import { useAccountEns } from '@/chain/use-account-ens'
@@ -20,22 +21,26 @@ interface Props {
 const markdownOptions = {
   overrides: {
     token: {
-      component: ({ name, ticker, address, logo_uri, description, decimals }: { name: string, ticker: string, address: string, logo_uri?: string, description?: string, decimals: string }) => {
+      component: ({ display_name, ticker, address, logo_uri }: { display_name?: string, ticker?: string, address?: string, logo_uri?: string }) => {
+        if (!display_name || !ticker || !address) {
+          return null
+        }
+
         const asset: Asset = {
           id: `bsc:${address.toLowerCase()}`,
-          name,
-          displayName: name,
+          name: display_name,
+          displayName: display_name,
           ticker,
           address,
           logoUri: logo_uri,
-          description: description || '',
-          decimals: Number.parseInt(decimals, 10),
+          description: '',
+          decimals: 0,
           trustScore: 100,
           categories: [],
           type: 'TOKEN',
         }
 
-        return (<div className="inline-block align-middle mx-1"><AssetChip asset={asset} /></div>)
+        return <div className="inline-block align-middle mx-1"><AssetChip asset={asset} /></div>
       },
     },
     a: {
@@ -56,13 +61,19 @@ function MarkdownView({ children }: { children: string }) {
   )
 }
 
+export const MemoMessageBubble = React.memo(MessageBubble, (prevProps, nextProps) => {
+  // Only re-render if the message content has changed
+  return JSON.stringify(prevProps.message.parts) === JSON.stringify(nextProps.message.parts)
+})
+
 export function MessageBubble({
   message,
   onResume,
 }: Props) {
   if (message.role === 'user' && !(message.metadata as Record<string, unknown>)?.isResuming) {
     return <UserMessageBubble message={message} />
-  } else if (message.role === 'assistant') {
+  }
+  else if (message.role === 'assistant') {
     return <AssistantMessageBubble message={message} onResume={onResume} />
   }
   // Don't display responses to interrupts
