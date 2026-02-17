@@ -1,4 +1,4 @@
-[<img src="./assets/coinbasket_banner_thin.png"/>](./assets/coinbasket_banner_thin.png)
+[<img src="./assets/coinbasket-og-banner.jpg" alt="Coinbasket Banner"/>](./assets/coinbasket-og-banner.jpg)
 
 # Coinbasket
 
