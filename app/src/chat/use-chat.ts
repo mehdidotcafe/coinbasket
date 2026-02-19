@@ -75,7 +75,7 @@ export function useChat() {
 
   // Reset hasFetchedRef and clear messages when auth state changes
   useEffect(() => {
-    const currentAddress = authentication.authStatus === 'authenticated' ? authentication.address : undefined
+    const currentAddress = isAuthenticated ? authentication.address : undefined
 
     // Skip first render (null means uninitialized)
     if (prevAuthAddressRef.current === null) {
@@ -89,7 +89,7 @@ export function useChat() {
       setMessages([])
       prevAuthAddressRef.current = currentAddress
     }
-  }, [authentication, setMessages])
+  }, [authentication, isAuthenticated])
 
   useEffect(() => {
     if (!isAuthenticated || hasFetchedRef.current)
@@ -101,7 +101,7 @@ export function useChat() {
     }).catch((err) => {
       console.error('Error fetching initial messages:', err)
     })
-  }, [isAuthenticated, API_URL, setMessages])
+  }, [isAuthenticated, API_URL])
 
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : undefined
   const lastMessageIsEmpty = lastMessage ? !hasNotEmptyPart(lastMessage) : false
