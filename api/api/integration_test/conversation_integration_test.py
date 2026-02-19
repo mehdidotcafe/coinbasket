@@ -20,7 +20,6 @@ from api.test.sse import (
     find_data_interrupt,
     find_events,
     parse_sse_events,
-    concat_text_deltas,
 )
 from syrupy.filters import paths
 
