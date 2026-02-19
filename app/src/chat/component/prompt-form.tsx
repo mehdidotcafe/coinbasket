@@ -1,6 +1,5 @@
 'use client'
 
-import type { QueryMessage } from '../message/QueryMessage'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef } from 'react'
@@ -14,14 +13,13 @@ import { Form, FormControl, FormField, FormItem } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { usePromptInput } from '@/prompt-input/prompt-input-context'
-import { makeQueryMessage } from '../message/make-query-message'
 import precraftPrompts from '../precraft-prompts'
 
 type PromptStatus = 'waiting_user_response' | 'waiting_ai_response' | 'ready'
 
 export interface Props {
   status: PromptStatus
-  onSubmit?: (message: QueryMessage) => void
+  onSubmit?: (text: string) => void
   size: 'large' | 'small'
   placeholder?: string
   hasMessageHistory?: boolean
@@ -54,7 +52,7 @@ export function PromptForm({ onSubmit, status, size, placeholder = 'Ask somethin
     else {
       form.reset()
       setPromptInput('')
-      onSubmit?.(makeQueryMessage(data.content, false))
+      onSubmit?.(data.content)
     }
   }
 
@@ -106,7 +104,7 @@ export function PromptForm({ onSubmit, status, size, placeholder = 'Ask somethin
         form.reset()
 
         setPromptInput('')
-        onSubmit?.(makeQueryMessage(promptInputToSubmit, false))
+        onSubmit?.(promptInputToSubmit)
       }
     }
   }, [])

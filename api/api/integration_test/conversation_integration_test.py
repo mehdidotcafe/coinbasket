@@ -16,6 +16,11 @@ from environs import env
 from api.test.database.cleanup_all import cleanup_all  # noqa: F401
 from api.test.database.seed_fixtures import seed_fixtures  # noqa: F401
 from api.protocol.fixture.token import btc_token, eth_token
+from api.test.sse import (
+    find_data_interrupt,
+    find_events,
+    parse_sse_events,
+)
 from syrupy.filters import paths
 
 app_port = env.int("APP_PORT")
@@ -165,16 +170,16 @@ def test_integration_conversation_success(
         timeout=60,
     )
 
-    response_1_json = response_1.json()
-
     assert response_1.status_code == 200
+    events_1 = parse_sse_events(response_1)
 
-    assert len(response_1_json["messages"]) == 1
+    interrupt_event = find_data_interrupt(events_1)
+    text_deltas = find_events(events_1, "text-delta")
 
     # The agent may either respond with an interrupting UI or with a content message asking for confirmation
-    if not response_1_json["messages"][0]["is_interrupting"]:
-        assert response_1_json["messages"][0]["ui"] is None
-        assert response_1_json["messages"][0]["content"] is not None
+    if not interrupt_event:
+        assert len(text_deltas) > 0
+        assert text_deltas[0]["delta"] is not None
 
         response_2 = requests.post(
             f"http://localhost:{app_port}/conversation",
@@ -193,14 +198,15 @@ def test_integration_conversation_success(
             timeout=60,
         )
 
-        response_2_json = response_2.json()
-
         assert response_2.status_code == 200
-        assert len(response_2_json["messages"]) == 1
-        assert response_2_json["messages"][0]["is_interrupting"] is True
-        assert response_2_json["messages"][0]["content"] is None
+        events_2 = parse_sse_events(response_2)
 
-        assert response_2_json["messages"][0]["ui"] == snapshot(
+        interrupt_event = find_data_interrupt(events_2)
+        assert interrupt_event is not None
+        assert interrupt_event["data"]["is_interrupting"] is True
+        assert interrupt_event["data"]["content"] is None
+
+        assert interrupt_event["data"]["ui"] == snapshot(
             name="ethereum",
             exclude=paths(
                 "args.planned_order.id",
@@ -211,8 +217,8 @@ def test_integration_conversation_success(
             ),
         )
     else:
-        assert response_1_json["messages"][0]["content"] is None
-        assert response_1_json["messages"][0]["ui"] == snapshot(
+        assert interrupt_event["data"]["content"] is None
+        assert interrupt_event["data"]["ui"] == snapshot(
             name="ethereum",
             exclude=paths(
                 "args.planned_order.id",
@@ -240,10 +246,10 @@ def test_integration_conversation_success(
         timeout=60,
     )
 
-    response_3_json = response_3.json()
-
     assert response_3.status_code == 200
-    assert len(response_3_json["messages"]) == 1
-    assert response_3_json["messages"][0]["is_interrupting"] is False
-    assert response_3_json["messages"][0]["ui"] is None
-    assert response_3_json["messages"][0]["content"] is not None
+    events_3 = parse_sse_events(response_3)
+
+    assert find_data_interrupt(events_3) is None
+    text_deltas_3 = find_events(events_3, "text-delta")
+    assert len(text_deltas_3) > 0
+    assert text_deltas_3[0]["delta"] is not None

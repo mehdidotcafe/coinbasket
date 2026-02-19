@@ -1,12 +1,16 @@
 from unittest import mock
+
 from api.conversation.exception.waiting_interrupt import WaitingInterrupt
-from api.conversation.message import Message, MessageUi, QueryMessage
+from api.conversation.message import QueryMessage
+from api.test.sse import parse_sse_chunks
 from pytest import fixture, mark, raises
 
 from api.conversation.conversation_use_case import (
     ConversationUseCase,
 )
 from api.datetime.date_time import DateTime
+from api.shared.id_generator.id_generator import IdGenerator
+from langchain_core.messages import AIMessageChunk, HumanMessageChunk
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt
 
@@ -27,14 +31,22 @@ def thread_id():
 
 
 @fixture
-def use_case(date_time: DateTime):
+def id_generator():
+    generator = mock.Mock(spec=IdGenerator)
+    generator.generate_random_id.return_value = "random-id"
+    return generator
+
+
+@fixture
+def use_case(date_time: DateTime, id_generator: IdGenerator):
     return ConversationUseCase(
         date_time=date_time,
+        id_generator=id_generator,
     )
 
 
 @mark.asyncio
-async def test_conversation_use_case_execute_agent_last_step_no_ui(
+async def test_conversation_use_case_execute_text_only(
     date_time: DateTime,
     use_case: ConversationUseCase,
     thread_id: str,
@@ -49,102 +61,106 @@ async def test_conversation_use_case_execute_agent_last_step_no_ui(
         created_at="2023-10-01",
     )
 
-    step = {
-        "model": {
-            "messages": [
-                mock.Mock(
-                    id="1",
-                    content=[{"text": "Hello, how can I help you?", "type": "text"}],
-                )
-            ]
-        }
-    }
-    agent_executor.aget_state = mock.AsyncMock(return_value=mock.Mock(interrupts=[]))
-    agent_executor.astream = mock.MagicMock()
-    agent_executor.astream.return_value.__aiter__.return_value = [step]
-
-    message = await use_case.execute(agent_executor, thread_id, message)
-
-    assert message == [
-        Message(
-            id="1",
-            role="assistant",
-            is_interrupting=False,
-            ui=None,
-            content="Hello, how can I help you?",
-            created_at="2023-10-01",
-        )
-    ]
-
-
-@mark.asyncio
-async def test_conversation_use_case_execute_agent_last_step_ui(
-    date_time: DateTime,
-    use_case: ConversationUseCase,
-    thread_id: str,
-    agent_executor: CompiledStateGraph,
-):
-    date_time.now_str = mock.Mock(return_value="2023-10-01")
-    message = QueryMessage(
-        id="42",
-        is_resuming=False,
-        role="user",
-        content="Hello?",
-        created_at="2023-10-01",
-    )
-
+    metadata = {"langgraph_node": "model"}
     steps = [
-        {
-            "tools": {
-                "messages": [mock.Mock()],
-                "ui": {
-                    "id": "tool_ui_1",
-                    "name": "tool_ui",
-                    "props": {"key": "value"},
-                },
-            }
-        },
-        {
-            "model": {
-                "messages": [
-                    mock.Mock(
-                        id="1",
-                        content=[
-                            {"text": "Hello, how can I help you?", "type": "text"}
-                        ],
-                    )
-                ]
-            },
-        },
+        ("messages", (AIMessageChunk(content="Hello, "), metadata)),
+        ("messages", (AIMessageChunk(content="how can I help you?"), metadata)),
+        ("updates", {"model": {"messages": [mock.Mock()]}}),
     ]
-    agent_executor.aget_state = mock.AsyncMock(return_value=mock.Mock(interrupts=[]))
     agent_executor.astream = mock.MagicMock()
     agent_executor.astream.return_value.__aiter__.return_value = steps
 
-    message = await use_case.execute(agent_executor, thread_id, message)
-
-    assert message == [
-        Message(
-            id="tool_ui_1",
-            role="assistant",
-            is_interrupting=False,
-            ui=MessageUi(id="tool_ui", args={"key": "value"}),
-            content=None,
-            created_at="2023-10-01",
-        ),
-        Message(
-            id="1",
-            role="assistant",
-            is_interrupting=False,
-            ui=None,
-            content="Hello, how can I help you?",
-            created_at="2023-10-01",
-        ),
+    chunks = [
+        chunk async for chunk in use_case.execute(agent_executor, thread_id, message)
     ]
+    events = parse_sse_chunks(chunks)
+
+    assert events[0]["type"] == "start"
+    assert "messageId" in events[0]
+    assert events[1] == {"type": "start-step"}
+    assert events[2]["type"] == "text-start"
+    text_id = events[2]["id"]
+    assert events[3] == {"type": "text-delta", "id": text_id, "delta": "Hello, "}
+    assert events[4] == {
+        "type": "text-delta",
+        "id": text_id,
+        "delta": "how can I help you?",
+    }
+    assert events[5] == {"type": "text-end", "id": text_id}
+    assert events[6] == {"type": "finish-step"}
+    assert events[7] == {"type": "finish"}
+    assert events[8] == "[DONE]"
 
 
 @mark.asyncio
-async def test_conversation_use_case_execute_interrupt_last_step(
+async def test_conversation_use_case_execute_with_ui_then_text(
+    date_time: DateTime,
+    use_case: ConversationUseCase,
+    thread_id: str,
+    agent_executor: CompiledStateGraph,
+):
+    date_time.now_str = mock.Mock(return_value="2023-10-01")
+    message = QueryMessage(
+        id="42",
+        is_resuming=False,
+        role="user",
+        content="Hello?",
+        created_at="2023-10-01",
+    )
+
+    metadata = {"langgraph_node": "model"}
+    steps = [
+        (
+            "updates",
+            {
+                "tools": {
+                    "messages": [mock.Mock()],
+                    "ui": {
+                        "id": "tool_ui_1",
+                        "name": "tool_ui",
+                        "props": {"key": "value"},
+                    },
+                }
+            },
+        ),
+        ("messages", (AIMessageChunk(content="Hello, "), metadata)),
+        ("messages", (AIMessageChunk(content="how can I help you?"), metadata)),
+        ("updates", {"model": {"messages": [mock.Mock()]}}),
+    ]
+    agent_executor.astream = mock.MagicMock()
+    agent_executor.astream.return_value.__aiter__.return_value = steps
+
+    chunks = [
+        chunk async for chunk in use_case.execute(agent_executor, thread_id, message)
+    ]
+    events = parse_sse_chunks(chunks)
+
+    assert events[0]["type"] == "start"
+    # UI step
+    assert events[1] == {"type": "start-step"}
+    assert events[2] == {
+        "type": "data-tool_ui",
+        "data": {"id": "tool_ui_1", "args": {"key": "value"}},
+    }
+    assert events[3] == {"type": "finish-step"}
+    # Text step (token-by-token)
+    assert events[4] == {"type": "start-step"}
+    assert events[5]["type"] == "text-start"
+    text_id = events[5]["id"]
+    assert events[6] == {"type": "text-delta", "id": text_id, "delta": "Hello, "}
+    assert events[7] == {
+        "type": "text-delta",
+        "id": text_id,
+        "delta": "how can I help you?",
+    }
+    assert events[8] == {"type": "text-end", "id": text_id}
+    assert events[9] == {"type": "finish-step"}
+    assert events[10] == {"type": "finish"}
+    assert events[11] == "[DONE]"
+
+
+@mark.asyncio
+async def test_conversation_use_case_execute_interrupt(
     date_time: DateTime,
     use_case: ConversationUseCase,
     agent_executor: CompiledStateGraph,
@@ -159,63 +175,90 @@ async def test_conversation_use_case_execute_interrupt_last_step(
         created_at="2023-10-01",
     )
 
-    step = {
-        "__interrupt__": (
-            Interrupt(
-                value={
-                    "ui": {
-                        "id": "prepare_investment_plan",
-                        "args": {
-                            "intent_investment_plan": {
-                                "steps": [
-                                    {"buy_balance": None, "sell_balance": None},
-                                    {"buy_balance": None, "sell_balance": None},
-                                ]
-                            }
+    step = (
+        "updates",
+        {
+            "__interrupt__": (
+                Interrupt(
+                    value={
+                        "ui": {
+                            "id": "prepare_investment_plan",
+                            "args": {
+                                "intent_investment_plan": {
+                                    "steps": [
+                                        {"buy_balance": None, "sell_balance": None},
+                                        {"buy_balance": None, "sell_balance": None},
+                                    ]
+                                }
+                            },
                         },
+                        "content": None,
                     },
-                    "content": None,
-                },
-                id="99",
-                resumable=True,
-                ns=["tools:43e88f20-5846-1931-5515-951101740e44"],
-            ),
-        )
-    }
+                    id="99",
+                    resumable=True,
+                    ns=["tools:43e88f20-5846-1931-5515-951101740e44"],
+                ),
+            )
+        },
+    )
 
-    agent_executor.aget_state = mock.AsyncMock(return_value=mock.Mock(interrupts=[]))
     agent_executor.astream = mock.MagicMock()
     agent_executor.astream.return_value.__aiter__.return_value = [step]
 
-    message = await use_case.execute(agent_executor, thread_id, message)
-
-    assert message == [
-        Message(
-            id="99",
-            role="assistant",
-            content=None,
-            is_interrupting=True,
-            ui=MessageUi(
-                id="prepare_investment_plan",
-                args={
-                    "intent_investment_plan": {
-                        "steps": [
-                            {"buy_balance": None, "sell_balance": None},
-                            {"buy_balance": None, "sell_balance": None},
-                        ]
-                    }
-                },
-            ),
-            created_at="2023-10-01",
-        )
+    chunks = [
+        chunk async for chunk in use_case.execute(agent_executor, thread_id, message)
     ]
+    events = parse_sse_chunks(chunks)
+
+    assert events[0]["type"] == "start"
+    assert events[1] == {"type": "start-step"}
+    assert events[2]["type"] == "data-interrupt"
+    assert events[2]["data"]["id"] == "99"
+    assert events[2]["data"]["is_interrupting"] is True
+    assert events[2]["data"]["ui"]["id"] == "prepare_investment_plan"
+    assert events[2]["data"]["content"] is None
+    assert events[3] == {"type": "finish-step"}
+    assert events[4] == {"type": "finish"}
+    assert events[5] == "[DONE]"
 
 
-async def test_conversation_use_case_execute_with_active_interrupt_raises(
+@mark.asyncio
+async def test_conversation_use_case_check_active_interrupt_raises(
     use_case: ConversationUseCase,
     agent_executor: CompiledStateGraph,
     thread_id: str,
 ):
+    snap_mock = mock.Mock()
+    snap_mock.interrupts = [mock.Mock()]
+    agent_executor.aget_state = mock.AsyncMock(return_value=snap_mock)
+
+    with raises(WaitingInterrupt):
+        await use_case.check_active_interrupt(
+            agent_executor, thread_id, is_resuming=False
+        )
+
+
+@mark.asyncio
+async def test_check_active_interrupt_allows_resume(
+    use_case: ConversationUseCase,
+    agent_executor: CompiledStateGraph,
+    thread_id: str,
+):
+    snap_mock = mock.Mock()
+    snap_mock.interrupts = [mock.Mock()]
+    agent_executor.aget_state = mock.AsyncMock(return_value=snap_mock)
+
+    await use_case.check_active_interrupt(agent_executor, thread_id, is_resuming=True)
+
+
+@mark.asyncio
+async def test_execute_filters_out_tools_without_ui(
+    date_time: DateTime,
+    use_case: ConversationUseCase,
+    thread_id: str,
+    agent_executor: CompiledStateGraph,
+):
+    date_time.now_str = mock.Mock(return_value="2023-10-01")
     message = QueryMessage(
         id="42",
         is_resuming=False,
@@ -224,10 +267,71 @@ async def test_conversation_use_case_execute_with_active_interrupt_raises(
         created_at="2023-10-01",
     )
 
-    snap_mock = mock.Mock()
-    snap_mock.interrupts = [mock.Mock()]
+    metadata = {"langgraph_node": "model"}
+    steps = [
+        (
+            "updates",
+            {
+                "tools": {
+                    "messages": [mock.Mock()],
+                }
+            },
+        ),
+        ("messages", (AIMessageChunk(content="Done"), metadata)),
+        ("updates", {"model": {"messages": [mock.Mock()]}}),
+    ]
+    agent_executor.astream = mock.MagicMock()
+    agent_executor.astream.return_value.__aiter__.return_value = steps
 
-    agent_executor.aget_state = mock.AsyncMock(return_value=snap_mock)
+    chunks = [
+        chunk async for chunk in use_case.execute(agent_executor, thread_id, message)
+    ]
+    events = parse_sse_chunks(chunks)
 
-    with raises(WaitingInterrupt):
-        await use_case.execute(agent_executor, thread_id, message)
+    # start, start-step, text-start, text-delta, text-end, finish-step, finish, [DONE]
+    assert len(events) == 8
+    assert events[0]["type"] == "start"
+    assert events[1] == {"type": "start-step"}
+    assert events[2]["type"] == "text-start"
+    assert events[3]["type"] == "text-delta"
+    assert events[3]["delta"] == "Done"
+    assert events[6] == {"type": "finish"}
+
+
+@mark.asyncio
+async def test_execute_skips_non_ai_message_chunks(
+    date_time: DateTime,
+    use_case: ConversationUseCase,
+    thread_id: str,
+    agent_executor: CompiledStateGraph,
+):
+    date_time.now_str = mock.Mock(return_value="2023-10-01")
+    message = QueryMessage(
+        id="42",
+        is_resuming=False,
+        role="user",
+        content="Hello?",
+        created_at="2023-10-01",
+    )
+
+    metadata = {"langgraph_node": "model"}
+    steps = [
+        ("messages", (HumanMessageChunk(content="Hello?"), metadata)),
+        ("messages", (AIMessageChunk(content=""), metadata)),
+        ("messages", (AIMessageChunk(content="Hi!"), metadata)),
+        ("updates", {"model": {"messages": [mock.Mock()]}}),
+    ]
+    agent_executor.astream = mock.MagicMock()
+    agent_executor.astream.return_value.__aiter__.return_value = steps
+
+    chunks = [
+        chunk async for chunk in use_case.execute(agent_executor, thread_id, message)
+    ]
+    events = parse_sse_chunks(chunks)
+
+    text_deltas = [
+        e for e in events if isinstance(e, dict) and e.get("type") == "text-delta"
+    ]
+    assert len(text_deltas) == 2
+    assert text_deltas[0]["delta"] == ""
+    assert text_deltas[1]["delta"] == "Hi!"

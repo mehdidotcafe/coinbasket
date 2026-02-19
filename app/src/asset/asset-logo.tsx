@@ -12,13 +12,14 @@ export function AssetLogo({
   }
 
   return (
-    <div className="rounded-full bg-primary overflow-hidden max-w-[24px] max-h-[24px] w-[24px] h-[24px] flex items-center justify-center">
+    <span className="rounded-full bg-primary overflow-hidden max-w-[24px] max-h-[24px] w-[24px] h-[24px] flex items-center justify-center">
       <Image
         src={logoUri}
         alt={asset.ticker}
         width={24}
         height={24}
+        onError={e => console.error(e)}
       />
-    </div>
+    </span>
   )
 }

@@ -664,7 +664,7 @@ function useTransactionFlow({
       dispatch({ type: 'START_SENDING_TRANSACTION' })
       handleSignAndSendTransaction(signableOrder)
     }
-    else if (permitError) {
+    else if (permitError && state.currentStep !== 'canceled') {
       dispatch({ type: 'ERROR', error: permitError.message })
     }
   }, [isSigningPermit, permitSignature, permitError, state.currentStep, signableOrder])

@@ -1,4 +1,4 @@
-import type { Message } from '../message/Message'
+import type { UIMessage } from '@ai-sdk/react'
 import type { Props } from './message-list'
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -27,9 +27,9 @@ function renderComponent(props: Props) {
 }
 
 it('should render a message list', () => {
-  const messages: Message[] = [
-    { id: '1', role: 'user', content: 'Hello', createdAt: new Date('2020-01-01') },
-    { id: '2', role: 'assistant', content: 'Hi there!', createdAt: new Date('2020-01-01') },
+  const messages: UIMessage[] = [
+    { id: '1', role: 'user', parts: [{ type: 'text', text: 'Hello' }], metadata: { createdAt: new Date('2020-01-01') } },
+    { id: '2', role: 'assistant', parts: [{ type: 'text', text: 'Hi there!' }], metadata: { createdAt: new Date('2020-01-01') } },
   ]
 
   const { getAllByRole } = renderComponent({ messages })
