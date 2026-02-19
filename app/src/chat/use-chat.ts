@@ -71,14 +71,16 @@ export function useChat() {
   })
 
   const hasFetchedRef = useRef(false)
-  const prevAuthAddressRef = useRef<string | undefined | null>(null)
+  const prevAuthAddressRef = useRef<string | undefined>(undefined)
+  const isFirstRenderRef = useRef(true)
 
   // Reset hasFetchedRef and clear messages when auth state changes
   useEffect(() => {
     const currentAddress = isAuthenticated ? authentication.address : undefined
 
-    // Skip first render (null means uninitialized)
-    if (prevAuthAddressRef.current === null) {
+    // Skip first render
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false
       prevAuthAddressRef.current = currentAddress
       return
     }
