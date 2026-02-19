@@ -23,7 +23,7 @@ const markdownOptions = {
     token: {
       component: ({ display_name, ticker, address, logo_uri }: { display_name?: string, ticker?: string, address?: string, logo_uri?: string }) => {
         if (!display_name || !ticker || !address) {
-          return null
+          return display_name || ticker || address
         }
 
         const asset: Asset = {
@@ -40,7 +40,7 @@ const markdownOptions = {
           type: 'TOKEN',
         }
 
-        return <div className="inline-block align-middle mx-1"><AssetChip asset={asset} /></div>
+        return <span className="inline-block align-middle mx-1"><AssetChip asset={asset} /></span>
       },
     },
     a: {
@@ -160,7 +160,7 @@ function AssistantMessageBubble({
             const ui = MessageUiDto.fromResponse({ id: 'asset_price_card', args: data.args } as any)
             if (ui.id === 'asset_price_card') {
               return (
-                <div key={i} className="w-fit">
+                <div key={i} className="w-fit my-0.5">
                   <AssetPriceCard sellBalance={ui.args.sellBalance} buyBalance={ui.args.buyBalance} />
                 </div>
               )

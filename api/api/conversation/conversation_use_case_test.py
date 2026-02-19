@@ -332,5 +332,6 @@ async def test_execute_skips_non_ai_message_chunks(
     text_deltas = [
         e for e in events if isinstance(e, dict) and e.get("type") == "text-delta"
     ]
-    assert len(text_deltas) == 1
-    assert text_deltas[0]["delta"] == "Hi!"
+    assert len(text_deltas) == 2
+    assert text_deltas[0]["delta"] == ""
+    assert text_deltas[1]["delta"] == "Hi!"

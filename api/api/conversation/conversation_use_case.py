@@ -132,7 +132,6 @@ class ConversationUseCase:
                     yield _sse({"type": "finish-step"})
                     text_started = False
 
-                # TODO: Investigate if this is still useful
                 if "model" in data:
                     if text_started:
                         yield _sse({"type": "text-end", "id": text_id})
@@ -143,17 +142,13 @@ class ConversationUseCase:
         yield _sse("[DONE]")
 
     def _extract_tokens_from_chunk(self, chunk: AIMessageChunk) -> list[str]:
-        if isinstance(chunk.content, str) and chunk.content.strip() != "":
+        if isinstance(chunk.content, str):
             return [chunk.content]
 
         tokens: list[str] = []
         for item in chunk.content:
-            if isinstance(item, str) and item.strip() != "":
+            if isinstance(item, str):
                 tokens.append(item)
-            elif (
-                "text" in item
-                and isinstance(item["text"], str)
-                and item["text"].strip() != ""
-            ):
+            elif "text" in item and isinstance(item["text"], str):
                 tokens.append(item["text"])
         return tokens

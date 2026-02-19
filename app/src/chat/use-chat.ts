@@ -20,6 +20,18 @@ async function fetchInitialMessages(apiUrl: string): Promise<UIMessage[]> {
   return res.json()
 }
 
+function hasNotEmptyPart(message: UIMessage) {
+  return message.parts.some((part) => {
+    if (part.type === 'text' && 'text' in part && part.text.trim() !== '') {
+      return true
+    }
+    if (part.type.startsWith('data-')) {
+      return true
+    }
+    return false
+  })
+}
+
 export function useChat() {
   const authentication = useAuthentication()
   const { API_URL } = useEnv()
@@ -55,6 +67,7 @@ export function useChat() {
 
   const { messages, sendMessage, status, setMessages } = useAIChat({
     transport,
+    experimental_throttle: 50,
   })
 
   const hasFetchedRef = useRef(false)
@@ -72,8 +85,9 @@ export function useChat() {
   }, [isAuthenticated, API_URL, setMessages])
 
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : undefined
+  const lastMessageIsEmpty = lastMessage ? !hasNotEmptyPart(lastMessage) : false
   const isInterrupted = lastMessage?.parts.some(p => p.type.startsWith('data-interrupt')) ?? false
-  const isWaitingMessage = status === 'submitted'
+  const isWaitingMessage = status === 'submitted' || (status === 'streaming' && lastMessageIsEmpty)
   const isFetching = !hasFetchedRef.current && isAuthenticated
 
   return {
@@ -82,7 +96,7 @@ export function useChat() {
     isFetching,
     isPending: isFetching,
     isEnabled: isAuthenticated,
-    messages: messages.map(message => structuredClone(message)),
+    messages: (lastMessageIsEmpty ? messages.slice(0, -1) : messages).map(message => structuredClone(message)).map(message => structuredClone(message)),
     sendMessage,
     status,
   }
