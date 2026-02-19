@@ -139,6 +139,7 @@ function AssistantMessageBubble({
           if (part.type === 'data-interrupt') {
             const uiRaw = data.ui as { id: string, args: Record<string, unknown> } | null
             if (uiRaw) {
+              try {
               const ui = MessageUiDto.fromResponse(uiRaw as any)
               if (ui.id === 'confirm_planned_order') {
                 return (
@@ -151,6 +152,10 @@ function AssistantMessageBubble({
                     />
                   </div>
                 )
+                }
+              }
+              catch (e) {
+                console.error('Failed to parse UI from interrupt message part', e)
               }
             }
             return null

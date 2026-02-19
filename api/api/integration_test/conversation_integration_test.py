@@ -176,9 +176,6 @@ def test_integration_conversation_success(
 
     interrupt_event = find_data_interrupt(events_1)
     text_deltas = find_events(events_1, "text-delta")
-    concatenated_text = concat_text_deltas(text_deltas)
-
-    print(f"events 1: {concatenated_text} {interrupt_event}")
 
     # The agent may either respond with an interrupting UI or with a content message asking for confirmation
     if not interrupt_event:
@@ -204,8 +201,6 @@ def test_integration_conversation_success(
 
         assert response_2.status_code == 200
         events_2 = parse_sse_events(response_2)
-
-        print(f"events 2: {concat_text_deltas(events_2)}")
 
         interrupt_event = find_data_interrupt(events_2)
         assert interrupt_event is not None
