@@ -36,6 +36,7 @@ export function useChat() {
   const authentication = useAuthentication()
   const { API_URL } = useEnv()
   const isAuthenticated = authentication.authStatus === 'authenticated'
+  const currentAuthAddress = isAuthenticated ? authentication.address : undefined
 
   const transport = useMemo(
     () =>
@@ -76,22 +77,20 @@ export function useChat() {
 
   // Reset hasFetchedRef and clear messages when auth state changes
   useEffect(() => {
-    const currentAddress = isAuthenticated ? authentication.address : undefined
-
     // Skip first render
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false
-      prevAuthAddressRef.current = currentAddress
+      prevAuthAddressRef.current = currentAuthAddress
       return
     }
 
     // If auth state changed (sign out or different address), reset and clear
-    if (prevAuthAddressRef.current !== currentAddress) {
+    if (prevAuthAddressRef.current !== currentAuthAddress) {
       hasFetchedRef.current = false
       setMessages([])
-      prevAuthAddressRef.current = currentAddress
+      prevAuthAddressRef.current = currentAuthAddress
     }
-  }, [authentication])
+  }, [currentAuthAddress])
 
   useEffect(() => {
     if (!isAuthenticated || hasFetchedRef.current)
