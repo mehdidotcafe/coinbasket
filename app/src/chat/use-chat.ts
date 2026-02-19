@@ -71,6 +71,19 @@ export function useChat() {
   })
 
   const hasFetchedRef = useRef(false)
+  const prevAuthAddressRef = useRef<string | undefined>(undefined)
+
+  // Reset hasFetchedRef and clear messages when auth state changes
+  useEffect(() => {
+    const currentAddress = authentication.authStatus === 'authenticated' ? authentication.address : undefined
+
+    // If auth state changed (sign out or different address), reset and clear
+    if (prevAuthAddressRef.current !== currentAddress) {
+      hasFetchedRef.current = false
+      setMessages([])
+      prevAuthAddressRef.current = currentAddress
+    }
+  }, [authentication, setMessages])
 
   useEffect(() => {
     if (!isAuthenticated || hasFetchedRef.current)
