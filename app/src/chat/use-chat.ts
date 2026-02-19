@@ -91,7 +91,7 @@ export function useChat() {
       setMessages([])
       prevAuthAddressRef.current = currentAddress
     }
-  }, [authentication, isAuthenticated])
+  }, [authentication])
 
   useEffect(() => {
     if (!isAuthenticated || hasFetchedRef.current)
