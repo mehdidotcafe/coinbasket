@@ -24,6 +24,7 @@
         'Bridged USDT',
         'Bridged-Tokens',
         'Bridged Stablecoin',
+        'Coinbasket Selection',
       ]),
       decimals=18,
       description='Tether USD stablecoin',
@@ -40,6 +41,7 @@
       categories=list([
         'BNB Chain Ecosystem',
         'Binance-Peg Tokens',
+        'Coinbasket Selection',
       ]),
       decimals=18,
       description='Binance pegged Ethereum token',
