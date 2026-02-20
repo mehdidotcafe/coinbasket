@@ -1056,12 +1056,13 @@ async def handle_tool_errors(
     request: ToolCallRequest,
     handler: Callable[[ToolCallRequest], Awaitable[ToolMessage | Command[Any]]],
 ) -> ToolMessage | Command[Any]:
-    """Handle tool execution errors with custom messages."""
+    """Handle tool execution errors with custom messages coming from raised error."""
     try:
         return await handler(request)
+    except GraphInterrupt:
+        # Don't catch interrupts, they are used for flow control
+        raise
     except Exception as e:
-        if isinstance(e, GraphInterrupt):
-            raise e  # Don't catch interrupts, they are used for flow control
         print(
             f"Error in tool {request.tool.name if request.tool else 'unknown'} ({type(e)}): ${e}"
         )
