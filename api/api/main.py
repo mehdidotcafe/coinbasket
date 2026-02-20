@@ -311,8 +311,8 @@ async def get_assets_sample(
     asset_type: Literal["TOKEN", "BASKET"] | None = None,
 ) -> list[TokenResponse | BasketResponse]:
     """
-    Retrieve a sample of available assets. This is useful is the user ask for available assets / tokens / baskets / coins without providing any filter or criteria.
-    Note that much more assets are available in the system and can be retrieved with specific filters/criteria. This tool just return the "Coinbasket Selection" sample of them.
+    Retrieve a sample of available assets. This is useful if the user ask for available assets / tokens / baskets / coins without providing any filter or criteria.
+    Note that much more assets are available in the system and can be retrieved with specific filters/criteria. This tool just returns the "Coinbasket Selection" sample of them.
     Some examples of criteria that the user can provide to retrieve specific assets are: "tokens in the bnb ecosystem", "available baskets", "tokens related to trump", "AI Tokens", "Memecoins"...
 
     Args:
