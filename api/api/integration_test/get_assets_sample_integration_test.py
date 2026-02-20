@@ -57,4 +57,4 @@ def test_integration_get_assets_sample():
     assert "0x2170ed0880ac9a755fd29b2688956bd959f933f8".lower() in concat_text
     assert "0x55d398326f99059ff775485246999027b3197955".lower() in concat_text
     assert "0x1d2f0da169ceb9fc7b3144628db156f3f6c60dbe".lower() in concat_text
-    assert "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c".lower() in concat_text
+    assert "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".lower() in concat_text
