@@ -1,0 +1,26 @@
+# serializer version: 1
+# name: test_native_bnb_data_source_get
+  list([
+    TokenSimilarity(
+      address='0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      categories=list([
+        'Crypto-Backed Tokens',
+        'BNB Chain Ecosystem',
+        'Wrapped-Tokens',
+        'Native Token',
+        'Coinbasket Selection',
+      ]),
+      decimals=18,
+      description='BNB is the native coin of the BNB Chain ecosystem, essential for powering its multifaceted Web3 environment. It supports transactions on the BNB Smart Chain (BSC), the opBNB L2s, and BNB Greenfield. Besides transaction fees, BNB serves as a governance token, granting holders the ability to participate in the BNB Chain’s decentralized on-chain governance. Additionally, BNB functions as a strategic reserve asset and plays a critical role in the BNB Executive Total Value Locked (TVL) campaign, driving ecosystem growth and incentivizing adoption. Originally launched in 2017 as Binance’s exchange token, BNB was designed to offer trading fee discounts and other utilities within the Binance platform. It later evolved into the foundational asset of a much broader ecosystem. Following its mainnet launch on April 18, 2019, BNB transitioned from the Ethereum Network to BNB Chain. "Build and Build" is the philosophy behind BNB, reflecting its role in fostering development within the ecosystem.',
+      display_name='Binance Coin',
+      id='bsc:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      is_canonical=1,
+      logo_uri='https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+      market_cap_usd=85763281181,
+      name='Binance Coin',
+      ticker='BNB',
+      trust_score=100,
+      type='TOKEN',
+    ),
+  ])
+# ---

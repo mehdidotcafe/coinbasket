@@ -13,6 +13,9 @@ from api.ingestion.data_source.infrastructure.bsc.coingecko_live_tokens_data_sou
     CoingeckoLiveTokenListDataSource,
 )
 from api.ingestion.data_source.infrastructure.bsc.dev_data_source import DevDataSource
+from api.ingestion.data_source.infrastructure.bsc.native_bnb_data_source import (
+    NativeBnbDataSource,
+)
 from api.ingestion.data_source.infrastructure.bsc.test_data_source import TestDataSource
 from api.ingestion.ingest_data_use_case import IngestDataUseCase
 from api.protocol.token import Token
@@ -127,7 +130,10 @@ async def seed_assets():
 
     match configuration.app_env:
         case "test":
-            data_sources = [TestDataSource(id_generator)]
+            data_sources = [
+                TestDataSource(id_generator),
+                NativeBnbDataSource(id_generator),
+            ]
         case "development":
             data_sources = [
                 DevDataSource(
@@ -137,6 +143,7 @@ async def seed_assets():
                 CmcTop20BasketDataSource(
                     id_generator,
                 ),
+                NativeBnbDataSource(id_generator),
             ]
         case _:
             data_sources = [
@@ -148,6 +155,7 @@ async def seed_assets():
                 CmcTop20BasketDataSource(
                     id_generator,
                 ),
+                NativeBnbDataSource(id_generator),
             ]
 
     ingest_data_use_case = IngestDataUseCase(

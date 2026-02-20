@@ -31,8 +31,6 @@ class DevDataSource(DataSource):
         "0x55d398326f99059ff775485246999027b3197955".lower(),
         # XRP
         "0x1d2f0da169ceb9fc7b3144628db156f3f6c60dbe".lower(),
-        # WBNB
-        "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c".lower(),
     ]
 
     def __init__(
@@ -91,7 +89,7 @@ class DevDataSource(DataSource):
         return tokens
 
     def version(self) -> int:
-        return 7
+        return 8
 
     async def _score_and_map_token(self, raw_token: dict[str, Any]) -> TokenSimilarity:
         validated_token = GetFromAddressToken.model_validate(raw_token)

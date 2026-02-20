@@ -6,6 +6,7 @@ AssetCategory = Literal[
     "Basket",
     "Coinbasket Selection",
     "DTF",
+    "Native Token",
     # Coingecko categories
     "0g Ecosystem",
     "4chan-Themed",

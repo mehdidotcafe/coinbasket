@@ -30,7 +30,8 @@
           'categories': list([
             'Crypto-Backed Tokens',
             'BNB Chain Ecosystem',
-            'Wrapped-Tokens',
+            'Native Token',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Binance native token',
@@ -143,7 +144,8 @@
           'categories': list([
             'Crypto-Backed Tokens',
             'BNB Chain Ecosystem',
-            'Wrapped-Tokens',
+            'Native Token',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Binance native token',
@@ -254,7 +256,8 @@
           'categories': list([
             'Crypto-Backed Tokens',
             'BNB Chain Ecosystem',
-            'Wrapped-Tokens',
+            'Native Token',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Binance native token',
@@ -367,7 +370,8 @@
           'categories': list([
             'Crypto-Backed Tokens',
             'BNB Chain Ecosystem',
-            'Wrapped-Tokens',
+            'Native Token',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Binance native token',

@@ -8,7 +8,12 @@ bnb_token = Token(
     address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     description="Binance native token",
     decimals=18,
-    categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Wrapped-Tokens"],
+    categories=[
+        "Crypto-Backed Tokens",
+        "BNB Chain Ecosystem",
+        "Native Token",
+        "Coinbasket Selection",
+    ],
     logo_uri="https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png",
     trust_score=100,
 )
@@ -26,7 +31,6 @@ wbnb_token = Token(
         "Crypto-Backed Tokens",
         "BNB Chain Ecosystem",
         "Wrapped-Tokens",
-        "Coinbasket Selection",
     ],
     logo_uri="https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png",
     trust_score=100,
