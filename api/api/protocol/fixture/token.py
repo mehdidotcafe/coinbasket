@@ -11,7 +11,7 @@ bnb_token = Token(
     categories=[
         "Crypto-Backed Tokens",
         "BNB Chain Ecosystem",
-        "Wrapped-Tokens",
+        "Native Token",
         "Coinbasket Selection",
     ],
     logo_uri="https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png",
