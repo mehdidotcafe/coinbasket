@@ -1,7 +1,8 @@
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from decimal import Decimal
-from typing import Annotated, Any, Dict, Literal, Optional, Sequence, cast
+from collections.abc import Callable
+from typing import Annotated, Any, Awaitable, Dict, Literal, Optional, Sequence, cast
 
 from starlette.responses import StreamingResponse
 
@@ -51,7 +52,8 @@ from api.similarity.basket.get_all_baskets_use_case import GetAllBasketsUseCase
 from api.similarity.get_similar_assets_use_case import GetSimilarAssetsUseCase
 from langchain.agents import create_agent
 from langchain.agents.middleware.types import AgentState
-
+from langchain.agents.middleware import wrap_tool_call
+from langchain.messages import ToolMessage
 
 from apispec import APISpec
 from api.registry import (
@@ -97,8 +99,10 @@ from api.protocol.fixture.token import usdt_token
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langchain.chat_models import init_chat_model
-from langgraph.types import interrupt
+from langgraph.prebuilt.tool_node import ToolCallRequest
+from langgraph.types import Command, interrupt
 from langgraph.graph.ui import AnyUIMessage, ui_message_reducer, push_ui_message
+from langgraph.errors import GraphInterrupt
 
 print(f"Agent Env: {configuration.app_env}")
 
@@ -1047,6 +1051,27 @@ class StateSchema(AgentState):  # noqa: D101
     ui: Annotated[Sequence[AnyUIMessage], ui_message_reducer]
 
 
+@wrap_tool_call
+async def handle_tool_errors(
+    request: ToolCallRequest,
+    handler: Callable[[ToolCallRequest], Awaitable[ToolMessage | Command[Any]]],
+) -> ToolMessage | Command[Any]:
+    """Handle tool execution errors with custom messages coming from raised error."""
+    try:
+        return await handler(request)
+    except GraphInterrupt:
+        # Don't catch interrupts, they are used for flow control
+        raise
+    except Exception as e:
+        print(
+            f"Error in tool {request.tool.name if request.tool else 'unknown'} ({type(e)}): ${e}"
+        )
+        return ToolMessage(
+            content=str(e),
+            tool_call_id=request.tool_call["id"],
+        )
+
+
 async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
     agent_executor = create_agent(
         init_chat_model(
@@ -1066,7 +1091,7 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
                 'To display a token, ALWAYS display using this format: <token display_name="{token.display_name}" ticker="{token.ticker}" address="{token.address}" logo_uri="{token.logo_uri}" decimals="{token.decimals}" />.  ',
                 "ALWAYS use a tool to fetch an asset address when you need it.  ",
                 "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
-                "The only way to place order is to use the plan_and_execute_swap_order tool.  ",
+                "IMPORTANT: The only way to place order is to use the plan_and_execute_swap_order tool, never say that you executed an order without using the tool.  ",
                 "You don't need to know the asset prices before calling the plan_and_execute_swap_order tool, the tool will handle it for you.  ",
                 "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
                 "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
@@ -1075,6 +1100,7 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
             ]
         ),
         state_schema=StateSchema,
+        middleware=[handle_tool_errors],
     )
 
     return agent_executor

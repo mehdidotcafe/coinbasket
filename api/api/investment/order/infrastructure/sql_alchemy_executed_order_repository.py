@@ -19,24 +19,22 @@ from api.protocol.basket import Basket
 from api.protocol.token import Token
 
 
-def _deserialize_asset_from_dict(asset_dict: dict[str, Any]) -> Asset:
+def _deserialize_asset_from_dict(asset: dict[str, Any]) -> Asset:
     """Deserialize an asset from a dictionary."""
+    ChildAsset = Token if asset["type"] == "TOKEN" else Basket
 
-    def deserialize_asset(token: dict[str, Any]) -> Asset:
-        ChildAsset = Token if token["type"] == "TOKEN" else Basket
-
-        return ChildAsset(
-            id=token["id"],
-            name=token["name"],
-            display_name=token["display_name"],
-            ticker=token["ticker"],
-            address=token["address"],
-            decimals=token["decimals"],
-            categories=token["categories"],
-            description=token["description"],
-        )
-
-    return deserialize_asset(asset_dict)
+    return ChildAsset(
+        id=asset["id"],
+        name=asset["name"],
+        display_name=asset["display_name"],
+        ticker=asset["ticker"],
+        address=asset["address"],
+        decimals=asset["decimals"],
+        categories=asset["categories"],
+        description=asset["description"],
+        logo_uri=asset["logo_uri"],
+        trust_score=asset["trust_score"],
+    )
 
 
 class ExecutedOrderModel(Base):
