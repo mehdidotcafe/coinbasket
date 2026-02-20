@@ -18,9 +18,21 @@ from api.token.infrastructure.coingecko.coingecko_token_repository import (
 class DevDataSource(DataSource):
     blacklist_tokens = [
         # CMC20 basket
-        "0x2f8a339b5889ffac4c5a956787cda593b3c36867",
-        # "Wrapped BNB"
-        "0x0555e30da8f98308edb960aa94c0db47230d2b9c",
+        "0x2f8a339b5889ffac4c5a956787cda593b3c36867".lower(),
+        # "Wrapped BTC"
+        "0x0555e30da8f98308edb960aa94c0db47230d2b9c".lower(),
+    ]
+    coinbasket_selection = [
+        # Bitcoin
+        "0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c".lower(),
+        # Ethereum
+        "0x2170ed0880ac9a755fd29b2688956bd959f933f8".lower(),
+        # USDT
+        "0x55d398326f99059ff775485246999027b3197955".lower(),
+        # XRP
+        "0x1d2f0da169ceb9fc7b3144628db156f3f6c60dbe".lower(),
+        # WBNB
+        "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c".lower(),
     ]
 
     def __init__(
@@ -48,7 +60,8 @@ class DevDataSource(DataSource):
         raw_tokens = [
             token
             for token in raw_tokens
-            if token["platforms"]["binance-smart-chain"] not in self.blacklist_tokens
+            if token["platforms"]["binance-smart-chain"].lower()
+            not in self.blacklist_tokens
         ]
 
         tokens: list[AssetSimilarity] = []
@@ -78,7 +91,7 @@ class DevDataSource(DataSource):
         return tokens
 
     def version(self) -> int:
-        return 6
+        return 7
 
     async def _score_and_map_token(self, raw_token: dict[str, Any]) -> TokenSimilarity:
         validated_token = GetFromAddressToken.model_validate(raw_token)
@@ -105,7 +118,7 @@ class DevDataSource(DataSource):
             ticker=token.symbol.upper(),
             description=token.description.en if token.description else "",
             decimals=token.detail_platforms.binance_smart_chain.decimal_place,
-            categories=self._make_categories(token.categories),
+            categories=self._make_categories(token.categories, address),
             logo_uri=f"https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/{address}.png",
             is_canonical=self._is_canonical_from_token(token),
             market_cap_usd=int(token.market_data.market_cap.usd or 0)
@@ -114,11 +127,13 @@ class DevDataSource(DataSource):
             trust_score=trust_score,
         )
 
-    def _make_categories(self, categories: list[str] | None) -> list[str]:
+    def _make_categories(self, categories: list[str] | None, address: str) -> list[str]:
         categories = [cast(AssetCategory, category) for category in categories or []]
 
         if "Storage" in categories:
             categories.append("DePIN")
+        if address.lower() in self.coinbasket_selection:
+            categories.append("Coinbasket Selection")
 
         if next(
             (

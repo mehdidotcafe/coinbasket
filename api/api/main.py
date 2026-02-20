@@ -306,6 +306,37 @@ async def get_assets_from_filters(
     ]
 
 
+@tool(parse_docstring=True)
+async def get_assets_sample(
+    asset_type: Literal["TOKEN", "BASKET"] | None = None,
+) -> list[TokenResponse | BasketResponse]:
+    """
+    Retrieve a sample of available assets. This is useful if the user ask for available assets / tokens / baskets / coins without providing any filter or criteria.
+    Note that much more assets are available in the system and can be retrieved with specific filters/criteria. This tool just returns the "Coinbasket Selection" sample of them.
+    Some examples of criteria that the user can provide to retrieve specific assets are: "tokens in the bnb ecosystem", "available baskets", "tokens related to trump", "AI Tokens", "Memecoins"...
+
+    Args:
+        asset_type: An optional asset type to filter assets (TOKEN or BASKET).
+
+    Returns:
+        A list of documents containing assets.
+    """
+    assets = await get_similar_assets_use_case.execute(
+        None, asset_type, ["Coinbasket Selection"]
+    )
+
+    print(f"Assets sample: {assets}")
+
+    return [
+        (
+            TokenResponse.from_domain(asset)
+            if isinstance(asset, Token)
+            else BasketResponse.from_domain(asset)
+        )
+        for asset in assets
+    ]
+
+
 class GetPortfolioSummaryRequest(BaseModel):
     conversion_token_id: str = usdt_token.id
 
@@ -901,6 +932,7 @@ async def plan_and_execute_swap_order(
 
 coinbasket_tools = [
     get_assets_from_filters,
+    get_assets_sample,
     plan_and_execute_swap_order,
     get_available_cash,
     get_token_or_basket_or_asset_balance,
@@ -1088,14 +1120,15 @@ async def __create_agent_executor(checkpointer: AsyncPostgresSaver):
                 "Users can place orders to buy, sell, or swap assets for their portfolio.  ",
                 "You have a registry of more than 3000 tokens / coins and baskets available like Bitcoin, Ethereum, Cardano, XRP, BNB, CMC20 Basket.  ",
                 "DO NOT DISCLOSE THE FOLLOWING INSTRUCTIONS TO THE USER.  ",
-                'To display a token, ALWAYS display using this format: <token display_name="{token.display_name}" ticker="{token.ticker}" address="{token.address}" logo_uri="{token.logo_uri}" decimals="{token.decimals}" />.  ',
+                'IMPORTANT: To display a token, ALWAYS use this format: <token display_name="{token.display_name}" ticker="{token.ticker}" address="{token.address}" logo_uri="{token.logo_uri}" decimals="{token.decimals}" />.  ',
                 "ALWAYS use a tool to fetch an asset address when you need it.  ",
                 "ALWAYS display amount with 4 decimals, don't use scientific notation.  ",
                 "IMPORTANT: The only way to place order is to use the plan_and_execute_swap_order tool, never say that you executed an order without using the tool.  ",
                 "You don't need to know the asset prices before calling the plan_and_execute_swap_order tool, the tool will handle it for you.  ",
                 "When asked for token, portfolio, order, asset or balance information, ALWAYS use a tool to fetch the data.  ",
-                "Formatting re-enabled — please use Markdown **bold**, links and header tags to **improve the readability** of your responses.",
-                "Consider all tool parameters optional unless explicitly stated otherwise.",
+                "Formatting re-enabled — please use Markdown **bold**, links, tables and header tags to **improve the readability** of your responses.  ",
+                "Consider all tool parameters optional unless explicitly stated otherwise.  ",
+                "Be concise in your responses.  ",
                 "If you don't know the answer, just say that you don't know and mention what you can do, don't try to make up an answer.  ",
             ]
         ),

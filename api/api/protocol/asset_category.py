@@ -2,6 +2,11 @@ from typing import Literal
 
 
 AssetCategory = Literal[
+    # Coinbasket custom categories
+    "Basket",
+    "Coinbasket Selection",
+    "DTF",
+    # Coingecko categories
     "0g Ecosystem",
     "4chan-Themed",
     "8Bit Chain Ecosystem",

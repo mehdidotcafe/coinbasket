@@ -27,4 +27,4 @@ def test_cmc_top_20_basket_data_source_version(id_generator: IdGenerator):
     data_source = CmcTop20BasketDataSource(id_generator)
     version = data_source.version()
 
-    assert version == 1
+    assert version == 2

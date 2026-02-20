@@ -7,6 +7,7 @@
         'BNB Chain Ecosystem',
         'DTF',
         'Basket',
+        'Coinbasket Selection',
       ]),
       decimals=18,
       description='The CoinMarketCap 20 Index DTF (CMC20) is a liquid index token powered by Reserve that tracks the CoinMarketCap 20 Index. The CMC20 Index is a benchmark designed to measure the performance of the top 20 cryptocurrency projects by market capitalization, as ranked by CoinMarketCap. It excludes stablecoins (i.e. USDT), tokens that are pegged to other crypto assets (i.e. WBTC or stETH), and assets with limited investability (e.g. potential litigation risk, or limited circulating liquidity). The index represents the broader cryptocurrency market while providing insight into the performance of a diverse set of digital assets.',

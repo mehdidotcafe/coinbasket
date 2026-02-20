@@ -10,6 +10,7 @@
         'categories': list([
           'BNB Chain Ecosystem',
           'Binance-Peg Tokens',
+          'Coinbasket Selection',
         ]),
         'decimals': 18,
         'description': 'Binance pegged Ethereum token',
@@ -33,6 +34,7 @@
           'BNB Chain Ecosystem',
           'Harmony Ecosystem',
           'Bitcoin Ecosystem',
+          'Coinbasket Selection',
         ]),
         'decimals': 18,
         'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",

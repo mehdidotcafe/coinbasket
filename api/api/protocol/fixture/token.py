@@ -22,7 +22,12 @@ wbnb_token = Token(
     address="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
     description="Wrapped BNB a wrapped version of the BNB native tokens on the BEP-20 standard on the Binance Smart Chain and other EVM-compatible chains. Not to be confused with BNB Native Token on the BSC Chain.",
     decimals=18,
-    categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Wrapped-Tokens"],
+    categories=[
+        "Crypto-Backed Tokens",
+        "BNB Chain Ecosystem",
+        "Wrapped-Tokens",
+        "Coinbasket Selection",
+    ],
     logo_uri="https://token-registry.s3.amazonaws.com/icons/tokens/bsc/64/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png",
     trust_score=100,
 )
@@ -35,7 +40,7 @@ eth_token = Token(
     address="0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
     description="Binance pegged Ethereum token",
     decimals=18,
-    categories=["BNB Chain Ecosystem", "Binance-Peg Tokens"],
+    categories=["BNB Chain Ecosystem", "Binance-Peg Tokens", "Coinbasket Selection"],
     logo_uri="https://coin-images.coingecko.com/coins/images/39580/thumb/weth.png",
     trust_score=100,
 )
@@ -53,6 +58,7 @@ btc_token = Token(
         "BNB Chain Ecosystem",
         "Harmony Ecosystem",
         "Bitcoin Ecosystem",
+        "Coinbasket Selection",
     ],
     logo_uri="https://coin-images.coingecko.com/coins/images/14108/thumb/Binance-bitcoin.png",
     trust_score=100,
@@ -84,6 +90,7 @@ usdt_token = Token(
         "Bridged USDT",
         "Bridged-Tokens",
         "Bridged Stablecoin",
+        "Coinbasket Selection",
     ],
     logo_uri="https://coin-images.coingecko.com/coins/images/35021/thumb/USDT.png",
     trust_score=100,
@@ -187,7 +194,12 @@ xrp_token = Token(
     address="0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE",
     decimals=18,
     description="Tokens that are wrapped and pegged by Binance on a 1:1 ratio to the corresponding native token. Also supports BEP20 token deposits and withdrawals at Binance.com",
-    categories=["Crypto-Backed Tokens", "BNB Chain Ecosystem", "Binance-Peg Tokens"],
+    categories=[
+        "Crypto-Backed Tokens",
+        "BNB Chain Ecosystem",
+        "Binance-Peg Tokens",
+        "Coinbasket Selection",
+    ],
     trust_score=100,
 )
 
