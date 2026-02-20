@@ -62,6 +62,9 @@ from api.datetime.infrastructure.python_date_time import PythonDateTime
 from api.shared.http_request.infrastructure.aiohttp_http_request import (
     AiohttpHttpRequest,
 )
+from api.shared.hash_generator.infrastructure.hashlib_sha256_hash_generator import (
+    HashlibSha256HashGenerator,
+)
 from api.shared.id_generator.id_generator import IdGenerator
 from api.shared.random_generator.random_generator import RandomGenerator
 from api.investment.infrastructure.zero_x.zero_x_api_client import (
@@ -114,6 +117,8 @@ aiohttp_http_request = AiohttpHttpRequest(
 )
 
 id_generator = IdGenerator()
+
+hash_generator = HashlibSha256HashGenerator()
 
 random_generator = RandomGenerator()
 
