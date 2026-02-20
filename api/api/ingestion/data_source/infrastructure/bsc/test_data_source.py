@@ -16,6 +16,7 @@ from api.protocol.fixture.token import (
     usdt_token,
     shib_token,
     cake_token,
+    xrp_token,
 )
 from api.protocol.fixture.basket import (
     cmc20_basket,
@@ -41,6 +42,7 @@ class TestDataSource(DataSource):
                 usdt_token,
                 shib_token,
                 cake_token,
+                xrp_token,
             ]
         ]
         baskets = [

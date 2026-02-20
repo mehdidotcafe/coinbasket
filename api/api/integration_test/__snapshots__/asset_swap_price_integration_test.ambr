@@ -5,8 +5,10 @@
       'asset': dict({
         'address': '0x2f8A339B5889FfaC4c5A956787cdA593b3c36867',
         'categories': list([
-          'market-cap',
-          'diversified',
+          'BNB Chain Ecosystem',
+          'Basket',
+          'DTF',
+          'Coinbasket Selection',
         ]),
         'decimals': 18,
         'description': 'Top 20 tokens by market cap',
@@ -48,8 +50,10 @@
         'asset': dict({
           'address': '0x2f8A339B5889FfaC4c5A956787cdA593b3c36867',
           'categories': list([
-            'market-cap',
-            'diversified',
+            'BNB Chain Ecosystem',
+            'Basket',
+            'DTF',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Top 20 tokens by market cap',
@@ -69,8 +73,10 @@
         'asset': dict({
           'address': '0x2f8A339B5889FfaC4c5A956787cdA593b3c36867',
           'categories': list([
-            'market-cap',
-            'diversified',
+            'BNB Chain Ecosystem',
+            'Basket',
+            'DTF',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Top 20 tokens by market cap',
@@ -90,8 +96,9 @@
       'asset': dict({
         'address': '0x0000000000000000000000000000000000000000',
         'categories': list([
-          'test',
-          'demo',
+          'BNB Chain Ecosystem',
+          'Basket',
+          'DTF',
         ]),
         'decimals': 18,
         'description': 'A basket for testing purposes',
@@ -114,6 +121,7 @@
         'categories': list([
           'BNB Chain Ecosystem',
           'Binance-Peg Tokens',
+          'Coinbasket Selection',
         ]),
         'decimals': 18,
         'description': 'Binance pegged Ethereum token',
@@ -157,6 +165,7 @@
           'categories': list([
             'BNB Chain Ecosystem',
             'Binance-Peg Tokens',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Binance pegged Ethereum token',
@@ -178,6 +187,7 @@
           'categories': list([
             'BNB Chain Ecosystem',
             'Binance-Peg Tokens',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Binance pegged Ethereum token',
@@ -197,8 +207,9 @@
       'asset': dict({
         'address': '0x0000000000000000000000000000000000000000',
         'categories': list([
-          'test',
-          'demo',
+          'BNB Chain Ecosystem',
+          'Basket',
+          'DTF',
         ]),
         'decimals': 18,
         'description': 'A basket for testing purposes',
@@ -219,8 +230,9 @@
       'asset': dict({
         'address': '0x0000000000000000000000000000000000000000',
         'categories': list([
-          'test',
-          'demo',
+          'BNB Chain Ecosystem',
+          'Basket',
+          'DTF',
         ]),
         'decimals': 18,
         'description': 'A basket for testing purposes',
@@ -262,8 +274,9 @@
         'asset': dict({
           'address': '0x0000000000000000000000000000000000000000',
           'categories': list([
-            'test',
-            'demo',
+            'BNB Chain Ecosystem',
+            'Basket',
+            'DTF',
           ]),
           'decimals': 18,
           'description': 'A basket for testing purposes',
@@ -283,8 +296,9 @@
         'asset': dict({
           'address': '0x0000000000000000000000000000000000000000',
           'categories': list([
-            'test',
-            'demo',
+            'BNB Chain Ecosystem',
+            'Basket',
+            'DTF',
           ]),
           'decimals': 18,
           'description': 'A basket for testing purposes',
@@ -308,6 +322,7 @@
           'BNB Chain Ecosystem',
           'Harmony Ecosystem',
           'Bitcoin Ecosystem',
+          'Coinbasket Selection',
         ]),
         'decimals': 18,
         'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",
@@ -330,6 +345,7 @@
         'categories': list([
           'BNB Chain Ecosystem',
           'Binance-Peg Tokens',
+          'Coinbasket Selection',
         ]),
         'decimals': 18,
         'description': 'Binance pegged Ethereum token',
@@ -373,6 +389,7 @@
           'categories': list([
             'BNB Chain Ecosystem',
             'Binance-Peg Tokens',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Binance pegged Ethereum token',
@@ -394,6 +411,7 @@
           'categories': list([
             'BNB Chain Ecosystem',
             'Binance-Peg Tokens',
+            'Coinbasket Selection',
           ]),
           'decimals': 18,
           'description': 'Binance pegged Ethereum token',
@@ -417,6 +435,7 @@
           'BNB Chain Ecosystem',
           'Harmony Ecosystem',
           'Bitcoin Ecosystem',
+          'Coinbasket Selection',
         ]),
         'decimals': 18,
         'description': "Pegged tokens such as BTCB, are 100% backed by the native coin in reserve, which is Bitcoin (BTC) in BTCB's case.",

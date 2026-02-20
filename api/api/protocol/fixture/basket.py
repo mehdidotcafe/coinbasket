@@ -8,7 +8,7 @@ test_basket = Basket(
     description="A basket for testing purposes",
     decimals=18,
     address="0x0000000000000000000000000000000000000000",
-    categories=["test", "demo"],
+    categories=["BNB Chain Ecosystem", "Basket", "DTF"],
     trust_score=100,
 )
 
@@ -20,6 +20,6 @@ cmc20_basket = Basket(
     description="Top 20 tokens by market cap",
     decimals=18,
     address="0x2f8A339B5889FfaC4c5A956787cdA593b3c36867",
-    categories=["market-cap", "diversified"],
+    categories=["BNB Chain Ecosystem", "Basket", "DTF", "Coinbasket Selection"],
     trust_score=100,
 )
