@@ -63,7 +63,7 @@ export function PromptForm({ onSubmit, status, size, placeholder = 'Ask somethin
   }
 
   const askAvailableBaskets = () => {
-    form.setValue('content', 'What are the available baskets?')
+    form.setValue('content', 'What are the baskets available?')
     form.trigger('content')
     form.handleSubmit(onSubmitForm)()
   }
